@@ -47,6 +47,7 @@ Operands can also be mathematical expressions, even referencing labels. Math exp
 <tr><td>&lt;&lt;</td><td>Bitwise left shift</td></tr>
 <tr><td>&gt;&gt;></td><td>Bitwise right shift</td></tr>
 </table>
+
 ### Unary Operations
 <table>
 <tr><th>Operator</th><th>Meaning</th></tr>
@@ -398,8 +399,8 @@ variables   .byte ?
             * = $c000
             .code
 ```
-# Details
-## Instruction set
+## Details
+### Instruction set
 
 At this time, 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. Illegal opcodes must be invoked using the pseudo-ops .byte, .word, etc. The following mnemonics are legal:
 <pre>
@@ -410,13 +411,13 @@ ror,rti,rts,sbc,sbc,sec,sed,sei,sta,stx,sty,tax,tay,
 tsx,txa,txs,tya
 </pre>
 
-## Pseudo-Ops
+### Pseudo-Ops
 
 Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops. A pseudo-op is similar to a mnemonic in that it tells the assembler to output some number of bytes, but different in that it is not part of the CPU's instruction set. For each pseudo-op description is its name, any aliases, a definition, arguments, and examples of usage. Optional arguments are in square brackets (`[` and `]`).
 
 Note that every argument, unless specified, can be any legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. Anonymous labels should be referenced in parantheses, otherwise the expression engine might misinterpret them. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
 
-### Data/text insertions
+#### Data/text insertions
 
 <table>
 <tr><td><b>Name</b></td><td><code>.addr</code></td></tr>
@@ -679,7 +680,7 @@ mysub   lda #13             ; output newline
 </td></tr>
 </table>
 
-### Assembler directives
+#### Assembler directives
 
 <table>
 <tr><td><b>Name</b></td><td><code>.binclude</code></td></tr>
@@ -989,6 +990,338 @@ glyph             ;12345678
 </td></tr>
 </table>
 
+## Future ideas
+
+Some features may be introduced in a future release, such as conditional assembly, for-next loops, and flow control, though there is no plan at this time.
+
 ## Appendix
 ### Built-In functions
 
+<table>
+<tr><td><b>Name</b></td><td><code>abs</code></td></tr>
+<tr><td><b>Definition</b></td><td>The absolute (positive sign) value of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.word abs(-2234)     ; > ba 08</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>acos</code></td></tr>
+<tr><td><b>Definition</b></td><td>The arc cosine of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte acos(1.0)      ; > 00</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>atan</code></td></tr>
+<tr><td><b>Definition</b></td><td>The arc tangent of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte atan(0.0)      ; > 00</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>cbrt</code></td></tr>
+<tr><td><b>Definition</b></td><td>The cubed root of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.long cbrt(2048383)   ; > 7f 00 00</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>ceil</code></td></tr>
+<tr><td><b>Definition</b></td><td>Round up expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte ceil(1.1)       ; > 02</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>cos</code></td></tr>
+<tr><td><b>Definition</b></td><td>The cosine of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte cos(0.0)        ; > 01</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>cosh</code></td></tr>
+<tr><td><b>Definition</b></td><td>The hyperbolic cosine of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte cosh(0.0)       ; > 01</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>deg</code></td></tr>
+<tr><td><b>Definition</b></td><td>Degrees from radians.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>radian</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte deg(1.0)        ; > 39</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>exp</code></td></tr>
+<tr><td><b>Definition</b></td><td>Exponential of e.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>power</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.dint exp(16.0)       ; > 5e 97 87 00</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>floor</code></td></tr>
+<tr><td><b>Definition</b></td><td>Round down expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.char floor(-4.8)     ; > fb</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>frac</code></td></tr>
+<tr><td><b>Definition</b></td><td>The fractional part.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte frac(5.18)*100  ; > 12</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>hypot</code></td></tr>
+<tr><td><b>Definition</b></td><td>Polar distance.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>pole1, pole2</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte hypot(4.0, 3.0) ; > 05</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>ln</code></td></tr>
+<tr><td><b>Definition</b></td><td>Natural logarithm.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte ln(2048.0)      ; > 07</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>log10</code></td></tr>
+<tr><td><b>Definition</b></td><td>Common logarithm.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte log($7fffff)    ; > 06</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>pow</code></td></tr>
+<tr><td><b>Definition</b></td><td>Exponentiation.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>base, power</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.lint pow(2,16)       ; > 00 00 01</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>rad</code></td></tr>
+<tr><td><b>Definition</b></td><td>Radians from degrees.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>degree</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.word rad(79999.9)    ; > 74 05</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>random</code></td></tr>
+<tr><td><b>Definition</b></td><td>Generate a random number within the specified range of numbers. Both arguments can be negative or positive, but the second argument must be greater than the first, and the difference between them can be no greater than the maximum value of a signed 32-bit integer. This is a .Net limitation.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>range1, range2</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+     .word random(251,255)   ; generate a random # between
+                             ; 251 and 255.
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>round</code></td></tr>
+<tr><td><b>Definition</b></td><td>Round number.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value, places</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte round(18.21, 0) ; > 12</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>sgn</code></td></tr>
+<tr><td><b>Definition</b></td><td>The sign of the expression, returned as -1 for negative, 1 for positive, and 0 for no sign.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+     .char sgn(-8.0), sgn(14.0), sgn(0)
+     ;; > ff 01 00
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>sin</code></td></tr>
+<tr><td><b>Definition</b></td><td>The sine of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.char sin(1003.9) * 14 ; > f2</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>sinh</code></td></tr>
+<tr><td><b>Definition</b></td><td>The hyperbolic sine of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte sinh(0.0)        ; > f2</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>sqrt</code></td></tr>
+<tr><td><b>Definition</b></td><td>The square root of the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte sqrt(65536) - 1  ; > ff</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>str</code></td></tr>
+<tr><td><b>Definition</b></td><td>The expression as a text string. Only available for use with the string pseudo-ops.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte sqrt(65536) - 1  ; > ff</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>tan</code></td></tr>
+<tr><td><b>Definition</b></td><td>The tangent the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte tan(444.0)*5.0   ; > 08</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>tanh</code></td></tr>
+<tr><td><b>Definition</b></td><td>The hyperbolic tangent the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte tanh(0.0)        ; > 00</code></td></tr>
+</table>
+
+### Command-line options
+
+6502.Net accepts several arguments, requiring at least one. If no option flag precedes the argument, it is considered an input file. Multiple input files can be assembled. If no output file is specified, source is assembled to `a.out` within the current working directory. Below are the available option flags and their parameters.
+
+<table>
+<tr><td><b>Option</b></td><td><code>-o</code></td></tr>
+<tr><td><b>Alias</b></td><td>--output</td></tr>
+<tr><td><b>Definition</b></td><td>Output the assembly to the specified output file. Quote-enclosed filename is a required parameter.</td></tr>
+<tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myasm.asm -o myoutput
+/6502.Net myasm.asm -output=myoutput
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-b</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--nostart</code></td></tr>
+<tr><td><b>Definition</b></td><td>Do not set the header of the output file to the start address of the assembly, which is the Commodore DOS format for executables.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>/6502.Net myasm.asm -b -o notcbm.bin</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-C</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--case-sensitive</code></td></tr>
+<tr><td><b>Definition</b></td><td>Set the assembly mode to case-sensitive. All tokens, including assembly mnemonics, directives, and symbols, are treated as case-sensitive. By default, 6502.Net is not case-sensitive.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net mycsasm.asm -C
+/6502.Net mycsasm.asm --case-sensitive
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-C</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--case-sensitive</code></td></tr>
+<tr><td><b>Definition</b></td><td>Set the assembly mode to case-sensitive. All tokens, including assembly mnemonics, directives, and symbols, are treated as case-sensitive. By default, 6502.Net is not case-sensitive.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net mycsasm.asm -C
+/6502.Net mycsasm.asm --case-sensitive
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-D</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--define</code></td></tr>
+<tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at assembly time.</td></tr>
+<tr><td><b>Parameter</b></td><td><code>{label}={value}</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>/6502.Net -D chrout=$ffd2 myasm.asm -o myoutput</pre>
+</td></tr>
+</table>
+<table>
+<table>
+<tr><td><b>Option</b></td><td><code>-h</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>-?, --help</code></td></tr>
+<tr><td><b>Definition</b></td><td>Print all command-line options to console output.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net -h
+/6502.Net --help
+</pre>
+</td></tr>
+</table>
+<tr><td><b>Option</b></td><td><code>-l</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--labels</code></td></tr>
+<tr><td><b>Definition</b></td><td>Dump all label definitions to listing.</td></tr>
+<tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myasm.asm -l labels.asm
+/6502.Net myasm.asm --labels=labels.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-L</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--list</code></td></tr>
+<tr><td><b>Definition</b></td><td>Output the assembly listing to the specified file.</td></tr>
+<tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myasm.asm -L listing.asm
+/6502.Net myasm.asm --list=listing.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--verbose-list</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--list</code></td></tr>
+<tr><td><b>Definition</b></td><td>Make listing output verbose. If the verbose option is set then all non-assembled lines are included, such as blocks and comment blocks.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>/6502.Net myasm.asm --verbose-list -L myverboselist.asm</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-V</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--version</code></td></tr>
+<tr><td><b>Definition</b></td><td>Print the current version of 6502.Net to console output.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net -V
+/6502.Net --version
+</pre>
+</td></tr>
+</table>
+
+### Error messages
+
+`Bad expression` - An error in the expression.
+
+`Cannot resolve anonymous label` - The assembler cannot find the reference to the anonymous label.
+
+`Closure does not close a block` - A block closure is present but no block opening.
+
+`Constant expression in LValue` - Expression attempting to assign a value to a constant.
+
+`Could not process binary file` - The binary file could not be opened or processed.
+
+`Directve takes no arguments` - An argument is present for a pseudo-op or directive that takes no arguments.
+
+`Filename not specified` - A directive expected a filename that was not provided.
+
+`General syntax error` - A general syntax error.
+
+`Illegal quantity` - The expression value is larger than the allowable size.
+
+`Invalid constant assignment` - The constant could not be assigned to the expression.
+
+`Invalid parameter reference` - The macro reference does not reference a defined parameter.
+
+`Invalid Program Counter assignment` - An attempt was made to set the program counter to an invalid value.
+
+`Macro or segment is being called recursively` - A macro or segment is being invoked in its own definition.
+
+`Macro parameter not specified` - The macro expected a parameter that was not specified.
+
+`Missing closure for block` - A block does not have a closure.
+
+`Most significant bit should not be set` - A pseudo-op cannot set the most-significant bit because it is already set.
+
+`Program Counter overflow` - The program counter overflowed passed the allowable limit.
+
+`Pstring size too large` - The P-String size is more than the maximum 255 bytes.
+
+`Quote string not enclosed` - The quote string was not enclosed.
+
+`Relative branch out of range` - The relative branch jump was being the allowable 128 bytes.
+
+`Redefinition of label` - A label is redefined or being re-assigned to a new value, which is not allowed.
+
+`Redefinition of macro` - An attempt was made to redefine a macro.
+
+`Too few arguments for directive` - The assembler directive expected more arguments than were provided.
+
+`Too many argumnets for directive` - More arguments were provided to the directive than expected.
+
+`Unknown instruction or incorrect parameters for instruction` - An directive or instruction was encountered that was unknown, or the operand provided is incorrect.
