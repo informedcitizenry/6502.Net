@@ -1217,7 +1217,6 @@ Some features may be introduced in a future release, such as conditional assembl
 </td></tr>
 </table>
 <table>
-<table>
 <tr><td><b>Option</b></td><td><code>-h</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>-?, --help</code></td></tr>
 <tr><td><b>Definition</b></td><td>Print all command-line options to console output.</td></tr>
@@ -1229,6 +1228,7 @@ Some features may be introduced in a future release, such as conditional assembl
 </pre>
 </td></tr>
 </table>
+<table>
 <tr><td><b>Option</b></td><td><code>-l</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--labels</code></td></tr>
 <tr><td><b>Definition</b></td><td>Dump all label definitions to listing.</td></tr>
