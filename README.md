@@ -85,7 +85,7 @@ In addition, certain assembler directives expect conditional expressions. Compou
 
 ## Comments
 
-Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored.
+Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or character constant.
 ```
     lda #0      ; 0 = color black
     sta $d020   ; set border color to accumulator
