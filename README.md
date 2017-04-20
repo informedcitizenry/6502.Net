@@ -45,7 +45,7 @@ Operands can also be mathematical expressions, even referencing labels. Math exp
 <tr><td>|</td><td>Bitwise OR</td></tr>
 <tr><td>^</td><td>Bitwise XOR</td></tr>
 <tr><td>&lt;&lt;</td><td>Bitwise left shift</td></tr>
-<tr><td>&gt;&gt;></td><td>Bitwise right shift</td></tr>
+<tr><td>&gt;&gt;</td><td>Bitwise right shift</td></tr>
 </table>
 
 ### Unary Operations
