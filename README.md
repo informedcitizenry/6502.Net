@@ -227,9 +227,10 @@ unused      .fill 256,0 ; Assemble 256 bytes with the value 0
 
 atpage      .align 256  ; The program counter is guaranteed to be at a page boundary
 ```
-Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, this is useful for program variables. Use the "?" instead of an expression:
+Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, this is useful for program variables. Use the `?` instead of an expression:
 ```
 highscore   .dword ?    ; set the symbol highscore to the program counter,
+                        ; but do not output any bytes 
                         ; but do not output any bytes 
 ```                             
 Note that if uninitialized data is defined, but thereafter initialized data is defined, the output will fill bytes to the program counter from the occurrence of the uninitialized symbol:
@@ -655,7 +656,7 @@ jumptable
 <table>
 <tr><td><b>Name</b></td><td><code>.sint</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a signed 16-bit value or values between -32768 and 32767 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a signed 16-bit value or values between -32768 and 32767 into the assembly, little-endian. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -686,7 +687,7 @@ mysub   lda #13             ; output newline
 <tr><td><b>Name</b></td><td><code>.binclude</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Include a source file and enclose the expanded source into a scoped block. The specified file is 6502.Net-compatible source. If no name is given in front of the directive then all symbols inside the included source will be inaccessible.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>Filename</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>filename</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
 soundlib    .binclude "sound.s"
@@ -711,17 +712,17 @@ kernal .block
         chrout = $ffd2
         chrin  = $ffcf
                 .endblock
-                ...
-        chrout  lda message,x       
-                jsr kernal.chrout   ; this is a different
-                                    ; chrout!
-        done    rts                 ; this is not the done
-                                    ; below!                
-                .block
-                beq done            ; the done below!
-                nop
-                nop
-        done    rts                 
+        ...
+chrout  lda message,x       
+        jsr kernal.chrout   ; this is a different
+                            ; chrout!
+done    rts                 ; this is not the done
+                            ; below!                
+        .block
+        beq done            ; the done below!
+        nop
+        nop
+done    rts                 
         .endblock
 </pre>
 </td></tr>
@@ -774,11 +775,11 @@ kernal .block
 <tr><td><b>Name</b></td><td><code>.enc</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td> Set the text encoding, how to interpret character literals. Currently only relevant to Commodore  targets. Three options are available:
-<pre>
-        petscii - convert ASCII/UTF8 to Commodore PETSCII
-        screen  - convert ASCII/UTF8 to Commodore screen codes
-        none    - treat as raw ASCII/UTF-8
-</pre>
+<ol>
+        <li><code>petscii</code> - convert ASCII/UTF8 to Commodore PETSCII</li>
+        <li><code>screen</code>  - convert ASCII/UTF8 to Commodore screen codes</li>
+        <li><code>none</code>    - treat as raw ASCII/UTF-8</li>
+</ol>
 </td></tr>
 <tr><td><b>Arguments</b></td><td><code>encoding</code></td></tr>
 <tr><td><b>Example</b></td><td>
@@ -856,7 +857,7 @@ inc16       .macro
             inc \1
             bne +
             inc \1+1
-&#43;       .endmacro
+&#43;          .endmacro
             .inc16 $c000
             ;; expands to =>
             inc $c000
@@ -1254,7 +1255,7 @@ Some features may be introduced in a future release, such as conditional assembl
 </table>
 <table>
 <tr><td><b>Option</b></td><td><code>--verbose-list</code></td></tr>
-<tr><td><b>Alias</b></td><td><code>--list</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Make listing output verbose. If the verbose option is set then all non-assembled lines are included, such as blocks and comment blocks.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
