@@ -5,4 +5,4 @@ install:
   - nuget install Nunit.Runners -Version 3.6.1.0 -OutputDirectory testrunner
 script:
   - xbuild /p:Configuration=Release 6502.Net.sln
-  - mono ./testrunner/NUnit.Console.3.6.1.0/tools/nunit-console.exe ./NUnitTest6502.Net/bin/Release/NUnitTest6502.Net.dll
+  - mono ./testrunner/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe ./NUnitTest6502.Net/bin/Release/NUnitTest6502.Net.dll
