@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Asm6502.Net
@@ -127,7 +128,7 @@ namespace Asm6502.Net
 
             bool double_enclosed = false;
             bool single_enclosed = false;
-            string token = string.Empty;
+            StringBuilder sb = new StringBuilder();
             string unprocessedTrim = SourceString.Trim();
             for (int n = 0; n < unprocessedTrim.Length; n++)
             {
@@ -139,16 +140,16 @@ namespace Asm6502.Net
                 else if (c == "'" && !double_enclosed)
                     single_enclosed = !single_enclosed;
 
-                token += c.ToString();
-
+                sb.Append(c);
+                
                 if (string.IsNullOrWhiteSpace(c.ToString()) && !double_enclosed && !single_enclosed)
                 {
                     if (string.IsNullOrEmpty(Label) ||
                         string.IsNullOrEmpty(Instruction) ||
                         string.IsNullOrEmpty(Operand))
                     {
-                        SetLineToken(checkReserved, checkSymbol, token);
-                        token = string.Empty;
+                        SetLineToken(checkReserved, checkSymbol, sb.ToString());
+                        sb.Clear();
                     }
                 }
             }
@@ -156,7 +157,7 @@ namespace Asm6502.Net
             {
                 throw new QuoteNotEnclosedException();
             }
-            SetLineToken(checkReserved, checkSymbol, token);
+            SetLineToken(checkReserved, checkSymbol, sb.ToString());
             Label = Label.TrimEnd(':');
             Operand = Operand.Trim();
         }
@@ -179,7 +180,7 @@ namespace Asm6502.Net
             bool single_enclosed = false;
             bool paren_enclosed = false;
 
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            StringBuilder sb = new System.Text.StringBuilder();
             
             for (int i = 0; i < Operand.Length; i++)
             {
