@@ -101,9 +101,6 @@ namespace Asm6502.Net
         /// <param name="token">The token to parse.</param>
         private void SetLineToken(Func<string, bool> checkReserved, Func<string, bool> checkSymbol, string token)
         {
-            /*if (string.IsNullOrEmpty(token))
-                return;
-            */
             var trimmed = token.Trim();
             if (string.IsNullOrEmpty(Instruction) &&
                 (checkReserved(trimmed)))
@@ -153,10 +150,6 @@ namespace Asm6502.Net
                         SetLineToken(checkReserved, checkSymbol, token);
                         token = string.Empty;
                     }
-                }
-                else
-                {
-                    //token += c.ToString();
                 }
             }
             if (single_enclosed || double_enclosed)
