@@ -879,7 +879,7 @@ namespace Asm6502.Net
             if (Options.InputFiles.Count == 0)
                 return;
 
-            Console.WriteLine("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE.txt!");
+            Console.WriteLine("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
             Console.WriteLine();
 
             Labels = new Dictionary<string, Label>(Options.StringComparar);
