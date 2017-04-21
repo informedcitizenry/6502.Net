@@ -571,14 +571,14 @@ reserved. Otherwise the optional second argument indicates the assembly should b
 <tr><td><b>Example</b></td><td>
 <pre>
         ldx #0
-+       lda message,x
+-       lda message,x
         lsr a               ; shift right
         php                 ; save carry flag
         jsr chrout          ; print 
         plp                 ; restore carry flag
         bcs done            ; if set we printed last char
         inx                 ; increment pointer
-        jmp +               ; get next
+        jmp -               ; get next
         ...
         .enc petscii    ; turn on petscii-encoding
         * = $c100
@@ -594,14 +594,14 @@ message .lsstring "hello"   ; >c100 90 8a 98 98 9f
 <tr><td><b>Example</b></td><td>
 <pre>
         ldx #0
-+       lda message,x
+-       lda message,x
         php                 ; save negative flag
         and #%01111111      ; turn off high bit...
         jsr chrout          ; and print 
         plp                 ; restore negative flag
         bmi done            ; if set we printed last char
         inx                 ; else increment pointer
-        jmp +               ; get next
+        jmp -               ; get next
         ...
         * = $c100
 message .nstring "hello"    ; >c100 68 65 6c 6c ef
