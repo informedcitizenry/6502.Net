@@ -283,8 +283,8 @@ namespace Asm6502.Net
         /// </summary>
         /// <param name="amount">The amount to fill</param>
         /// <param name="value">The fill value</param>
-        /// <param name="doNotAlign">If the value is larger than a byte, do not align fill amount.</param>
-        public void Fill(int amount, Int64 value, bool doNotAlign)
+        /// <param name="repeatNotFill">Repeat the value not fill to the amount.</param>
+        public void Fill(int amount, Int64 value, bool repeatNotFill)
         {
             int size = value.Size();
             byte[] fillbytes;
@@ -310,7 +310,7 @@ namespace Asm6502.Net
                     repeated.Add(fillbytes[j]);
 
             }
-            if (doNotAlign)
+            if (repeatNotFill)
                 AddBytes(repeated, true);
             else
                 AddBytes(repeated.GetRange(0, amount), true);
@@ -332,9 +332,9 @@ namespace Asm6502.Net
         /// set the align amount to 256.
         /// </summary>
         /// <param name="amount">The amount to align the compilation</param>
-        /// <param name="value">The bytes to fill before the alignment</param>
+        /// <param name="value">The value to fill before the alignment</param>
         /// <returns>Returns the offset needed to align the Program Counter</returns>
-        public int Align(int amount, byte value)
+        public int Align(int amount, long value)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
             Fill(align, value, false);

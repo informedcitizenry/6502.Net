@@ -63,9 +63,14 @@ namespace Asm6502.Net
                 }));
         }
 
+        /// <summary>
+        /// Callback method that handles text encoding for output.
+        /// </summary>
+        /// <param name="b">The byte to enocde.</param>
+        /// <returns>The encoded byte.</returns>
         private byte EncodeString(byte b)
         {
-            if (encoding_ == Net.TextEncoding.Screen)
+            if (encoding_ == TextEncoding.Screen)
             {
                 if (b < 0x20) b += 128;
                 else if (b >= 0x40 && b < 0x60) b -= 0x40;
@@ -75,7 +80,7 @@ namespace Asm6502.Net
                 else if (b >= 0xC0 && b < 0xFF) b -= 0x80;
                 else if (b == 0xFF) b = 0x94;
             }
-            else if (encoding_ == Net.TextEncoding.Petscii)
+            else if (encoding_ == TextEncoding.Petscii)
             {
                 if (b >= Convert.ToByte('A') && b <= Convert.ToByte('Z'))
                     b += 32;
@@ -148,8 +153,7 @@ namespace Asm6502.Net
                     int size = 1;
                     Int64 val;
 
-                    var m = Regex.Match(arg, @"str(\((.+)\))", Controller.Options.StringComparison == StringComparison.CurrentCultureIgnoreCase ?
-                        RegexOptions.IgnoreCase : RegexOptions.None);
+                    var m = Regex.Match(arg, @"str(\((.+)\))", Controller.Options.RegexOption);
                     if (string.IsNullOrEmpty(m.Value) == false)
                     {
                         if (m.Groups[1].Value != arg.Substring(3))
@@ -223,23 +227,21 @@ namespace Asm6502.Net
                     Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
-                Int64 fillval_i = Controller.Evaluator.Eval(csv.Last());
+                Int64 fillval = Controller.Evaluator.Eval(csv.Last());
 
                 if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
                 {
-                    if (fillval_i < 0) fillval_i += 256;
-                    if (fillval_i > byte.MaxValue || fillval_i < 0)
+                    if (fillval < 0)
                     {
-                        Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, fillval_i.ToString());
+                        Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, fillval.ToString());
                         return;
                     }
-                    byte fillvalb = Convert.ToByte(fillval_i);
-                    Controller.Output.Align(Convert.ToUInt16(alignval), fillvalb);
+                    Controller.Output.Align(Convert.ToUInt16(alignval), fillval);
                 }
                 else
                 {
                     bool repeat = line.Instruction.Equals(".repeat", Controller.Options.StringComparison);
-                    Controller.Output.Fill(Convert.ToUInt16(alignval), Convert.ToUInt16(fillval_i), repeat);
+                    Controller.Output.Fill(Convert.ToUInt16(alignval), fillval, repeat);
                 }
             }
             else
@@ -295,15 +297,15 @@ namespace Asm6502.Net
             }
             if (line.Operand.Equals("screen", Controller.Options.StringComparison))
             {
-                encoding_ = Net.TextEncoding.Screen;
+                encoding_ = TextEncoding.Screen;
             }
             else if (line.Operand.Equals("petscii", Controller.Options.StringComparison))
             {
-                encoding_ = Net.TextEncoding.Petscii;
+                encoding_ = TextEncoding.Petscii;
             }
             else if (line.Operand.Equals("none", Controller.Options.StringComparison))
             {
-                encoding_ = Net.TextEncoding.None;
+                encoding_ = TextEncoding.None;
             }
             else
             {
@@ -519,8 +521,7 @@ namespace Asm6502.Net
                                 else
                                 {
                                     Int64 v;
-                                    var m = Regex.Match(t, @"str(\(.+\))", Controller.Options.StringComparison == StringComparison.CurrentCultureIgnoreCase ?
-                    RegexOptions.IgnoreCase : RegexOptions.None);
+                                    var m = Regex.Match(t, @"str(\(.+\))", Controller.Options.RegexOption);
                                     if (string.IsNullOrEmpty(m.Value) == false)
                                     {
                                         string exp = m.Groups[1].Value;
