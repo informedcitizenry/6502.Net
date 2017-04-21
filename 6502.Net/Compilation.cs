@@ -272,17 +272,6 @@ namespace Asm6502.Net
         /// </summary>
         /// <param name="amount">The amount to fill</param>
         /// <param name="value">The fill value</param>
-        public void Fill(int amount, byte value, bool doNotAlign)
-        {
-            var bytes = Enumerable.Repeat(value, amount);
-            AddBytes(bytes, true);
-        }
-
-        /// <summary>
-        /// Fill memory with the specified values by the specified amount.
-        /// </summary>
-        /// <param name="amount">The amount to fill</param>
-        /// <param name="value">The fill value</param>
         /// <param name="repeatNotFill">Repeat the value not fill to the amount.</param>
         public void Fill(int amount, Int64 value, bool repeatNotFill)
         {
