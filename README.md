@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/informedcitizenry/6502.Net.svg?branch=master)](https://travis-ci.org/informedcitizenry/6502.Net) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)     mxParser: [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Build Status](https://travis-ci.org/informedcitizenry/6502.Net.svg?branch=master)](https://travis-ci.org/informedcitizenry/6502.Net) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
 
