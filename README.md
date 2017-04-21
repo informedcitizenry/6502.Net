@@ -1196,18 +1196,6 @@ Some features may be introduced in a future release, such as conditional assembl
 </td></tr>
 </table>
 <table>
-<tr><td><b>Option</b></td><td><code>-C</code></td></tr>
-<tr><td><b>Alias</b></td><td><code>--case-sensitive</code></td></tr>
-<tr><td><b>Definition</b></td><td>Set the assembly mode to case-sensitive. All tokens, including assembly mnemonics, directives, and symbols, are treated as case-sensitive. By default, 6502.Net is not case-sensitive.</td></tr>
-<tr><td><b>Parameter</b></td><td>None</td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-/6502.Net mycsasm.asm -C
-/6502.Net mycsasm.asm --case-sensitive
-</pre>
-</td></tr>
-</table>
-<table>
 <tr><td><b>Option</b></td><td><code>-D</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--define</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at assembly time.</td></tr>
