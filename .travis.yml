@@ -2,7 +2,7 @@ language: csharp
 solution: 6502.Net.sln
 install:
   - nuget restore 6502.Net.sln
-  - nuget install NUnit.Runners -Version 2.6.4 -OutputDirectory testrunner
+  - nuget install Nunit.Console -Version 3.6.1.0 -OutputDirectory testrunner
 script:
   - xbuild /p:Configuration=Release 6502.Net.sln
-  - mono ./testrunner/NUnit.Runners.2.6.4/tools/nunit-console.exe ./NUnitTest6502.Net/bin/Release/NUnitTest6502.Net.dll
+  - mono ./testrunner/NUnit.Console.3.6.1.0/tools/nunit-console.exe ./NUnitTest6502.Net/bin/Release/NUnitTest6502.Net.dll
