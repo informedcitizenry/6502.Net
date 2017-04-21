@@ -420,8 +420,7 @@ Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops
 
 Note that every argument, unless specified, can be any legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. Anonymous labels should be referenced in parantheses, otherwise the expression engine might misinterpret them. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
 
-#### Data/text insertions
-
+<p align="center"><b>Data/text insertions</b></p>
 <table>
 <tr><td><b>Name</b></td><td><code>.addr</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>.word</code></td></tr>
@@ -682,9 +681,7 @@ mysub   lda #13             ; output newline
 </pre>
 </td></tr>
 </table>
-
-#### Assembler directives
-
+<p align="center"><b>Assembler directives</b></p>
 <table>
 <tr><td><b>Name</b></td><td><code>.binclude</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
