@@ -1,2 +1,3 @@
 language: csharp
-solution: 6502.Net.sln
+script: 
+ - xbuild /6502.Net/6502.Net.csproj
