@@ -335,12 +335,7 @@ namespace Asm6502.Net
                     return;
                 }
             }
-            if (Output.PCOverflow)
-            {
-                Log.LogEntry(line, Resources.ErrorStrings.PCOverflow, Output.GetPC().ToString());
-                return;
-            }
-
+            
             try
             {
                 if (lineAssembler_.AssemblesInstruction(line.Instruction))

@@ -379,6 +379,13 @@ namespace Asm6502.Net
         /// <param name="line">The source line to assemble.</param>
         public void AssembleLine(SourceLine line)
         {
+            if (Controller.Output.PCOverflow)
+            {
+                Controller.Log.LogEntry(line, 
+                                        Resources.ErrorStrings.PCOverflow, 
+                                        Controller.Output.GetPC().ToString());
+                return;
+            }
             Controller.Evaluator.CharEncoding = EncodeString;
 
             switch (line.Instruction.ToLower())

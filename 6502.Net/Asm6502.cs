@@ -516,6 +516,13 @@ namespace Asm6502.Net
         /// <param name="line">The source line to assembler.</param>
         public void AssembleLine(SourceLine line)
         {
+            if (Controller.Output.PCOverflow)
+            {
+                Controller.Log.LogEntry(line, 
+                                        Resources.ErrorStrings.PCOverflow, 
+                                        Controller.Output.GetPC().ToString());
+                return;
+            }
             var opcode = GetInstruction(line);
             if (opcode == null)
                 return;
