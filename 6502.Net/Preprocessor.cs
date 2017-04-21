@@ -541,7 +541,7 @@ namespace Asm6502.Net
                         scoped += "." + line.Label;
                     if (Controller.Labels.ContainsKey(scoped))
                     {
-                        Controller.Log.LogEntry(line, Resources.ErrorStrings.LabelRedefinition);
+                        Controller.Log.LogEntry(line, Resources.ErrorStrings.LabelRedefinition, line.Label);
                         continue;
                     }
                     else
