@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/informedcitizenry/6502.Net.svg?branch=master)](https://travis-ci.org/informedcitizenry/6502.Net) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) mxParser: [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Build Status](https://travis-ci.org/informedcitizenry/6502.Net.svg?branch=master)](https://travis-ci.org/informedcitizenry/6502.Net) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)     mxParser: [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
 
@@ -94,7 +94,7 @@ Comments can be added to source code in one of two ways, as single-line trailing
     lda #';'    ; the first semi-colon is a char literal so will be assembled
     jsr $ffd2   ; not a comment.
 ```
-Block comments span multiple lines, enclosed in .comment and .endcomment directives. These are useful when you want to exclude unwanted code:
+Block comments span multiple lines, enclosed in `.comment` and `.endcomment` directives. These are useful when you want to exclude unwanted code:
 ```
     .comment
     
@@ -158,7 +158,7 @@ done        rts
 ```
 In addition to explicit blocks, any label with a leading underscore is considered "local" to the most recent label without an underscore
 ```
-printmessage     ldx #0
+printmessage    ldx #0
 _loop           lda msg_ptr,x       ; _loop is local to printmessage
                 beq _done           ; _done is local to printmessage
                 jsr chrout
@@ -426,7 +426,7 @@ Note that every argument, unless specified, can be any legal mathematical expres
 <tr><td><b>Name</b></td><td><code>.addr</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>.word</code></td></tr>
 <tr><td><b>Definition</b></td><td>Insert an unsigned 16-bit value or values between 0 and 65535 into the assembly. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>address[, address2[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>address[, address2[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c000
@@ -454,7 +454,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Name</b></td><td><code>.binary</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a file as binary data into the assembly. Optional offset and file size arguments can be passed for greater flexibility.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>filename[, offset[, size]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>filename[, offset[, size]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
       .binary     "subroutines.prg",2  ; strip off start address
@@ -469,7 +469,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Name</b></td><td><code>.byte</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert an unsigned byte-sized value or values between 0 and 255 into the assembly. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
       * = $033c
@@ -482,7 +482,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Name</b></td><td><code>.char</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert an unsigned byte-sized value or values between -128 and 127 into the assembly. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $033c
@@ -493,7 +493,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Name</b></td><td><code>.cstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a C-style null-terminated string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = 1000
@@ -509,7 +509,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Name</b></td><td><code>.dint</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a signed 32-bit value or values between −2147483648 and 2147483647 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0801
@@ -520,7 +520,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Name</b></td><td><code>.dword</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a signed 32-bit value or values between 0 and 4294967295 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0801
@@ -545,7 +545,7 @@ reserved. Otherwise the optional second argument indicates the assembly should b
 <tr><td><b>Name</b></td><td><code>.lint</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a signed 24-bit value or values between -8388608 and 8388607 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c100
@@ -556,7 +556,7 @@ reserved. Otherwise the optional second argument indicates the assembly should b
 <tr><td><b>Name</b></td><td><code>.long</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a signed 24-bit value or values between 0 and 16777215 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c100
@@ -567,7 +567,7 @@ reserved. Otherwise the optional second argument indicates the assembly should b
 <tr><td><b>Name</b></td><td><code>.lsstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the last byte. See example of how this format can be used. If the highest bit in each value is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         ldx #0
@@ -580,7 +580,7 @@ reserved. Otherwise the optional second argument indicates the assembly should b
         inx                 ; increment pointer
         jmp +               ; get next
         ...
-.enc petscii    ; turn on petscii-encoding
+        .enc petscii    ; turn on petscii-encoding
         * = $c100
 message .lsstring "hello"   ; >c100 90 8a 98 98 9f
 </pre>
@@ -590,7 +590,7 @@ message .lsstring "hello"   ; >c100 90 8a 98 98 9f
 <tr><td><b>Name</b></td><td><code>.nstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the last byte. See example of how this format can be used. If the highest bit on the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         ldx #0
@@ -612,7 +612,7 @@ message .nstring "hello"    ; >c100 68 65 6c 6c ef
 <tr><td><b>Name</b></td><td><code>.pstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a Pascal-style string into the assembly, the first byte indicating the full string size. Note this size includes all arguments in the expression. If the size is greater than 255, the assembler will error. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $4000
@@ -637,7 +637,7 @@ message .nstring "hello"    ; >c100 68 65 6c 6c ef
 <tr><td><b>Name</b></td><td><code>.rta</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert an unsigned 16-bit value or values between 0 and 65535 into the assembly. Similar to <code>.addr</code> and <code>.word</code>, except the value is decremented by one, yielding a return address. This is useful for building "rts jump" tables. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>address[, address2[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>address[, address2[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
 chrin   = $ffcf
@@ -659,7 +659,7 @@ jumptable
 <tr><td><b>Name</b></td><td><code>.sint</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a signed 16-bit value or values between -32768 and 32767 into the assembly, little-endian. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c000
@@ -673,7 +673,7 @@ mysub   lda #13             ; output newline
 <tr><td><b>Name</b></td><td><code>.string</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = 1000
@@ -751,9 +751,9 @@ done    rts
 <tr><td><b>Arguments</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-        .comment
-        My code pre-amble
-        .endcomment
+    .comment
+    My code pre-amble
+    .endcomment
 </pre>
 </td></tr>
 </table>
@@ -764,12 +764,12 @@ done    rts
 <tr><td><b>Arguments</b></td><td><code>condition, error</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-        * = $0800
-        nop
-        .warn   * > $0801, "Check bound" 
-        ;; if program counter
-        ;; is greater than 2049,
-        ;; raise a custom warning
+    * = $0800
+    nop
+    .warn   * > $0801, "Check bound" 
+    ;; if program counter
+    ;; is greater than 2049,
+    ;; raise a custom warning
 </pre>
 </td></tr>
 </table>
@@ -777,11 +777,11 @@ done    rts
 <tr><td><b>Name</b></td><td><code>.enc</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td> Set the text encoding, how to interpret character literals. Currently only relevant to Commodore  targets. Three options are available:
-<ol>
+<ul>
         <li><code>petscii</code> - convert ASCII/UTF8 to Commodore PETSCII</li>
         <li><code>screen</code>  - convert ASCII/UTF8 to Commodore screen codes</li>
         <li><code>none</code>    - treat as raw ASCII/UTF-8</li>
-</ol>
+</ul>
 </td></tr>
 <tr><td><b>Arguments</b></td><td><code>encoding</code></td></tr>
 <tr><td><b>Example</b></td><td>
@@ -851,8 +851,8 @@ done    ...                 ; assembly will never
 <table>
 <tr><td><b>Name</b></td><td><code>.macro</code>/<code>.endmacro</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading backslash "\" and either the macro name or the number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are called by name with a leading "." All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>parameter[, parameter[, ...]]</code></td></tr>
+<tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading backslash <code>\</code> and either the macro name or the number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are called by name with a leading "." All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>parameter[, parameter[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
 inc16       .macro
@@ -958,14 +958,14 @@ variables   .dword ?, ?, ?, ?
             .segment code
             .segment data
 glyph             ;12345678
-            .byte %00001111
-            .byte %00111110
-            .byte %01111100
-            .byte %11111000
-            .byte %11111000
-            .byte %01111100
-            .byte %00111110
-            .byte %00001111
+            .byte %....####
+            .byte %..#####.
+            .byte %.#####..
+            .byte %#####...
+            .byte %#####...
+            .byte %.#####..
+            .byte %..#####.
+            .byte %....####
             .endsegment data
             .basic      ; macro that creates BASIC stub
             sei
@@ -1102,8 +1102,8 @@ Some features may be introduced in a future release, such as conditional assembl
 <tr><td><b>Arguments</b></td><td><code>range1, range2</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-     .word random(251,255)   ; generate a random # between
-                             ; 251 and 255.
+ .word random(251,255)   ; generate a random # between
+                         ; 251 and 255.
 </pre>
 </td></tr>
 </table>
@@ -1119,8 +1119,8 @@ Some features may be introduced in a future release, such as conditional assembl
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-     .char sgn(-8.0), sgn(14.0), sgn(0)
-     ;; > ff 01 00
+ .char sgn(-8.0), sgn(14.0), sgn(0)
+ ;; > ff 01 00
 </pre>
 </td></tr>
 </table>
@@ -1289,7 +1289,7 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `Could not process binary file` - The binary file could not be opened or processed.
 
-`Directve takes no arguments` - An argument is present for a pseudo-op or directive that takes no arguments.
+`Directive takes no arguments` - An argument is present for a pseudo-op or directive that takes no arguments.
 
 `Filename not specified` - A directive expected a filename that was not provided.
 
