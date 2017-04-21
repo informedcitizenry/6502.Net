@@ -375,8 +375,6 @@ namespace Asm6502.Net
             if (string.IsNullOrEmpty(Options.OutputFile))
                 outputfile = "a.out";
 
-            var bary = Output.GetCompilation().ToList();
-
             using (BinaryWriter writer = new BinaryWriter(new FileStream(outputfile, FileMode.Create, FileAccess.Write)))//File.OpenWrite(OutputFile)))
             {
                 if (!Options.SuppressCbmHeader)

@@ -512,9 +512,6 @@ namespace Asm6502.Net
                 {
                     if (!line.Label.StartsWith("_") && IsSymbol(line.Label))
                     {
-                        string what = string.Empty;
-                        if (Scope.Count > 0)
-                            what = Scope.Peek();
                         if (Scope.Count > 0 && Scope.Peek().EndsWith("@"))
                             Scope.Pop();
                         Scope.Push(line.Label + "@");

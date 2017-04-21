@@ -281,8 +281,6 @@ namespace Asm6502.Net
                         {
                             throw new MacroException(def, "Invalid parameter(s) (" + def.Operand + ")");
                         }
-                        string defaultval = String.Empty;
-                        string paramname = String.Empty;
                         for (int i = 0; i < parms.Count; i++)
                         {
                             var p = parms[i];

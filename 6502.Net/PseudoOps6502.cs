@@ -485,14 +485,13 @@ namespace Asm6502.Net
                 case ".repeat":
                     {
                         var fillamount = Controller.Evaluator.Eval(csv.First());
-                        var size = fillamount;
                         if (csv.Count < 2)
                         {
                             Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
                             return 0;
                         }
                         var fillval = Controller.Evaluator.Eval(csv[1]);
-                        size = fillamount.Size() * fillamount;
+                        var size = fillval.Size() * fillamount;
                         return Convert.ToUInt16(size);
                     }
                 case ".long":
