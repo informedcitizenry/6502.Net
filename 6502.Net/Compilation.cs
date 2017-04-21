@@ -498,9 +498,9 @@ namespace Asm6502.Net
             get { return pc_; }
             private set 
             {
-                if (value < 0 || value < pc_ || value > MaxAddress)
+                if (value < 0 || value < pc_)
                     throw new InvalidPCAssignmentException(value);
-                pc_ = value;
+                pc_ = value & MaxAddress;
             }
         }
 
@@ -510,6 +510,11 @@ namespace Asm6502.Net
         public bool IsLittleEndian { get; private set; }
 
         /// <summary>
+        /// Gets a flag that indicates if a PC overflow has occurred.
+        /// </summary>
+        public bool PCOverflow { get; private set; }
+
+        /// <summary>
         /// Gets or sets the logical Program Counter
         /// </summary>
         int LogicalPC
@@ -517,9 +522,10 @@ namespace Asm6502.Net
             get { return log_pc_; }
             set
             {
-                if (value < 0 || value < log_pc_ || value > MaxAddress)
+                if (value < 0 || value < log_pc_)
                     throw new InvalidPCAssignmentException(value);
-                log_pc_ = value;
+                PCOverflow = value > MaxAddress;
+                log_pc_ = value & MaxAddress;
             }
         }
 

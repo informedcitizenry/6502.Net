@@ -308,10 +308,10 @@ namespace Asm6502.Net
         {
             Reserved.Types.Add("Mnemonics", new HashSet<string>(new string[]
                 {
-                    "adc","and","asl","bcc","bcs","beq","bit","bmi","bne","bpl","brk","bvc","bvs","clc","cli",
-                    "clv","cmp","cpx","cpy","dec","dex","dey","eor","inc","inx","iny","jmp","jsr","lda","ldx",
-                    "ldy","lsr","nop","ora","pha","php","pla","plp","rol","ror","rti","rts","sbc","sbc","sec",
-                    "sed","sei","sta","stx","sty","tax","tay","tsx","txa","txs","tya"
+                    "adc","and","asl","bcc","bcs","beq","bit","bmi","bne","bpl","brk","bvc","bvs","cld","clc",
+                    "cli","clv","cmp","cpx","cpy","dec","dex","dey","eor","inc","inx","iny","jmp","jsr","lda",
+                    "ldx","ldy","lsr","nop","ora","pha","php","pla","plp","rol","ror","rti","rts","sbc","sbc",
+                    "sec","sed","sei","sta","stx","sty","tax","tay","tsx","txa","txs","tya"
                 }));
 
             Reserved.Types.Add("Branches", new HashSet<string>(new string[]

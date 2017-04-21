@@ -335,6 +335,11 @@ namespace Asm6502.Net
                     return;
                 }
             }
+            if (Output.PCOverflow)
+            {
+                Log.LogEntry(line, Resources.ErrorStrings.PCOverflow, Output.GetPC().ToString());
+                return;
+            }
 
             try
             {
@@ -654,6 +659,7 @@ namespace Asm6502.Net
         private bool FirstPassLine(SourceLine line)
         {
             bool anotherpass = false;
+
             if (line.PC != Output.GetPC() && !Reserved.IsOneOf("Directives", line.Instruction))
             {
                 line.PC = Output.GetPC();
@@ -824,7 +830,6 @@ namespace Asm6502.Net
                     if (line.Instruction.Equals(".end", Options.StringComparison))
                         break;
                     evaluator_.SymbolLookupObject = line;
-
                     anotherpass = FirstPassLine(line);
                 }
                 Output.Reset();
