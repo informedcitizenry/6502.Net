@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/informedcitizenry/6502.Net.svg?branch=master)](https://travis-ci.org/informedcitizenry/6502.Net)
+
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
 
 ## Introduction
