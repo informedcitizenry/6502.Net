@@ -5,7 +5,7 @@ VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "6502.Net", "6502.Net\6502.Net.csproj", "{51438B28-BEFC-43F9-AF62-ECFD402426EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest6502.Net", "UnitTest6502.Net\UnitTest6502.Net.csproj", "{A47A807E-AE65-4529-B410-7BA35FDD7369}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitTest6502.Net", "NUnitTest6502.Net\NUnitTest6502.Net.csproj", "{3F0A92F4-84BD-461A-87AF-0E033737C622}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{51438B28-BEFC-43F9-AF62-ECFD402426EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51438B28-BEFC-43F9-AF62-ECFD402426EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51438B28-BEFC-43F9-AF62-ECFD402426EB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A47A807E-AE65-4529-B410-7BA35FDD7369}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A47A807E-AE65-4529-B410-7BA35FDD7369}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A47A807E-AE65-4529-B410-7BA35FDD7369}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A47A807E-AE65-4529-B410-7BA35FDD7369}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F0A92F4-84BD-461A-87AF-0E033737C622}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F0A92F4-84BD-461A-87AF-0E033737C622}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F0A92F4-84BD-461A-87AF-0E033737C622}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F0A92F4-84BD-461A-87AF-0E033737C622}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
