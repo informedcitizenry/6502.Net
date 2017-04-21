@@ -666,7 +666,7 @@ jumptable
 mysub   lda #13             ; output newline
         jsr chrout
         rts
-        .addr mysub         ; >c006 00 c0
+        .sint -16384        ; >c006 00 c0
 </pre>
 </td></tr></table>
 <table>
@@ -1146,7 +1146,7 @@ Some features may be introduced in a future release, such as conditional assembl
 <tr><td><b>Name</b></td><td><code>str</code></td></tr>
 <tr><td><b>Definition</b></td><td>The expression as a text string. Only available for use with the string pseudo-ops.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte sqrt(65536) - 1  ; > ff</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.string str($c000)     ; > 34 39 31 35 32</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>tan</code></td></tr>
