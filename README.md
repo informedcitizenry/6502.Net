@@ -1245,12 +1245,12 @@ Some features may be introduced in a future release, such as conditional assembl
 </td></tr>
 </table>
 <table>
-<tr><td><b>Option</b></td><td><code>--verbose-list</code></td></tr>
+<tr><td><b>Option</b></td><td><code>--verbose-asm</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Make listing output verbose. If the verbose option is set then all non-assembled lines are included, such as blocks and comment blocks.</td></tr>
+<tr><td><b>Definition</b></td><td>Make the assembly listing verbose. If the verbose option is set then all non-assembled lines are included, such as blocks and comment blocks.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
-<pre>/6502.Net myasm.asm --verbose-list -L myverboselist.asm</pre>
+<pre>/6502.Net myasm.asm --verbose-asm -L myverboselist.asm</pre>
 </td></tr>
 </table>
 <table>
