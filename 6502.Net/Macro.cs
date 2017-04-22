@@ -328,21 +328,21 @@ namespace Asm6502.Net
 
                 if (def.Label.Equals(line.Instruction, comparer))
                 {
-                    throw new MacroException(line, "Recursive " + class_ + " call");
+                    throw new MacroException(line, string.Format(Resources.ErrorStrings.RecursiveMacro, line.Label));
                 }
                 var param_ix = line.Operand.IndexOf('\\');
                 if (param_ix >= 0 && isSegment == false)
                 {
                     if (line.Operand.EndsWith("\\"))
                     {
-                        throw new MacroException(line, "Macro parameter reference not specified");
+                        throw new MacroException(line, Resources.ErrorStrings.MacroParamNotSpecified);
                     }
                     else
                     {
                         string param = String.Empty;
                         if (char.IsLetterOrDigit(line.Operand.ElementAt(param_ix + 1)) == false)
                         {
-                            throw new MacroException(line, "Macro parameter reference must be lette or digit");
+                            throw new MacroException(line, Resources.ErrorStrings.MacroParamIncorrect);
                         }
                         foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
                         {
@@ -353,7 +353,7 @@ namespace Asm6502.Net
                         }
                         if (string.IsNullOrEmpty(param))
                         {
-                            throw new MacroException(line, "Macro parameter not specified");
+                            throw new MacroException(line, Resources.ErrorStrings.MacroParamNotSpecified);
                         }
 
                         int paramref;
@@ -371,7 +371,7 @@ namespace Asm6502.Net
                             }
                             else if (paramref < 1)
                             {
-                                throw new MacroException(line, "Invalid macro parameter reference: '" + param + "'");
+                                throw new MacroException(line, string.Format(Resources.ErrorStrings.InvalidParamRef, param));
                             }
                             paramref--;
                             macro.Params[paramref].SourceLines.Add(line.SourceInfo());
@@ -380,7 +380,7 @@ namespace Asm6502.Net
                         {
                             if (macro.Params.Any(p => p.Name == param) == false)
                             {
-                                throw new MacroException(line, "Invalid macro parameter reference: '" + param + "'");
+                                throw new MacroException(line, string.Format(Resources.ErrorStrings.InvalidParamRef, param));
                             }
                             var macparm = macro.Params.First(p => p.Name == param);
                             macparm.SourceLines.Add(line.SourceInfo());
@@ -392,14 +392,14 @@ namespace Asm6502.Net
             def = source.Last();
 
             if (def.IsComment)
-                throw new MacroException(def, class_ + " definition missing closure");
+                throw new MacroException(def, string.Format(Resources.ErrorStrings.MissingClosureMacro, class_));
 
             if (string.IsNullOrEmpty(def.Operand) == false)
             {
                 if (isSegment && !name.Equals(def.Operand, comparer))
-                    throw new MacroException(def, "Segment closure does not match definition");
+                    throw new MacroException(def, string.Format(Resources.ErrorStrings.ClosureDoesNotCloseMacro, def.Instruction, "segment"));
                 else
-                    throw new MacroException(def, "Macro closure takes no arguments");
+                    throw new MacroException(def, string.Format(Resources.ErrorStrings.DirectiveTakesNoArguments, def.Instruction));
             }
             if (macro.IsSegment == false)
             {
