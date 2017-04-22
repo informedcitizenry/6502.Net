@@ -656,7 +656,9 @@ namespace Asm6502.Net
         {
             bool anotherpass = false;
 
-            if (line.PC != Output.GetPC() && !Reserved.IsOneOf("Directives", line.Instruction))
+            if (line.PC != Output.GetPC() && !
+                (Reserved.IsOneOf("Directives", line.Instruction) || 
+                 directives_.AssemblesInstruction(line.Instruction)))
             {
                 line.PC = Output.GetPC();
                 anotherpass = !IsDefiningConstant(line);
@@ -725,19 +727,11 @@ namespace Asm6502.Net
                         label = line.Scope.TrimEnd('@');
 
                     Int64 intval = Output.GetPC();
-                    if (IsDefiningConstant(line))
+                    if (IsDefiningConstant(line) && string.IsNullOrEmpty(line.Operand) == false)
                     {
-                        if (string.IsNullOrEmpty(line.Operand) == false)
-                            intval = evaluator_.Eval(line.Operand);
+                        intval = evaluator_.Eval(line.Operand);
                     }
-                    else
-                    {
-                        if (IsSymbol(line.Instruction))
-                        {
-                            Log.LogEntry(line, Resources.ErrorStrings.UnknownInstruction, line.Instruction);
-                            return false;
-                        }
-                    }
+                    
                     if (Labels[label].Value != Convert.ToUInt16(intval))
                     {
                         Labels[label].Value = Convert.ToUInt16(intval);
