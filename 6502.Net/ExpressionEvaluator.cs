@@ -72,9 +72,15 @@ namespace Asm6502.Net
 
         #region Constants
 
-        public static string EVAL_OKAY = "?OKAY";
+                /// <summary>
+        /// Represents the string indicating the string expression can be evaluated.
+        /// </summary>
+        public const string EVAL_OKAY = "?OKAY";
 
-        public static string EVAL_FAIL = "?FAIL";
+        /// <summary>
+        /// Represents the string indicating the expression cannot be evaluated.
+        /// </summary>
+        public const string EVAL_FAIL = "?FAIL";
 
         #endregion
 
