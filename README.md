@@ -1274,6 +1274,10 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `Closure does not close a block` - A block closure is present but no block opening.
 
+`Closure does not close a macro` - A macro closure is present but no macro definition.
+
+`Closure does not close a segment` - A segment closure is present but no segment definition.
+
 `Constant expression in LValue` - Expression attempting to assign a value to a constant.
 
 `Could not process binary file` - The binary file could not be opened or processed.
@@ -1296,7 +1300,13 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `Macro parameter not specified` - The macro expected a parameter that was not specified.
 
+`Macro parameter reference must be a letter or digit` - The macro parameter was in an invalid format.
+
 `Missing closure for block` - A block does not have a closure.
+
+`Missing closure for macro` - The macro does not have a closure.
+
+`Missing closure for segment` - A segment does not have a closure.
 
 `Most significant bit should not be set` - A pseudo-op cannot set the most-significant bit because it is already set.
 
