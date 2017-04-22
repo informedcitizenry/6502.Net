@@ -38,7 +38,7 @@ Negative numbers are assembled according to twos-complement rules, with the high
                 .byte %...###..
                 .byte %.#######
 ```                            
-Operands can also be mathematical expressions, even referencing labels. Math expressions can be nested in paranetheses, except in some limited cases (`lda ($02,x)` or `jmp ($ea31)`, for instance). Several operations are available.
+Operands can also be mathematical expressions, even referencing labels. Math expressions can be nested in paranetheses, except in some limited cases (i.e., indirect commands). Several operations are available.
 ### Binary Operations
 <table>
 <tr><th>Operator</th><th>Meaning</th></tr>
