@@ -88,6 +88,15 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Closure {0} does not close a {1}.
+        /// </summary>
+        internal static string ClosureDoesNotCloseMacro {
+            get {
+                return ResourceManager.GetString("ClosureDoesNotCloseMacro", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Constant expression in LValue &apos;{0}&apos;.
         /// </summary>
         internal static string ConstantExpressionInLVal {
@@ -187,6 +196,15 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Macro parameter reference must be a letter or digit.
+        /// </summary>
+        internal static string MacroParamIncorrect {
+            get {
+                return ResourceManager.GetString("MacroParamIncorrect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Macro parameter not specified.
         /// </summary>
         internal static string MacroParamNotSpecified {
@@ -214,6 +232,15 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Missing closure for {0}.
+        /// </summary>
+        internal static string MissingClosureMacro {
+            get {
+                return ResourceManager.GetString("MissingClosureMacro", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Most significant bit should not be set &apos;{0}&apos;.
         /// </summary>
         internal static string MSBShouldNotBeSet {
@@ -232,7 +259,7 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Program Counter overflow.
+        ///   Looks up a localized string similar to Program Counter overflow &apos;{0}&apos;.
         /// </summary>
         internal static string PCOverflow {
             get {
@@ -259,7 +286,7 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Macro or segment is being called recursively.
+        ///   Looks up a localized string similar to Macro or segment &apos;{0}&apos; is being called recursively.
         /// </summary>
         internal static string RecursiveMacro {
             get {

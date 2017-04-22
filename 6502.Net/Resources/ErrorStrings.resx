@@ -175,7 +175,7 @@
     <value>General syntax error.</value>
   </data>
   <data name="PCOverflow" xml:space="preserve">
-    <value>Program Counter overflow</value>
+    <value>Program Counter overflow '{0}'</value>
   </data>
   <data name="PStringSizeTooLarge" xml:space="preserve">
     <value>Pstring size too large</value>
@@ -184,7 +184,7 @@
     <value>Quote string not enclosed</value>
   </data>
   <data name="RecursiveMacro" xml:space="preserve">
-    <value>Macro or segment is being called recursively</value>
+    <value>Macro or segment '{0}' is being called recursively</value>
   </data>
   <data name="RelativeBranchOutOfRange" xml:space="preserve">
     <value>Relative branch out of range '{0}'</value>
@@ -197,5 +197,14 @@
   </data>
   <data name="UnknownInstruction" xml:space="preserve">
     <value>Unknown instruction or incorrect parameters for instruction '{0}'</value>
+  </data>
+  <data name="ClosureDoesNotCloseMacro" xml:space="preserve">
+    <value>Closure {0} does not close a {1}</value>
+  </data>
+  <data name="MacroParamIncorrect" xml:space="preserve">
+    <value>Macro parameter reference must be a letter or digit</value>
+  </data>
+  <data name="MissingClosureMacro" xml:space="preserve">
+    <value>Missing closure for {0}</value>
   </data>
 </root>
