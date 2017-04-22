@@ -61,6 +61,8 @@ namespace Asm6502.Net
 
         int pc_;
 
+        bool overflow_;
+
         #endregion
 
         #region Constructors
@@ -115,6 +117,7 @@ namespace Asm6502.Net
             Bytes.Clear();
             pc_ = log_pc_ = 0;
             MaxAddress = ushort.MaxValue;
+            overflow_ = false;
         }
 
         /// <summary>
@@ -510,9 +513,10 @@ namespace Asm6502.Net
         public bool IsLittleEndian { get; private set; }
 
         /// <summary>
-        /// Gets a flag that indicates if a PC overflow has occurred.
+        /// Gets a flag that indicates if a PC overflow has occurred. This flag will 
+        /// only be cleared with a call to the Reset method.
         /// </summary>
-        public bool PCOverflow { get; private set; }
+        public bool PCOverflow { get { return overflow_; } }
 
         /// <summary>
         /// Gets or sets the logical Program Counter
@@ -524,7 +528,8 @@ namespace Asm6502.Net
             {
                 if (value < 0 || value < log_pc_)
                     throw new InvalidPCAssignmentException(value);
-                PCOverflow = value > MaxAddress;
+                if (!overflow_)
+                    overflow_= value > MaxAddress;
                 log_pc_ = value & MaxAddress;
             }
         }

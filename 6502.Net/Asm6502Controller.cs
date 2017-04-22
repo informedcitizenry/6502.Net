@@ -458,7 +458,8 @@ namespace Asm6502.Net
                         sourcestr = line.Label;
                     }
                     if (string.IsNullOrEmpty(line.Label) && 
-                        Reserved.IsOneOf("Directives", line.Instruction))
+                        (Reserved.IsOneOf("Directives", line.Instruction) || 
+                         directives_.AssemblesInstruction(line.Instruction)))
                         continue; // skip directives (e.g., .if blocks, etc.) and anonymous blocks
                     else if (string.IsNullOrWhiteSpace(line.Label + line.Instruction))
                         continue;

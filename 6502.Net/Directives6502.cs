@@ -70,7 +70,7 @@ namespace Asm6502.Net
                 {
                     if (csv[i].EnclosedInQuotes())
                     {
-                        message += csv[i];
+                        message += csv[i].Trim('"');
                     }
                     else
                     {
@@ -128,13 +128,13 @@ namespace Asm6502.Net
                     if (!line.Operand.EnclosedInQuotes())
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.BadExpression);
                     else
-                        Controller.Log.LogEntry(line, line.Operand);
+                        Controller.Log.LogEntry(line, line.Operand.Trim('"'));
                     break;
                 case ".warn":
                     if (!line.Operand.EnclosedInQuotes())
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.BadExpression);
                     else
-                        Controller.Log.LogEntry(line.Filename, line.LineNumber, line.Operand, Controller.Options.WarningsAsErrors);
+                        Controller.Log.LogEntry(line.Filename, line.LineNumber, line.Operand.Trim('"'), Controller.Options.WarningsAsErrors);
                     break;
                 case ".relocate":
                 case ".pseudopc":
