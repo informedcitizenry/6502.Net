@@ -92,7 +92,7 @@ In addition, certain assembler directives expect conditional expressions. Compou
 
 ## Comments
 
-Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or character constant.
+Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or constant character.
 ```
     lda #0      ; 0 = color black
     sta $d020   ; set border color to accumulator
@@ -714,7 +714,7 @@ soundlib    .binclude "sound.s"
 kernal .block
         chrout = $ffd2
         chrin  = $ffcf
-                .endblock
+        .endblock
         ...
 chrout  lda message,x       
         jsr kernal.chrout   ; this is a different
@@ -767,7 +767,7 @@ done    rts
 <pre>
     * = $0800
     nop
-    .warn   * > $0801, "Check bound" 
+    .cwarn   * > $0801, "Check bound" 
     ;; if program counter
     ;; is greater than 2049,
     ;; raise a custom warning
@@ -915,6 +915,7 @@ printloop   lda message,x
             jmp printloop
 done        rts
 message     .cstring "HELLO, HIGH CODE!"
+            .endrelocate
             ;; outputs the following =>
             .comment
             >0801 0b 08 0a 00           
@@ -990,7 +991,7 @@ glyph             ;12345678
 <tr><td><b>Definition</b></td><td>Prints a custom warning to the console. The warning is treated like any assembler warning, and if warnings are treated as errors it will cause failure of assembly.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>error</code></td></tr>
 <tr><td><b>Example</b></td><td>
-<code>.error "We haven't fixed this yet!" </code>
+<code>.warn "We haven't fixed this yet!" </code>
 </td></tr>
 </table>
 
