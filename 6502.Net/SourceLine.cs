@@ -44,7 +44,7 @@ namespace Asm6502.Net
             {
                 get
                 {
-                    return "Quote String not enclosed";
+                    return Resources.ErrorStrings.QuoteStringNotEnclosed;
                 }
             }
         }
@@ -169,12 +169,6 @@ namespace Asm6502.Net
         /// <returns>Returns a List&lt;string&gt; collection of the values.</returns>
         public List<string> CommaSeparateOperand()
         {
-            /*
-            if (string.IsNullOrEmpty(Operand))
-                return null;
-            if (Operand.StartsWith(",") || Operand.EndsWith(","))
-                return null;
-            */
             List<string> csv = new List<string>();
             bool double_enclosed = false;
             bool single_enclosed = false;
