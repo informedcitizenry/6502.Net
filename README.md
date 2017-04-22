@@ -762,7 +762,7 @@ done    rts
 <tr><td><b>Name</b></td><td><code>.cwarn</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Prints a custom warning to the console if the condition is met. The warning is treated like any assembler warning, and if warnings are treated as errors it will cause failure of assembly The condition is any logical expression using C-style operators, and can be compound.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>condition, error</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>condition, warning</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
     * = $0800
@@ -989,7 +989,7 @@ glyph             ;12345678
 <tr><td><b>Name</b></td><td><code>.warn</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Prints a custom warning to the console. The warning is treated like any assembler warning, and if warnings are treated as errors it will cause failure of assembly.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>error</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>warning</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <code>.warn "We haven't fixed this yet!" </code>
 </td></tr>
