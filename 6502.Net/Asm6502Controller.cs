@@ -745,46 +745,9 @@ namespace Asm6502.Net
                         anotherpass = true;
                     }
                 }
-                
-                switch (line.Instruction.ToLower())
-                {
-                    case ".pseudopc":
-                    case ".relocate":
-                        {
-                            var csv = line.CommaSeparateOperand();
-                            if (csv.Count > 1)
-                                Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Instruction);
-                            var logical_pc = evaluator_.Eval(csv.First());
-                            if (logical_pc > ushort.MaxValue)
-                            {
-                                Log.LogEntry(line, Resources.ErrorStrings.PCOverflow);
-                                return false;
-                            }
-                            Output.SetLogicalPC(Convert.ToUInt16(logical_pc));
-                            if (line.PC != logical_pc)
-                            {
-                                line.PC = (ushort)logical_pc;
-                                anotherpass = true;
-                            }
-                            break;
-                        }
-                    case ".endrelocate":
-                    case ".realpc":
-                        {
-                            if (string.IsNullOrEmpty(line.Operand) == false)
-                                Log.LogEntry(line, Resources.ErrorStrings.DirectiveTakesNoArguments);
 
-                            var logical_pc = Output.SynchPC();
-                            if (logical_pc != line.PC)
-                            {
-                                line.PC = logical_pc;
-                                anotherpass = true;
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                if (directives_.AssemblesInstruction(line.Instruction))
+                    anotherpass = directives_.HandleFirstPass(line);
                 if (!IsDefiningConstant(line))
                     Output.AddUninitialized(GetInstructionSize(line));
                 return anotherpass;

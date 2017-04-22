@@ -113,6 +113,61 @@ namespace Asm6502.Net
             });
         }
 
+
+        /// <summary>
+        /// Handle first-pass assembly, returning true if another pass is needed.
+        /// </summary>
+        /// <param name="line">The SourceLine.</param>
+        /// <returns>True if another pass is needed, otherwise false</returns>
+        public bool HandleFirstPass(SourceLine line)
+        {
+            switch (line.Instruction.ToLower())
+            {
+                case ".pseudopc":
+                case ".relocate":
+                    {
+                        var csv = line.CommaSeparateOperand();
+                        if (csv.Count > 1)
+                            Controller.Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Instruction);
+                        
+                        var logical_pc = Controller.Evaluator.Eval(csv.First());
+                        if (logical_pc > ushort.MaxValue)
+                            Controller.Log.LogEntry(line, Resources.ErrorStrings.PCOverflow);
+                        
+                        Controller.Output.SetLogicalPC(Convert.ToUInt16(logical_pc));
+                        
+                        if (line.PC != logical_pc)
+                        {
+                            line.PC = (ushort)logical_pc;
+                            return true;
+                        }
+                        break;
+                    }
+                case ".endrelocate":
+                case ".realpc":
+                    {
+                        if (string.IsNullOrEmpty(line.Operand) == false)
+                            Controller.Log.LogEntry(line, Resources.ErrorStrings.DirectiveTakesNoArguments);
+
+                        var logical_pc = Controller.Output.SynchPC();
+                        if (logical_pc != line.PC)
+                        {
+                            line.PC = logical_pc;
+                            return true;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Assemble the line of source into output bytes of the
+        /// target architecture.
+        /// </summary>
+        /// <param name="evaluator">An expression evaluator.</param>
         public void AssembleLine(SourceLine line)
         {
             switch (line.Instruction.ToLower())
@@ -150,11 +205,23 @@ namespace Asm6502.Net
             }
         }
 
+        /// <summary>
+        /// Gets the size of the instruction in the source line.
+        /// </summary>
+        /// <param name="line">The source line to query.</param>
+        /// <returns>Returns the size in bytes of the instruction or directive.</returns>
         public int GetInstructionSize(SourceLine line)
         {
             return 0;
         }
 
+        /// <summary>
+        /// Indicates whether this line assembler will assemble the 
+        /// given instruction or directive.
+        /// </summary>
+        /// <param name="instruction">The instruction.</param>
+        /// <returns>True, if the line assembler can assemble the source, 
+        /// otherwise false.</returns>
         public bool AssemblesInstruction(string instruction)
         {
             return Reserved.IsReserved(instruction);

@@ -590,6 +590,11 @@ namespace Asm6502.Net
             return Reserved.IsReserved(instruction);
         }
 
+        public bool HandleFirstPass(SourceLine line)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #endregion

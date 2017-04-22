@@ -48,5 +48,12 @@ namespace Asm6502.Net
         /// <returns>True, if the line assembler can assemble the source, 
         /// otherwise false.</returns>
         bool AssemblesInstruction(string instruction);
+
+        /// <summary>
+        /// Handle first-pass assembly, returning true if another pass is needed.
+        /// </summary>
+        /// <param name="line">The SourceLine.</param>
+        /// <returns>True if another pass is needed, otherwise false</returns>
+        bool HandleFirstPass(SourceLine line);
     }
 }
