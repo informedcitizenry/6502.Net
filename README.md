@@ -627,7 +627,7 @@ message .nstring "hello"    ; >c100 68 65 6c 6c ef
 <table>
 <tr><td><b>Name</b></td><td><code>.repeat</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat the specified number of times the specified value. Similar to fill, except that both arguments are required, the first argument the number of times to repeat the expression in the second argument, little-endian if more than one byte in size.</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat the specified value the specified number of times. Similar to fill, except the first argument is a repeat amount (not a number of bytes to fill) and the second argument for the value to repeat is required. The expression repeatedly outputs the expression the minimum number of bytes required, little-endian.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>amount, repeatvalue</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
