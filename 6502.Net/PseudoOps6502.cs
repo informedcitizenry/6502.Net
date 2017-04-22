@@ -213,34 +213,30 @@ namespace Asm6502.Net
         private void AssembleFills(SourceLine line)
         {
             var csv = line.CommaSeparateOperand();
-            if (csv.Count == 0)
+            if (csv.Count == 0 || (csv.Count == 1 && line.Instruction.ToLower().Equals(".repeat")))
             {
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
                 return;
             }
+          
             Int64 alignval = Controller.Evaluator.Eval(csv.First());
             if (alignval < 1)
             {
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.BadExpression, alignval.ToString());
                 return;
             }
-            
+
             if (csv.Count > 1)
             {
                 if (csv.Count > 2)
                 {
-                    Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
                 Int64 fillval = Controller.Evaluator.Eval(csv.Last());
 
                 if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
                 {
-                    if (fillval < 0)
-                    {
-                        Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, fillval.ToString());
-                        return;
-                    }
                     Controller.Output.Align(Convert.ToUInt16(alignval), fillval);
                 }
                 else
