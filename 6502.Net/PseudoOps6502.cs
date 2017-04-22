@@ -219,7 +219,12 @@ namespace Asm6502.Net
                 return;
             }
             Int64 alignval = Controller.Evaluator.Eval(csv.First());
-
+            if (alignval < 1)
+            {
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.BadExpression, alignval.ToString());
+                return;
+            }
+            
             if (csv.Count > 1)
             {
                 if (csv.Count > 2)
