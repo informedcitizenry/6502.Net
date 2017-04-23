@@ -347,6 +347,12 @@ namespace UnitTest6502.Net
             line.Parse(s => s.Equals(".text"), s => false);
             Assert.AreEqual(".text", line.Instruction);
             Assert.AreEqual("\"He said, \",'\"',\"Hello, World!\"", line.Operand);
+
+            line.SourceString = "\"hello\" = \"32\"";
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.Parse(s => false, s => false);
+
+            Assert.AreEqual(string.Empty, line.Label);
         }
 
         [Test]
