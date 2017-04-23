@@ -830,7 +830,7 @@ done    ...                 ; assembly will never
 <table>
 <tr><td><b>Name</b></td><td><code>.equ</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>=</code></td></tr>
-<tr><td><b>Definition</b></td><td>Assign the label, anonymous symbol, or program counter to the expression.</td></tr>
+<tr><td><b>Definition</b></td><td>Assign the label, anonymous symbol, or program counter to the expression. Note that there is an implied version of this directive, such that if the directive and expression are ommitted altogether, the label or symbol is set to the program counter.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>symbol, value</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -838,6 +838,8 @@ chrin      .equ $ffcf
 chrout      =   $ffd2
           * .equ $c000
 -           =   255
+start       ; same as start .equ *
+            ldx #$00
 </pre>
 </td></tr>
 </table>
