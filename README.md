@@ -828,6 +828,20 @@ done    ...                 ; assembly will never
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.equ</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>=</code></td></tr>
+<tr><td><b>Definition</b></td><td>Assign the label, anonymous symbol, or program counter to the expression.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>symbol, value</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+chrin      .equ $ffcf
+chrout      =   $ffd2
+          * .equ $c000
+-           =   255
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.error</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Prints a custom error to the console Useful for sanity checks and assertions. The error is treated like any assembler error and will cause failure of assembly.</td></tr>
