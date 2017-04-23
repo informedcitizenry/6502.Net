@@ -212,12 +212,7 @@ namespace Asm6502.Net
         private void AssembleFills(SourceLine line)
         {
             var csv = line.CommaSeparateOperand();
-            if (csv.Count == 0 || (csv.Count == 1 && line.Instruction.ToLower().Equals(".repeat")))
-            {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
-                return;
-            }
-          
+            
             Int64 alignval = Controller.Evaluator.Eval(csv.First());
             if (alignval < 1)
             {
@@ -366,15 +361,20 @@ namespace Asm6502.Net
             {
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Operand);
             }
-            
+            string filename = args.First().Trim('"');
+            BinaryFile binary = includedBinaries_.FirstOrDefault(b => b.Filename.Equals(filename));
 
-            BinaryFile binary = new BinaryFile(args.First());
-            if (binary.Open() == false)
+            if (binary == null)
             {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.CouldNotProcessBinary, args.First());
-                return null;
+                binary = new BinaryFile(args.First());
+
+                if (binary.Open() == false)
+                {
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.CouldNotProcessBinary, args.First());
+                    return null;
+                }
+                includedBinaries_.Add(binary);
             }
-            includedBinaries_.Add(binary);
             return binary;
         }
 
@@ -463,6 +463,11 @@ namespace Asm6502.Net
             }
 
             var csv = line.CommaSeparateOperand();
+            if (csv.Count == 0)
+            {
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
+                return 0;
+            }
             switch (line.Instruction.ToLower())
             {
                 case ".align":
