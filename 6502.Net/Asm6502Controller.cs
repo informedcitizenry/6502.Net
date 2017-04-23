@@ -643,7 +643,7 @@ namespace Asm6502.Net
         private bool FirstPassLine(SourceLine line)
         {
             bool anotherpass = false;
-            if (IsDefiningConstant(line) && string.IsNullOrEmpty(line.Operand))
+            if (IsDefiningConstant(line) && !string.IsNullOrEmpty(line.Instruction) && string.IsNullOrEmpty(line.Operand))
             {
                 Log.LogEntry(line, Resources.ErrorStrings.InvalidConstantAssignment);
                 return false;

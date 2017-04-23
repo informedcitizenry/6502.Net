@@ -326,6 +326,7 @@ namespace Asm6502.Net
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
             Int64 offs = 0, size = binary.Data.Count;
+            
             if (args.Count >= 2)
             {
                 offs = Controller.Evaluator.Eval(args[1]);
@@ -353,13 +354,19 @@ namespace Asm6502.Net
         private BinaryFile IncludeBinary(SourceLine line)
         {
             var args = line.CommaSeparateOperand();
-            if (args.Count > 3)
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Operand);
-            if (args.First().EnclosedInQuotes() == false)
+            if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
             {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.FilenameNotSpecified);
+                if (args.Count == 0)
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
+                else
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.FilenameNotSpecified);
                 return null;
             }
+            else if (args.Count > 3)
+            {
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Operand);
+            }
+            
 
             BinaryFile binary = new BinaryFile(args.First());
             if (binary.Open() == false)
@@ -471,11 +478,7 @@ namespace Asm6502.Net
                         if (csv.Count > 1)
                         {
                             boffset = Controller.Evaluator.Eval(csv[1]);
-                            if (boffset > ushort.MaxValue)
-                            {
-                                Controller.Log.LogEntry(line, Resources.ErrorStrings.PCOverflow, boffset.ToString());
-                                return 0;
-                            }
+                            
                             if (csv.Count > 2)
                                 bsize = Controller.Evaluator.Eval(csv.Last());
                             else
