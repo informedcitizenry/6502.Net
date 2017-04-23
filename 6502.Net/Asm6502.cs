@@ -526,9 +526,8 @@ namespace Asm6502.Net
             var opcode = GetInstruction(line);
             if (opcode == null)
                 return;
-            List<byte> opcodebytes = BitConverter.GetBytes(opcode.Item1).ToList();
+            Controller.Output.Add(opcode.Item1, opcode.Item2);
             line.Disassembly = opcode.Item3;
-            Controller.Output.AddBytes(opcodebytes, opcode.Item2, false);
         }
 
         /// <summary>

@@ -57,8 +57,7 @@ namespace Asm6502.Net
                 {
                     ".addr", ".byte", ".char", ".dint", ".dword", ".enc", ".fill", ".lint", ".long", ".cstring", 
                     ".pstring", ".nstring", ".string", ".word", ".binary", 
-                    ".align", 
-                    ".repeat", ".rta", ".sint",
+                    ".align", ".repeat", ".rta", ".sint",
                     ".lsstring"
                 }));
         }

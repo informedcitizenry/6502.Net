@@ -62,8 +62,7 @@ namespace Asm6502.Net
 
             Reserved.Types.Add("Directives", new HashSet<string>(new string[]
                 {
-                    ".proff", ".pron", ".end", 
-                    ".cpu"
+                    ".proff", ".pron", ".end", ".equ"
                 }));
 
             ProcessedLines = new List<SourceLine>();
@@ -139,23 +138,12 @@ namespace Asm6502.Net
         /// <returns>True, if the line is defining a constant, otherwise false.</returns>
         private bool IsDefiningConstant(SourceLine line)
         {
-            if (line.Label.EnclosedInQuotes())
-            {
-                Log.LogEntry(line, Resources.ErrorStrings.ConstantExpressionInLVal, line.Label);
-                return false;
-            }
-            else if (line.Operand.EnclosedInQuotes())
+            if (line.Operand.EnclosedInQuotes())
                 return false; // define a constant string??
 
             if (line.Instruction.Equals("=") || line.Instruction.Equals(".equ", Options.StringComparison))
-            {
-                if (string.IsNullOrEmpty(line.Label) || string.IsNullOrEmpty(line.Operand))
-                {
-                    Log.LogEntry(line, Resources.ErrorStrings.InvalidConstantAssignment);
-                    return false;
-                }
                 return true;
-            }
+            
             if (string.IsNullOrEmpty(line.Label) == false &&
                 string.IsNullOrEmpty(line.Instruction) &&
                 string.IsNullOrEmpty(line.Operand))
@@ -655,7 +643,11 @@ namespace Asm6502.Net
         private bool FirstPassLine(SourceLine line)
         {
             bool anotherpass = false;
-
+            if (IsDefiningConstant(line) && string.IsNullOrEmpty(line.Operand))
+            {
+                Log.LogEntry(line, Resources.ErrorStrings.InvalidConstantAssignment);
+                return false;
+            }
             if (line.PC != Output.GetPC() && !
                 (Reserved.IsOneOf("Directives", line.Instruction) || 
                  directives_.AssemblesInstruction(line.Instruction)))
