@@ -272,7 +272,7 @@ namespace Asm6502.Net
                 else
                 {
                     Int64 val = Controller.Evaluator.Eval(t);
-                    if (line.Instruction.Equals(".rta", Controller.Options.StringComparison))
+                    if (line.Instruction.ToLower().Equals(".rta"))
                         val -= 1;
                     if (val < minval || val > maxval)
                     {
@@ -391,7 +391,6 @@ namespace Asm6502.Net
             switch (line.Instruction.ToLower())
             {
                 case ".addr":
-                case ".rta":
                 case ".word":
                     AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2);
                     break;
@@ -430,6 +429,9 @@ namespace Asm6502.Net
                     break;
                 case ".long":
                     AssembleValues(line, UInt24.MinValue, UInt24.MaxValue, 3);
+                    break;
+                case ".rta":
+                    AssembleValues(line, -1, UInt16.MaxValue - 1, 2);
                     break;
                 case ".sint":
                     AssembleValues(line, short.MinValue, short.MaxValue, 2);

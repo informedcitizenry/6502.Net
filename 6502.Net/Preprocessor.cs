@@ -622,27 +622,25 @@ namespace Asm6502.Net
                     while (reader.EndOfStream == false)
                     {
                         string unprocessedline = reader.ReadLine();
+                        try
                         {
-                            try
-                            {
-                                var line = new SourceLine(file, currentline, unprocessedline);
-                                line.Parse(
-                                    delegate(string token)
-                                    {
-                                        return IsReserved(token) || Reserved.IsReserved(token) ||
-                                            Regex.IsMatch(token, @"\.[a-zA-Z][a-zA-Z0-9]*") ||
-                                            token == "=";
-                                    },
-                                    delegate(string token)
-                                    {
-                                        return IsSymbol(token);
-                                    });
-                                sourcelines.Add(line);
-                            }
-                            catch (SourceLine.QuoteNotEnclosedException)
-                            {
-                                Controller.Log.LogEntry(file, currentline, Resources.ErrorStrings.QuoteStringNotEnclosed);
-                            }
+                            var line = new SourceLine(file, currentline, unprocessedline);
+                            line.Parse(
+                                delegate(string token)
+                                {
+                                    return IsReserved(token) || Reserved.IsReserved(token) ||
+                                        Regex.IsMatch(token, @"\.[a-zA-Z][a-zA-Z0-9]*") ||
+                                        token == "=";
+                                },
+                                delegate(string token)
+                                {
+                                    return IsSymbol(token);
+                                });
+                            sourcelines.Add(line);
+                        }
+                        catch (SourceLine.QuoteNotEnclosedException)
+                        {
+                            Controller.Log.LogEntry(file, currentline, Resources.ErrorStrings.QuoteStringNotEnclosed);
                         }
                         currentline++;
                     }
