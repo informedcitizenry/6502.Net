@@ -1344,3 +1344,5 @@ Some features may be introduced in a future release, such as conditional assembl
 `Too many argumnets for directive` - More arguments were provided to the directive than expected.
 
 `Unknown instruction or incorrect parameters for instruction` - An directive or instruction was encountered that was unknown, or the operand provided is incorrect.
+
+`Unknown or invalid expression` - There was an error evaluating the expression.
