@@ -56,9 +56,8 @@ namespace Asm6502.Net
             Reserved.Types.Add("PseudoOps", new HashSet<string>(new string[]
                 {
                     ".addr", ".byte", ".char", ".dint", ".dword", ".enc", ".fill", ".lint", ".long", ".cstring", 
-                    ".pstring", ".nstring", ".string", ".word", ".binary", 
-                    ".align", ".repeat", ".rta", ".sint",
-                    ".lsstring"
+                    ".pstring", ".lsstring", ".nstring", ".string", ".word", ".binary", 
+                    ".align", ".repeat", ".rta", ".sint"
                 }));
         }
 
@@ -148,8 +147,6 @@ namespace Asm6502.Net
                         Controller.Output.AddUninitialized(1);
                         continue;
                     }
-
-                    int size = 1;
                     Int64 val;
 
                     var m = Regex.Match(arg, @"str(\((.+)\))", Controller.Options.RegexOption);
@@ -168,17 +165,9 @@ namespace Asm6502.Net
                             continue;
                         }
                     }
-
                     val = Controller.Evaluator.Eval(arg);
-                    size = val.Size();
-                    var convbytes = BitConverter.GetBytes(val).ToList();
+                    Controller.Output.Add(val, val.Size());
 
-                    Controller.Output.AddBytes(convbytes, size, false);
-
-                    if (format.Equals(".lsstring", Controller.Options.StringComparison))
-                        Controller.Output.ChangeLast(convbytes.Last() + 1, 1);
-                    else if (format.Equals(".nstring", Controller.Options.StringComparison))
-                        Controller.Output.ChangeLast(convbytes.Last() | 0x80, 1);
                 }
                 else
                 {
@@ -189,14 +178,25 @@ namespace Asm6502.Net
                         return;
                     }
                     Controller.Output.Add(noquotes);
-                    var lastbyte = Controller.Output.GetCompilation().Last();
-                    if (format.Equals(".lsstring", Controller.Options.StringComparison))
-                        Controller.Output.ChangeLast(lastbyte + 1, 1);
-                    else if (format.Equals(".nstring", Controller.Options.StringComparison))
-                        Controller.Output.ChangeLast(lastbyte | 0x80, 1);
-
                 }
             }
+
+            var lastbyte = Controller.Output.GetCompilation().Last();
+
+            if (format.Equals(".lsstring", Controller.Options.StringComparison))
+            {
+                Controller.Output.ChangeLast(lastbyte + 1, 1);
+            }
+            else if (format.Equals(".nstring", Controller.Options.StringComparison))
+            {
+                if (lastbyte > 0x7F)
+                {
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.MSBShouldNotBeSet, lastbyte.ToString());
+                    return;
+                }
+                Controller.Output.ChangeLast(lastbyte | 0x80, 1);
+            }
+                
             Controller.Output.Transforms.Pop(); // clean up
 
             if (format.Equals(".cstring", Controller.Options.StringComparison))
@@ -212,7 +212,7 @@ namespace Asm6502.Net
         private void AssembleFills(SourceLine line)
         {
             var csv = line.CommaSeparateOperand();
-            
+           
             Int64 alignval = Controller.Evaluator.Eval(csv.First());
             if (alignval < 1)
             {
@@ -220,7 +220,7 @@ namespace Asm6502.Net
                 return;
             }
 
-            if (csv.Count > 1)
+            if (csv.Count > 1 && csv.Last().Equals("?") == false)
             {
                 if (csv.Count > 2)
                 {
@@ -241,7 +241,9 @@ namespace Asm6502.Net
             }
             else
             {
-                if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
+                if (line.Instruction.ToLower().Equals(".repeat"))
+                    Controller.Log.LogEntry(line);
+                else if (line.Instruction.ToLower().Equals(".align"))
                     Controller.Output.Align(Convert.ToUInt16(alignval));
                 else
                     Controller.Output.Fill(Convert.ToUInt16(alignval));
@@ -394,7 +396,6 @@ namespace Asm6502.Net
                 return;
             }
             Controller.Evaluator.CharEncoding = EncodeString;
-
             switch (line.Instruction.ToLower())
             {
                 case ".addr":

@@ -449,6 +449,7 @@ namespace Asm6502.Net
         /// <returns>Returns the relative offset between the two addresses</returns>
         public int GetRelativeOffset(int address1, int address2)
         {
+            address2 = address2 & MaxAddress;
             int offset = address1 - address2;
             if (Math.Abs(offset) > (MaxAddress / 2))
             {
@@ -456,6 +457,9 @@ namespace Asm6502.Net
                     offset = Math.Abs(offset) - (MaxAddress + 1);
                 else
                     offset = MaxAddress + 1 - offset;
+
+                if (address1 > address2)
+                    offset = -offset;
             }
             return offset;
         }

@@ -43,6 +43,8 @@ namespace Asm6502.Net
 
         private ILineAssembler directives_;
 
+        private ILineDisassembler lineDisassembler_;
+
         #endregion
 
         #region Constructors
@@ -413,144 +415,6 @@ namespace Asm6502.Net
         }
 
         /// <summary>
-        /// Used by the ToListing method to get the full listing.
-        /// </summary>
-        /// <param name="verbose">Sets the verbose option.</param>
-        /// <returns>Returns a listing string to save to disk.</returns>
-        private string GetFullListing(bool verbose)
-        {
-            string listing = string.Empty;
-            foreach (var line in ProcessedLines)
-            {
-                bool print = true;
-
-                if (!line.DoNotAssemble)
-                {
-                    if (line.Instruction.Equals(".pron", Options.StringComparison))
-                        print = true;
-                    else if (line.Instruction.Equals(".proff", Options.StringComparison))
-                        print = false;
-                }
-                if (!print)
-                    continue; // printing has been suppressed
-
-                string disassem = string.Empty;
-                string sourcestr = line.SourceString;
-
-                if (!verbose)
-                {
-                    if (line.DoNotAssemble)
-                    {
-                        if (line.IsDefinition && string.IsNullOrEmpty(line.Label))
-                            continue;
-                        sourcestr = line.Label;
-                    }
-                    if (string.IsNullOrEmpty(line.Label) && 
-                        (Reserved.IsOneOf("Directives", line.Instruction) || 
-                         directives_.AssemblesInstruction(line.Instruction)))
-                        continue; // skip directives (e.g., .if blocks, etc.) and anonymous blocks
-                    else if (string.IsNullOrWhiteSpace(line.Label + line.Instruction))
-                        continue;
-                }
-                else
-                {
-                    string lineinfo = line.Filename;
-                    if (lineinfo.Length > 14)
-                        lineinfo = lineinfo.Substring(0, 11) + "...";
-                    lineinfo += "(" + line.LineNumber.ToString() + ")";
-                    disassem = string.Format("{0,-20}:", lineinfo);
-                }
-                var collen = string.IsNullOrEmpty(line.Disassembly) ? 36 : 20;
-                if (verbose)
-                    collen += 21;
-                if (string.IsNullOrEmpty(line.Instruction))
-                    goto updatelisting;
-
-                if (Reserved.IsOneOf("Directives", line.Instruction))
-                {
-                    // do not print out the source for directives unless verbose
-                    if (!verbose)
-                        sourcestr = line.Label;
-                    else if (string.IsNullOrEmpty(sourcestr))
-                        sourcestr = line.Instruction;
-                    goto updatelisting;
-                }
-                if (line.DoNotAssemble) goto updatelisting;
-    
-                if (IsDefiningConstant(line))
-                {
-                    Int64 value = 0;
-                    if (line.Label == "*")
-                        continue;
-                    if (string.IsNullOrEmpty(line.Operand) || line.Operand == "*")
-                        value = line.PC;
-                    else
-                        value = evaluator_.Eval(line.Operand);
-                    disassem += string.Format("=${0:x}  ", value);
-                    goto updatelisting;
-                }
-                else
-                {
-                    if (pseudoOps_.AssemblesInstruction(line.Instruction))
-                        disassem += string.Format(">{0:x4}  ", line.PC);
-                    else
-                        disassem += string.Format(".{0:x4}  ", line.PC);
-                }
-                
-                line.Assembly.ForEach(b => disassem += string.Format(" {0:x2}", b));
-                if (pseudoOps_.AssemblesInstruction(line.Instruction))
-                {
-                    string monitor = disassem;
-                    if (verbose)
-                        monitor = disassem.Substring(21);
-                    if (monitor.Length >= 30)
-                    {
-                        int pc = line.PC;
-                        string source = line.SourceString;
-                        var subdisasms = monitor.Substring(8).SplitByLength(24);
-                        string file = disassem.Substring(0, 20);
-                        foreach (string l in subdisasms)
-                        {
-                            string subdisasm;
-                            if (verbose)
-                                subdisasm = string.Format("{0,-20}:>{1:x4}   {2}", file, pc, l);
-                            else
-                                subdisasm = string.Format(">{0:x4}   {1}", pc, l);
-                            listing += string.Format("{0,-" + collen + "}{1,-10}{2}", subdisasm, source, Environment.NewLine);
-                            pc += 8;
-                            source = string.Empty;
-                            file = string.Empty;
-                        }
-                        continue;
-                    }
-                }
-            updatelisting:
-                if (string.IsNullOrEmpty(line.Disassembly))
-                {
-                    
-                    listing += string.Format("{0,-" + collen + "}{1,-10}{2}",
-                                                            disassem,
-                                                            sourcestr,
-                                                            Environment.NewLine);
-                }
-                else
-                {
-                    listing += string.Format("{0,-" + collen + "}{1,-16}{2,-10}{3}",
-                                            disassem,
-                                            line.Disassembly,
-                                            sourcestr,
-                                            Environment.NewLine);
-                }
-                if (line.Instruction.Equals(".end", Options.StringComparison))
-                    break;
-            }
-            if (listing.EndsWith(Environment.NewLine))
-                listing = listing.Substring(0, listing.Length - 2);
-           
-            return listing;
-        }
-
-        /// <summary>
         /// Used by the ToListing method to get a listing of all defined labels.
         /// </summary>
         /// <returns>A string containing all label definitions.</returns>
@@ -585,7 +449,7 @@ namespace Asm6502.Net
 
             if (!string.IsNullOrEmpty(Options.ListingFile))
             {
-                listing = GetFullListing(Options.VerboseList);
+                listing = GetListing();
                 using (StreamWriter writer = new StreamWriter(Options.ListingFile, false))
                 {
                     string argstring = string.Join(" ", Options.Arguments);
@@ -614,6 +478,26 @@ namespace Asm6502.Net
                     writer.WriteLine(listing);
                 }
             }
+        }
+
+        /// <summary>
+        /// Used by the ToListing method to get the full listing.</summary>
+        /// <returns>Returns a listing string to save to disk.</returns>
+        private string GetListing()
+        {
+            string listing = string.Empty;
+
+            foreach(SourceLine line in ProcessedLines)
+            {
+                if (line.Instruction.Equals(".end", Options.StringComparison))
+                    break;
+
+                listing += lineDisassembler_.DisassembleLine(line);
+            }
+            if (listing.EndsWith(Environment.NewLine))
+                listing = listing.Substring(0, listing.Length - 2);
+
+            return listing;
         }
 
         /// <summary>
@@ -837,6 +721,7 @@ namespace Asm6502.Net
             pseudoOps_ = new PseudoOps6502(this);
             lineAssembler_ = new Asm6502(this);
             directives_ = new Directives6502(this);
+            lineDisassembler_ = new Disasm6502(this);
 
             Reserved.Comparer = Options.StringComparison;
             evaluator_.IgnoreCase = !Options.CaseSensitive;

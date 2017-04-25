@@ -43,7 +43,7 @@ namespace Asm6502.Net
                 "ora ${0:x2}",      // 05
                 "asl ${0:x2}",      // 06
                 null,               // 07
-                "php",              // 09
+                "php",              // 08
                 "ora #${0:x2}",     // 09
                 "asl",              // 0a
                 null,               // 0b
@@ -51,7 +51,7 @@ namespace Asm6502.Net
                 "ora ${0:x4}",      // 0d
                 "asl ${0:x4}",      // 0e
                 null,               // 0f
-                "bpl ${0:x2}",      // 10
+                "bpl ${0:x4}",      // 10
                 "ora (${0:x2}),y",  // 11
                 null,               // 12
                 null,               // 13
@@ -83,7 +83,7 @@ namespace Asm6502.Net
                 "and ${0:x4}",      // 2d
                 "rol ${0:x4}",      // 2e
                 null,               // 2f
-                "bmi ${0:x2}",      // 30
+                "bmi ${0:x4}",      // 30
                 "and (${0:x2}),y",  // 31
                 null,               // 32
                 null,               // 33
@@ -115,7 +115,7 @@ namespace Asm6502.Net
                 "eor ${0:x4}",      // 4d
                 "lsr ${0:x4}",      // 4e
                 null,               // 4f
-                "bvc ${0:x2}",      // 50
+                "bvc ${0:x4}",      // 50
                 "eor (${0:x2}),y",  // 51
                 null,               // 52
                 null,               // 53
@@ -147,7 +147,7 @@ namespace Asm6502.Net
                 "adc ${0:x4}",      // 6d
                 "ror ${0:x4}",      // 6e
                 null,               // 6f
-                "bvs ${0:x2}",      // 70
+                "bvs ${0:x4}",      // 70
                 "adc (${0:x2}),y",  // 71
                 null,               // 72
                 null,               // 73
@@ -179,7 +179,7 @@ namespace Asm6502.Net
                 "sta ${0:x4}",      // 8d
                 "stx ${0:x4}",      // 8e
                 null,               // 8f
-                "bcc ${0:x2}",      // 90
+                "bcc ${0:x4}",      // 90
                 "sta (${0:x2}),y",  // 91
                 null,               // 92
                 null,               // 93
@@ -211,7 +211,7 @@ namespace Asm6502.Net
                 "lda ${0:x4}",      // ad
                 "ldx ${0:x4}",      // ae
                 null,               // af
-                "bcs ${0:x2}",      // b0
+                "bcs ${0:x4}",      // b0
                 "lda (${0:x2}),y",  // b1
                 null,               // b2
                 null,               // b3
@@ -243,7 +243,7 @@ namespace Asm6502.Net
                 "cmp ${0:x4}",      // cd
                 "dec ${0:x4}",      // ce
                 null,               // cf
-                "bne ${0:x2}",      // d0
+                "bne ${0:x4}",      // d0
                 "cmp (${0:x2}),y",  // d1
                 null,               // d2
                 null,               // d3
@@ -275,7 +275,7 @@ namespace Asm6502.Net
                 "sbc ${0:x4}",      // ed
                 "inc ${0:x4}",      // ee
                 null,               // ef
-                "beq ${0:x2}",      // f0
+                "beq ${0:x4}",      // f0
                 "sbc (${0:x2}),y",  // f1
                 null,               // f2
                 null,               // f3
@@ -308,15 +308,29 @@ namespace Asm6502.Net
         {
             Reserved.Types.Add("Mnemonics", new HashSet<string>(new string[]
                 {
-                    "adc","and","asl","bcc","bcs","beq","bit","bmi","bne","bpl","brk","bvc","bvs","cld","clc",
-                    "cli","clv","cmp","cpx","cpy","dec","dex","dey","eor","inc","inx","iny","jmp","jsr","lda",
-                    "ldx","ldy","lsr","nop","ora","pha","php","pla","plp","rol","ror","rti","rts","sbc","sbc",
-                    "sec","sed","sei","sta","stx","sty","tax","tay","tsx","txa","txs","tya"
+                    "adc","and","asl","bit","cmp","cpx","cpy","dec","eor","inc","lda","ldx","ldy",
+                    "lsr","ora","rol","ror","sbc","sta","stx","sty"
                 }));
 
             Reserved.Types.Add("Branches", new HashSet<string>(new string[]
                 {
                     "bcc","bcs","beq","bmi","bne","bpl","bvc","bvs"
+                }));
+
+            Reserved.Types.Add("Implied", new HashSet<string>(new string[]
+                {
+                    "brk","clc","cld","cli","clv","dex","dey","inx","iny","nop","pha","php","pla",
+                    "plp","rti","rts","sec","sed","sei","tax","tay","tsx","txa","txs","tya"
+                }));
+
+            Reserved.Types.Add("ImpliedAccumulator", new HashSet<string>(new string[]
+                {
+                    "asl", "lsr", "rol", "ror"
+                }));
+
+            Reserved.Types.Add("Jumps", new HashSet<string>(new string[]
+                {
+                    "jmp", "jsr"
                 }));
         }
 
@@ -334,15 +348,15 @@ namespace Asm6502.Net
             if (string.IsNullOrEmpty(operand))
                 return new Tuple<string, string>(string.Empty, string.Empty);
 
-            string opfmt = "${0:x4}";
+            string opfmt = string.Empty;
             string oper = operand;
 
             if (operand.StartsWith("#"))
             {
                 opfmt = "#${0:x2}";
                 oper = operand.Substring(1);
+                return new Tuple<string, string>(oper, opfmt);
             }
-            // you have to test for indirect mode, e.g. jmp ($c000) or lda ($fb),y
             else if (operand.StartsWith("("))
             {
                 string firstparen = ExpressionEvaluator.FirstParenGroup(operand, false);
@@ -368,7 +382,7 @@ namespace Asm6502.Net
                     return new Tuple<string, string>(oper, opfmt);
                 }
             }
-
+            
             if (operand.ToLower().EndsWith(",x") || operand.ToLower().EndsWith(",y"))
             {
                 oper = operand.Substring(0, operand.Length - 2);
@@ -376,7 +390,13 @@ namespace Asm6502.Net
                 {
                     return null;
                 }
-                opfmt = "${0:x4}" + operand.Substring(operand.Length - 2);
+                long val = Controller.Evaluator.Eval(oper);
+                opfmt = "${0:x" + val.Size()*2 + "}" + operand.Substring(operand.Length - 2);
+            }
+            else
+            {
+                long val = Controller.Evaluator.Eval(operand);
+                opfmt = "${0:x" + val.Size()*2 + "}";
             }
             return new Tuple<string, string>(oper, opfmt);
         }
@@ -385,9 +405,8 @@ namespace Asm6502.Net
         // implied instructions on the accumulator, e.g. lsr a
         private bool IsImpliedAccumulator(SourceLine line)
         {
-            string[] ImpliedAccs = { "asl", "lsr", "rol", "ror" };
-            if (ImpliedAccs.Any(i => i.Equals(line.Instruction, Controller.Options.StringComparison) &&
-                line.Operand.Equals("a", Controller.Options.StringComparison)))
+            if (Reserved.IsOneOf("ImpliedAccumulator",line.Instruction) &&
+                line.Operand.Equals("a", Controller.Options.StringComparison))
             {
                 string scoped = Controller.GetNearestScope(line.Operand, line.Scope);
                 return !Controller.Labels.ContainsKey(scoped);
@@ -407,7 +426,7 @@ namespace Asm6502.Net
             string operand = line.Operand;//string.Empty;
             string opfmt = string.Empty;
             Int64 operval = 0;
-            int size = 1;
+            int size = GetInstructionSize(line);
 
             if (string.IsNullOrEmpty(line.Instruction))
                 return null;
@@ -433,25 +452,18 @@ namespace Asm6502.Net
                 }
                 opfmt = components.Item2;
                 operval = Controller.Evaluator.Eval(operand);
-                size += operval.Size();
             }
             if (Reserved.IsOneOf("Branches", instr))
             {
-                size = 2;
-                operval = Controller.Output.GetRelativeOffset(Convert.ToUInt16(operval), line.PC + 2);
+                operval = Controller.Output.GetRelativeOffset(Convert.ToUInt16(operval), Controller.Output.GetPC() + 2);//line.PC + 2);
                 if (operval > sbyte.MaxValue || operval < sbyte.MinValue)
                 {
                     Controller.Log.LogEntry(line, Resources.ErrorStrings.RelativeBranchOutOfRange, operval.ToString());
                     return null;
                 }
-            }
-            else if (instr.ToLower().StartsWith("j") && size == 2)
-                size = 3;
-            if (size == 2)
-                opfmt = opfmt.Replace("x4", "x2");
-            else if (size == 3)
                 opfmt = opfmt.Replace("x2", "x4");
-
+            }
+           
             string fmt = opcodeFormats_.FirstOrDefault(
                 delegate(string op)
                 {
@@ -461,7 +473,7 @@ namespace Asm6502.Net
                         return op.Equals(instr, Controller.Options.StringComparison);
                     return op.Equals(instr + " " + opfmt, Controller.Options.StringComparison);
                 });
-
+            
             if (string.IsNullOrEmpty(fmt))
             {
                 // if not one byte try two
@@ -495,16 +507,12 @@ namespace Asm6502.Net
                 return null;
             }
             string disasm = string.Format(fmt, operval & (operval.AndMask()));
-            if (size > 1)
+            if (Reserved.IsOneOf("Branches", instr))
             {
-                if (Reserved.IsOneOf("Branches", instr))
-                {
-                    fmt = fmt.Substring(0, 4) + "${0:x4}";
-                    Int64 rel = (line.PC + 2) + operval;
-                    disasm = string.Format(fmt, (rel & ushort.MaxValue));
-                }
-                opcode += (Convert.ToInt32(operval) << 8);
+                var rel = (Controller.Output.GetPC() + 2) + operval;
+                disasm = string.Format(fmt, (rel & ushort.MaxValue));
             }
+            opcode += (Convert.ToInt32(operval) << 8);
             return new Tuple<int, int, string>(opcode, size, disasm);
         }
 
@@ -538,28 +546,45 @@ namespace Asm6502.Net
         public int GetInstructionSize(SourceLine line)
         {
             // implied mode
-            if (string.IsNullOrEmpty(line.Operand) || IsImpliedAccumulator(line))
+            if (string.IsNullOrEmpty(line.Operand) || Reserved.IsOneOf("Implied", line.Instruction) || IsImpliedAccumulator(line))
                 return 1;
 
             // relative mode
             if (Reserved.IsOneOf("Branches", line.Instruction))
                 return 2;
 
+            // immediate mode
+            if (line.Operand.StartsWith("#"))
+                return 2;
+
             // long jumps
-            if (line.Instruction.ToLower().StartsWith("j"))
+            if (Reserved.IsOneOf("Jumps", line.Instruction))
                 return 3;
 
-            // indexed y
-            if (line.Instruction.ToLower().EndsWith("a") && line.Operand.ToLower().EndsWith(",y"))
+            if (line.Instruction.ToLower().EndsWith("a"))
             {
-                // lda xx,y and sta xx,y have no zp-equivalent
-                if ((!line.Operand.StartsWith("(") &&
-                     !line.Operand.EndsWith("),y")) ||
-                    line.Operand.Substring(0, line.Operand.Length - 2) != ExpressionEvaluator.FirstParenGroup(line.Operand, true)
-                    )
+                if (line.Operand.StartsWith("("))
+                {
+                    if (line.Operand.ToLower().EndsWith(",x)"))
+                    {
+                        return 2; // indexed indirect
+                    }
+                    else if (line.Operand.ToLower().EndsWith("),y"))
+                    {
+                        string subop = line.Operand.Substring(0, line.Operand.Length - 2);
+                        string paren = ExpressionEvaluator.FirstParenGroup(subop, true);
+                        if (paren == subop)
+                            return 2; // indirect indexed
+                    }
+                }
+                // indexed y
+                if (line.Operand.ToLower().EndsWith(",y"))
+                {
+                    // lda xx,y and sta xx,y have no zp-equivalent
                     return 3;
+                }
             }
-            // else get the size based on the operand format
+            // else get the size based on the operand
             var components = GetOperandComponents(line.Operand);
 
             if (components == null)
@@ -567,14 +592,16 @@ namespace Asm6502.Net
                 Controller.Log.LogEntry(line);
                 return 0;
             }
+            return Controller.Evaluator.Eval(components.Item1).Size() + 1;
+            
             // make sure operand is byte-sized and not word-sized despite format
-            if (components.Item2.Contains("x4"))
-            {
-                Int64 val = Controller.Evaluator.Eval(components.Item1);
-                if (val.Size() == 1)
-                    return 2;
-            }
-            return components.Item2.Contains("x2") ? 2 : 3;
+            //if (components.Item2.Contains("x4"))
+            //{
+            //    Int64 val = Controller.Evaluator.Eval(components.Item1);
+            //    if (val.Size() == 1)
+            //        return 2;
+            //}
+            //return components.Item2.Contains("x2") ? 2 : 3;
         }
 
         /// <summary>
