@@ -61,7 +61,7 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Bad expression.
+        ///   Looks up a localized string similar to Unknown or invalid expression: &apos;{0}&apos;.
         /// </summary>
         internal static string BadExpression {
             get {
