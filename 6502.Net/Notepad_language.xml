@@ -25,10 +25,10 @@
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
             <Keywords name="Keywords1">adc and asl bcc bcs beq bit bmi bne bpl brk bvc bvs clc cld cli clv cmp cpx cpy dec dex dey eor inc inx iny jmp jsr lda ldx ldy lsr nop ora pha php pla plp rol ror rti rts sbc sec sed sei sta stx sty tax tay tsx txa txs tya</Keywords>
-            <Keywords name="Keywords2">.absolute .al .as .assert .autsiz .bend .binary .binclude .block .break .case .cdef .cerror .check .continue .cpu .cwarn .databank .default .defined .dpage .dsection .dstruct .dunion .edef .else .elsif .enc .end .endblock .enddef .endf .endif .endmacro .endp .ends .endsegment .endswitch .endu .endweak .eor .error .for .function .goto .here .hidemac .if .ifeq .ifmi .ifne .ifpl .include .lbl .logical .macro .mansiz .next .notdefined .offs .option .page .pend .proc .proff .pron .relocate .rept .rta .section .seed .segment .send .shiftl .showmac .struct .switch .union .var .warn .weak .xl .xs</Keywords>
-            <Keywords name="Keywords3">.addr .align .byte .char .cstring .dint .dword .fill .lint .long .lsstring .pstring .nstring .sint .string .word</Keywords>
+            <Keywords name="Keywords2">.binary .binclude .block .cerror .cwarn .enc .end .endblock .endmacro .endsegment .eor .error .include .macro .proff .pron .relocate .segment </Keywords>
+            <Keywords name="Keywords3">.addr .align .byte .char .cstring .dint .dword .fill .lint .long .lsstring .pstring .repeat .nstring .repeat .rta .sint .string .word</Keywords>
             <Keywords name="Keywords4">$ %</Keywords>
-            <Keywords name="Keywords5">floor round ceil trunc frac sqrt cbrt log10 ln exp pow sin asin sinh cos acos cosh tan atan tanh rad deg hypot atan2 abs sgn all any format len random range repr size str</Keywords>
+            <Keywords name="Keywords5">floor round ceil trunc frac sqrt cbrt log10 ln exp pow sin asin sinh cos acos cosh tan atan tanh rad deg hypot atan2 abs sgn all random str</Keywords>
             <Keywords name="Keywords6">.</Keywords>
             <Keywords name="Keywords7"></Keywords>
             <Keywords name="Keywords8"></Keywords>
