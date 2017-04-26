@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -83,12 +83,11 @@ namespace Asm6502.Net
         /// <returns>Returns a hex representation of the source line address.</returns>
         private string DisassembleAddress(SourceLine line)
         {
-            if (string.IsNullOrEmpty(line.Instruction) || 
-                Reserved.IsReserved(line.Instruction) || 
+            if (string.IsNullOrEmpty(line.Instruction) ||
+                Reserved.IsReserved(line.Instruction) ||
                 line.DoNotAssemble)
-                return "       ";
-                      //.c000  /
-           
+                return string.Empty;
+                      
             if (line.Instruction == "=" || line.Instruction.Equals(".equ", Controller.Options.StringComparison))
             {
                 Int64 value = 0;
@@ -117,49 +116,38 @@ namespace Asm6502.Net
         /// the source assembly.</returns>
         private string DisassembleAsm(SourceLine line)
         {
-            string asm = string.Empty;
-            string listing = string.Empty;
-            
             if (line.Assembly.Count == 0)
                 return string.Empty;
-           
-            line.Assembly.ForEach(b => asm += string.Format(" {0:x2}", b));
-            if (line.Instruction.StartsWith(".") == false)
-            {
-                return asm;
-            }
-            string monitor = asm;
 
-            if (monitor.Length > 24)
+            StringBuilder sb = new StringBuilder();
+            line.Assembly.ForEach(b => sb.AppendFormat(" {0:x2}", b));
+
+            if (sb.Length > 24)
             {
                 int pc = line.PC;
                 string source = line.SourceString;
-                var subdisasms = monitor.SplitByLength(24).ToList();
+
+                var subdisasms = sb.ToString().SplitByLength(24).ToList();
+                sb.Clear();
 
                 for (int i = 0; i < subdisasms.Count; i++)
                 {
-                    listing += string.Format("{0,-29}{1,-10}", 
-                                            subdisasms[i], 
-                                            source);
-                    listing = listing.TrimEnd() + Environment.NewLine;
+                    sb.AppendFormat("{0,-29}{1,-10}",
+                                    subdisasms[i],
+                                    source).TrimEnd();
+                    sb.AppendLine();
                     pc += 8;
                     if (i < subdisasms.Count - 1)
                     {
                         string format = ">{0:x4}  ";
                         if (Controller.Options.VerboseList)
                             format = "                    :" + format;
-                        listing += string.Format(format, pc);
+                        sb.AppendFormat(format, pc);
                     }
-                   
                     source = string.Empty;
                 }
-                return listing;
             }
-            else
-            {
-                listing = asm;
-            }
-            return listing;
+            return sb.ToString();
         }
 
         /// <summary>
@@ -181,7 +169,8 @@ namespace Asm6502.Net
             if (!PrintingOn)
                 return string.Empty;// printing has been suppressed
 
-            string disassem = string.Empty;
+            StringBuilder sb = new StringBuilder();
+            
             string sourcestr = line.SourceString;
 
             if (!Controller.Options.VerboseList)
@@ -202,37 +191,27 @@ namespace Asm6502.Net
             {
                 if (string.IsNullOrEmpty(sourcestr))
                     sourcestr = line.Instruction;
-                disassem = DisassembleFileLine(line);
+                sb.Append(DisassembleFileLine(line));
             }
-            var collen = string.IsNullOrEmpty(line.Disassembly) ? 36 : 20;
-            if (Controller.Options.VerboseList)
-                collen += 21;
             
-            disassem += DisassembleAddress(line);
+            sb.AppendFormat("{0,-7}",DisassembleAddress(line));
            
             string asm = DisassembleAsm(line);
-            disassem += asm;
-
+            
             if (asm.Length > 24)
-                return disassem;
-           
+                return sb.Append(asm).ToString();
+
+            
             if (string.IsNullOrEmpty(line.Disassembly))
             {
-
-                listing += string.Format("{0,-" + collen + "}{1,-10}{2}",
-                                                        disassem,
-                                                        sourcestr,
-                                                        Environment.NewLine);
+                sb.AppendFormat("{0,-29}{1,-10}", asm, sourcestr).AppendLine();
             }
             else
             {
-                listing += string.Format("{0,-" + collen + "}{1,-16}{2,-10}{3}",
-                                        disassem,
-                                        line.Disassembly,
-                                        sourcestr,
-                                        Environment.NewLine);
+                sb.AppendFormat("{0,-13}{1,-16}{2,-10}", asm, line.Disassembly, sourcestr)
+                  .AppendLine();
             }
-            return listing;
+            return sb.ToString();
         }
         #endregion
 

@@ -23,9 +23,61 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Asm6502.Net
 {
+    public static class StringBuilderExtensions
+    {
+        /// <summary>
+        /// Removes all trailing occurrences of white spaces from the
+        /// current System.Text.StringBuilder object.
+        /// </summary>
+        /// <param name="sb">This StringBuilder.</param>
+        /// <returns>The trimmed System.Text.StringBuilder.</returns>
+        public static StringBuilder TrimEnd(this StringBuilder sb)
+        {
+            if (sb == null || sb.Length == 0) return sb;
+
+            int i = sb.Length - 1;
+            for (; i >= 0; i--)
+                if (!char.IsWhiteSpace(sb[i]))
+                    break;
+
+            if (i < sb.Length - 1)
+                sb.Length = i + 1;
+
+            return sb;
+        }
+
+        /// <summary>
+        /// Removes all leading occurrences of white spaces from the
+        /// current System.Text.StringBuilder object.
+        /// </summary>
+        /// <param name="sb">This StringBuilder.</param>
+        /// <returns>The trimmed System.Text.StringBuilder.</returns>
+        public static StringBuilder TrimStart(this StringBuilder sb)
+        {
+            if (sb == null || sb.Length == 0) return sb;
+
+            while (sb.Length > 0 && char.IsWhiteSpace(sb[0]))
+                sb.Remove(0, 1);
+
+            return sb;
+        }
+
+        /// <summary>
+        /// Removes all leading and trailing occurrences of white spaces from the
+        /// current System.Text.StringBuilder object.
+        /// </summary>
+        /// <param name="sb">This StringBuilder.</param>
+        /// <returns>The trimmed System.Text.StringBuilder.</returns>
+        public static StringBuilder Trim(this StringBuilder sb)
+        {
+            return sb.TrimStart().TrimEnd();
+        }
+    }
+
     public static class StringExtensions
     {
         /// <summary>
