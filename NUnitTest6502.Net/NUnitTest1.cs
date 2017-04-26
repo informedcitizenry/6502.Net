@@ -1,15 +1,35 @@
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NUnit.Framework;
+using Asm6502.Net;
 
 namespace UnitTest6502.Net
 {
     [TestFixture]
     public class GeneralTest
     {
+        [Test]
+        public void TestStringBuilderExtensions()
+        {
+            StringBuilder sb = new StringBuilder("     hello     ");
+            Assert.AreEqual("     hello     ", sb.ToString());
+
+            sb.TrimStart();
+            Assert.AreEqual("hello     ", sb.ToString());
+
+            sb.TrimEnd();
+            Assert.AreEqual("hello", sb.ToString());
+
+            sb = new StringBuilder("     hello     ");
+            sb.Trim();
+            Assert.AreEqual("hello", sb.ToString());
+
+        }
+
+
         [Test]
         public void TestcaseSensitivity()
         {

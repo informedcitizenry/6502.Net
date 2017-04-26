@@ -212,7 +212,7 @@ namespace NUnitTest6502.Net
             line.PC = 0xc03c;
             line.Assembly.Clear();
             line.Assembly.AddRange(Enumerable.Repeat(Convert.ToByte(0), 8));
-
+           
             expected = ">c03c   00 00 00 00 00 00 00 00     somelabel   .fill 8,0" + Environment.NewLine;
             result = disasm_.DisassembleLine(line);
             Assert.AreEqual(expected, result);

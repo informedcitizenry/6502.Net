@@ -1196,6 +1196,16 @@ namespace NUnitTest6502.Net
             line.Operand = "#(34)";
             TestInstruction(line, 0x0002, new byte[] { 0xa9, 0x22 }, "lda #$22");
 
+            line.Operand = "#sqrt(25)";
+            TestInstruction(line, 0x0002, new byte[] { 0xa9, 0x05 }, "lda #$05");
+
+            line.Operand = "#4*23";
+            TestInstruction(line, 0x0002, new byte[] { 0xa9, 0x5c }, "lda #$5c");
+
+            line.Instruction = "sta";
+            line.Operand = "$1000<<8";
+            TestForFailure(line);
+
             line.Instruction = "tyx";
             line.Operand = string.Empty;
 
