@@ -1285,8 +1285,6 @@ Some features may be introduced in a future release, such as conditional assembl
 
 ### Error messages
 
-`Bad expression` - An error in the expression.
-
 `Cannot resolve anonymous label` - The assembler cannot find the reference to the anonymous label.
 
 `Closure does not close a block` - A block closure is present but no block opening.
@@ -1300,6 +1298,10 @@ Some features may be introduced in a future release, such as conditional assembl
 `Could not process binary file` - The binary file could not be opened or processed.
 
 `Directive takes no arguments` - An argument is present for a pseudo-op or directive that takes no arguments.
+
+`End of file reached without block closure` - A block directive has no corresponding closure.
+
+`File previously included. Possible circular reference?` - A directive was issued to include a source file that was previously included, thereby causing a circular reference.
 
 `Filename not specified` - A directive expected a filename that was not provided.
 
@@ -1342,6 +1344,10 @@ Some features may be introduced in a future release, such as conditional assembl
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
 `Too many argumnets for directive` - More arguments were provided to the directive than expected.
+
+`Unable to find binary file` - A directive was given to include a binary file, but the binary file was not found, either due to filesystem error or file not found.
+
+`Unable to open source file` - A source file could not be opened, either due to filesystem error or file not found.
 
 `Unknown instruction or incorrect parameters for instruction` - An directive or instruction was encountered that was unknown, or the operand provided is incorrect.
 
