@@ -103,6 +103,11 @@ namespace NUnitTest6502.Net
             test_.Log.ClearErrors();
         }
 
+        private void TestForFailure(SourceLine line)
+        {
+            TestInstruction(line, 0, null, string.Empty, false);
+        }
+
         private void TestRelativeBranch(string mnemonic, byte opcode)
         {
             SourceLine line = new SourceLine();
@@ -132,15 +137,15 @@ namespace NUnitTest6502.Net
             test_.Output.Reset();
 
             line.Operand = "$ff81";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             test_.Log.ClearErrors();
 
             line.Operand = "$0082";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             test_.Log.ClearErrors();
 
             line.Operand = "$1000";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             test_.Log.ClearErrors();
         }
 
@@ -153,25 +158,25 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0001, new byte[] { opcode }, mnemonic);
 
             line.Operand = "$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$34,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -284,16 +289,16 @@ namespace NUnitTest6502.Net
             
             // fails
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -330,19 +335,19 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x2c, 0x34, 0x12 }, "bit $1234");
             
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "$34,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -460,19 +465,19 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xec, 0x34, 0x12 }, "cpx $1234");
 
             line.Operand = "$34,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -495,19 +500,19 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xcc, 0x34, 0x12 }, "cpy $1234");
 
             line.Operand = "$34,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -534,13 +539,13 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xde, 0x34, 0x12 }, "dec $1234,x");
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -618,13 +623,13 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xfe, 0x34, 0x12 }, "inc $1234,x");
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -654,22 +659,22 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x34, 0x00 }, "jmp ($0034)");
 
             line.Operand = "$34,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -681,22 +686,22 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x20, 0x34, 0x00 }, "jsr $0034");
 
             line.Operand = "$34,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$34,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -765,13 +770,13 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xbe, 0x34, 0x12 }, "ldx $1234,y");
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -801,13 +806,13 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xbc, 0x34, 0x12 }, "ldy $1234,x");
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -841,16 +846,16 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x5e, 0x34, 0x12 }, "lsr $1234,x");
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -947,16 +952,16 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x3e, 0x34, 0x12 }, "rol $1234,x");
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
             
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -989,16 +994,16 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x7e, 0x34, 0x12 }, "ror $1234,x");
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -1066,7 +1071,7 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x9d, 0x34, 0x12 }, "sta $1234,x");
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -1089,19 +1094,19 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0x96, 0x34 }, "stx $34,y");
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -1123,19 +1128,19 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0x94, 0x34 }, "sty $34,x");
 
             line.Operand = "#$34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1234,x";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -1180,10 +1185,10 @@ namespace NUnitTest6502.Net
             SourceLine line = new SourceLine();
             line.Instruction = "lda";
             line.Operand = "# 34";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($34),y";
             TestInstruction(line, 0x0002, new byte[] { 0xb1, 0x34 }, "lda ($34),y");
@@ -1194,13 +1199,13 @@ namespace NUnitTest6502.Net
             line.Instruction = "tyx";
             line.Operand = string.Empty;
 
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Instruction = "lda";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$10000";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "$1000|$100";
             TestInstruction(line, 0x0003, new byte[] { 0xad, 0x00, 0x11 }, "lda $1100");
@@ -1209,25 +1214,25 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0xa5, 0x01 }, "lda $01");
 
             line.Operand = "#256";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($1234),y";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "( $12 ,x)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($12,x)";
             TestInstruction(line, 0x0002, new byte[] { 0xa1, 0x12 }, "lda ($12,x)");
 
             line.Instruction = "jmp";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "($12)";
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x12, 0x00 }, "jmp ($0012)");
 
             line.Operand = "(65535+1)";
-            TestInstruction(line, 0, null, string.Empty, false);
+            TestForFailure(line);
 
             line.Operand = "(65535)";
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");

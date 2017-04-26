@@ -42,6 +42,11 @@ namespace NUnitTest6502.Net
             test_.Log.ClearErrors();
         }
 
+        private void TestForFailure(SourceLine line)
+        {
+            TestInstruction(line, 0, null, false);
+        }
+
         [Test]
         public void TestMultiByte()
         {
@@ -82,14 +87,14 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0x00, 0xff });
 
             line.Operand = "-123";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".char";
             line.Operand = "-128,127";
             TestInstruction(line, 0x0002, new byte[] { 0x80, 0x7f });
 
             line.Operand = "192";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -101,28 +106,28 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0004, new byte[] { 0x00, 0x80, 0xff, 0x7f });
 
             line.Operand = "$ffd2";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".word";
             TestInstruction(line, 0x0002, new byte[] { 0xd2, 0xff });
 
             line.Operand = "-1";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".addr";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Operand = "65232 , $c000";
             TestInstruction(line, 0x0004, new byte[] { 0xd0, 0xfe, 0x00, 0xc0 });
 
             line.Operand = "$010000";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".word";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".sint";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -134,13 +139,13 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0008, new byte[] { 0x00, 0x00, 0x00, 0x80, 
                                                        0xff, 0xff, 0xff, 0x7f});
             line.Operand = uint.MaxValue.ToString();
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".dword";
             TestInstruction(line, 0x0004, new byte[] { 0xff, 0xff, 0xff, 0xff });
 
             line.Operand = "-32342";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -153,13 +158,13 @@ namespace NUnitTest6502.Net
                                                        0xff, 0xff, 0x7f});
 
             line.Operand = "16777215";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".long";
             TestInstruction(line, 0x0003, new byte[] { 0xff, 0xff, 0xff });
 
             line.Operand = "$01000000";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -279,7 +284,7 @@ namespace NUnitTest6502.Net
             test_.Output.Reset();
 
             line.Operand = string.Format("42, ?, ?, \"{0}\", $80", teststring);
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             test.Clear();
             test.AddRange(BitConverter.GetBytes(0x0d0d).Take(2));
@@ -294,7 +299,7 @@ namespace NUnitTest6502.Net
             TestInstruction(line, test.Count(), test);
 
             line.Operand += ",$80";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -328,7 +333,7 @@ namespace NUnitTest6502.Net
             test_.Output.Reset();
 
             line.Operand = "10, $ea, $20";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
         }
 
@@ -366,7 +371,7 @@ namespace NUnitTest6502.Net
             test_.Output.Reset();
 
             line.Operand = "$100, $10, $02";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
         }
 
         [Test]
@@ -383,11 +388,11 @@ namespace NUnitTest6502.Net
 
             // can't use repeat for uninitialized
             line.Operand = "4, ?";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             // can't have less than two args
             line.Operand = "4";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Operand = string.Empty;
             Assert.Throws<InvalidOperationException>(() => TestInstruction(line, 0, null, false));
@@ -411,7 +416,7 @@ namespace NUnitTest6502.Net
 
             line.Instruction = ".enc";
             line.Operand = "ascii";
-            TestInstruction(line, 0, null, false);
+            TestForFailure(line);
 
             line.Instruction = ".char";
             line.Operand = "%34";
