@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Asm6502.Net
@@ -485,19 +486,19 @@ namespace Asm6502.Net
         /// <returns>Returns a listing string to save to disk.</returns>
         private string GetListing()
         {
-            string listing = string.Empty;
+            StringBuilder listing = new StringBuilder();
 
             foreach(SourceLine line in ProcessedLines)
             {
                 if (line.Instruction.Equals(".end", Options.StringComparison))
                     break;
 
-                listing += lineDisassembler_.DisassembleLine(line);
+                listing.Append(lineDisassembler_.DisassembleLine(line));
             }
-            if (listing.EndsWith(Environment.NewLine))
-                listing = listing.Substring(0, listing.Length - 2);
+            if (listing.ToString().EndsWith(Environment.NewLine))
+                return listing.ToString().Substring(0, listing.Length - 2);
 
-            return listing;
+            return listing.ToString();
         }
 
         /// <summary>
