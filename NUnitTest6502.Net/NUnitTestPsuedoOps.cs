@@ -276,6 +276,7 @@ namespace NUnitTest6502.Net
             line.Operand = line.Operand + "$80";
             Assert.Throws<ExpressionEvaluator.ExpressionException>(() =>
                 TestInstruction(line, 0, null, false));
+            test_.Output.Reset();
 
             line.Operand = string.Format("42, ?, ?, \"{0}\", $80", teststring);
             TestInstruction(line, 0, null, false);
@@ -324,6 +325,7 @@ namespace NUnitTest6502.Net
 
             line.Operand = string.Empty;
             Assert.Throws<InvalidOperationException>(() => TestInstruction(line, 0, null, false));
+            test_.Output.Reset();
 
             line.Operand = "10, $ea, $20";
             TestInstruction(line, 0, null, false);
@@ -361,7 +363,8 @@ namespace NUnitTest6502.Net
 
             line.Operand = string.Empty;
             Assert.Throws<InvalidOperationException>(() => TestInstruction(line, 0, null, false));
-            
+            test_.Output.Reset();
+
             line.Operand = "$100, $10, $02";
             TestInstruction(line, 0, null, false);
         }
@@ -388,6 +391,48 @@ namespace NUnitTest6502.Net
 
             line.Operand = string.Empty;
             Assert.Throws<InvalidOperationException>(() => TestInstruction(line, 0, null, false));
+            test_.Output.Reset();
+        }
+
+        [Test]
+        public void TestSyntaxErrors()
+        {
+            SourceLine line = new SourceLine();
+            line.Instruction = ".byte";
+            line.Operand = "3,";
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, false));
+
+            line.Operand = "3,,2";
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, false));
+            test_.Output.Reset();
+
+            line.Operand = "pow(3,2)";
+            TestInstruction(line, 0x0001, new byte[] { 0x09 });
+
+            line.Instruction = ".enc";
+            line.Operand = "ascii";
+            TestInstruction(line, 0, null, false);
+
+            line.Instruction = ".char";
+            line.Operand = "%34";
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, false));
+            test_.Output.Reset();
+
+            line.Operand = "256%34";
+            TestInstruction(line, 0x0001, new byte[] { 0x12 });
+
+            line.Operand = "%0101";
+            TestInstruction(line, 0x0001, new byte[] { 0x05 });
+
+            line.Operand = "'''";
+            TestInstruction(line, 0x0001, new byte[] { 0x27 });
+
+            line.Operand = "-?";
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, false));
+            test_.Output.Reset();
+
+            line.Operand = "-1,?";
+            TestInstruction(line, 0x0002, new byte[] { 0xff });
         }
     }
 }

@@ -1173,5 +1173,77 @@ namespace NUnitTest6502.Net
         {
             TestImplied("tya", 0x98);
         }
+
+        [Test]
+        public void TestSyntaxErrors()
+        {
+            SourceLine line = new SourceLine();
+            line.Instruction = "lda";
+            line.Operand = "# 34";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "($34)";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "($34),y";
+            TestInstruction(line, 0x0002, new byte[] { 0xb1, 0x34 }, "lda ($34),y");
+
+            line.Operand = "#(34)";
+            TestInstruction(line, 0x0002, new byte[] { 0xa9, 0x22 }, "lda #$22");
+
+            line.Instruction = "tyx";
+            line.Operand = string.Empty;
+
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Instruction = "lda";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "$10000";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "$1000|$100";
+            TestInstruction(line, 0x0003, new byte[] { 0xad, 0x00, 0x11 }, "lda $1100");
+
+            line.Operand = "3<34";
+            TestInstruction(line, 0x0002, new byte[] { 0xa5, 0x01 }, "lda $01");
+
+            line.Operand = "#256";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "($1234),y";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "( $12 ,x)";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "($12,x)";
+            TestInstruction(line, 0x0002, new byte[] { 0xa1, 0x12 }, "lda ($12,x)");
+
+            line.Instruction = "jmp";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "($12)";
+            TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x12, 0x00 }, "jmp ($0012)");
+
+            line.Operand = "(65535+1)";
+            TestInstruction(line, 0, null, string.Empty, false);
+
+            line.Operand = "(65535)";
+            TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");
+
+            line.Operand = "()";
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, string.Empty, false));
+
+            line.Operand = "0xffd2"; // oops wrong architecture!
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, string.Empty, false));
+            test_.Output.Reset();
+
+            line.Operand = "pow(2,4)";
+            TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x10, 0x00 }, "jmp $0010");
+
+            line.Operand = "2**4";
+            TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x10, 0x00 }, "jmp $0010");
+        }
     }
 }
