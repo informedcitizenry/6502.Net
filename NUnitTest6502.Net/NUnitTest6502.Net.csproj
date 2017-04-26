@@ -53,8 +53,11 @@
   <ItemGroup>
     <Compile Include="NUnitTest1.cs" />
     <Compile Include="NUnitTestAsm6502.cs" />
+    <Compile Include="NUnitTestCompilation.cs" />
+    <Compile Include="NUnitTestEvaluator.cs" />
     <Compile Include="NUnitTestPsuedoOps.cs" />
     <Compile Include="NUnitTestDisasm6502.cs" />
+    <Compile Include="NUnitTestSourceLine.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
