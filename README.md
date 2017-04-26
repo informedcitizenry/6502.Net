@@ -4,7 +4,7 @@
 
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 and related CPU architectures. It is written for .Net (Version 4.5.1) and supports all of the published (legal) instructions of 6502-based CPUs. The MOS 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. 
 
-## Copyright and Licensing
+## Legal
 
 * 6502.Net (c) 2017 Nate Burnett
 * mxParser, a [powerful math expression parser](http://mathparser.org/) (c) 2010-2017 Mariusz Gromada
