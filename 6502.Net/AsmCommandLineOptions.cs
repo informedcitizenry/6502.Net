@@ -100,6 +100,16 @@ namespace Asm6502.Net
             return printVersion;
         }
 
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets the argument string array passed.
+        /// </summary>
+        public string[] Arguments { get; private set; }
+        
+        
         /// <summary>
         /// Gets the value determining whether output file should be generated, 
         /// based on the criterion that input files were specified and either
@@ -116,15 +126,6 @@ namespace Asm6502.Net
                      );
             }
         }
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>
-        /// Gets the argument string array passed.
-        /// </summary>
-        public string[] Arguments { get; private set; }
 
         /// <summary>
         /// Gets the read-only list of input filenames.
