@@ -98,7 +98,7 @@ Comments can be added to source code in one of two ways, as single-line trailing
     lda #0      ; 0 = color black
     sta $d020   ; set border color to accumulator
     lda #';'    ; the first semi-colon is a char literal so will be assembled
-    jsr $ffd2   ; not a comment.
+    jsr $ffd2   
 ```
 Block comments span multiple lines, enclosed in `.comment` and `.endcomment` directives. These are useful when you want to exclude unwanted code:
 ```
@@ -1343,7 +1343,7 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
-`Too many argumnets for directive` - More arguments were provided to the directive than expected.
+`Too many arguments for directive` - More arguments were provided to the directive than expected.
 
 `Unable to find binary file` - A directive was given to include a binary file, but the binary file was not found, either due to filesystem error or file not found.
 
