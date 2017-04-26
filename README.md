@@ -28,7 +28,7 @@ Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal
 %1111111111010010 = 65490
               'E' = 69
 ```
-Negative numbers are assembled according to twos-complement rules, with the highest bits set. Binary strings can alternatively be expressed as `.` for `0` and `#` for `1`, which is helpful for laying out pixel data:
+Negative numbers are assembled according to two's complement rules, with the highest bits set. Binary strings can alternatively be expressed as `.` for `0` and `#` for `1`, which is helpful for laying out pixel data:
 ```
     number1     .byte %...###..
                 .byte %..####..
