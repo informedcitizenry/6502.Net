@@ -72,7 +72,7 @@ namespace Asm6502.Net
 
         #region Constants
 
-                /// <summary>
+        /// <summary>
         /// Represents the string indicating the string expression can be evaluated.
         /// </summary>
         public const string EVAL_OKAY = "?OKAY";
@@ -320,18 +320,6 @@ namespace Asm6502.Net
         }
 
         /// <summary>
-        /// Calculate the bitwise complement.
-        /// </summary>
-        /// <param name="match">The Regex Match finding the bitwise NOT.</param>
-        /// <returns>The complement as a text string.</returns>
-        private string ConvertComplements(Match match)
-        {
-            var valstring = GetRVal(match.Groups[1].Value, string.Empty);
-            Int64 val = Eval(valstring.Item1);
-            return "(" + (~val).ToString() + ")" + valstring.Item2;
-        }
-
-        /// <summary>
         /// Get the RValue of an expression post-first parenthetical group.
         /// </summary>
         /// <param name="rval">The string to evaluate.</param>
@@ -456,22 +444,19 @@ namespace Asm6502.Net
 
             expression = Regex.Replace(expression, mod_pattern, m => "#");
 
-            // Convert unary binary NOT (~n) to binary XOR (n|<mask>) since the parser doesn't support unary operations
-            expression = Regex.Replace(expression, "~", "@~");//not_pattern, ConvertComplements,
-                //IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
-
+            // massage bitwise operators
+            expression = Regex.Replace(expression, "~", "@~");
             expression = Regex.Replace(expression, @"\^", "@^");
             expression = Regex.Replace(expression, "&", "@&");
             expression = Regex.Replace(expression, @"\|", "@|");
+            expression = Regex.Replace(expression, "<<", "@<<");
+            expression = Regex.Replace(expression, ">>", "@>>");
 
-            // convert pow ** operator to single-char ; operator
-            expression = Regex.Replace(expression, @"\*\*", "^");//";");
+            // convert pow ** operator to single-char ^ operator
+            expression = Regex.Replace(expression, @"\*\*", "^");
 
-            // convert shift operations to single-char {,} operators
-            expression = Regex.Replace(expression, "<<", "@<<");//"{");
-            expression = Regex.Replace(expression, ">>", "@>>");//"}");
-
-            // convert functions (but not their arguments) to lowercase
+            // convert functions (but not their arguments) to lowercase if we
+            // are ignoring case
             if (IgnoreCase)
                 expression = Regex.Replace(expression, func_pattern, m => m.Groups[1].Value.ToLower() + "(" + m.Groups[2].Value + ")", RegexOptions.IgnoreCase);
 

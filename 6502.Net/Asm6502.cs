@@ -593,15 +593,6 @@ namespace Asm6502.Net
                 return 0;
             }
             return Controller.Evaluator.Eval(components.Item1).Size() + 1;
-            
-            // make sure operand is byte-sized and not word-sized despite format
-            //if (components.Item2.Contains("x4"))
-            //{
-            //    Int64 val = Controller.Evaluator.Eval(components.Item1);
-            //    if (val.Size() == 1)
-            //        return 2;
-            //}
-            //return components.Item2.Contains("x2") ? 2 : 3;
         }
 
         /// <summary>
