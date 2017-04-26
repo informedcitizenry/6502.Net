@@ -501,7 +501,7 @@ namespace Asm6502.Net
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.UnknownInstruction);
                 return null;
             }
-            if (size > 3 || (size == 3 && fmt.Contains("x2")))
+            if (operval.Size() > 2 || ((size == 3 || operval.Size() == 2) && fmt.Contains("x2")))
             {
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, operval.ToString());
                 return null;
