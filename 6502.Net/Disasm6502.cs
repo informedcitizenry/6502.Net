@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -42,17 +42,6 @@ namespace Asm6502.Net
         public Disasm6502(IAssemblyController controller)
             : base(controller)
         {
-            Reserved.Types.Add("Directives", new HashSet<string>(new string[]
-                {
-                    ".pron", ".proff"
-                }));
-
-            Reserved.Types.Add("SkipOnVerbose", new HashSet<string>(new string[]
-                {
-                    ".eor", ".error", ".cerror", ".cwarn", ".relocate", ".pseudopc", 
-                    ".realpc", ".endrelocate", ".warn",  ".end", ".equ"
-                }));
-
             PrintingOn = true;
         }
 
@@ -232,22 +221,6 @@ namespace Asm6502.Net
         /// </summary>
         public bool PrintingOn { get; private set; }
 
-        /// <summary>
-        /// Gets or sets the set of instructions the disassembler
-        /// will skip if verbose flag is not set in the controller options.
-        /// </summary>
-        public HashSet<string> SkipOnVerbose
-        {
-            get
-            {
-                return Reserved.Types["SkipOnVerbose"];
-
-            }
-            set
-            {
-                Reserved.Types["SkipOnVerbose"] = value;
-            }
-        }
         #endregion
     }
 }
