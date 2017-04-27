@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,8 +20,6 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace Asm6502.Net
 {
