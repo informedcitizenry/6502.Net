@@ -328,6 +328,11 @@ namespace Asm6502.Net
                     "asl", "lsr", "rol", "ror"
                 }));
 
+            Reserved.Types.Add("Accumulator", new HashSet<string>(new string[]
+                {
+                    "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
+                }));
+
             Reserved.Types.Add("Jumps", new HashSet<string>(new string[]
                 {
                     "jmp", "jsr"
@@ -399,7 +404,12 @@ namespace Asm6502.Net
             }
 
             long val = Controller.Evaluator.Eval(operand);
-            opfmt = "${0:x" + val.Size() * 2 + "}" + post;
+
+            if (Reserved.IsOneOf("Jumps", line.Instruction) || 
+                (post.Equals(",y") && Reserved.IsOneOf("Accumulator", line.Instruction)))
+                opfmt = "${0:x4}" + post;
+            else
+                opfmt = "${0:x" + val.Size() * 2 + "}" + post;
 
             return new Tuple<string, string>(operand, opfmt);
         }
@@ -465,7 +475,7 @@ namespace Asm6502.Net
                     return null;
                 }
             }
-           
+
             string fmt = opcodeFormats_.FirstOrDefault(
                 delegate(string op)
                 {
@@ -475,28 +485,13 @@ namespace Asm6502.Net
                         return op.Equals(instr, Controller.Options.StringComparison);
                     return op.Equals(instr + " " + opfmt, Controller.Options.StringComparison);
                 });
-            
+
             if (string.IsNullOrEmpty(fmt))
             {
-                // if not one byte try two
-                if (opfmt.Contains("x2"))
-                {
-                    opfmt = opfmt.Replace("x2", "x4");
-                    fmt = opcodeFormats_.FirstOrDefault(
-                            delegate(string op)
-                            {
-                                if (string.IsNullOrEmpty(op))
-                                    return false;
-                                return op.Equals(instr + " " + opfmt, Controller.Options.StringComparison);
-                            });
-                    size = 3;
-                }
-                if (string.IsNullOrEmpty(fmt))
-                {
-                    Controller.Log.LogEntry(line, Resources.ErrorStrings.UnknownInstruction, line.Instruction);
-                    return null;
-                }
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.UnknownInstruction, line.Instruction);
+                return null;
             }
+           
             int opcode = opcodeFormats_.ToList().IndexOf(fmt.ToLower());
             if (opcode == -1) // just in case??
             {

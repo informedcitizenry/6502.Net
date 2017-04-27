@@ -195,26 +195,20 @@ namespace Asm6502.Net
                     sourcestr = string.Empty;
                 sb.Append(DisassembleFileLine(line));
             }
-
-
             sb.AppendFormat("{0,-7}", DisassembleAddress(line));
 
             string asm = DisassembleAsm(line, sourcestr);
-
             if (asm.Length > 24)
             {
                 sb.Append(asm);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
-            {
-                sb.AppendFormat("{0,-29}{1,-10}", asm, sourcestr).AppendLine();
             }
             else
             {
-                sb.AppendFormat("{0,-13}{1,-16}{2,-10}", asm, line.Disassembly, sourcestr)
-                  .AppendLine();
+                if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
+                    sb.AppendFormat("{0,-29}{1,-10}", asm, sourcestr).AppendLine();
+                else
+                    sb.AppendFormat("{0,-13}{1,-16}{2,-10}", asm, line.Disassembly, sourcestr)
+                      .AppendLine();
             }
         }
 
