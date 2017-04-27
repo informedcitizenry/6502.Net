@@ -50,11 +50,5 @@ namespace Asm6502.Net
         /// Gets a flag indicating if printing is on.
         /// </summary>
         bool PrintingOn { get; }
-
-        /// <summary>
-        /// Gets or sets the set of directives to skip if 
-        /// verbose option is not set.
-        /// </summary>
-        HashSet<string> SkipOnVerbose { get; set; }
     }
 }
