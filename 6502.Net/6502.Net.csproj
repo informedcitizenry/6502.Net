@@ -72,7 +72,6 @@
     <Compile Include="IEvaluator.cs" />
     <Compile Include="ILineAssembler.cs" />
     <Compile Include="ILineDisassembler.cs" />
-    <Compile Include="NullWriter.cs" />
     <Compile Include="Preprocessor.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
