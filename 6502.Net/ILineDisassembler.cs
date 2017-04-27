@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Asm6502.Net
 {
@@ -31,11 +32,19 @@ namespace Asm6502.Net
     public interface ILineDisassembler
     {
         /// <summary>
-        /// Disassemble a line of 6502-source.
+        /// Disassemble a line of 6502 source.
         /// </summary>
-        /// <param name="line">The SourceLine</param>
+        /// <param name="line">The SourceLine.</param>
         /// <returns>A string representation of the source.</returns>
         string DisassembleLine(SourceLine line);
+
+        /// <summary>
+        /// Disassemble a line of 6502 source to a supplied 
+        /// System.Text.StringBuilder.
+        /// </summary>
+        /// <param name="line">The SourceLine to disassemble.</param>
+        /// <param name="sb">A System.Text.StringBuilder to output disassembly.</param>
+        void DisassembleLine(SourceLine line, StringBuilder sb);
 
         /// <summary>
         /// Gets a flag indicating if printing is on.

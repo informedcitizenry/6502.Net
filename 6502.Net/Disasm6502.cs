@@ -114,9 +114,9 @@ namespace Asm6502.Net
         /// <param name="line">The SourceLine</param>
         /// <returns>A string representation of the hex bytes of
         /// the source assembly.</returns>
-        private string DisassembleAsm(SourceLine line)
+        private string DisassembleAsm(SourceLine line, string source)
         {
-            if (line.Assembly.Count == 0)
+            if (line.Assembly.Count == 0 || Controller.Options.NoAssembly)
                 return string.Empty;
 
             StringBuilder sb = new StringBuilder();
@@ -125,8 +125,7 @@ namespace Asm6502.Net
             if (sb.Length > 24)
             {
                 int pc = line.PC;
-                string source = line.SourceString;
-
+                
                 var subdisasms = sb.ToString().SplitByLength(24).ToList();
                 sb.Clear();
 
@@ -151,14 +150,13 @@ namespace Asm6502.Net
         }
 
         /// <summary>
-        /// Disassemble a line of 6502-source.
+        /// Disassemble a line of 6502 source into a supplied 
+        /// System.Text.StringBuilder object.
         /// </summary>
-        /// <param name="line">The SourceLine</param>
-        /// <returns>A string representation of the source.</returns>
-        public string DisassembleLine(SourceLine line)
+        /// <param name="line">The SourceLine to disassemble.</param>
+        /// <param name="sb">The System.Texxt.StringBuilder to output disassembly.</param>
+        public void DisassembleLine(SourceLine line, StringBuilder sb)
         {
-            string listing = string.Empty;
-
             if (!line.DoNotAssemble)
             {
                 if (line.Instruction.Equals(".pron", Controller.Options.StringComparison))
@@ -167,10 +165,8 @@ namespace Asm6502.Net
                     PrintingOn = false;
             }
             if (!PrintingOn)
-                return string.Empty;// printing has been suppressed
+                return;// printing has been suppressed
 
-            StringBuilder sb = new StringBuilder();
-            
             string sourcestr = line.SourceString;
 
             if (!Controller.Options.VerboseList)
@@ -178,31 +174,41 @@ namespace Asm6502.Net
                 if (line.DoNotAssemble)
                 {
                     if (line.IsDefinition && string.IsNullOrEmpty(line.Label))
-                        return string.Empty; 
+                        return;
                     sourcestr = line.Label;
+                }
+                else if (Controller.Options.NoSource)
+                {
+                    sourcestr = string.Empty;
                 }
                 if (string.IsNullOrEmpty(line.Label) &&
                     (Reserved.IsReserved(line.Instruction)))
-                    return string.Empty; // skip directives (e.g., .if blocks, etc.) and anonymous blocks
+                    return; // skip directives (e.g., .if blocks, etc.) and anonymous blocks
                 else if (string.IsNullOrWhiteSpace(line.Label + line.Instruction))
-                    return string.Empty;
+                    return;
             }
             else
             {
                 if (string.IsNullOrEmpty(sourcestr))
                     sourcestr = line.Instruction;
+                else if (Controller.Options.NoSource)
+                    sourcestr = string.Empty;
                 sb.Append(DisassembleFileLine(line));
             }
-            
-            sb.AppendFormat("{0,-7}",DisassembleAddress(line));
-           
-            string asm = DisassembleAsm(line);
-            
-            if (asm.Length > 24)
-                return sb.Append(asm).ToString();
 
-            
-            if (string.IsNullOrEmpty(line.Disassembly))
+
+            sb.AppendFormat("{0,-7}", DisassembleAddress(line));
+
+            string asm = DisassembleAsm(line, sourcestr);
+
+            if (asm.Length > 24)
+            {
+                sb.Append(asm);
+                return;
+            }
+
+
+            if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
             {
                 sb.AppendFormat("{0,-29}{1,-10}", asm, sourcestr).AppendLine();
             }
@@ -211,6 +217,17 @@ namespace Asm6502.Net
                 sb.AppendFormat("{0,-13}{1,-16}{2,-10}", asm, line.Disassembly, sourcestr)
                   .AppendLine();
             }
+        }
+
+        /// <summary>
+        /// Disassemble a line of 6502-source.
+        /// </summary>
+        /// <param name="line">The SourceLine</param>
+        /// <returns>A string representation of the source.</returns>
+        public string DisassembleLine(SourceLine line)
+        {
+            StringBuilder sb = new StringBuilder();
+            DisassembleLine(line, sb);
             return sb.ToString();
         }
         #endregion

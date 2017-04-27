@@ -421,19 +421,19 @@ namespace Asm6502.Net
         /// <returns>A string containing all label definitions.</returns>
         private string GetLabels()
         {
-            string listing = string.Empty;
+            StringBuilder listing = new StringBuilder();
             Labels.ToList().ForEach(delegate(KeyValuePair<string, Label> label)
             {
                 var labelname = Regex.Replace(label.Key, @"!anon[0-9]+", "{anonymous}");
                 var maxlen = labelname.Length > 30 ? 30 : labelname.Length;
                 if (maxlen < 0) maxlen++;
                 labelname = labelname.Substring(labelname.Length - maxlen, maxlen);
-                listing += string.Format("{0,-30} = ${1,-4:x" + label.Value.Size*2 + "} ({1}){2}", 
-                    labelname, 
-                    label.Value.Value,
-                    Environment.NewLine);
+                listing.AppendFormat("{0,-30} = ${1,-4:x" + label.Value.Size * 2 + "} ({1}){2}",
+                    labelname,
+                    label.Value.Value)
+                    .AppendLine();
             });
-            return listing;
+            return listing.ToString();
         }
 
         /// <summary>
@@ -493,7 +493,7 @@ namespace Asm6502.Net
                 if (line.Instruction.Equals(".end", Options.StringComparison))
                     break;
 
-                listing.Append(lineDisassembler_.DisassembleLine(line));
+                lineDisassembler_.DisassembleLine(line, listing);
             }
             if (listing.ToString().EndsWith(Environment.NewLine))
                 return listing.ToString().Substring(0, listing.Length - 2);

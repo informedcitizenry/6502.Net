@@ -170,11 +170,15 @@ namespace Asm6502.Net
         public List<string> CommaSeparateOperand()
         {
             List<string> csv = new List<string>();
+
+            if (string.IsNullOrEmpty(Operand))
+                return csv;
+
             bool double_enclosed = false;
             bool single_enclosed = false;
             bool paren_enclosed = false;
 
-            StringBuilder sb = new System.Text.StringBuilder();
+            StringBuilder sb = new StringBuilder();
             
             for (int i = 0; i < Operand.Length; i++)
             {
