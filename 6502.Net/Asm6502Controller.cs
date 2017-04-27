@@ -684,7 +684,8 @@ namespace Asm6502.Net
                     }
                 }
             }
-            Console.WriteLine("Passes completed: {0}", passes);
+            if (!Controller.Options.Quiet)
+                Console.WriteLine("Passes completed: {0}", passes);
         }
 
         /// <summary>

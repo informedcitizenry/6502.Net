@@ -614,7 +614,8 @@ namespace Asm6502.Net
         {
             if (File.Exists(file))
             {
-                Console.WriteLine("Processing input file " + file + "...");
+                if (Controller.Options.Quiet == false)
+                    Console.WriteLine("Processing input file " + file + "...");
                 int currentline = 1;
                 List<SourceLine> sourcelines = new List<SourceLine>();
                 using (StreamReader reader = new StreamReader(File.Open(file, FileMode.Open)))

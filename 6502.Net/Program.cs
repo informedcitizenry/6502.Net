@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,13 +27,15 @@ namespace Asm6502.Net
     {
         static void Main(string[] args)
         {
+            IAssemblyController asm = new Asm6502Controller();
             try
             {
-                IAssemblyController asm = new Asm6502Controller(); asm.Assemble(args);
+                asm.Assemble(args);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                if (!asm.Options.Quiet)
+                    Console.WriteLine(e.Message);
             }
         }
     }
