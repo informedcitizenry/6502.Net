@@ -1,0 +1,1 @@
+<Playlist Version="1.0"><Add Test="NUnitTest6502.Net.CompilationTest.TestAddUninitialized" /><Add Test="NUnitTest6502.Net.CompilationTest.TestLittleEndian" /><Add Test="NUnitTest6502.Net.CompilationTest.TestLogicalRelocation" /><Add Test="NUnitTest6502.Net.CompilationTest.TestProgramStart" /></Playlist>

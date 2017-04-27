@@ -406,6 +406,12 @@ namespace NUnitTest6502.Net
         }
 
         [Test]
+        public void TestClv()
+        {
+            TestImplied("clv", 0xb8);
+        }
+
+        [Test]
         public void TestCmp()
         {
             /*
