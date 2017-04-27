@@ -97,14 +97,14 @@ namespace Asm6502.Net
                     value = line.PC;
                 else
                     value = Controller.Evaluator.Eval(line.Operand);
-                return string.Format("=${0:x}  ", value);
+                return string.Format("=${0:x}", value);
             }
             else
             {
                 if (line.Instruction.StartsWith("."))
-                    return string.Format(">{0:x4}  ", line.PC);
+                    return string.Format(">{0:x4}", line.PC);
                 else
-                    return string.Format(".{0:x4}  ", line.PC);
+                    return string.Format(".{0:x4}", line.PC);
             }
         }
 
