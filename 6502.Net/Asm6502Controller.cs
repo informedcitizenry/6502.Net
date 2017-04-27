@@ -698,7 +698,7 @@ namespace Asm6502.Net
             bool showVersion = Options.ProcessArgs(args);
 
             if (Options.Quiet)
-                Console.SetOut(new NullWriter());
+                Console.SetOut(TextWriter.Null);
 
             Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 Nate Burnett.");
             if (showVersion)
