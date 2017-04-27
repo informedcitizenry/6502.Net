@@ -306,10 +306,9 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.Types.Add("Mnemonics", new HashSet<string>(new string[]
+            Reserved.Types.Add("Accumulator", new HashSet<string>(new string[]
                 {
-                    "adc","and","asl","bit","cmp","cpx","cpy","dec","eor","inc","lda","ldx","ldy",
-                    "lsr","ora","rol","ror","sbc","sta","stx","sty"
+                    "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
                 }));
 
             Reserved.Types.Add("Branches", new HashSet<string>(new string[]
@@ -328,14 +327,14 @@ namespace Asm6502.Net
                     "asl", "lsr", "rol", "ror"
                 }));
 
-            Reserved.Types.Add("Accumulator", new HashSet<string>(new string[]
-                {
-                    "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
-                }));
-
             Reserved.Types.Add("Jumps", new HashSet<string>(new string[]
                 {
                     "jmp", "jsr"
+                }));
+            Reserved.Types.Add("Mnemonics", new HashSet<string>(new string[]
+                {
+                    "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
+                    "ldy", "lsr", "rol", "ror", "stx", "sty"
                 }));
         }
 
