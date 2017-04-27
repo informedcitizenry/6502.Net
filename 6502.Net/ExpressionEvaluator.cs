@@ -396,7 +396,7 @@ namespace Asm6502.Net
                 });
             }
             // Certain operators are reserved. 
-            if (Regex.IsMatch(expression, "[@#]"))
+            if (Regex.IsMatch(expression, "[\[@#\]]"))
                 throw new ExpressionException(expression);
 
             // convert bin e.g. %0110101
