@@ -39,8 +39,10 @@ namespace Asm6502.Net
         private string labelFile_;
         private string outputFile_;
         private bool cbmheader_;
+        private bool quiet_;
         private bool verbose_;
         private bool werror_;
+        private bool nowarn_;
         private bool casesensitive_;
         private bool noassembly_;
         private bool nosource_;
@@ -63,6 +65,11 @@ namespace Asm6502.Net
             cbmheader_ =
             verbose_ =
             werror_ =
+            nowarn_ = 
+            nodisassembly_ =
+            nosource_ =
+            noassembly_ =
+            quiet_ =
             casesensitive_ = false;
         }
 
@@ -92,6 +99,9 @@ namespace Asm6502.Net
                 syntax.DefineOption("o|output", ref outputFile_, "Output assembly to <arg>");
                 syntax.DefineOption("b|nostart", ref cbmheader_, "No starting address output (CBM PRG format)");
                 syntax.DefineOptionList("D|define", ref defines_, "Assign value to a global symbol/label in <arg>");
+                syntax.DefineOption("q|quiet", ref quiet_, "Assemble in quiet mode (no console messages)");
+                syntax.DefineOption("w|no-warn", ref nowarn_, "Suppress all warnings");
+                syntax.DefineOption("werror", ref werror_, "Treat all warnings as errors");
                 syntax.DefineOption("l|labels", ref labelFile_, "Output label definitions to <arg>");
                 syntax.DefineOption("L|list", ref listingFile_, "Output listing to <arg>");
                 syntax.DefineOption("a|no-assembly", ref noassembly_, "Suppress assembled bytes from assembly listing");
@@ -159,9 +169,27 @@ namespace Asm6502.Net
         public string LabelFile { get { return labelFile_; } }
 
         /// <summary>
+        /// Gets the flag that indicates assembly should be quiet.
+        /// </summary>
+        public bool Quiet { get { return quiet_; } }
+
+        /// <summary>
+        /// Gets the flag that indicates warnings should be suppressed.
+        /// </summary>
+        public bool NoWarnings { get { return nowarn_; } }
+
+        /// <summary>
         /// Gets a flag that treats warnings as errors.
         /// </summary>
-        public bool WarningsAsErrors { get { return werror_; } }
+        public bool WarningsAsErrors 
+        { 
+            get 
+            { 
+                if (!nowarn_) 
+                    return werror_;
+                return false;
+            } 
+        }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 
