@@ -27,6 +27,9 @@ namespace UnitTest6502.Net
             sb.Trim();
             Assert.AreEqual("hello", sb.ToString());
 
+            sb.Length = 10;
+            sb.Replace('\0', ' ');
+            Assert.AreEqual("hello     ", sb.ToString());
         }
 
 
