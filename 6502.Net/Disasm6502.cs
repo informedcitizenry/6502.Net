@@ -207,7 +207,6 @@ namespace Asm6502.Net
                 return;
             }
 
-
             if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
             {
                 sb.AppendFormat("{0,-29}{1,-10}", asm, sourcestr).AppendLine();

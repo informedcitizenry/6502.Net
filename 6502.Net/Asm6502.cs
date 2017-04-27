@@ -338,67 +338,70 @@ namespace Asm6502.Net
 
         #region Methods
 
-        /// <summary>
-        /// Gets the operand's component pieces.
-        /// </summary>
-        /// <param name="operand">The full operand, including 6502-specific assembler elements.</param>
-        /// <returns>A tuple containing both the operand expression and the corresponding operand format.</returns>
-        private Tuple<string, string> GetOperandComponents(string operand)
+        private Tuple<string, string> GetOperandComponents(SourceLine line)
         {
-            if (string.IsNullOrEmpty(operand))
+            if (string.IsNullOrEmpty(line.Operand))
                 return new Tuple<string, string>(string.Empty, string.Empty);
 
-            string opfmt = string.Empty;
-            string oper = operand;
+            if (Reserved.IsOneOf("Implied", line.Instruction) || IsImpliedAccumulator(line))
+                return null;
 
-            if (operand.StartsWith("#"))
+            string opfmt = "${0:x4}";
+            string operand = line.Operand;
+
+            if (Reserved.IsOneOf("Branches", line.Instruction))
+            {
+                return new Tuple<string, string>(operand, opfmt);
+            }
+            
+
+            if (line.Operand.StartsWith("#"))
             {
                 opfmt = "#${0:x2}";
-                oper = operand.Substring(1);
-                return new Tuple<string, string>(oper, opfmt);
+                operand = operand.Substring(1);
+                return new Tuple<string, string>(operand, opfmt);
             }
             else if (operand.StartsWith("("))
             {
                 string firstparen = ExpressionEvaluator.FirstParenGroup(operand, false);
                 if (firstparen == operand)
                 {
-                    oper = operand.TrimStart('(');
+                    operand = line.Operand.TrimStart('(');
                     if (operand.ToLower().EndsWith(",x)"))
                     {
                         opfmt = "(${0:x2},x)";
-                        oper = oper.Substring(0, oper.Length - 3);
+                        operand = operand.Substring(0, operand.Length - 3);
                     }
                     else
                     {
                         opfmt = "(${0:x4})";
-                        oper = oper.TrimEnd(')');
+                        operand = operand.TrimEnd(')');
                     }
-                    return new Tuple<string, string>(oper, opfmt);
+                    return new Tuple<string, string>(operand, opfmt);
                 }
                 else if (firstparen.Length == operand.Length - 2 && operand.ToLower().EndsWith("),y"))
                 {
-                    oper = operand.TrimStart('(').Substring(0, operand.Length - 4);
+                    operand = operand.TrimStart('(').Substring(0, operand.Length - 4);
                     opfmt = "(${0:x2}),y";
-                    return new Tuple<string, string>(oper, opfmt);
+                    return new Tuple<string, string>(operand, opfmt);
                 }
             }
-            
+
+            string post = string.Empty;
             if (operand.ToLower().EndsWith(",x") || operand.ToLower().EndsWith(",y"))
             {
-                oper = operand.Substring(0, operand.Length - 2);
-                if (string.IsNullOrEmpty(oper))
+                post = operand.Substring(operand.Length - 2);
+                operand = operand.Substring(0, operand.Length - 2);
+                if (string.IsNullOrEmpty(operand))
                 {
                     return null;
                 }
-                long val = Controller.Evaluator.Eval(oper);
-                opfmt = "${0:x" + val.Size()*2 + "}" + operand.Substring(operand.Length - 2);
             }
-            else
-            {
-                long val = Controller.Evaluator.Eval(operand);
-                opfmt = "${0:x" + val.Size()*2 + "}";
-            }
-            return new Tuple<string, string>(oper, opfmt);
+
+            long val = Controller.Evaluator.Eval(operand);
+            opfmt = "${0:x" + val.Size() * 2 + "}" + post;
+
+            return new Tuple<string, string>(operand, opfmt);
         }
 
         // it is an allowed convention to include "a" as an operand in 
@@ -438,7 +441,7 @@ namespace Asm6502.Net
                     int impl = opcodeFormats_.ToList().IndexOf(line.Instruction);
                     return new Tuple<int, int, string>(impl, 1, opcodeFormats_[impl]);
                 }
-                Tuple<string, string> components = GetOperandComponents(operand);
+                Tuple<string, string> components = GetOperandComponents(line);
                 if (components == null)
                 {
                     Controller.Log.LogEntry(line);
@@ -461,7 +464,6 @@ namespace Asm6502.Net
                     Controller.Log.LogEntry(line, Resources.ErrorStrings.RelativeBranchOutOfRange, operval.ToString());
                     return null;
                 }
-                opfmt = opfmt.Replace("x2", "x4");
             }
            
             string fmt = opcodeFormats_.FirstOrDefault(
@@ -545,54 +547,12 @@ namespace Asm6502.Net
         /// <returns>Returns the size in bytes of the instruction or directive.</returns>
         public int GetInstructionSize(SourceLine line)
         {
-            // implied mode
-            if (string.IsNullOrEmpty(line.Operand) || Reserved.IsOneOf("Implied", line.Instruction) || IsImpliedAccumulator(line))
+            var components = GetOperandComponents(line);
+            if (components == null || string.IsNullOrEmpty(components.Item2))
                 return 1;
-
-            // relative mode
-            if (Reserved.IsOneOf("Branches", line.Instruction))
-                return 2;
-
-            // immediate mode
-            if (line.Operand.StartsWith("#"))
-                return 2;
-
-            // long jumps
-            if (Reserved.IsOneOf("Jumps", line.Instruction))
+            if (components.Item2.Contains("x4") && !Reserved.IsOneOf("Branches", line.Instruction))
                 return 3;
-
-            if (line.Instruction.ToLower().EndsWith("a"))
-            {
-                if (line.Operand.StartsWith("("))
-                {
-                    if (line.Operand.ToLower().EndsWith(",x)"))
-                    {
-                        return 2; // indexed indirect
-                    }
-                    else if (line.Operand.ToLower().EndsWith("),y"))
-                    {
-                        string subop = line.Operand.Substring(0, line.Operand.Length - 2);
-                        string paren = ExpressionEvaluator.FirstParenGroup(subop, true);
-                        if (paren == subop)
-                            return 2; // indirect indexed
-                    }
-                }
-                // indexed y
-                if (line.Operand.ToLower().EndsWith(",y"))
-                {
-                    // lda xx,y and sta xx,y have no zp-equivalent
-                    return 3;
-                }
-            }
-            // else get the size based on the operand
-            var components = GetOperandComponents(line.Operand);
-
-            if (components == null)
-            {
-                Controller.Log.LogEntry(line);
-                return 0;
-            }
-            return Controller.Evaluator.Eval(components.Item1).Size() + 1;
+            return 2;
         }
 
         /// <summary>
