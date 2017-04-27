@@ -42,7 +42,10 @@ namespace Asm6502.Net
         private bool verbose_;
         private bool werror_;
         private bool casesensitive_;
-        
+        private bool noassembly_;
+        private bool nosource_;
+        private bool nodisassembly_;
+
         #endregion
 
         #region Constructors
@@ -66,7 +69,7 @@ namespace Asm6502.Net
         #endregion
 
         #region Methods
-        
+
         /// <summary>
         /// Process the command-line arguments passed by the end-user.
         /// </summary>
@@ -91,6 +94,9 @@ namespace Asm6502.Net
                 syntax.DefineOptionList("D|define", ref defines_, "Assign value to a global symbol/label in <arg>");
                 syntax.DefineOption("l|labels", ref labelFile_, "Output label definitions to <arg>");
                 syntax.DefineOption("L|list", ref listingFile_, "Output listing to <arg>");
+                syntax.DefineOption("a|no-assembly", ref noassembly_, "Suppress assembled bytes from assembly listing");
+                syntax.DefineOption("d|no-disassembly", ref nodisassembly_, "Suppress disassembly from assembly listing");
+                syntax.DefineOption("s|no-source", ref nosource_, "Suppress original source from assembly listing");
                 syntax.DefineOption("verbose-asm", ref verbose_, "Expand listing to include all directives and comments");
                 syntax.DefineOption("C|case-sensitive", ref casesensitive_, "Treat all symbols as case sensitive");
                 syntax.DefineOption("V|version", ref printVersion, "Print current version");
@@ -108,8 +114,8 @@ namespace Asm6502.Net
         /// Gets the argument string array passed.
         /// </summary>
         public string[] Arguments { get; private set; }
-        
-        
+
+
         /// <summary>
         /// Gets the value determining whether output file should be generated, 
         /// based on the criterion that input files were specified and either
@@ -172,12 +178,12 @@ namespace Asm6502.Net
         /// <summary>
         /// Gets the System.StringComparison, which is based on the case-sensitive flag.
         /// </summary>
-        public StringComparison StringComparison 
-        { 
-            get 
+        public StringComparison StringComparison
+        {
+            get
             {
-                return casesensitive_ ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase; 
-            } 
+                return casesensitive_ ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
+            }
         }
 
         /// <summary>
@@ -207,6 +213,21 @@ namespace Asm6502.Net
         /// program starting address (CBM DOS format)
         /// </summary>
         public bool SuppressCbmHeader { get { return cbmheader_; } }
+
+        /// <summary>
+        /// Gets a flag indicating if assembly listing should suppress original source.
+        /// </summary>
+        public bool NoSource { get { return nosource_; } }
+
+        /// <summary>
+        /// Gets a flag indicating if assembly listing should suppress 6502 disassembly.
+        /// </summary>
+        public bool NoDissasembly { get { return nodisassembly_; } }
+
+        /// <summary>
+        /// Gets a flag indicating if assembly listing should suppress assembly bytes.
+        /// </summary>
+        public bool NoAssembly { get { return noassembly_; } }
 
         #endregion
     }
