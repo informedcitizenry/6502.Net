@@ -684,8 +684,7 @@ namespace Asm6502.Net
                     }
                 }
             }
-            if (!Controller.Options.Quiet)
-                Console.WriteLine("Passes completed: {0}", passes);
+            Console.WriteLine("Passes completed: {0}", passes);
         }
 
         /// <summary>
@@ -698,33 +697,30 @@ namespace Asm6502.Net
 
             bool showVersion = Options.ProcessArgs(args);
 
-            if (!Options.Quiet)
+            if (Options.Quiet)
+                Console.SetOut(new NullWriter());
+
+            Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 Nate Burnett.");
+            if (showVersion)
             {
-                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 Nate Burnett.");
-                if (showVersion)
-                {
-                    Console.WriteLine("Version {0}.{1} Build {2}",
-                    System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
-                    System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor,
-                    System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Build);
-                }
-                else
-                {
-                    Console.WriteLine("Version {0}.{1}",
-                    System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
-                    System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor);
-                    Console.WriteLine();
-                }
+                Console.WriteLine("Version {0}.{1} Build {2}",
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor,
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Build);
+            }
+            else
+            {
+                Console.WriteLine("Version {0}.{1}",
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor);
+                Console.WriteLine();
             }
             
             if (Options.InputFiles.Count == 0)
                 return;
 
-            if (!Options.Quiet)
-            {
-                Console.WriteLine("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
-                Console.WriteLine();
-            }
+            Console.WriteLine("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
+            Console.WriteLine();
 
             Labels = new Dictionary<string, Label>(Options.StringComparar);
 
@@ -851,29 +847,25 @@ namespace Asm6502.Net
                 Console.WriteLine();
                 Log.DumpWarnings();
             }
-
-            if (!Options.Quiet)
+            if (Log.HasErrors == false)
             {
-                if (Log.HasErrors == false)
-                {
-                    Console.WriteLine("\n********************************");
-                    Console.WriteLine("Assembly start: ${0:X4}", Output.ProgramStart);
-                    Console.WriteLine("Assembly end:   ${0:X4}", Output.GetPC());
-                    Console.WriteLine();
-                }
-                else
-                {
-                    Log.DumpErrors();
-                }
+                Console.WriteLine("\n********************************");
+                Console.WriteLine("Assembly start: ${0:X4}", Output.ProgramStart);
+                Console.WriteLine("Assembly end:   ${0:X4}", Output.GetPC());
+                Console.WriteLine();
+            }
+            else
+            {
+                Log.DumpErrors();
+            }
 
-                Console.WriteLine("Number of errors: {0}", Log.ErrorCount);
-                Console.WriteLine("Number of warnings: {0}", Log.WarningCount);
+            Console.WriteLine("Number of errors: {0}", Log.ErrorCount);
+            Console.WriteLine("Number of warnings: {0}", Log.WarningCount);
 
-                if (Log.HasErrors == false)
-                {
-                    Console.WriteLine("*********************************");
-                    Console.WriteLine("Assembly completed successfully.");
-                }
+            if (Log.HasErrors == false)
+            {
+                Console.WriteLine("*********************************");
+                Console.WriteLine("Assembly completed successfully.");
             }
         }
 

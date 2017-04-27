@@ -27,15 +27,13 @@ namespace Asm6502.Net
     {
         static void Main(string[] args)
         {
-            IAssemblyController asm = new Asm6502Controller();
             try
             {
-                asm.Assemble(args);
+                IAssemblyController asm = new Asm6502Controller(); asm.Assemble(args);
             }
             catch (Exception e)
             {
-                if (!asm.Options.Quiet)
-                    Console.WriteLine(e.Message);
+                Console.WriteLine(e.Message);
             }
         }
     }
