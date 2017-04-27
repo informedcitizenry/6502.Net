@@ -1262,6 +1262,42 @@ Some features may be introduced in a future release, such as conditional assembl
 </td></tr>
 </table>
 <table>
+<tr><td><b>Option</b></td><td><code>-a</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--no-assembly</code></td></tr>
+<tr><td><b>Definition</b></td><td>Suppress assembled bytes from assembly listing.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myasm.asm -a -L mylist.asm
+/6502.Net myasm.asm --no-assembly --list=mylist.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-d</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--no-disassembly</code></td></tr>
+<tr><td><b>Definition</b></td><td>Suppress disassembly from assembly listing.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myasm.asm -d -L mylist.asm
+/6502.Net myasm.asm --no-disassembly --list=mylist.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-s</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--no-source</code></td></tr>
+<tr><td><b>Definition</b></td><td>Do not list original source in the assembly listing.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myasm.asm -s -L mylist.asm
+/6502.Net myasm.asm --no-source --list=mylist.asm
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Option</b></td><td><code>--verbose-asm</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Make the assembly listing verbose. If the verbose option is set then all non-assembled lines are included, such as blocks and comment blocks.</td></tr>
