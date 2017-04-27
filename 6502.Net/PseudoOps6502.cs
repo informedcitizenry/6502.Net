@@ -55,9 +55,10 @@ namespace Asm6502.Net
 
             Reserved.Types.Add("PseudoOps", new HashSet<string>(new string[]
                 {
-                    ".addr", ".byte", ".char", ".dint", ".dword", ".enc", ".fill", ".lint", ".long", ".cstring", 
-                    ".pstring", ".lsstring", ".nstring", ".string", ".word", ".binary", 
-                    ".align", ".repeat", ".rta", ".sint"
+                    ".addr", ".align", ".binary", ".byte", ".char", ".cstring",  
+                    ".dint", ".dword", ".enc", ".fill", ".lint", ".long", 
+                    ".lsstring", ".nstring", ".pstring", ".repeat", ".rta",   
+                    ".sint", ".string", ".word"
                 }));
         }
 
