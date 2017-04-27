@@ -94,6 +94,7 @@ namespace NUnitTest6502.Net
                 Assert.AreEqual(pc, test_.Output.GetPC());
                 Assert.IsTrue(test_.Output.GetCompilation().SequenceEqual(expected));
                 Assert.AreEqual(disasm, line.Disassembly);
+                Assert.AreEqual(expected.Count(), asm_.GetInstructionSize(line));
             }
             else
             {
