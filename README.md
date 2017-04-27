@@ -1238,6 +1238,41 @@ Some features may be introduced in a future release, such as conditional assembl
 </td></tr>
 </table>
 <table>
+<tr><td><b>Option</b></td><td><code>-q</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--quiet</code></td></tr>
+<tr><td><b>Definition</b></td><td>Assemble in quiet mode, with no messages sent to console output, including errors and warnings.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net -q myasm.asm
+/6502.Net --quiet myasm.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>-w</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--no-warn</code></td></tr>
+<tr><td><b>Definition</b></td><td>Suppress the display of all warnings.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net -w myasm.asm
+/6502.Net --no-warn myasm.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--werror</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Treat all warnings as errors.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net --werror myasm.asm
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Option</b></td><td><code>-l</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--labels</code></td></tr>
 <tr><td><b>Definition</b></td><td>Dump all label definitions to listing.</td></tr>
