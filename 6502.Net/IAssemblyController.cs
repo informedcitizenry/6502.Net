@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -39,7 +39,7 @@ namespace Asm6502.Net
         void Assemble(string[] args);
 
         /// <summary>
-        /// Gets the command-line arguments passed by the end-user and parses into a type-strong
+        /// Gets the command-line arguments passed by the end-user and parses into a strongly-typed
         /// set of options.
         /// </summary>
         AsmCommandLineOptions Options { get; }
