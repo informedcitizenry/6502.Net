@@ -1,10 +1,9 @@
-﻿using NUnit.Framework;
 using Asm6502.Net;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NUnitTest6502.Net
 {
