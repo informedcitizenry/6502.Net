@@ -211,11 +211,9 @@ namespace Asm6502.Net
                 line = obj as SourceLine;
                 label = GetNearestScope(symbol, line.Scope);
             }
-            if (Labels.ContainsKey(label))//Labels.ContainsKey(label))
+            if (Labels.ContainsKey(label))
             {
                 return evaluator_.Eval(Labels[label]).ToString();
-                
-                //return Labels[label].Value.ToString();
             }
             else
             {
