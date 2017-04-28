@@ -62,8 +62,8 @@ namespace Asm6502.Net
             : base(controller)
         {
             FileRegistry = new HashSet<string>();
-            IsReserved = checkReserved;
-            IsSymbol = checkSymbol;
+            ReservedFunc = checkReserved;
+            SymbolNameFunc = checkSymbol;
             Macros = new Dictionary<string, Macro>();
             Scope = new Stack<string>();
             
@@ -257,7 +257,7 @@ namespace Asm6502.Net
                     if (args.Count > 1)
                     {
                         string label = line.Label;
-                        if (string.IsNullOrEmpty(line.Label) == false && IsSymbol(line.Label) == false)
+                        if (string.IsNullOrEmpty(line.Label) == false && SymbolNameFunc(line.Label) == false)
                         {
                             Controller.Log.LogEntry(line, Resources.ErrorStrings.LabelNotValid, label);
                             continue;
@@ -305,8 +305,8 @@ namespace Asm6502.Net
             var def = source.First();
             if (def.IsComment == false)
             {
-                if (def.Label.StartsWith("_") || IsSymbol(def.Label) == false ||
-                IsReserved(def.Label) || Reserved.IsReserved(def.Label))
+                if (def.Label.StartsWith("_") || SymbolNameFunc(def.Label) == false ||
+                ReservedFunc(def.Label) || Reserved.IsReserved(def.Label))
                 {
                     Controller.Log.LogEntry(def, Resources.ErrorStrings.LabelNotValid, def.Label);
                     return;
@@ -346,7 +346,7 @@ namespace Asm6502.Net
             {
                 if (line.Instruction.Equals(".segment", Controller.Options.StringComparison))
                 {
-                    if (line.Operand.StartsWith("_") || IsSymbol(line.Operand) == false)
+                    if (line.Operand.StartsWith("_") || SymbolNameFunc(line.Operand) == false)
                     {
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Operand);
                         return;
@@ -460,7 +460,7 @@ namespace Asm6502.Net
                     string label = line.Label;
                     if (string.IsNullOrEmpty(label) == false)
                     {
-                        if (label.StartsWith("_") || IsSymbol(label) == false)
+                        if (label.StartsWith("_") || SymbolNameFunc(label) == false)
                         {
                             Controller.Log.LogEntry(line);
                             continue;
@@ -496,7 +496,7 @@ namespace Asm6502.Net
                     }
                     else
                     {
-                        if (IsSymbol(line.Label))
+                        if (SymbolNameFunc(line.Label))
                         {
                             Scope.Push(line.Label);
 
@@ -510,7 +510,7 @@ namespace Asm6502.Net
                 }
                 else
                 {
-                    if (!line.Label.StartsWith("_") && IsSymbol(line.Label))
+                    if (!line.Label.StartsWith("_") && SymbolNameFunc(line.Label))
                     {
                         if (Scope.Count > 0 && Scope.Peek().EndsWith("@"))
                             Scope.Pop();
@@ -534,19 +534,19 @@ namespace Asm6502.Net
                     Scope.Pop();
                 }
 
-                if (IsSymbol(line.Label))
+                if (SymbolNameFunc(line.Label))
                 {
                     string scoped = line.Scope.Replace("@", "");
                     if (line.Label.StartsWith("_"))
                         scoped += "." + line.Label;
-                    if (Controller.Labels.ContainsKey(scoped))
+                    if (/*Controller.Labels.ContainsKey(scoped)*/Controller.Labels.ContainsKey(scoped))
                     {
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.LabelRedefinition, line.Label);
                         continue;
                     }
                     else
                     {
-                        Controller.Labels.Add(scoped, new Label { Size = 2, Value = 0 });
+                        Controller.Labels.Add(scoped, "0");
                     }
                 }
             }
@@ -628,13 +628,13 @@ namespace Asm6502.Net
                             line.Parse(
                                 delegate(string token)
                                 {
-                                    return IsReserved(token) || Reserved.IsReserved(token) ||
+                                    return ReservedFunc(token) || Reserved.IsReserved(token) ||
                                         Regex.IsMatch(token, @"\.[a-zA-Z][a-zA-Z0-9]*") ||
                                         token == "=";
                                 },
                                 delegate(string token)
                                 {
-                                    return IsSymbol(token);
+                                    return SymbolNameFunc(token);
                                 });
                             sourcelines.Add(line);
                         }
@@ -687,14 +687,14 @@ namespace Asm6502.Net
         /// Gets or sets the helper function that will determine if a given token
         /// being processed is a label/symbol.
         /// </summary>
-        private Func<string, bool> IsSymbol { get; set; }
+        private Func<string, bool> SymbolNameFunc { get; set; }
 
         /// <summary>
         /// Gets or sets the helper function that will determine if a given token
         /// being processed is a reserved word, such as an instruction or 
         /// assembler directive.
         /// </summary>
-        private Func<string, bool> IsReserved { get; set; }
+        private Func<string, bool> ReservedFunc { get; set; }
 
         #endregion      
     }

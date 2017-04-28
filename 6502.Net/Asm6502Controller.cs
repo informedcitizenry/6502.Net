@@ -46,6 +46,8 @@ namespace Asm6502.Net
 
         private ILineDisassembler lineDisassembler_;
 
+        private int passes_;
+
         #endregion
 
         #region Constructors
@@ -88,7 +90,7 @@ namespace Asm6502.Net
         #region Methods
 
         /// <summary>
-        /// Checks whether the token is a symbol/label.
+        /// Checks whether the token is a valid symbol/label name.
         /// </summary>
         /// <param name="token">The token to check.</param>
         /// <param name="allowLeadUnderscore">Allow the token to have a leading underscore
@@ -96,7 +98,7 @@ namespace Asm6502.Net
         /// <param name="allowDot">Allow the token to have separating dots for it to be
         /// considered a symbol.</param>
         /// <returns></returns>
-        private bool IsSymbol(string token, bool allowLeadUnderscore = true, bool allowDot = true)
+        private bool IsSymbolName(string token, bool allowLeadUnderscore = true, bool allowDot = true)
         {
             // empty string 
             if (string.IsNullOrEmpty(token))
@@ -211,9 +213,11 @@ namespace Asm6502.Net
                 System.Diagnostics.Debug.Assert(line != null);
                 label = GetNearestScope(symbol, line.Scope);
             }
-            if (Labels.ContainsKey(label))
+            if (Labels.ContainsKey(label))//Labels.ContainsKey(label))
             {
-                return Labels[label].Value.ToString();
+                return evaluator_.Eval(Labels[label]).ToString();
+                
+                //return Labels[label].Value.ToString();
             }
             else
             {
@@ -311,7 +315,7 @@ namespace Asm6502.Net
                 return;
             }
 
-            if (IsSymbol(line.Label) || line.Label == "-" || line.Label == "+")
+            if (IsSymbolName(line.Label) || line.Label == "-" || line.Label == "+")
             {
                 if (string.IsNullOrEmpty(line.Instruction))
                     return;
@@ -422,15 +426,16 @@ namespace Asm6502.Net
         private string GetLabels()
         {
             StringBuilder listing = new StringBuilder();
-            Labels.ToList().ForEach(delegate(KeyValuePair<string, Label> label)
+            Labels.ToList().ForEach(delegate(KeyValuePair<string, string> label)
             {
                 var labelname = Regex.Replace(label.Key, @"!anon[0-9]+", "{anonymous}");
                 var maxlen = labelname.Length > 30 ? 30 : labelname.Length;
                 if (maxlen < 0) maxlen++;
                 labelname = labelname.Substring(labelname.Length - maxlen, maxlen);
-                listing.AppendFormat("{0,-30} = ${1,-4:x" + label.Value.Size * 2 + "} ({1}){2}",
+                var size = Convert.ToInt64(label.Value).Size() * 2;
+                listing.AppendFormat("{0,-30} = ${1,-4:x" + size + "} ({1}){2}",
                     labelname,
-                    label.Value.Value)
+                    label.Value)
                     .AppendLine();
             });
             return listing.ToString();
@@ -542,13 +547,12 @@ namespace Asm6502.Net
             }
             if (string.IsNullOrEmpty(line.Instruction) || line.IsDefinition == true)
             {
-                if (IsSymbol(line.Label))
+                if (IsSymbolName(line.Label))
                 {
                     string scoped = GetNearestScope(line.Label, line.Scope);
-                    if (Labels[scoped].Value != (ushort)line.PC)
+                    if (Labels[scoped] != line.PC.ToString())
                     {
-                        Labels[scoped].Value = (ushort)line.PC;
-                        Labels[scoped].Size = Convert.ToInt64(line.PC).Size();
+                        Labels[scoped] = line.PC.ToString();
                         anotherpass = true;
                     }
                 }
@@ -592,7 +596,7 @@ namespace Asm6502.Net
                         }
                     }
                 }
-                else if (IsSymbol(line.Label, true, false))
+                else if (IsSymbolName(line.Label, true, false))
                 {
                     string label = string.Empty;
 
@@ -608,11 +612,9 @@ namespace Asm6502.Net
                     {
                         intval = evaluator_.Eval(line.Operand);
                     }
-                    
-                    if (Labels[label].Value != Convert.ToUInt16(intval))
+                    if (Labels[label] != intval.ToString())
                     {
-                        Labels[label].Value = Convert.ToUInt16(intval);
-                        Labels[label].Size = intval.Size();
+                        Labels[label] = intval.ToString();
                         anotherpass = true;
                     }
                 }
@@ -633,6 +635,11 @@ namespace Asm6502.Net
                 Log.LogEntry(line, Resources.ErrorStrings.LabelNotDefined, line.Operand);
                 return false;
             }
+            catch (StackOverflowException)
+            {
+                passes_ = 4;
+                return false;
+            }
             catch (Exception)
             {
                 Log.LogEntry(line, Resources.ErrorStrings.None);
@@ -648,10 +655,10 @@ namespace Asm6502.Net
         {
             Output.Reset();
             GetAnonymousLabels();
-            int passes = 0;
+            passes_ = 0;
             bool anotherpass = true;
-            ProcessedLines = ProcessedLines.Select(l => { l.DoNotAssemble = false; return l;}).ToList();
-            
+            ProcessedLines = ProcessedLines.Select(l => { l.DoNotAssemble = false; return l; }).ToList();
+
             while (anotherpass && !Log.HasErrors)
             {
                 anotherpass = false;
@@ -663,28 +670,13 @@ namespace Asm6502.Net
                     anotherpass = FirstPassLine(line);
                 }
                 Output.Reset();
-                passes++;
-                if (passes > 4)
+                passes_++;
+                if (passes_ > 4)
                 {
                     throw new Exception("Too many passes attempted.");
                 }
-                // We are now ready to process any labels defined in the command line
-                foreach(var label in Labels)
-                {
-                    if (label.Value.PreDefined)
-                    {
-                        evaluator_.SymbolLookupObject = null;
-                        var val = evaluator_.Eval(label.Value.Expression);
-                        if (label.Value.Value != val)
-                        {
-                            anotherpass = true;
-                            label.Value.Value = Convert.ToUInt16(val);
-                            label.Value.Size = val.Size();
-                        }
-                    }
-                }
             }
-            Console.WriteLine("Passes completed: {0}", passes);
+            Console.WriteLine("Passes completed: {0}", passes_);
         }
 
         /// <summary>
@@ -715,7 +707,7 @@ namespace Asm6502.Net
                 Console.WriteLine();
             }
 
-            Labels = new Dictionary<string, Label>(Options.StringComparar);
+            Labels = new Dictionary<string, string>(Options.StringComparar);
 
             pseudoOps_ = new PseudoOps6502(this);
             lineAssembler_ = new Asm6502(this);
@@ -738,19 +730,13 @@ namespace Asm6502.Net
                 if (Labels.ContainsKey(def.First()))
                     throw new Exception("Re-definition of label '" + def.First() + "'.");
 
-                Labels.Add(def.First(), new Label
-                {
-                    Value = 0,
-                    Size = 1,
-                    PreDefined = true,
-                    Expression = def.Last()
-                });
+                Labels.Add(def.First(), def.Last());
             }
             List<SourceLine> source = new List<SourceLine>();
 
             Preprocessor processor = new Preprocessor(this,
                                                       r => IsReserved(r),
-                                                      s => IsSymbol(s, true, false));
+                                                      s => IsSymbolName(s, true, false));
             processor.FileRegistry = FileRegistry;
             foreach (var file in Options.InputFiles)
             {
@@ -927,7 +913,7 @@ namespace Asm6502.Net
         /// <summary>
         /// Gets the labels for the controller.
         /// </summary>
-        public IDictionary<string, Label> Labels { get; private set; }
+        public IDictionary<string, string> Labels { get; private set; }
 
         /// <summary>
         /// Gets the evaluator for the controller.

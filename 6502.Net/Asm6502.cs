@@ -421,7 +421,7 @@ namespace Asm6502.Net
                 line.Operand.Equals("a", Controller.Options.StringComparison))
             {
                 string scoped = Controller.GetNearestScope(line.Operand, line.Scope);
-                return !Controller.Labels.ContainsKey(scoped);
+                return !Controller.Labels.ContainsKey(scoped);//!Controller.Labels.ContainsKey(scoped);
             }
             return false;
         }

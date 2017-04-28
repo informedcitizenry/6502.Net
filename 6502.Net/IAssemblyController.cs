@@ -73,7 +73,7 @@ namespace Asm6502.Net
         /// <summary>
         /// Gets the labels for the controller.
         /// </summary>
-        IDictionary<string, Label> Labels { get; }
+        IDictionary<string, string> Labels { get; }
 
         /// <summary>
         /// Gets expression evaluator for the controller.
