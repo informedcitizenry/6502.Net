@@ -715,13 +715,6 @@ namespace Asm6502.Net
                 Console.WriteLine();
             }
 
-            
-            if (Options.InputFiles.Count == 0)
-                return;
-
-            Console.WriteLine("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
-            Console.WriteLine();
-
             Labels = new Dictionary<string, Label>(Options.StringComparar);
 
             pseudoOps_ = new PseudoOps6502(this);
@@ -731,7 +724,10 @@ namespace Asm6502.Net
 
             Reserved.Comparer = Options.StringComparison;
             evaluator_.IgnoreCase = !Options.CaseSensitive;
+        }
 
+        private void Preprocess()
+        {
             foreach (var label in Options.LabelDefines)
             {
                 var def = label.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
@@ -773,9 +769,8 @@ namespace Asm6502.Net
                 ProcessedLines.AddRange(processor.ExpandMacros(source));
 
                 if (Log.HasErrors == false)
-                    processor.DefineScopedSymbols(ProcessedLines);   
+                    processor.DefineScopedSymbols(ProcessedLines);
             }
-            
         }
 
         #region IAssemblyController.Methods
@@ -825,6 +820,14 @@ namespace Asm6502.Net
         {
             Init(args);
 
+            if (Options.InputFiles.Count == 0)
+                return;
+
+            Console.WriteLine("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
+            Console.WriteLine();
+
+            Preprocess();
+            
             if (Log.HasErrors == false)
             {
                 FirstPass();
