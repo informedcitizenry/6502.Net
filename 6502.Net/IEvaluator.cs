@@ -33,13 +33,11 @@ namespace Asm6502.Net
         /// </summary>
         /// <param name="expression">The string representation of the mathematical expression.</param>
         /// <returns>The result of the expression evaluation.</returns>
-        /// <exception cref="ExpressionEvaluator.ExpressionException">ExpressionEvaluator.ExpressionException</exception>
         long Eval(string expression);
 
         /// </summary>
         /// <param name="condition">The string representation of the conditional expression.</param>
         /// <returns>Returns true, if the expression is true, false otherwise.</returns>
-        /// <exception cref="ExpressionEvaluator.ExpressionException">ExpressionEvaluator.ExpressionException</exception>
         bool EvalCondition(string expression);
 
         /// <summary>
@@ -51,7 +49,7 @@ namespace Asm6502.Net
         bool CanEvaluate(string expression);
 
         /// <summary>
-        /// Gets or sets the char-encoding transform, e.g. ASCII to Commodore PETSCII.
+        /// Gets or sets a custom char-encoding transform.
         /// </summary>
         Func<byte, byte> CharEncoding { get; set; }
     }
