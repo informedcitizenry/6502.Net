@@ -81,7 +81,6 @@
     <Compile Include="PseudoOps6502.cs" />
     <Compile Include="Asm6502Controller.cs" />
     <Compile Include="IAssemblyController.cs" />
-    <Compile Include="Label.cs" />
     <Compile Include="AssemblerBase.cs" />
     <Compile Include="BinaryFile.cs" />
     <Compile Include="Compilation.cs" />
