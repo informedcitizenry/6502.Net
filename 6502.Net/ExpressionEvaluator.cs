@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
+// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -198,10 +198,8 @@ namespace Asm6502.Net
                 string pre_eval = PreEvaluate(expression);
 
                 evalImpl_.setExpressionString(pre_eval);
-                //setImplExpression(pre_eval);
-
+                
                 var eval = evalImpl_.calculate();
-
                 if (eval == Double.NaN)
                     throw new ExpressionException(expression);
 

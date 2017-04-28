@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2017 Nate Burnett <informedcitizenry@gmail.com>
+// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -454,7 +454,7 @@ namespace Asm6502.Net
                 using (StreamWriter writer = new StreamWriter(Options.ListingFile, false))
                 {
                     string argstring = string.Join(" ", Options.Arguments);
-                    writer.WriteLine(";; 6502.Net V.{0}.{1}, simple .Net 6502 Cross-Assembler (C) Copyright 2017 Nate Burnett.",
+                    writer.WriteLine(";; 6502.Net V.{0}.{1}, simple .Net 6502 Cross-Assembler (C) Copyright 2017 informedcitizenry.",
                         System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
                         System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor);
                     writer.WriteLine(";; 6502.Net {0}", argstring);
@@ -697,24 +697,24 @@ namespace Asm6502.Net
 
             bool showVersion = Options.ProcessArgs(args);
 
-            if (Options.Quiet)
-                Console.SetOut(TextWriter.Null);
-
-            Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 Nate Burnett.");
             if (showVersion)
             {
+                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 informedcitizenry.");
                 Console.WriteLine("Version {0}.{1} Build {2}",
                 System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
                 System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor,
                 System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Build);
             }
-            else
+
+            if (Options.Quiet)
+                Console.SetOut(TextWriter.Null);
+
+            if (!showVersion)
             {
-                Console.WriteLine("Version {0}.{1}",
-                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
-                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor);
+                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 informedcitizenry.");
                 Console.WriteLine();
             }
+
             
             if (Options.InputFiles.Count == 0)
                 return;
