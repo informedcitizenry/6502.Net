@@ -11,7 +11,7 @@ using System.Resources;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("6502.Net")]
-[assembly: AssemblyCopyright("Copyright © Nate Burnett")]
+[assembly: AssemblyCopyright("Copyright © informedcitizenry")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
