@@ -23,7 +23,7 @@ namespace NUnitTest6502.Net
 
             Evaluator = new ExpressionEvaluator(true);
 
-            Labels = new Dictionary<string, Label>();
+            Labels = new Dictionary<string, string>();
         }
 
         public void Assemble(string[] args)
@@ -59,7 +59,7 @@ namespace NUnitTest6502.Net
             private set;
         }
 
-        public IDictionary<string, Label> Labels
+        public IDictionary<string, string> Labels
         {
             get;
             private set;
