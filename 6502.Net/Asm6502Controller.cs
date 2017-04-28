@@ -185,7 +185,6 @@ namespace Asm6502.Net
         private string ConvertAnonymous(string symbol, object obj)
         {
             SourceLine line = obj as SourceLine;
-            System.Diagnostics.Debug.Assert(line != null);
             string trimmed = symbol.Trim(new char[] { '(', ')' });
             int addr = GetAnonymousAddress(line, trimmed);
             if (addr < 0)
@@ -210,7 +209,6 @@ namespace Asm6502.Net
             if (obj != null)
             {
                 line = obj as SourceLine;
-                System.Diagnostics.Debug.Assert(line != null);
                 label = GetNearestScope(symbol, line.Scope);
             }
             if (Labels.ContainsKey(label))//Labels.ContainsKey(label))
