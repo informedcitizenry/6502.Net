@@ -250,7 +250,7 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to General syntax error..
+        ///   Looks up a localized string similar to General syntax error.
         /// </summary>
         internal static string None {
             get {

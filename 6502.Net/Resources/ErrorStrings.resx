@@ -172,7 +172,7 @@
     <value>Most significant bit should not be set '{0}'</value>
   </data>
   <data name="None" xml:space="preserve">
-    <value>General syntax error.</value>
+    <value>General syntax error</value>
   </data>
   <data name="PCOverflow" xml:space="preserve">
     <value>Program Counter overflow '{0}'</value>
