@@ -7,7 +7,7 @@ The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 
 ## Legal
 
 * 6502.Net (c) 2017 informedcitizenry
-* mxParser, a [powerful math expression parser](http://mathparser.org/) (c) 2010-2017 Mariusz Gromada
+* mXparser, a [powerful math expression parser](http://mathparser.org/) (c) 2010-2017 Mariusz Gromada
 * System.CommandLine, a [command-line argument parser](https://github.com/dotnet/corefxlab/tree/master/src/System.CommandLine) (c) Microsoft Corporation
 
 See LICENSE and LICENSE_third_party for licensing information.
