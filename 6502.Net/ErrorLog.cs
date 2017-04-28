@@ -122,7 +122,7 @@ namespace Asm6502.Net
             }
 
             errors_.Add(new Tuple<string, bool>(
-                string.Format(formatted, filename, linenumber, message),
+                string.Format(formatted, filename, linenumber, message.Trim()),
                 isError));
         }
 
