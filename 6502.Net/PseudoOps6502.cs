@@ -243,7 +243,7 @@ namespace Asm6502.Net
             else
             {
                 if (line.Instruction.ToLower().Equals(".repeat"))
-                    Controller.Log.LogEntry(line);
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.None);
                 else if (line.Instruction.ToLower().Equals(".align"))
                     Controller.Output.Align(Convert.ToUInt16(alignval));
                 else

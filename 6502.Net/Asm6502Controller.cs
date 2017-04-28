@@ -296,7 +296,7 @@ namespace Asm6502.Net
             if (string.IsNullOrEmpty(line.Instruction))
             {
                 if (!string.IsNullOrEmpty(line.Operand))
-                    Log.LogEntry(line);
+                    Log.LogEntry(line, Resources.ErrorStrings.None);
                 return;
             }
 
@@ -560,7 +560,7 @@ namespace Asm6502.Net
                 {
                     if (IsDefiningConstant(line) == false)
                     {
-                        Log.LogEntry(line);
+                        Log.LogEntry(line, Resources.ErrorStrings.None);
                         return anotherpass;
                     }
                     Output.SetPC(Convert.ToUInt16(evaluator_.Eval(line.Operand)));
@@ -737,7 +737,6 @@ namespace Asm6502.Net
                     throw new Exception(string.Format(Resources.ErrorStrings.LabelNotValid, name));
                 Labels.Add(name, definition);
             }
-            
             List<SourceLine> source = new List<SourceLine>();
 
             Preprocessor processor = new Preprocessor(this,

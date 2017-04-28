@@ -264,7 +264,7 @@ namespace Asm6502.Net
                         }
                         if (line.Operand.EnclosedInQuotes() == false)
                         {
-                            Controller.Log.LogEntry(line);
+                            Controller.Log.LogEntry(line, Resources.ErrorStrings.None);
                             continue;
                         }
                         if (FileRegistry.Add(line.Operand.Trim('"')) == false)
@@ -462,7 +462,7 @@ namespace Asm6502.Net
                     {
                         if (label.StartsWith("_") || SymbolNameFunc(label) == false)
                         {
-                            Controller.Log.LogEntry(line);
+                            Controller.Log.LogEntry(line, Resources.ErrorStrings.None);
                             continue;
                         }
                         Scope.Push(label);

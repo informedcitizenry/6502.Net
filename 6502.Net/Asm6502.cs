@@ -453,7 +453,7 @@ namespace Asm6502.Net
                 Tuple<string, string> components = GetOperandComponents(line);
                 if (components == null)
                 {
-                    Controller.Log.LogEntry(line);
+                    Controller.Log.LogEntry(line, Resources.ErrorStrings.None);
                     return null;
                 }
                 operand = components.Item1;
