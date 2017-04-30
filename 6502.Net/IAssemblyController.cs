@@ -45,12 +45,12 @@ namespace Asm6502.Net
         AsmCommandLineOptions Options { get; }
 
         /// <summary>
-        /// Gets the nearest scope for the given token in its given scope.
+        /// Get the value of the label in the controller's symbol table (if exists).
         /// </summary>
-        /// <param name="token">The line token.</param>
-        /// <param name="scope">The line scope.</param>
-        /// <returns>Returns the nearest scope for the token.</returns>
-        string GetNearestScope(string token, string scope);
+        /// <param name="label">The label to lookup the value.</param>
+        /// <param name="line">The SourceLine where the label is being referenced.</param>
+        /// <returns>The label value as a string, otherwise an empty string.</returns>
+        string GetLabelValue(string label, SourceLine line);
 
         /// <summary>
         /// Indicates if the instruction in the given source line 

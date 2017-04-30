@@ -419,10 +419,7 @@ namespace Asm6502.Net
         {
             if (Reserved.IsOneOf("ImpliedAccumulator",line.Instruction) &&
                 line.Operand.Equals("a", Controller.Options.StringComparison))
-            {
-                string scoped = Controller.GetNearestScope(line.Operand, line.Scope);
-                return !Controller.Labels.ContainsKey(scoped);//!Controller.Labels.ContainsKey(scoped);
-            }
+                return string.IsNullOrEmpty(Controller.GetLabelValue("a", line));
             return false;
         }
 

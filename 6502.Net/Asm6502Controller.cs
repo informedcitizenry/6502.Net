@@ -196,6 +196,20 @@ namespace Asm6502.Net
         }
 
         /// <summary>
+        /// Get the value of the label in the controller's symbol table (if exists).
+        /// </summary>
+        /// <param name="label">The label to lookup the value.</param>
+        /// <param name="line">The SourceLine where the label is being referenced.</param>
+        /// <returns>The label value as a string, otherwise an empty string.</returns>
+        public string GetLabelValue(string label, SourceLine line)
+        {
+            label = GetNearestScope(label, line.Scope);
+            if (Labels.ContainsKey(label))
+                return evaluator_.Eval(Labels[label]).ToString();
+            return string.Empty;
+        }
+
+        /// <summary>
         /// Used by the expression evaluator to get the actual value of the symbol.
         /// </summary>
         /// <param name="symbol">The symbol to look up.</param>
@@ -204,21 +218,20 @@ namespace Asm6502.Net
         /// <returns>The underlying value of the symbol.</returns>
         private string GetLabelValue(string symbol, object obj)
         {
-            string label = symbol;
-            SourceLine line = ProcessedLines.Last();
+            string value;
+            SourceLine line = new SourceLine { Scope = string.Empty };
             if (obj != null)
-            {
                 line = obj as SourceLine;
-                label = GetNearestScope(symbol, line.Scope);
-            }
-            if (Labels.ContainsKey(label))
-            {
-                return evaluator_.Eval(Labels[label]).ToString();
-            }
-            else
+                
+            value = GetLabelValue(symbol, line);
+            if (string.IsNullOrEmpty(value))
             {
                 Log.LogEntry(line, Resources.ErrorStrings.LabelNotDefined);
                 return ExpressionEvaluator.EVAL_FAIL;
+            }
+            else
+            {
+                return value;
             }
         }
 
@@ -508,8 +521,9 @@ namespace Asm6502.Net
         private void GetAnonymousLabels()
         {
             int id = 0;
-            ProcessedLines.ForEach(l => l.Id = ++id);
-            foreach(var line in ProcessedLines)
+            var nonComments = ProcessedLines.Where(l => !l.IsComment);
+            nonComments.ToList().ForEach(l => l.Id = ++id);
+            foreach(var line in nonComments)
             {
                 if (string.IsNullOrEmpty(line.Label))
                     continue;
@@ -764,15 +778,13 @@ namespace Asm6502.Net
             }
         }
 
-        #region IAssemblyController.Methods
-
         /// <summary>
         /// Gets the nearest scope for the given token in its given scope.
         /// </summary>
         /// <param name="token">The line token.</param>
         /// <param name="scope">The line scope.</param>
         /// <returns>Returns the nearest scope for the token.</returns>
-        public string GetNearestScope(string label, string linescope)
+        private string GetNearestScope(string label, string linescope)
         {
             linescope = linescope.Replace("@", "");
             List<string> scopes = GetSubScopes(linescope).ToList();
@@ -785,9 +797,10 @@ namespace Asm6502.Net
                     return scoped.TrimStart('.');
                 }
             }
-            label = label.Replace("@", "");
             return label;
         }
+
+        #region IAssemblyController.Methods
 
         /// <summary>
         /// Indicates if the instruction in the given source line 

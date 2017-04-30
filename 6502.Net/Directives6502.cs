@@ -193,16 +193,36 @@ namespace Asm6502.Net
                     break;
                 case ".relocate":
                 case ".pseudopc":
+                    Relocate(line);
+                    break;
                 case ".realpc":
                 case ".endrelocate":
+                    Controller.Output.SynchPC();
+                    break;
                 case ".cpu":
                     break;
                 default:
-                    Controller.Log.LogEntry(line,
-                        string.Format("Directive '{0}' is  not supported at this time.", line.Instruction),
-                        Controller.Options.WarningsAsErrors);
-                    break;
+                   break;
             }
+        }
+
+        /// <summary>
+        /// Perform the relocate directive to change the logical program
+        /// counter.
+        /// </summary>
+        /// <param name="line">The SourceLine.</param>
+        private void Relocate(SourceLine line)
+        {
+            if (string.IsNullOrEmpty(line.Operand))
+            {
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.TooFewArguments, line.Instruction);
+                return;
+            }
+            var relocval = Controller.Evaluator.Eval(line.Operand);
+            if (relocval < short.MinValue || relocval > ushort.MaxValue)
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, line.Operand);
+            else
+                Controller.Output.SetLogicalPC(Convert.ToInt32(relocval));
         }
 
         /// <summary>
