@@ -1,4 +1,4 @@
-using Asm6502.Net;
+﻿using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -38,6 +38,11 @@ namespace NUnitTest6502.Net
         }
 
         public string GetNearestScope(string token, string scope)
+        {
+            return string.Empty;
+        }
+
+        public string GetLabelValue(string label, SourceLine line)
         {
             return string.Empty;
         }
