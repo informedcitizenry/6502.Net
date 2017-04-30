@@ -213,7 +213,7 @@ namespace Asm6502.Net
             if (relocval < short.MinValue || relocval > ushort.MaxValue)
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, relocval.ToString());
             else
-                Controller.Output.SetLogicalPC(Convert.ToInt32(relocval));
+                Controller.Output.SetLogicalPC(Convert.ToInt32(relocval) & ushort.MaxValue);
         }
 
         /// <summary>
