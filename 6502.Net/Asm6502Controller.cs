@@ -223,7 +223,7 @@ namespace Asm6502.Net
             if (obj != null)
                 line = obj as SourceLine;
                 
-            value = GetLabelValue(symbol, line);
+            value = GetScopedLabelValue(symbol, line);
             if (string.IsNullOrEmpty(value))
             {
                 Log.LogEntry(line, Resources.ErrorStrings.LabelNotDefined);
@@ -319,7 +319,7 @@ namespace Asm6502.Net
             {
                 if (line.Label == "*")
                 {
-                    Output.SetPC(Convert.ToUInt16(evaluator_.Eval(line.Operand)));
+                    SetPC(line);
                 }
                 return;
             }
@@ -577,13 +577,7 @@ namespace Asm6502.Net
                         Log.LogEntry(line, Resources.ErrorStrings.None);
                         return anotherpass;
                     }
-                    var pcval = evaluator_.Eval(line.Operand);
-                    if (pcval < short.MinValue || pcval > ushort.MaxValue)
-                    {
-                        Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, pcval.ToString());
-                        return false;
-                    }
-                    Output.SetPC(Convert.ToInt32(pcval) & ushort.MaxValue);
+                    SetPC(line);
                     line.PC = Output.GetPC();
                     return anotherpass;
                 }
@@ -661,6 +655,21 @@ namespace Asm6502.Net
                 Log.LogEntry(line, Resources.ErrorStrings.None);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Set the Program Counter.
+        /// </summary>
+        /// <param name="line">The SourceLine.</param>
+        private void SetPC(SourceLine line)
+        {
+            var pcval = evaluator_.Eval(line.Operand);
+            if (pcval < short.MinValue || pcval > ushort.MaxValue)
+            {
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, pcval.ToString());
+                return;
+            }
+            Output.SetPC(Convert.ToInt32(pcval) & ushort.MaxValue);
         }
    
         /// <summary>
