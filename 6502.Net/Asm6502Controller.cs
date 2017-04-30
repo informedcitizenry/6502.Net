@@ -577,7 +577,13 @@ namespace Asm6502.Net
                         Log.LogEntry(line, Resources.ErrorStrings.None);
                         return anotherpass;
                     }
-                    Output.SetPC(Convert.ToUInt16(evaluator_.Eval(line.Operand)));
+                    var pcval = evaluator_.Eval(line.Operand);
+                    if (pcval < short.MinValue || pcval > ushort.MaxValue)
+                    {
+                        Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, pcval.ToString());
+                        return false;
+                    }
+                    Output.SetPC(Convert.ToInt32(pcval) & ushort.MaxValue);
                     line.PC = Output.GetPC();
                     return anotherpass;
                 }
