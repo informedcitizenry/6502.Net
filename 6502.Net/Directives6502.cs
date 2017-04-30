@@ -127,9 +127,9 @@ namespace Asm6502.Net
                 case ".relocate":
                     {
                         Relocate(line);
-                        if (line.PC != logical_pc)
+                        if (line.PC != Controller.Output.GetPC())
                         {
-                            line.PC = (ushort)logical_pc;
+                            line.PC = (ushort)Controller.Output.GetPC();
                             return true;
                         }
                         break;
