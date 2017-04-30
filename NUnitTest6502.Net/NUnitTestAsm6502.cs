@@ -42,7 +42,7 @@ namespace NUnitTest6502.Net
             return string.Empty;
         }
 
-        public string GetLabelValue(string label, SourceLine line)
+        public string GetScopedLabelValue(string label, SourceLine line)
         {
             return string.Empty;
         }
