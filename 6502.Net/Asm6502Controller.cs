@@ -196,12 +196,12 @@ namespace Asm6502.Net
         }
 
         /// <summary>
-        /// Get the value of the label in the controller's symbol table (if exists).
+        /// Get the value of the scoped label in the controller's symbol table (if exists).
         /// </summary>
         /// <param name="label">The label to lookup the value.</param>
         /// <param name="line">The SourceLine where the label is being referenced.</param>
         /// <returns>The label value as a string, otherwise an empty string.</returns>
-        public string GetLabelValue(string label, SourceLine line)
+        public string GetScopedLabelValue(string label, SourceLine line)
         {
             label = GetNearestScope(label, line.Scope);
             if (Labels.ContainsKey(label))
