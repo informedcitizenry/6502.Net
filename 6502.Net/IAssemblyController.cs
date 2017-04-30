@@ -45,7 +45,7 @@ namespace Asm6502.Net
         AsmCommandLineOptions Options { get; }
 
         /// <summary>
-        /// Get the value of the label in the controller's symbol table (if exists).
+        /// Get the value of the scoped label in the controller's symbol table (if exists).
         /// </summary>
         /// <param name="label">The label to lookup the value.</param>
         /// <param name="line">The SourceLine where the label is being referenced.</param>
