@@ -126,16 +126,7 @@ namespace Asm6502.Net
                 case ".pseudopc":
                 case ".relocate":
                     {
-                        var csv = line.CommaSeparateOperand();
-                        if (csv.Count > 1)
-                            Controller.Log.LogEntry(line, Resources.ErrorStrings.TooManyArguments, line.Instruction);
-                        
-                        var logical_pc = Controller.Evaluator.Eval(csv.First());
-                        if (logical_pc > ushort.MaxValue)
-                            Controller.Log.LogEntry(line, Resources.ErrorStrings.PCOverflow);
-                        
-                        Controller.Output.SetLogicalPC(Convert.ToUInt16(logical_pc));
-                        
+                        Relocate(line);
                         if (line.PC != logical_pc)
                         {
                             line.PC = (ushort)logical_pc;
