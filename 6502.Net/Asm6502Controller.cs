@@ -666,7 +666,7 @@ namespace Asm6502.Net
             var pcval = evaluator_.Eval(line.Operand);
             if (pcval < short.MinValue || pcval > ushort.MaxValue)
             {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, pcval.ToString());
+                Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, pcval.ToString());
                 return;
             }
             Output.SetPC(Convert.ToInt32(pcval) & ushort.MaxValue);
