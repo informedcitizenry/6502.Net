@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -220,7 +220,7 @@ namespace Asm6502.Net
             }
             var relocval = Controller.Evaluator.Eval(line.Operand);
             if (relocval < short.MinValue || relocval > ushort.MaxValue)
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, line.Operand);
+                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, relocval.ToString());
             else
                 Controller.Output.SetLogicalPC(Convert.ToInt32(relocval));
         }
