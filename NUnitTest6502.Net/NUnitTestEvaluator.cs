@@ -1,4 +1,4 @@
-using Asm6502.Net;
+﻿using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -56,7 +56,7 @@ namespace NUnitTest6502.Net
             long frac = evaluator.Eval("frac(5.25)*100");
             long hypot = evaluator.Eval("hypot(4.0, 3.0)");
             long ln = evaluator.Eval("ln(2048.0)");
-            long log10 = evaluator.Eval("log10(" + 0x7fffff.ToString() + ")");
+            long log10 = evaluator.Eval("log10(" + 0x7fffff.ToString() + ") + log10(3*4) + (12*3)");
             long pow = evaluator.Eval("pow(2,16)");
             long rad = evaluator.Eval("rad(79999.9)");
             long random = evaluator.Eval("random(-3,2047)");
@@ -90,7 +90,7 @@ namespace NUnitTest6502.Net
             Assert.AreEqual(Convert.ToInt64(Math.Exp(15.0)), exp);
             Assert.AreEqual(Convert.ToInt64(Math.Floor(-4.8)), floor);
             Assert.AreEqual(Convert.ToInt64(Math.Floor(Math.Log(2048.0))), ln);
-            Assert.AreEqual(Convert.ToInt64(Math.Floor(Math.Log10(0x7fffff))), log10);
+            Assert.AreEqual(Convert.ToInt64(Math.Floor(Math.Log10(0x7fffff) + Math.Log10(3 * 4) + (12 * 3))), log10);
             Assert.AreEqual(Convert.ToInt64(Math.Pow(2, 16)), pow);
             Assert.AreEqual(Convert.ToInt64(Math.Round(18.21, 0)), round);
             Assert.AreEqual(Convert.ToInt64(Math.Sign(-8.0)), negsgn);
@@ -107,8 +107,8 @@ namespace NUnitTest6502.Net
         public void TestSymbolLookup()
         {
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
-            evaluator.SymbolLookups.Add(@"testvar", (str, obj) => "42");
-            evaluator.SymbolLookups.Add(@"\*", (str, obj) => "49152");
+            evaluator.SymbolLookups.Add(@"testvar", (str, ix, obj) => "42");
+            evaluator.SymbolLookups.Add(@"(?<=[^a-zA-Z0-9_\.\)]|^)\*(?=[^a-zA-Z0-9_\.\(]|$)", (str, ix, obj) => "49152");
             long result1 = evaluator.Eval("testvar");
             long result2 = evaluator.Eval("testvar*12");
             long result3 = evaluator.Eval("testvar**");
@@ -139,7 +139,7 @@ namespace NUnitTest6502.Net
         {
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
             int myvar = 548;
-            evaluator.SymbolLookups.Add("myvar", (s, o) => myvar.ToString());
+            evaluator.SymbolLookups.Add("myvar", (s, i, o) => myvar.ToString());
             long notZero = evaluator.Eval("~0");
             long not255 = evaluator.Eval("~255");
             long notmyvar = evaluator.Eval("~(myvar*2)%256");
@@ -147,6 +147,7 @@ namespace NUnitTest6502.Net
             long msb = evaluator.Eval(">$8040ffd2");
             long bb = evaluator.Eval("^$8040ffd2");
             long mixed = evaluator.Eval("25*<myvar+>$2456*2");
+            long notandnot = evaluator.Eval("~(35*2) + ~(22*6) + (12*2)");
 
             Assert.AreEqual(~(myvar * 2) % 256, notmyvar);
             Assert.AreEqual(~0, notZero);
@@ -155,6 +156,7 @@ namespace NUnitTest6502.Net
             Assert.AreEqual(0xff, msb);
             Assert.AreEqual(0x40, bb);
             Assert.AreEqual(25 * (myvar % 256) + 0x24 * 2, mixed);
+            Assert.AreEqual(~(35 * 2) + ~(22 * 6) + (12 * 2), notandnot);
         }
 
         [Test]
@@ -163,7 +165,7 @@ namespace NUnitTest6502.Net
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
 
             int myvar = 224;
-            evaluator.SymbolLookups.Add("myvar", (s, o) => myvar.ToString());
+            evaluator.SymbolLookups.Add("myvar", (s, i, o) => myvar.ToString());
 
             long and = evaluator.Eval("myvar&$e0");
             long or = evaluator.Eval("myvar|$0f");
@@ -184,10 +186,11 @@ namespace NUnitTest6502.Net
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
             bool simple = evaluator.EvalCondition("1 < 3");
             bool compound = evaluator.EvalCondition("5+2 > 6 && 4+3 != 12");
-            bool complex = evaluator.EvalCondition("((1<3)||(4>6)&&(13*2!=4||8>0))");
+            bool complex = evaluator.EvalCondition("((1<3)||!(4>6)&&(13*2!=4||8>0))");
+            bool tricky = evaluator.EvalCondition("$8000 > $6900 - (16*3 + 32*2)");
             Assert.AreEqual((1 < 3), simple);
             Assert.AreEqual((5 + 2 > 6 && 4 + 3 != 12), compound);
-            Assert.AreEqual(((1 < 3) || (4 > 6) && (13 * 2 != 4 || 8 > 0)), complex);
+            Assert.AreEqual(((1 < 3) || !(4 > 6) && (13 * 2 != 4 || 8 > 0)), complex);
         }
     }
 }

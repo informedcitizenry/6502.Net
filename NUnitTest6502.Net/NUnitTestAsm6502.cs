@@ -1259,10 +1259,10 @@ namespace NUnitTest6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");
 
             line.Operand = "()";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, string.Empty, false));
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
 
             line.Operand = "0xffd2"; // oops wrong architecture!
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestInstruction(line, 0, null, string.Empty, false));
+            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
             test_.Output.Reset();
 
             line.Operand = "pow(2,4)";
