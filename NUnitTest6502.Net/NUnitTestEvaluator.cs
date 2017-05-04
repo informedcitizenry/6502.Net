@@ -1,4 +1,4 @@
-﻿using Asm6502.Net;
+using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -11,6 +11,20 @@ namespace NUnitTest6502.Net
     [TestFixture]
     public class EvaluatorTest
     {
+        [Test]
+        public void TestMaths()
+        {
+            ExpressionEvaluator evaluator = new ExpressionEvaluator();
+
+            long compound = evaluator.Eval("(2*(3+4))/9");
+            long negative = evaluator.Eval("-1");
+            long pow = evaluator.Eval("13**2");
+
+            Assert.AreEqual((2 * (3 + 4)) / 9, compound);
+            Assert.AreEqual(-1, negative);
+            Assert.AreEqual(Convert.ToInt64(Math.Pow(13, 2)), pow);
+        }
+
         [Test]
         public void TestBinHex()
         {
