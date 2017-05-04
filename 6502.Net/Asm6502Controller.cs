@@ -731,7 +731,7 @@ namespace Asm6502.Net
 
             if (showVersion)
             {
-                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 informedcitizenry.");
+                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
                 Console.WriteLine("Version {0}.{1} Build {2}",
                 System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
                 System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor,
@@ -743,7 +743,7 @@ namespace Asm6502.Net
 
             if (!showVersion)
             {
-                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assember\n(C) Copyright 2017 informedcitizenry.");
+                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
                 Console.WriteLine();
             }
 
