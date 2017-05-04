@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -90,6 +90,11 @@ namespace Asm6502.Net
 
         private Dictionary<string, string> cache_;
 
+        // instantiate compiled regexes for most common replacements (performance advantage?)
+        private Regex hexRegex_;
+        private Regex binaryRegex_;
+        private Regex unaryRegex_;
+
         #endregion
 
         #region Constructors
@@ -104,6 +109,10 @@ namespace Asm6502.Net
             SymbolLookups = new Dictionary<string, Func<string, int, object, string>>();
             cache_ = new Dictionary<string, string>();
             rng_ = new Random();
+
+            hexRegex_ = new Regex(@"\$([a-fA-F0-9]+)", RegexOptions.Compiled);
+            binaryRegex_ = new Regex(@"%([01]+)", RegexOptions.Compiled);
+            unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_\.\)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_\.]+)", RegexOptions.Compiled);
 
             evalImpl_ = new Mathos.Parser.MathParser();
 
@@ -413,7 +422,6 @@ namespace Asm6502.Net
         /// <returns>Returns the "sanitized"/normally expression ready for final evaluation.</returns>
         private string PreEvaluate(string expression)
         {
-            var unary_pattern = @"(?<![a-zA-Z0-9_\.\)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_\.]+)";
             var char_pattern = @"(?<![a-zA-Z0-9_\)])'(.)'(?![a-zA-Z0-9_\(])";
             var func_pattern = @"([a-zA-Z][a-zA-Z0-9]*)\((.*?)\)";
             var altbin_pattern = @"%([\.#]+)";
@@ -422,16 +430,16 @@ namespace Asm6502.Net
             {
                 string key = expression;
 
-                if (Regex.IsMatch(expression, @"\$([a-fA-F0-9]+)"))
+                if (hexRegex_.IsMatch(expression))
                 {
                     // convert hex e.g. $FFD2
-                    expression = Regex.Replace(expression, @"\$([a-fA-F0-9]+)",
+                    expression = hexRegex_.Replace(expression,
                         m => Convert.ToInt64(m.Groups[1].Value, 16).ToString());
 
                 }
                 
                 // if allowed also convert alt bin, e.g. %..##.#..
-                if (AllowAlternateBinString && Regex.IsMatch(expression, altbin_pattern))
+                if (AllowAlternateBinString) //&& Regex.IsMatch(expression, altbin_pattern))
                 {
                     // allow alternate binary string, e.g. %.###.##.##... in lieu of %0111011011000
                     expression = Regex.Replace(expression, altbin_pattern, delegate(Match m)
@@ -442,8 +450,9 @@ namespace Asm6502.Net
                 }
 
                 // convert bin e.g. %0110101
-                if (Regex.IsMatch(expression, @"%([01]+)"))
-                    expression = Regex.Replace(expression, @"%([01]+)", m => Convert.ToInt32(m.Groups[1].Value, 2).ToString(), RegexOptions.IgnoreCase);
+                if (binaryRegex_.IsMatch(expression))
+                    expression = binaryRegex_.Replace(expression, 
+                        m => Convert.ToInt32(m.Groups[1].Value, 2).ToString());
 
                 // convert unary bitwise complement
                 if (Regex.IsMatch(expression, @"(?<![a-zA-Z0-9_\)<>])~(\(.+\)|[a-zA-Z0-9_\.]+)"))
@@ -467,17 +476,15 @@ namespace Asm6502.Net
                 }
                 
                 // convert LSB/MSB/bankbyte to (x % 256), x/256, or x/65536 respectively
-                if (Regex.IsMatch(expression, unary_pattern))
-                {
-                    expression = Regex.Replace(expression, unary_pattern, ConvertUnary,
-                    IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
-                }
+                if (unaryRegex_.IsMatch(expression))
+                    expression = unaryRegex_.Replace(expression, ConvertUnary);
                 
-
                 // convert functions (but not their arguments) to lowercase if we
                 // are ignoring case
-                if (IgnoreCase)
-                    expression = Regex.Replace(expression, func_pattern, m => m.Groups[1].Value.ToLower() + "(" + m.Groups[2].Value + ")", RegexOptions.IgnoreCase);
+                if (IgnoreCase && Regex.IsMatch(expression, func_pattern, RegexOptions.IgnoreCase))
+                    expression = Regex.Replace(expression, func_pattern, m => 
+                        m.Groups[1].Value.ToLower() + "(" + m.Groups[2].Value + ")", 
+                        RegexOptions.IgnoreCase);
 
                 cache_.Add(key, expression);
             }
@@ -539,11 +546,12 @@ namespace Asm6502.Net
                 throw new ExpressionException(expression);
 
             // massage bit shift and pow operators
-            expression = Regex.Replace(expression, "<<", "{");
-            expression = Regex.Replace(expression, ">>", "}");
-            expression = Regex.Replace(expression, @"\*\*", ";");
-
-            return expression;
+            return Regex.Replace(
+                    Regex.Replace(
+                        Regex.Replace(expression, 
+                        "<<", "{"), 
+                    ">>", "}"), 
+                   @"\*\*", ";");
         }
 
         #endregion
