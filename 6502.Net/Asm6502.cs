@@ -306,36 +306,36 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.Types.Add("Accumulator", new HashSet<string>(new string[]
+            Reserved.DefineType("Accumulator", new string[]
                 {
                     "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
-                }));
+                });
 
-            Reserved.Types.Add("Branches", new HashSet<string>(new string[]
+            Reserved.DefineType("Branches", new string[]
                 {
                     "bcc","bcs","beq","bmi","bne","bpl","bvc","bvs"
-                }));
+                });
 
-            Reserved.Types.Add("Implied", new HashSet<string>(new string[]
+            Reserved.DefineType("Implied", new string[]
                 {
                     "brk","clc","cld","cli","clv","dex","dey","inx","iny","nop","pha","php","pla",
                     "plp","rti","rts","sec","sed","sei","tax","tay","tsx","txa","txs","tya"
-                }));
+                });
 
-            Reserved.Types.Add("ImpliedAccumulator", new HashSet<string>(new string[]
+            Reserved.DefineType("ImpliedAccumulator", new string[]
                 {
                     "asl", "lsr", "rol", "ror"
-                }));
+                });
 
-            Reserved.Types.Add("Jumps", new HashSet<string>(new string[]
+            Reserved.DefineType("Jumps", new string[]
                 {
                     "jmp", "jsr"
-                }));
-            Reserved.Types.Add("Mnemonics", new HashSet<string>(new string[]
+                });
+            Reserved.DefineType("Mnemonics", new string[]
                 {
                     "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
                     "ldy", "lsr", "rol", "ror", "stx", "sty"
-                }));
+                });
         }
 
         #endregion
@@ -358,7 +358,6 @@ namespace Asm6502.Net
                 return new Tuple<string, string>(operand, opfmt);
             }
             
-
             if (line.Operand.StartsWith("#"))
             {
                 opfmt = "#${0:x2}";
@@ -401,7 +400,6 @@ namespace Asm6502.Net
                     return null;
                 }
             }
-
             long val = Controller.Evaluator.Eval(operand);
 
             if (Reserved.IsOneOf("Jumps", line.Instruction) || 

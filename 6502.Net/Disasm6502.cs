@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -42,6 +42,16 @@ namespace Asm6502.Net
             : base(controller)
         {
             PrintingOn = true;
+            Reserved.DefineType("Blocks", new string[]
+                {
+                    ".block", ".endblock"
+                });
+            Reserved.DefineType("Directives", new string[]
+                {
+                    ".eor", ".error", ".cerror", 
+                    ".cwarn", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
+                });
+            Reserved.Comparer = controller.Options.StringComparison;
         }
 
         #endregion
@@ -71,8 +81,8 @@ namespace Asm6502.Net
         /// <returns>Returns a hex representation of the source line address.</returns>
         private string DisassembleAddress(SourceLine line)
         {
-            if (string.IsNullOrEmpty(line.Instruction) ||
-                Reserved.IsReserved(line.Instruction) ||
+            if ((string.IsNullOrEmpty(line.Label) && (string.IsNullOrEmpty(line.Instruction) ||
+                Reserved.IsReserved(line.Instruction))) ||
                 line.DoNotAssemble)
                 return string.Empty;
                       
@@ -89,7 +99,7 @@ namespace Asm6502.Net
             }
             else
             {
-                if (line.Instruction.StartsWith("."))
+                if (line.Instruction.StartsWith(".") && !Reserved.IsReserved(line.Instruction))
                     return string.Format(">{0:x4}", line.PC);
                 else
                     return string.Format(".{0:x4}", line.PC);
@@ -159,19 +169,18 @@ namespace Asm6502.Net
 
             if (!Controller.Options.VerboseList)
             {
-                if (line.DoNotAssemble)
+                if (line.DoNotAssemble || Reserved.IsReserved(line.Instruction))
                 {
-                    if (line.IsDefinition && string.IsNullOrEmpty(line.Label))
+                    if (line.IsComment) return;
+                    // skip directives (e.g., macro definitions, etc.) and anonymous blocks
+                    if ((line.IsDefinition || Reserved.IsReserved(line.Instruction)) && string.IsNullOrEmpty(line.Label))
                         return;
                     sourcestr = line.Label;
                 }
                 else if (Controller.Options.NoSource)
                 {
                     sourcestr = string.Empty;
-                }
-                if (string.IsNullOrEmpty(line.Label) &&
-                    (Reserved.IsReserved(line.Instruction)))
-                    return; // skip directives (e.g., .if blocks, etc.) and anonymous blocks
+                } 
                 else if (string.IsNullOrWhiteSpace(line.Label + line.Instruction))
                     return;
             }

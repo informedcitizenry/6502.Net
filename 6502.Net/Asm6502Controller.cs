@@ -58,17 +58,17 @@ namespace Asm6502.Net
         public Asm6502Controller() :
             base()
         {
-            Reserved.Types.Add("Functions", new HashSet<string>(new string[]
+            Reserved.DefineType("Functions", new string[]
                 {
                      "abs", "acos", "asin", "atan", "cbrt", "ceil", "cos", "cosh", "deg", 
                      "exp", "floor", "frac", "hypot", "ln", "log10", "pow", "rad", "random", 
                      "round", "sgn", "sin", "sinh", "sqrt", "str", "tan", "tanh", "trunc"
-                }));
+                });
 
-            Reserved.Types.Add("Directives", new HashSet<string>(new string[]
+            Reserved.DefineType("Directives", new string[]
                 {
                     ".proff", ".pron", ".end", ".equ"
-                }));
+                });
 
             ProcessedLines = new List<SourceLine>();
             AnonPlus = new HashSet<int>();
@@ -79,9 +79,9 @@ namespace Asm6502.Net
             Options = new AsmCommandLineOptions();
 
             evaluator_ = new ExpressionEvaluator();
-            evaluator_.SymbolLookups.Add(@"_?[a-zA-Z][a-zA-Z0-9_\.]*", GetLabelValue);
+            evaluator_.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_\.]*)(?!\()", GetLabelValue);
             evaluator_.SymbolLookups.Add(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
-            evaluator_.SymbolLookups.Add(@"\*", (str, obj) => Output.GetPC().ToString());
+            evaluator_.SymbolLookups.Add(@"(?<=[^a-zA-Z0-9_\.\)]|^)\*(?=[^a-zA-Z0-9_\.\(]|$)", (str, ix, obj) => Output.GetPC().ToString());
             evaluator_.AllowAlternateBinString = true;
         }
 
@@ -180,9 +180,10 @@ namespace Asm6502.Net
         /// to an address.
         /// </summary>
         /// <param name="symbol">The anonymous symbol.</param>
+        /// <param name="notused">The match group (not used)</param>
         /// <param name="obj">A helper object, in this case a SourceLine.</param>
         /// <returns>The actual address the anonymous symbol will resolve to.</returns>
-        private string ConvertAnonymous(string symbol, object obj)
+        private string ConvertAnonymous(string symbol, int notused, object obj)
         {
             SourceLine line = obj as SourceLine;
             string trimmed = symbol.Trim(new char[] { '(', ')' });
@@ -213,10 +214,11 @@ namespace Asm6502.Net
         /// Used by the expression evaluator to get the actual value of the symbol.
         /// </summary>
         /// <param name="symbol">The symbol to look up.</param>
+        /// <param name="notused">The match group (not used)</param>
         /// <param name="obj">A helper object, usually a SourceLine to establish the current
         /// scope.</param>
         /// <returns>The underlying value of the symbol.</returns>
-        private string GetLabelValue(string symbol, object obj)
+        private string GetLabelValue(string symbol, int notused, object obj)
         {
             string value;
             SourceLine line = new SourceLine { Scope = string.Empty };
@@ -227,7 +229,7 @@ namespace Asm6502.Net
             if (string.IsNullOrEmpty(value))
             {
                 Log.LogEntry(line, Resources.ErrorStrings.LabelNotDefined);
-                return ExpressionEvaluator.EVAL_FAIL;
+                return string.Empty;
             }
             else
             {
@@ -292,7 +294,8 @@ namespace Asm6502.Net
         {
             Output.Reset();
 
-            foreach(var line in ProcessedLines.Where(pl => pl.DoNotAssemble == false))
+            var assembledLines = ProcessedLines.Where(l => !l.DoNotAssemble);
+            foreach(var line in assembledLines)
             {
                 if (line.Instruction.Equals(".end", Options.StringComparison))
                     break;
@@ -329,7 +332,6 @@ namespace Asm6502.Net
                 if (string.IsNullOrEmpty(line.Instruction))
                     return;
             }
-
             var fcnmatch = Regex.Match(line.Operand, @"([a-z][a-zA-Z0-9]*)\(");
             if (string.IsNullOrEmpty(fcnmatch.Value) == false)
             {
@@ -339,7 +341,6 @@ namespace Asm6502.Net
                     return;
                 }
             }
-            
             try
             {
                 if (lineAssembler_.AssemblesInstruction(line.Instruction))
@@ -355,6 +356,11 @@ namespace Asm6502.Net
                 else if (directives_.AssemblesInstruction(line.Instruction))
                 {
                     directives_.AssembleLine(line);
+                }
+                else if (line.Instruction.Equals(".block", Options.StringComparison) ||
+                    line.Instruction.Equals(".endblock", Options.StringComparison))
+                {
+                    // TODO: find a better way to handle this!
                 }
                 else 
                 {
@@ -390,7 +396,7 @@ namespace Asm6502.Net
 
         private void GetAssemblyBytes(SourceLine line)
         {
-            int range = GetInstructionSize(line);
+            int range = Output.GetPC() - line.PC; //GetInstructionSize(line);
             var robytes = Output.GetCompilation().ToList();
             int logicalsize = Output.ProgramCounter - Output.ProgramStart;
             if (robytes.Count - range < 0)
@@ -504,13 +510,14 @@ namespace Asm6502.Net
 
             foreach(SourceLine line in ProcessedLines)
             {
+                evaluator_.SymbolLookupObject = line;
                 if (line.Instruction.Equals(".end", Options.StringComparison))
                     break;
 
                 lineDisassembler_.DisassembleLine(line, listing);
             }
             if (listing.ToString().EndsWith(Environment.NewLine))
-                return listing.ToString().Substring(0, listing.Length - 2);
+                return listing.ToString().Substring(0, listing.Length - Environment.NewLine.Length);
 
             return listing.ToString();
         }
@@ -543,6 +550,10 @@ namespace Asm6502.Net
         private bool FirstPassLine(SourceLine line)
         {
             bool anotherpass = false;
+
+            if (line.IsDefinition == true)
+                return false;
+
             if (IsDefiningConstant(line) && !string.IsNullOrEmpty(line.Instruction) && string.IsNullOrEmpty(line.Operand))
             {
                 Log.LogEntry(line, Resources.ErrorStrings.InvalidConstantAssignment);
@@ -555,7 +566,7 @@ namespace Asm6502.Net
                 line.PC = Output.GetPC();
                 anotherpass = !IsDefiningConstant(line);
             }
-            if (string.IsNullOrEmpty(line.Instruction) || line.IsDefinition == true)
+            if (string.IsNullOrEmpty(line.Instruction))
             {
                 if (IsSymbolName(line.Label))
                 {
@@ -611,11 +622,13 @@ namespace Asm6502.Net
                     string label = string.Empty;
 
                     if (line.Label.StartsWith("_"))
-                        label = line.Scope.TrimEnd('@') + "." + line.Label;
+                        label = line.Scope + "." + line.Label;//label = line.Scope.TrimEnd('@') + "." + line.Label;
                     else if (string.IsNullOrEmpty(line.Scope))
                         label = line.Label;
                     else
-                        label = line.Scope.TrimEnd('@');
+                        label = line.Scope;//line.Scope.TrimEnd('@');
+
+                    label = label.Replace("@", string.Empty);
 
                     Int64 intval = Output.GetPC();
                     if (IsDefiningConstant(line) && string.IsNullOrEmpty(line.Operand) == false)
@@ -682,12 +695,13 @@ namespace Asm6502.Net
             GetAnonymousLabels();
             passes_ = 0;
             bool anotherpass = true;
-            ProcessedLines = ProcessedLines.Select(l => { l.DoNotAssemble = false; return l; }).ToList();
+            
+            var processed = ProcessedLines.Where(pl => pl.DoNotAssemble == false);
 
             while (anotherpass && !Log.HasErrors)
             {
                 anotherpass = false;
-                foreach(var line in ProcessedLines.Where(pl => pl.IsComment == false))
+                foreach(var line in processed)
                 {
                     if (line.Instruction.Equals(".end", Options.StringComparison))
                         break;
@@ -701,6 +715,7 @@ namespace Asm6502.Net
                     throw new Exception("Too many passes attempted.");
                 }
             }
+
             Console.WriteLine("Passes completed: {0}", passes_);
         }
 
@@ -733,7 +748,7 @@ namespace Asm6502.Net
             }
 
             Labels = new Dictionary<string, string>(Options.StringComparar);
-
+            
             pseudoOps_ = new PseudoOps6502(this);
             lineAssembler_ = new Asm6502(this);
             directives_ = new Directives6502(this);
@@ -770,7 +785,7 @@ namespace Asm6502.Net
 
             Preprocessor processor = new Preprocessor(this,
                                                       r => IsReserved(r),
-                                                      s => IsSymbolName(s, true, false));
+                                                      s => IsSymbolName(s.TrimEnd(':'), true, false));
             processor.FileRegistry = FileRegistry;
             foreach (var file in Options.InputFiles)
             {
@@ -789,7 +804,9 @@ namespace Asm6502.Net
                 ProcessedLines.AddRange(processor.ExpandMacros(source));
 
                 if (Log.HasErrors == false)
+                {
                     processor.DefineScopedSymbols(ProcessedLines);
+                }
             }
         }
 

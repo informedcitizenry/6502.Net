@@ -31,6 +31,14 @@ namespace Asm6502.Net
     /// </summary>
     public class ReservedWords
     {
+        #region Members
+
+        private HashSet<string> _values;
+
+        private Dictionary<string, HashSet<string>> types_;
+
+        #endregion
+
         #region Constructor
 
         /// <summary>
@@ -40,8 +48,9 @@ namespace Asm6502.Net
         /// to enforce case-sensitivity.</param>
         public ReservedWords(StringComparison comparer)
         {
-            Types = new Dictionary<string, HashSet<string>>();
+            types_ = new Dictionary<string, HashSet<string>>();
             Comparer = comparer;
+            _values = new HashSet<string>();
         }
 
         /// <summary>
@@ -58,6 +67,18 @@ namespace Asm6502.Net
         #region Methods
 
         /// <summary>
+        /// Define a type of reserved words.
+        /// </summary>
+        /// <param name="type">The type name.</param>
+        /// <param name="values">The collection of values that comprise the type. </param>
+        public void DefineType(string type, IEnumerable<string> values)
+        {
+            types_.Add(type, new HashSet<string>(values));
+            foreach (var v in values)
+                _values.Add(v); // grr!!!
+        }
+
+        /// <summary>
         /// Determines if the token is one of the type specified.
         /// </summary>
         /// <param name="type">The type (dictionary key).</param>
@@ -65,7 +86,7 @@ namespace Asm6502.Net
         /// <returns>Returns true if the specified token is one of the specified type.</returns>
         public bool IsOneOf(string type, string token)
         {
-            return Types[type].Any(d => d.Equals(token, Comparer));
+            return types_[type].Any(d => d.Equals(token, Comparer));
         }
 
         /// <summary>
@@ -76,8 +97,10 @@ namespace Asm6502.Net
         /// regardless of type.</returns>
         public bool IsReserved(string token)
         {
+            /*
             return Types.Values.SelectMany(s => s)
-                              .Any(s => s.Equals(token, Comparer));
+                              .Any(s => s.Equals(token, Comparer));*/
+            return _values.Any(s => s.Equals(token, Comparer));
         }
 
         /// <summary>
@@ -87,7 +110,7 @@ namespace Asm6502.Net
         /// <returns>The type of the token.</returns>
         public string GetType(string token)
         {
-            foreach(var type in Types)
+            foreach(var type in types_)
             {
                 if (type.Value.Contains(token))
                 {
@@ -102,11 +125,8 @@ namespace Asm6502.Net
         #region Properties
 
         /// <summary>
-        /// Gets or sets the dictionary of reserved words. The key is the type (e.g., Mnemonics), 
-        /// the value is a HashSet (unique list) of strings.
+        /// Gets or sets the System.StringComparison for the ReservedWords collection.
         /// </summary>
-        public Dictionary<string, HashSet<string>> Types { get; set; }
-
         public StringComparison Comparer { get; set; }
 
         #endregion

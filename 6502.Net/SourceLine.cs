@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -74,7 +75,11 @@ namespace Asm6502.Net
             Assembly = new List<byte>();
             Filename = filename;
             LineNumber = linenumber;
-            Label = Instruction = Operand = Disassembly = string.Empty;
+            Scope = 
+            Label = 
+            Instruction = 
+            Operand = 
+            Disassembly = string.Empty;
             SourceString = source;
         }
 
@@ -125,7 +130,6 @@ namespace Asm6502.Net
         public void Parse(Func<string, bool> checkReserved, Func<string, bool> checkSymbol)
         {
             if (string.IsNullOrWhiteSpace(SourceString)) return;
-
             bool double_enclosed = false;
             bool single_enclosed = false;
             StringBuilder sb = new StringBuilder();

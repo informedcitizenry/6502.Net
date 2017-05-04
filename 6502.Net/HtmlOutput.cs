@@ -39,28 +39,28 @@ namespace Asm6502.Net
         public HtmlOutput() :
             base()
         {
-            Reserved.Types.Add("Mnemonics", new HashSet<string>(new string[]
+            Reserved.DefineType("Mnemonics", new string[]
                 {
                     "adc","and","asl","bcc","bcs","beq","bit","bmi","bne","bpl","brk","bvc","bvs","clc","cli",
                     "clv","cmp","cpx","cpy","dec","dex","dey","eor","inc","inx","iny","jmp","jsr","lda","ldx",
                     "ldy","lsr","nop","ora","pha","php","pla","plp","rol","ror","rti","rts","sbc","sbc","sec",
                     "sed","sei","sta","stx","sty","tax","tay","tsx","txa","txs","tya"
-                }));
+                });
 
-            Reserved.Types.Add("Blocks", new HashSet<string>(new string[]
+            Reserved.DefineType("Blocks", new string[]
                 {
                     ".binclude", ".include",
                     ".block",    ".endblock",
                     ".macro",    ".endmacro",
                     ".segment",  ".endsegment" 
-                }));
+                });
 
-            Reserved.Types.Add("Comments", new HashSet<string>(new string[]
+            Reserved.DefineType("Comments", new string[]
                 {
                     ".comment",  ".endcomment"
-                }));
+                });
 
-            Reserved.Types.Add("PseudoOps", new HashSet<string>(new string[]
+            Reserved.DefineType("PseudoOps", new string[]
                 {
                     ".addr", ".byte", ".char", ".dint", ".dword", ".enc", ".fill", ".lint", ".long", ".cstring", 
                     ".pstring", ".nstring", ".string", ".word", ".binary", 
@@ -68,27 +68,27 @@ namespace Asm6502.Net
                     ".dstruct", ".dunion", 
                     ".repeat", ".rta", ".sint",
                     ".lsstring"
-                }));
+                });
 
-            Reserved.Types.Add("Functions", new HashSet<string>(new string[]
+            Reserved.DefineType("Functions", new string[]
                 {
                      "abs", "acos", "asin", "atan", "cbrt", "ceil", "cos", "cosh", "deg", 
                      "exp", "floor", "frac", "hypot", "ln", "log10", "pow", "rad", "random", 
                      "round", "sgn", "sin", "sinh", "sqrt", "str", "tan", "tanh", "trunc"
-                }));
+                });
 
-            Reserved.Types.Add("Directives", new HashSet<string>(new string[]
+            Reserved.DefineType("Directives", new string[]
                 {
                     ".proff", ".pron", ".eor", ".error", ".end", ".cerror", 
                     ".cwarn", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn", 
                     ".cpu"
-                }));
+                });
 
-            Reserved.Types.Add("Operators", new HashSet<string>(new string[]
+            Reserved.DefineType("Operators", new string[]
                 {
                     "%", "#", "<", ">", "^", "!", "=" , "~", "&", "|", "+", "-", "/", "*",
                     "(", ")", "?"
-                }));
+                });
         }
         #endregion
 

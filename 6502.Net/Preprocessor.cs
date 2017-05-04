@@ -67,14 +67,14 @@ namespace Asm6502.Net
             Macros = new Dictionary<string, Macro>();
             Scope = new Stack<string>();
             
-            Reserved.Types.Add("Directives", new HashSet<string>(new string[]
+            Reserved.DefineType("Directives", new string[]
                 {
                     ".binclude", ".include",
                     OPEN_SCOPE, CLOSE_SCOPE,
                     ".comment",  ".endcomment",
                     ".macro",    ".endmacro",
                     ".segment",  ".endsegment" 
-                }));
+                });
         }
 
         #endregion
@@ -179,7 +179,8 @@ namespace Asm6502.Net
         /// <param name="sourcelines">The list of sourceLines.</param>
         private void CheckQuotes(IEnumerable<SourceLine> sourcelines)
         {
-            foreach (var line in sourcelines.Where(l => l.IsComment == false))
+            var nocomments = sourcelines.Where(l => !l.IsComment);
+            foreach (var line in nocomments)
             {
                 bool double_enclosed = false;
                 for (int i = 0; i < line.Operand.Length; i++)
@@ -220,7 +221,7 @@ namespace Asm6502.Net
             CheckQuotes(sourcelines);
 
             sourcelines = ProcessBlocks(sourcelines, sourcelines.ToList(), ".segment", ".endsegment", DefineSegments, false);
-            sourcelines = ProcessBlocks(sourcelines, sourcelines.ToList(), ".macro", ".endmacro", DefineMacros, false);
+            sourcelines = ProcessBlocks(sourcelines, sourcelines.ToList(), ".macro", ".endmacro", DefineMacro, false);
 
             return ProcessIncludes(sourcelines);
         }
@@ -300,7 +301,7 @@ namespace Asm6502.Net
         /// Define macros from the source list.
         /// </summary>
         /// <param name="source">The SourceLines.</param>
-        private void DefineMacros(IEnumerable<SourceLine> source)
+        private void DefineMacro(IEnumerable<SourceLine> source)
         {
             var def = source.First();
             if (def.IsComment == false)
@@ -341,8 +342,9 @@ namespace Asm6502.Net
         /// <param name="source">The source listing.</param>
         private void DefineSegments(IEnumerable<SourceLine> source)
         {
+            var nocomments = source.Where(l => !l.IsComment);
             Stack<string> root = new Stack<string>();
-            foreach (var line in source.Where(l => !l.IsComment))
+            foreach (var line in nocomments)
             {
                 if (line.Instruction.Equals(".segment", Controller.Options.StringComparison))
                 {
@@ -400,7 +402,7 @@ namespace Asm6502.Net
         {
             this.Scope.Clear();
             Stack<string> condscope = new Stack<string>();
-            foreach (var line in lines.Where(l => l.DoNotAssemble == false))
+            foreach (var line in lines)
             {
                 var b = line.Instruction.ToLower();
                 switch (b)
@@ -430,16 +432,12 @@ namespace Asm6502.Net
         /// <param name="lines">The SourceLine listing.</param>
         public void DefineScopedSymbols(List<SourceLine> lines)
         {
-            CheckBlocks(lines);
+            var assembled = lines.Where(l => !l.DoNotAssemble);
+            CheckBlocks(assembled);
 
             int anon = 0;
-            for(int i = 0; i < lines.Count; i++)
+            foreach(var line in assembled)
             {
-                var line = lines[i];
-
-                if (line.IsComment)
-                    continue;
-
                 if (Controller.TerminateAssembly(line))
                     break;
 
@@ -454,7 +452,7 @@ namespace Asm6502.Net
                     if (string.IsNullOrEmpty(line.Operand) == false)
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.DirectiveTakesNoArguments, line.Instruction);
 
-                    if (Scope.Count > 0 && Scope.Peek().EndsWith("@"))
+                    if (Scope.Count > 0 && !string.IsNullOrEmpty(line.Label) && Scope.Peek().EndsWith("@"))
                         Scope.Pop();
 
                     string label = line.Label;
@@ -473,14 +471,14 @@ namespace Asm6502.Net
                         Scope.Push(anonscope);
                         anon++;
                     }
-                    line.IsDefinition = true;
+                    //line.IsDefinition = true;
                 }
                 else if (line.Instruction.Equals(".endblock", Controller.Options.StringComparison))
                 {
                     if (string.IsNullOrEmpty(line.Operand) == false)
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.DirectiveTakesNoArguments, line.Instruction);
 
-                    line.IsDefinition = true;
+                    //line.IsDefinition = true;
 
                     if (string.IsNullOrEmpty(line.Label))
                     {
@@ -518,7 +516,7 @@ namespace Asm6502.Net
                     }
                 }
 
-                line.Scope = string.Join(".", Scope.Reverse());
+                line.Scope = string.Join(".", Scope.Reverse());//.Replace("@", string.Empty);
 
                 if (line.Instruction.Equals(".endblock", Controller.Options.StringComparison) &&
                     string.IsNullOrEmpty(line.Label) == false)
@@ -566,7 +564,7 @@ namespace Asm6502.Net
             foreach (var line in listing)
             {
                 var instruction = line.Instruction;
-                var matches = Macros.Keys.Where(k => k.Equals(instruction, StringComparison.CurrentCultureIgnoreCase));
+                var matches = Macros.Keys.Where(k => k.Equals(instruction, Controller.Options.StringComparison));
 
                 processed.Add(line);
                 if (matches.Count() == 0 || line.DoNotAssemble)
@@ -584,7 +582,8 @@ namespace Asm6502.Net
                 }
                 else
                 {
-                    processed.AddRange(macro.Expand(line));
+                    var expanded = macro.Expand(line);
+                    processed.AddRange(expanded);
                 }
             }
             return processed;
@@ -636,6 +635,31 @@ namespace Asm6502.Net
                                 {
                                     return SymbolNameFunc(token);
                                 });
+
+                            // check to see if there are instructions like *= something
+                            if (!string.IsNullOrEmpty(line.Label) && string.IsNullOrEmpty(line.Instruction) 
+                                &&!string.IsNullOrWhiteSpace(line.Operand))
+                            {
+                                var m = Regex.Match(line.Label, @"(\s*)([a-zA-Z0-9_]+|\+|-|\*)(=)");
+                                if (!string.IsNullOrEmpty(m.Value))
+                                {
+                                    line.Label = m.Groups[2].Value;
+                                    line.Instruction = m.Groups[3].Value;
+                                }
+                            }
+                            else if (string.IsNullOrEmpty(line.Label) && string.IsNullOrEmpty(line.Instruction) 
+                                &&!string.IsNullOrWhiteSpace(line.Operand))
+                            {
+                                /// check to see if there are instructions like *=something
+                                var m = Regex.Match(line.Operand, @"(\s*)([a-zA-Z0-9_]+|\+|-|\*)(=)(.+)");
+                                if (!string.IsNullOrEmpty(m.Value))
+                                {
+                                    line.Label = m.Groups[2].Value;
+                                    line.Instruction = m.Groups[3].Value;
+                                    line.Operand = m.Groups[4].Value.Trim();
+                                }
+                            }
+
                             sourcelines.Add(line);
                         }
                         catch (SourceLine.QuoteNotEnclosedException)

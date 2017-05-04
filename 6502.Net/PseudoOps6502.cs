@@ -53,13 +53,13 @@ namespace Asm6502.Net
 
             includedBinaries_ = new HashSet<BinaryFile>();
 
-            Reserved.Types.Add("PseudoOps", new HashSet<string>(new string[]
+            Reserved.DefineType("PseudoOps", new string[]
                 {
                     ".addr", ".align", ".binary", ".byte", ".char", ".cstring",  
                     ".dint", ".dword", ".enc", ".fill", ".lint", ".long", 
                     ".lsstring", ".nstring", ".pstring", ".repeat", ".rta",   
                     ".sint", ".string", ".word"
-                }));
+                });
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace Asm6502.Net
             }
             string operand = line.Operand;
 
-            Controller.Output.Transforms.Push(EncodeString);
+            //Controller.Output.Transforms.Push(EncodeString);
 
             var args = line.CommaSeparateOperand();
 
@@ -172,6 +172,7 @@ namespace Asm6502.Net
                 }
                 else
                 {
+                    Controller.Output.Transforms.Push(EncodeString);
                     string noquotes = arg.Trim('"');
                     if (string.IsNullOrEmpty(noquotes))
                     {
@@ -179,6 +180,7 @@ namespace Asm6502.Net
                         return;
                     }
                     Controller.Output.Add(noquotes);
+                    Controller.Output.Transforms.Pop();
                 }
             }
 
@@ -198,7 +200,7 @@ namespace Asm6502.Net
                 Controller.Output.ChangeLast(lastbyte | 0x80, 1);
             }
                 
-            Controller.Output.Transforms.Pop(); // clean up
+            //Controller.Output.Transforms.Pop(); // clean up
 
             if (format.Equals(".cstring", Controller.Options.StringComparison))
                 Controller.Output.Add(0, 1);
@@ -480,8 +482,8 @@ namespace Asm6502.Net
                 case ".binary":
                     {
                         Int64 boffset = 0;
-                        Int64 bsize = 0;
                         var binary = IncludeBinary(line);
+                        Int64 bsize = binary.Data.Count;
                         if (csv.Count > 1)
                         {
                             boffset = Controller.Evaluator.Eval(csv[1]);

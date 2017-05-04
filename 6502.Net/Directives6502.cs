@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,11 +40,11 @@ namespace Asm6502.Net
         public Directives6502(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.Types.Add("Directives", new HashSet<string>(new string[]
+            Reserved.DefineType("Directives", new string[]
                 {
                     ".eor", ".error", ".cerror", 
-                    ".cwarn", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn", 
-                }));
+                    ".cwarn", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
+                });
         }
 
         #endregion

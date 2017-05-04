@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -163,9 +163,9 @@ namespace Asm6502.Net
         /// <param name="macrocall">The SourceLine that is invoking the macro. The macro
         /// name is in the instruction, while the list of parameters passed 
         /// are in the operand.</param>
-        /// <returns>A list of source from the expanded macro, included substituted 
+        /// <returns>A System.IEnumerable list of source from the expanded macro, included substituted 
         /// parameters in source.</returns>
-        public List<SourceLine> Expand(SourceLine macrocall)
+        public IEnumerable<SourceLine> Expand(SourceLine macrocall)
         {
             List<SourceLine> processed = new List<SourceLine>();
             List<Param> parms = new List<Param>(Params);
@@ -205,17 +205,24 @@ namespace Asm6502.Net
                     }
                 }
             }
-            
+            if (!string.IsNullOrEmpty(macrocall.Label))
+                processed.Add(new SourceLine 
+                { 
+                    Label = macrocall.Label,
+                    Scope = macrocall.Scope
+                });
+
             foreach (var src in Source)
             {
                 SourceLine repl = src.Clone() as SourceLine;
+                /*
                 if (object.ReferenceEquals(src, Source.First()))
                 {
                     // if there is a label for the macro invocation, 
                     // put the scope into that.
                     repl.Label = macrocall.Label;
                 }
-
+                */
                 if (IsSegment == false)
                 {
                     var insertedparm = parms.FirstOrDefault(pa =>
