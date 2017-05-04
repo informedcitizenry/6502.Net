@@ -134,8 +134,6 @@ namespace Asm6502.Net
             }
             string operand = line.Operand;
 
-            //Controller.Output.Transforms.Push(EncodeString);
-
             var args = line.CommaSeparateOperand();
 
             foreach (var arg in args)
@@ -199,9 +197,7 @@ namespace Asm6502.Net
                 }
                 Controller.Output.ChangeLast(lastbyte | 0x80, 1);
             }
-                
-            //Controller.Output.Transforms.Pop(); // clean up
-
+            
             if (format.Equals(".cstring", Controller.Options.StringComparison))
                 Controller.Output.Add(0, 1);
             else if (format.Equals(".lsstring", Controller.Options.StringComparison))
@@ -333,15 +329,15 @@ namespace Asm6502.Net
                 if (args.Count == 3)
                     size = Controller.Evaluator.Eval(args[2]);
             }
+            if (offs > binary.Data.Count - 1)
+                offs = binary.Data.Count - 1;
+            if (size > binary.Data.Count - offs)
+                size = binary.Data.Count - offs;
             if (size > ushort.MaxValue)
             {
                 Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, size.ToString());
                 return;
             }
-            if (offs > binary.Data.Count - 1)
-                offs = binary.Data.Count - 1;
-            if (size > binary.Data.Count - offs)
-                size = binary.Data.Count - offs;
             Controller.Output.AddBytes(binary.Data.Skip(Convert.ToUInt16(offs)), Convert.ToUInt16(size));
         }
 
@@ -487,7 +483,11 @@ namespace Asm6502.Net
                         if (csv.Count > 1)
                         {
                             boffset = Controller.Evaluator.Eval(csv[1]);
-                            
+                            if (boffset < 0)
+                            {
+                                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, boffset.ToString());
+                                return 0;
+                            }
                             if (csv.Count > 2)
                                 bsize = Controller.Evaluator.Eval(csv.Last());
                             else
