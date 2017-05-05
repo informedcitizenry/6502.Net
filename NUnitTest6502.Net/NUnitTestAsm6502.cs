@@ -13,6 +13,12 @@ namespace NUnitTest6502.Net
     class TestController : IAssemblyController
     {
         public TestController() :
+            this(null)
+        {
+
+        }
+
+        public TestController(string[] args) :
             base()
         {
             Output = new Compilation(true);
@@ -24,11 +30,14 @@ namespace NUnitTest6502.Net
             Evaluator = new ExpressionEvaluator(true);
 
             Labels = new Dictionary<string, string>();
+
+            if (args != null)
+                Options.ProcessArgs(args);
         }
 
-        public void Assemble(string[] args)
+        public void Assemble()
         {
-            Options.ProcessArgs(args);
+            
         }
 
         public AsmCommandLineOptions Options

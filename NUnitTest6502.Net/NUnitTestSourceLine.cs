@@ -1,4 +1,4 @@
-using Asm6502.Net;
+﻿using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -23,6 +23,30 @@ namespace NUnitTest6502.Net
             line.Parse(s => false, s => false);
 
             Assert.AreEqual(string.Empty, line.Label);
+
+            line.SourceString = "*=something";
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.Parse(s => s.Equals("="), s => s.Equals("*"));
+
+            Assert.AreEqual("*", line.Label);
+            Assert.AreEqual("=", line.Instruction);
+            Assert.AreEqual("something", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "*= something";
+            line.Parse(s => false, s => false);
+
+            Assert.AreEqual("*", line.Label);
+            Assert.AreEqual("=", line.Instruction);
+            Assert.AreEqual("something", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "mylabel =something";
+            line.Parse(s => false, s => s.Equals("mylabel"));
+
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.AreEqual("=", line.Instruction);
+            Assert.AreEqual("something", line.Operand);
         }
 
         [Test]

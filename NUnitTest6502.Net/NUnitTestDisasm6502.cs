@@ -1,4 +1,4 @@
-using Asm6502.Net;
+﻿using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -16,10 +16,10 @@ namespace NUnitTest6502.Net
 
         public DisasmTestVerbose()
         {
-            test_ = new TestController();
+            test_ = new TestController(new string[] { "--verbose-asm" });
 
 
-            test_.Assemble(new string[] { "--verbose-asm" });
+            test_.Assemble();
             disasm_ = new Disasm6502(test_);
         }
 
