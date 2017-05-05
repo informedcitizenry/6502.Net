@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -109,8 +109,16 @@ namespace Asm6502.Net
         {
             var trimmed = token.Trim();
             if (string.IsNullOrEmpty(Instruction) &&
-                (checkReserved(trimmed)))
+                (checkReserved(trimmed) || trimmed.EndsWith("=")))
+            {
+                if (trimmed.EndsWith("="))
+                {
+                    if (string.IsNullOrEmpty(Label))
+                        Label = trimmed.Trim('=');
+                    trimmed = "=";
+                }
                 Instruction = trimmed;
+            }
             else if (string.IsNullOrEmpty(Label) && string.IsNullOrEmpty(Instruction) &&
             (checkSymbol(trimmed) || Regex.IsMatch(trimmed, @"[-\+\*]")))
                 Label = trimmed;
@@ -136,17 +144,17 @@ namespace Asm6502.Net
             string unprocessedTrim = SourceString.Trim();
             for (int n = 0; n < unprocessedTrim.Length; n++)
             {
-                string c = unprocessedTrim[n].ToString();
-                if (!single_enclosed && !double_enclosed && c == ";")
+                char c = unprocessedTrim[n];
+                if (!single_enclosed && !double_enclosed && c == ';')
                     break;
-                if (c == "\"" && !single_enclosed)
+                if (c == '"' && !single_enclosed)
                     double_enclosed = !double_enclosed;
-                else if (c == "'" && !double_enclosed)
+                else if (c == '\'' && !double_enclosed)
                     single_enclosed = !single_enclosed;
 
                 sb.Append(c);
                 
-                if (string.IsNullOrWhiteSpace(c.ToString()) && !double_enclosed && !single_enclosed)
+                if ((char.IsWhiteSpace(c) || c == '=') && !double_enclosed && !single_enclosed)
                 {
                     if (string.IsNullOrEmpty(Label) ||
                         string.IsNullOrEmpty(Instruction) ||
