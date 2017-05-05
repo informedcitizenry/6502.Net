@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -635,31 +635,6 @@ namespace Asm6502.Net
                                 {
                                     return SymbolNameFunc(token);
                                 });
-
-                            // check to see if there are instructions like *= something
-                            if (!string.IsNullOrEmpty(line.Label) && string.IsNullOrEmpty(line.Instruction) 
-                                &&!string.IsNullOrWhiteSpace(line.Operand))
-                            {
-                                var m = Regex.Match(line.Label, @"(\s*)([a-zA-Z0-9_]+|\+|-|\*)(=)");
-                                if (!string.IsNullOrEmpty(m.Value))
-                                {
-                                    line.Label = m.Groups[2].Value;
-                                    line.Instruction = m.Groups[3].Value;
-                                }
-                            }
-                            else if (string.IsNullOrEmpty(line.Label) && string.IsNullOrEmpty(line.Instruction) 
-                                &&!string.IsNullOrWhiteSpace(line.Operand))
-                            {
-                                /// check to see if there are instructions like *=something
-                                var m = Regex.Match(line.Operand, @"(\s*)([a-zA-Z0-9_]+|\+|-|\*)(=)(.+)");
-                                if (!string.IsNullOrEmpty(m.Value))
-                                {
-                                    line.Label = m.Groups[2].Value;
-                                    line.Instruction = m.Groups[3].Value;
-                                    line.Operand = m.Groups[4].Value.Trim();
-                                }
-                            }
-
                             sourcelines.Add(line);
                         }
                         catch (SourceLine.QuoteNotEnclosedException)
