@@ -29,7 +29,7 @@ namespace Asm6502.Net
         {
             try
             {
-                IAssemblyController asm = new Asm6502Controller(); asm.Assemble(args);
+                IAssemblyController asm = new Asm6502Controller(args); asm.Assemble();
             }
             catch (Exception e)
             {

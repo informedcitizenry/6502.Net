@@ -55,7 +55,8 @@ namespace Asm6502.Net
         /// <summary>
         /// Constructs a new 6502.Net assembler controller.
         /// </summary>
-        public Asm6502Controller() :
+        /// <param name="args">The command line arguments.</param>
+        public Asm6502Controller(string[] args) :
             base()
         {
             Reserved.DefineType("Functions", new string[]
@@ -83,6 +84,38 @@ namespace Asm6502.Net
             evaluator_.SymbolLookups.Add(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
             evaluator_.SymbolLookups.Add(@"(?<=[^a-zA-Z0-9_\.\)]|^)\*(?=[^a-zA-Z0-9_\.\(]|$)", (str, ix, obj) => Output.GetPC().ToString());
             evaluator_.AllowAlternateBinString = true;
+
+            Output.Reset();
+            Log.ClearAll();
+
+            bool showVersion = Options.ProcessArgs(args);
+            Labels = new Dictionary<string, string>(Options.StringComparar);
+
+            pseudoOps_ = new PseudoOps6502(this);
+            lineAssembler_ = new Asm6502(this);
+            directives_ = new Directives6502(this);
+            lineDisassembler_ = new Disasm6502(this);
+
+            Reserved.Comparer = Options.StringComparison;
+            evaluator_.IgnoreCase = !Options.CaseSensitive;
+
+            if (showVersion)
+            {
+                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
+                Console.WriteLine("Version {0}.{1} Build {2}",
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor,
+                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Build);
+            }
+
+            if (Options.Quiet)
+                Console.SetOut(TextWriter.Null);
+
+            if (!showVersion)
+            {
+                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
+                Console.WriteLine();
+            }
         }
 
         #endregion
@@ -719,45 +752,6 @@ namespace Asm6502.Net
             Console.WriteLine("Passes completed: {0}", passes_);
         }
 
-        /// <summary>
-        /// Initializes the controller, including processing command-line arguments.
-        /// </summary>
-        private void Init(string[] args)
-        {
-            Output.Reset();
-            Log.ClearAll();
-
-            bool showVersion = Options.ProcessArgs(args);
-
-            if (showVersion)
-            {
-                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
-                Console.WriteLine("Version {0}.{1} Build {2}",
-                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Major,
-                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Minor,
-                System.Reflection.Assembly.GetEntryAssembly().GetName().Version.Build);
-            }
-
-            if (Options.Quiet)
-                Console.SetOut(TextWriter.Null);
-
-            if (!showVersion)
-            {
-                Console.WriteLine("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
-                Console.WriteLine();
-            }
-
-            Labels = new Dictionary<string, string>(Options.StringComparar);
-            
-            pseudoOps_ = new PseudoOps6502(this);
-            lineAssembler_ = new Asm6502(this);
-            directives_ = new Directives6502(this);
-            lineDisassembler_ = new Disasm6502(this);
-
-            Reserved.Comparer = Options.StringComparison;
-            evaluator_.IgnoreCase = !Options.CaseSensitive;
-        }
-
         private void Preprocess()
         {
             // add labels defined with command-line -D
@@ -851,11 +845,8 @@ namespace Asm6502.Net
         /// Performs assembly operations based on the command line arguments passed,
         /// including output to an object file and assembly listing.
         /// </summary>
-        /// <param name="args">The command line arguments.</param>
-        public void Assemble(string[] args)
+        public void Assemble()
         {
-            Init(args);
-
             if (Options.InputFiles.Count == 0)
                 return;
 

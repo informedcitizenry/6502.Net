@@ -35,8 +35,7 @@ namespace Asm6502.Net
         /// Performs assembly operations based on the command line arguments passed,
         /// including output to an object file and assembly listing.
         /// </summary>
-        /// <param name="args">The command line arguments to direct the assembler.</param>
-        void Assemble(string[] args);
+        void Assemble();
 
         /// <summary>
         /// Gets the command-line arguments passed by the end-user and parses into a strongly-typed
