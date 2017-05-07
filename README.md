@@ -1219,7 +1219,7 @@ Some features may be introduced in a future release, such as conditional assembl
 <table>
 <tr><td><b>Option</b></td><td><code>-D</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--define</code></td></tr>
-<tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at assembly time.</td></tr>
+<tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at start of assembly, but before even the first pass. Therefore only expressions without references (or with references that have themselves already been defined) can be evaluated.</td></tr>
 <tr><td><b>Parameter</b></td><td><code>{label}={value}</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>/6502.Net -D chrout=$ffd2 myasm.asm -o myoutput</pre>
