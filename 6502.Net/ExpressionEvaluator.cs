@@ -241,6 +241,10 @@ namespace Asm6502.Net
                 long resultD = Convert.ToInt64(Math.Floor(evalD));
                 return resultD;
             }
+            catch (DivideByZeroException ex)
+            {
+                throw ex;
+            }
             catch
             {
                 throw new ExpressionException(expression);
