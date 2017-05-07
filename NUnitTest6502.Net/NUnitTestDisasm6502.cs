@@ -50,18 +50,22 @@ namespace NUnitTest6502.Net
         {
             SourceLine line = new SourceLine();
             line.SourceString = "               FLAG         =   $34             ";
+            line.Label = "FLAG";
             line.Instruction = "=";
             line.Operand = "$34";
             line.Disassembly = string.Empty;
             line.PC = 0x080b;
             line.Filename = "testdisasm.a65";
             line.LineNumber = 73;
+            test_.Labels.Add("FLAG", "52");
 
             string expected =
 @"testdisasm.a65(73)  :=$34                                               FLAG         =   $34             " + Environment.NewLine;
             string result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
+
+            test_.Labels.Clear();
         }
 
         [Test]
@@ -293,12 +297,16 @@ namespace NUnitTest6502.Net
             line.Operand = "$34";
             line.Disassembly = string.Empty;
             line.PC = 0x080b;
+            line.Label = "FLAG";
+            test_.Labels.Add("FLAG", "52");
 
             string expected =
 @"=$34                                               FLAG         =   $34 " + Environment.NewLine;
             string result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
+
+            test_.Labels.Clear();
         }
 
         [Test]

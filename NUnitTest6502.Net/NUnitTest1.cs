@@ -1,15 +1,32 @@
-using Asm6502.Net;
+﻿using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UnitTest6502.Net
 {
     [TestFixture]
     public class GeneralTest
     {
+        [Test]
+        public void TestRegex()
+        {
+            string expression = "MYVAR1 + 2 + MYVAR2";
+            string pattern = @"[a-zA-Z][a-zA-Z0-9_]*";
+
+            expression = Regex.Replace(expression, pattern, m =>
+                {
+                    if (m.Value.Equals("MYVAR1"))
+                        return "1";
+                    return "2";
+                });
+
+            Assert.AreEqual("1 + 2 + 2", expression);
+        }
+
         [Test]
         public void TestStringBuilderExtensions()
         {

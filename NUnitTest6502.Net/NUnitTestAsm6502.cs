@@ -53,6 +53,8 @@ namespace NUnitTest6502.Net
 
         public string GetScopedLabelValue(string label, SourceLine line)
         {
+            if (Labels.ContainsKey(label))
+                return Labels[label];
             return string.Empty;
         }
 

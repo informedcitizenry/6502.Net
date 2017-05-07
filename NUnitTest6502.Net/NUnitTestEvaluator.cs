@@ -1,4 +1,4 @@
-using Asm6502.Net;
+﻿using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -146,6 +146,22 @@ namespace NUnitTest6502.Net
             Assert.AreEqual(49152 * 3, result9);
             Assert.AreEqual(49152 * 3, result10);
             Assert.AreEqual(Math.Pow(49152, 2), result11);
+
+            evaluator.SymbolLookups.Remove(@"testvar");
+            evaluator.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_]*)(?!\()",
+                (str, ix, obj) =>
+                {
+                    if (str.Equals("var1"))
+                        return "1";
+                    if (str.Equals("var2"))
+                        return "2";
+                    Assert.IsTrue(str.Equals("pow") == false);
+                    return string.Empty;
+                });
+
+            string expression = "var1+var1*var2+pow(2,4)";
+            result1 = evaluator.Eval(expression);
+            Assert.AreEqual(1 + 1 * 2 + Math.Pow(2, 4), result1);
         }
 
         [Test()]
