@@ -222,7 +222,7 @@ namespace Asm6502.Net
         #region Methods
 
         /// <summary>
-        /// Evaluate the text string as a mathematical expression.
+        /// Evaluates a text string as a mathematical expression.
         /// </summary>
         /// <param name="expression">The string representation of the mathematical expression.</param>
         /// <returns>The result of the expression evaluation.</returns>
@@ -273,7 +273,7 @@ namespace Asm6502.Net
         }
 
         /// <summary>
-        /// Evaluates the text string as a conditional (boolean) evaluation.
+        /// Evaluates a text string as a conditional (boolean) evaluation.
         /// </summary>
         /// <param name="condition">The string representation of the conditional expression.</param>
         /// <returns>Returns true, if the expression is true, false otherwise.</returns>
