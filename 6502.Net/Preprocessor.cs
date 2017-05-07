@@ -432,6 +432,8 @@ namespace Asm6502.Net
         /// <param name="lines">The SourceLine listing.</param>
         public void DefineScopedSymbols(List<SourceLine> lines)
         {
+            ProcessDefinedLabels();
+
             var assembled = lines.Where(l => !l.DoNotAssemble);
             CheckBlocks(assembled);
 
@@ -552,6 +554,32 @@ namespace Asm6502.Net
 
             if (Scope.Count > 0 && Scope.Peek().EndsWith("@") == false)
                 throw new Exception("End of file reached without block closure");
+        }
+
+        private void ProcessDefinedLabels()
+        {
+            // add labels defined with command-line -D
+            foreach (var label in Controller.Options.LabelDefines)
+            {
+                string name = label;
+                string definition = string.Empty;
+                if (label.Contains("="))
+                {
+                    var def = label.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (def.Count() != 2)
+                        throw new Exception("Bad argument in label definition '" + label + "'");
+
+                    name = def.First(); 
+                    definition = Controller.Evaluator.Eval(def.Last()).ToString();
+                }
+
+                if (Controller.Labels.ContainsKey(name))
+                    throw new Exception(string.Format(Resources.ErrorStrings.LabelRedefinition, name));
+                else if (this.SymbolNameFunc(name) == false || name.StartsWith("_"))
+                    throw new Exception(string.Format(Resources.ErrorStrings.LabelNotValid, name));
+                Controller.Labels.Add(name, definition);
+            }
         }
 
         /// <summary>

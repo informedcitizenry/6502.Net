@@ -754,27 +754,6 @@ namespace Asm6502.Net
 
         private void Preprocess()
         {
-            // add labels defined with command-line -D
-            foreach (var label in Options.LabelDefines)
-            {
-                string name = label;
-                string definition = string.Empty;
-                if (label.Contains("="))
-                {
-                    var def = label.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (def.Count() != 2)
-                        throw new Exception("Bad argument in label definition '" + label + "'");
-
-                    name = def.First(); definition = def.Last();
-                }
-
-                if (Labels.ContainsKey(name))
-                    throw new Exception(string.Format(Resources.ErrorStrings.LabelRedefinition, name));
-                else if (IsSymbolName(name, false, false) == false)
-                    throw new Exception(string.Format(Resources.ErrorStrings.LabelNotValid, name));
-                Labels.Add(name, definition);
-            }
             List<SourceLine> source = new List<SourceLine>();
 
             Preprocessor processor = new Preprocessor(this,
