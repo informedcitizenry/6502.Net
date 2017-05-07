@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -455,30 +455,28 @@ namespace Asm6502.Net
                     if (Scope.Count > 0 && !string.IsNullOrEmpty(line.Label) && Scope.Peek().EndsWith("@"))
                         Scope.Pop();
 
-                    string label = line.Label;
-                    if (string.IsNullOrEmpty(label) == false)
+                    if (string.IsNullOrEmpty(line.Label) == false && line.Label != "+" && line.Label != "-")
                     {
-                        if (label.StartsWith("_") || SymbolNameFunc(label) == false)
+                        if (line.Label.StartsWith("_") || SymbolNameFunc(line.Label) == false)
                         {
                             Controller.Log.LogEntry(line, Resources.ErrorStrings.None);
                             continue;
                         }
-                        Scope.Push(label);
+                        Scope.Push(line.Label);
                     }
                     else
                     {
                         var anonscope = "!anon" + anon.ToString();
+                        if (line.Label == "-" || line.Label == "+")
+                            line.Scope = string.Join(".", Scope.Reverse());
                         Scope.Push(anonscope);
                         anon++;
                     }
-                    //line.IsDefinition = true;
                 }
                 else if (line.Instruction.Equals(".endblock", Controller.Options.StringComparison))
                 {
                     if (string.IsNullOrEmpty(line.Operand) == false)
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.DirectiveTakesNoArguments, line.Instruction);
-
-                    //line.IsDefinition = true;
 
                     if (string.IsNullOrEmpty(line.Label))
                     {
@@ -515,8 +513,11 @@ namespace Asm6502.Net
                         Scope.Push(line.Label + "@");
                     }
                 }
-
-                line.Scope = string.Join(".", Scope.Reverse());//.Replace("@", string.Empty);
+                if (!line.Instruction.Equals(".block", Controller.Options.StringComparison) ||
+                    (line.Label != "-" && line.Label != "+"))
+                {
+                    line.Scope = string.Join(".", Scope.Reverse());
+                }
 
                 if (line.Instruction.Equals(".endblock", Controller.Options.StringComparison) &&
                     string.IsNullOrEmpty(line.Label) == false)
@@ -537,7 +538,7 @@ namespace Asm6502.Net
                     string scoped = line.Scope.Replace("@", "");
                     if (line.Label.StartsWith("_"))
                         scoped += "." + line.Label;
-                    if (/*Controller.Labels.ContainsKey(scoped)*/Controller.Labels.ContainsKey(scoped))
+                    if (Controller.Labels.ContainsKey(scoped))
                     {
                         Controller.Log.LogEntry(line, Resources.ErrorStrings.LabelRedefinition, line.Label);
                         continue;

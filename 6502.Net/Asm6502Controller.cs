@@ -197,7 +197,7 @@ namespace Asm6502.Net
         /// <param name="line">The SourceLine to read</param>
         /// <param name="instruction_ix">The index of the instruction in the line tokens</param>
         /// <returns>The size in bytes of the instruction, including opcode and operand</returns>
-        public int GetInstructionSize(SourceLine line)
+        private int GetInstructionSize(SourceLine line)
         {
             if (lineAssembler_.AssemblesInstruction(line.Instruction))
                 return lineAssembler_.GetInstructionSize(line);
@@ -546,7 +546,7 @@ namespace Asm6502.Net
                 evaluator_.SymbolLookupObject = line;
                 if (line.Instruction.Equals(".end", Options.StringComparison))
                     break;
-
+      
                 lineDisassembler_.DisassembleLine(line, listing);
             }
             if (listing.ToString().EndsWith(Environment.NewLine))

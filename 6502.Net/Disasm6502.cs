@@ -91,10 +91,15 @@ namespace Asm6502.Net
                 Int64 value = 0;
                 if (line.Label == "*")
                     return string.Empty;
-                if (string.IsNullOrEmpty(line.Operand) || line.Operand == "*")
+                if (string.IsNullOrEmpty(line.Operand) || line.Operand == "*" || line.Label == "-" || line.Label == "+")
+                {
                     value = line.PC;
+                }
                 else
-                    value = Controller.Evaluator.Eval(line.Operand);
+                {
+                    var labelval = Controller.GetScopedLabelValue(line.Label, line);
+                    value = long.Parse(labelval);
+                }//Controller.Evaluator.Eval(line.Operand);
                 return string.Format("=${0:x}", value);
             }
             else

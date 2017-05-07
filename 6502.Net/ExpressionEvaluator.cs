@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -508,39 +508,9 @@ namespace Asm6502.Net
                 },
                 IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
             }
+
+            expression = ReplaceSymbols(expression);
             
-            // convert client-defined symbols into values
-            foreach (var l in SymbolLookups)
-            {
-                string sym_pattern = l.Key;
-
-                // strip white-spaces between operators and symbols first
-                expression = Regex.Replace(expression, @"\s*("+ l.Key + @")\s*", m => 
-                    {
-                        return m.Groups[1].Value;
-                    });
-
-                while (Regex.IsMatch(expression, sym_pattern, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None))
-                {
-
-                    expression = Regex.Replace(expression, sym_pattern, delegate(Match m)
-                    { 
-                        if (l.Value != null && !string.IsNullOrEmpty(m.Value))
-                        {
-                            string v = expression;
-                            for (int i = 0; i < m.Groups.Count; i++ )
-                            {
-                                Group g = m.Groups[i];
-
-                                if (string.IsNullOrEmpty(g.Value) == false)
-                                    v = g.Value.Replace(g.Value, l.Value(m.Value, i, SymbolLookupObject));
-                            }
-                            return v;//l.Value(m.Value, m. SymbolLookupObject);
-                        }
-                        return m.Value;
-                    }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
-                }
-            }
             // Certain operators are reserved and must be used in a legal way. 
             if (Regex.IsMatch(expression, @"[\[{};\]]") || Regex.IsMatch(expression, @"^%|%$"))
                 throw new ExpressionException(expression);
@@ -552,6 +522,39 @@ namespace Asm6502.Net
                         "<<", "{"), 
                     ">>", "}"), 
                    @"\*\*", ";");
+        }
+
+        private string ReplaceSymbols(string expression)
+        {
+            // convert client-defined symbols into values
+            foreach (var l in SymbolLookups)
+            {
+                string sym_pattern = l.Key;
+
+                // strip white-spaces between operators and symbols first
+                expression = Regex.Replace(expression, @"\s*(" + l.Key + @")\s*", m =>
+                {
+                    return m.Groups[1].Value;
+                });
+
+                expression = Regex.Replace(expression, sym_pattern, delegate(Match m)
+                {
+                    if (l.Value != null && !string.IsNullOrEmpty(m.Value))
+                    {
+                        string v = expression;
+                        for (int i = 0; i < m.Groups.Count; i++)
+                        {
+                            Group g = m.Groups[i];
+
+                            if (string.IsNullOrEmpty(g.Value) == false)
+                                v = g.Value.Replace(g.Value, l.Value(m.Value, i, SymbolLookupObject));
+                        }
+                        return v;//l.Value(m.Value, m. SymbolLookupObject);
+                    }
+                    return m.Value;
+                }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+            }
+            return expression;
         }
 
         #endregion
