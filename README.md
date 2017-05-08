@@ -1181,7 +1181,7 @@ Some features may be introduced in a future release, such as conditional assembl
 <table>
 <tr><td><b>Option</b></td><td><code>-o</code></td></tr>
 <tr><td><b>Alias</b></td><td>--output</td></tr>
-<tr><td><b>Definition</b></td><td>Output the assembly to the specified output file. Quote-enclosed filename is a required parameter.</td></tr>
+<tr><td><b>Definition</b></td><td>Output the assembly to the specified output file. A valid output filename is a required parameter.</td></tr>
 <tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
