@@ -432,7 +432,7 @@ namespace Asm6502.Net
         /// <param name="lines">The SourceLine listing.</param>
         public void DefineScopedSymbols(List<SourceLine> lines)
         {
-            ProcessDefinedLabels();
+            lines.InsertRange(0, ProcessDefinedLabels());
 
             var assembled = lines.Where(l => !l.DoNotAssemble);
             CheckBlocks(assembled);
@@ -556,13 +556,20 @@ namespace Asm6502.Net
                 throw new Exception("End of file reached without block closure");
         }
 
-        private void ProcessDefinedLabels()
+        /// <summary>
+        /// Add labels defined with command-line -D option
+        /// </summary>
+        /// <returns>Returns a System.Collections.Generic.IEnumerable&lt;SourceLine&gt; 
+        /// that will define the labels at assembly time.</returns>
+        private IEnumerable<SourceLine> ProcessDefinedLabels()
         {
-            // add labels defined with command-line -D
+            var labels = new List<SourceLine>();
+            
             foreach (var label in Controller.Options.LabelDefines)
             {
                 string name = label;
-                string definition = string.Empty;
+                string definition = "1";
+
                 if (label.Contains("="))
                 {
                     var def = label.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
@@ -570,16 +577,23 @@ namespace Asm6502.Net
                     if (def.Count() != 2)
                         throw new Exception("Bad argument in label definition '" + label + "'");
 
-                    name = def.First(); 
-                    definition = Controller.Evaluator.Eval(def.Last()).ToString();
+                    name = def.First(); definition = def.Last();
                 }
 
                 if (Controller.Labels.ContainsKey(name))
                     throw new Exception(string.Format(Resources.ErrorStrings.LabelRedefinition, name));
                 else if (this.SymbolNameFunc(name) == false || name.StartsWith("_"))
                     throw new Exception(string.Format(Resources.ErrorStrings.LabelNotValid, name));
-                Controller.Labels.Add(name, definition);
+                
+                labels.Add(new SourceLine
+                    {
+                        Label = name,
+                        Instruction = "=",
+                        Operand = definition,
+                        SourceString = string.Format("{0}={1} ;-D {2}", name, definition, label)
+                    });
             }
+            return labels;
         }
 
         /// <summary>

@@ -681,9 +681,9 @@ namespace Asm6502.Net
                     Output.AddUninitialized(GetInstructionSize(line));
                 return anotherpass;
             }
-            catch (DivideByZeroException dEx)
+            catch (DivideByZeroException)
             {
-                // we only care about divide by zero on subsequent passes
+                // we only care about divide by zero after the first pass is done
                 return false;
             }
             catch (Compilation.InvalidPCAssignmentException ex)

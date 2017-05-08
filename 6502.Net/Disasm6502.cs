@@ -100,7 +100,7 @@ namespace Asm6502.Net
                     var labelval = Controller.GetScopedLabelValue(line.Label, line);
                     value = long.Parse(labelval);
                 }//Controller.Evaluator.Eval(line.Operand);
-                return string.Format("=${0:x}", value);
+                return string.Format("=${0:x" + value.Size() * 2 + "}", value);
             }
             else
             {
