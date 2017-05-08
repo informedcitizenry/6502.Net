@@ -444,7 +444,8 @@ namespace Asm6502.Net
                     return;
                 range = range - (logicalsize - robytes.Count);
             }
-            line.Assembly.AddRange(robytes.GetRange(robytes.Count - range, range));
+            if (range > 0)
+                line.Assembly.AddRange(robytes.GetRange(robytes.Count - range, range));
         }
 
         /// <summary>
