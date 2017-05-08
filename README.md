@@ -411,13 +411,14 @@ variables   .byte ?
 ## Details
 ### Instruction set
 
-At this time, 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. Illegal opcodes must be invoked using the pseudo-ops .byte, .word, etc. The following mnemonics are legal:
-<pre>
+At this time, 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. Illegal opcodes must be invoked using the pseudo-ops .byte, .word, etc. The following mnemonics are recognized:
+
+```
 adc,and,asl,bcc,bcs,beq,bit,bmi,bne,bpl,brk,bvc,bvs,clc,
-cli,clv,cmp,cpx,cpy,dec,dex,dey,eor,inc,inx,iny,jmp,jsr,
-lda,ldx,ldy,lsr,nop,ora,pha,php,pla,plp,rol,ror,rti,rts,
-sbc,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
-</pre>
+cld,cli,clv,cmp,cpx,cpy,dec,dex,dey,eor,inc,inx,iny,jmp,
+jsr,lda,ldx,ldy,lsr,nop,ora,pha,php,pla,plp,rol,ror,rti,
+rts,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
+```
 
 ### Pseudo-Ops
 
