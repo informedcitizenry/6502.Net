@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -692,7 +692,7 @@ namespace Asm6502.Net
             }
             else
             {
-                throw new FileNotFoundException("Unable to open source file", file);
+                throw new FileNotFoundException(string.Format("Unable to open source file \"{0}\"", file));
             }
         }
         #endregion
