@@ -1413,6 +1413,8 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `Redefinition of macro` - An attempt was made to redefine a macro.
 
+`Symbol is not a valid label name` - The label name had one or more invalid characters.
+
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
 `Too many arguments for directive` - More arguments were provided to the directive than expected.
