@@ -509,8 +509,7 @@ namespace Asm6502.Net
                     if (CharEncoding != null)
                         convert = CharEncoding(b).ToString();
                     return convert;
-                },
-                IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+                });
             }
 
             expression = ReplaceSymbols(expression);
