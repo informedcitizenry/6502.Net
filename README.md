@@ -1377,6 +1377,8 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `Illegal quantity` - The expression value is larger than the allowable size.
 
+`Input file was previously added` - An attempt was made to process an input file that was previously added (either in the command line or in an `.include` directive).
+
 `Invalid constant assignment` - The constant could not be assigned to the expression.
 
 `Invalid parameter reference` - The macro reference does not reference a defined parameter.
