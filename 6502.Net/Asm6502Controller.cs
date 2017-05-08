@@ -261,7 +261,7 @@ namespace Asm6502.Net
             value = GetScopedLabelValue(symbol, line);
             if (string.IsNullOrEmpty(value))
             {
-                Log.LogEntry(line, Resources.ErrorStrings.LabelNotDefined);
+                Log.LogEntry(line, Resources.ErrorStrings.LabelNotDefined, symbol);
                 return string.Empty;
             }
             else
