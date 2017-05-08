@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -71,6 +71,8 @@ namespace Asm6502.Net
         /// </summary>
         /// <param name="type">The type name.</param>
         /// <param name="values">The collection of values that comprise the type. </param>
+        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
         public void DefineType(string type, IEnumerable<string> values)
         {
             types_.Add(type, new HashSet<string>(values));
@@ -84,6 +86,8 @@ namespace Asm6502.Net
         /// <param name="type">The type (dictionary key).</param>
         /// <param name="token">The token or keyword.</param>
         /// <returns>Returns true if the specified token is one of the specified type.</returns>
+        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
         public bool IsOneOf(string type, string token)
         {
             return types_[type].Any(d => d.Equals(token, Comparer));
