@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -206,5 +206,8 @@
   </data>
   <data name="MissingClosureMacro" xml:space="preserve">
     <value>Missing closure for {0}</value>
+  </data>
+  <data name="FilePreviouslyIncluded" xml:space="preserve">
+    <value>File {0} previously included. Possible circular reference?</value>
   </data>
 </root>

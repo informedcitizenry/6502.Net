@@ -133,6 +133,15 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to File {0} previously included. Possible circular reference?.
+        /// </summary>
+        internal static string FilePreviouslyIncluded {
+            get {
+                return ResourceManager.GetString("FilePreviouslyIncluded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Illegal quantity &apos;{0}&apos;.
         /// </summary>
         internal static string IllegalQuantity {
@@ -178,7 +187,7 @@ namespace Asm6502.Net.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Symbol &apos;{0}&apos; is not a valid label.
+        ///   Looks up a localized string similar to Symbol &apos;{0}&apos; is not a valid label name.
         /// </summary>
         internal static string LabelNotValid {
             get {
