@@ -728,7 +728,7 @@ done    rts
 <table>
 <tr><td><b>Name</b></td><td><code>.cerror</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Prints a custom error to the console if the condition is met. Useful for sanity checks and assertions. The error is treated like any assembler error and will cause failure of assembly. The condition is any logical expression using C-style operators, and can be compound.</td></tr>
+<tr><td><b>Definition</b></td><td>Prints a custom error to the console if the condition is met. Useful for sanity checks and assertions. The error is treated like any assembler error and will cause failure of assembly. The condition is any logical expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>condition, error</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -756,7 +756,7 @@ done    rts
 <table>
 <tr><td><b>Name</b></td><td><code>.cwarn</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Prints a custom warning to the console if the condition is met. The warning is treated like any assembler warning, and if warnings are treated as errors it will cause failure of assembly The condition is any logical expression using C-style operators, and can be compound.</td></tr>
+<tr><td><b>Definition</b></td><td>Prints a custom warning to the console if the condition is met. The warning is treated like any assembler warning, and if warnings are treated as errors it will cause failure of assembly The condition is any logical expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>condition, warning</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -842,7 +842,7 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.error</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Prints a custom error to the console Useful for sanity checks and assertions. The error is treated like any assembler error and will cause failure of assembly.</td></tr>
+<tr><td><b>Definition</b></td><td>Prints a custom error to the console. The error is treated like any assembler error and will cause failure of assembly.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>error</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <code>.error "We haven't fixed this yet!" </code>
