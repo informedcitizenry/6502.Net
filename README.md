@@ -518,7 +518,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.dword</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a signed 32-bit value or values between 0 and 4294967295 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a signed 32-bit value or values between 0 and 4294967295 into the assembly, little-endian. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -542,7 +542,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.lint</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a signed 24-bit value or values between -8388608 and 8388607 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a signed 24-bit value or values between -8388608 and 8388607 into the assembly, little-endian. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -553,7 +553,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.long</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a signed 24-bit value or values between 0 and 16777215 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a signed 24-bit value or values between 0 and 16777215 into the assembly, little-endian. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
