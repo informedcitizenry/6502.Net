@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Asm6502.Net
 {
@@ -109,21 +110,29 @@ namespace Asm6502.Net
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
         public void LogEntry(string filename, int linenumber, string message, string symbol, bool isError = true)
         {
-            string formatted = "Syntax error in file '{0}' at line {1}: {2}.";
-            if (!isError)
-                formatted = formatted.Replace("Syntax error in f", "Warning: F");
+            StringBuilder sb = new StringBuilder();
+           
+            if (string.IsNullOrEmpty(filename))
+            {
+                if (isError)
+                    sb.Append("Syntax error: ");
+                else
+                    sb.Append("Warning: ");
+            }
+            else
+            {
+                if (isError)
+                    sb.AppendFormat("Syntax error in file '{0}' at line {1}: ", filename, linenumber);
+                else
+                    sb.AppendFormat("Warning in file '{0}' at line {1}: ", filename, linenumber);
+            }
+            
             if (string.IsNullOrEmpty(symbol))
-            {
-                message = message.Replace(" '{0}'", string.Empty);
-            }
+                sb.Append(message.Replace(" '{0}'", string.Empty).Trim());
             else if (message.Contains("'{0}'"))
-            {
-                message = string.Format(message, symbol);
-            }
-
-            errors_.Add(new Tuple<string, bool>(
-                string.Format(formatted, filename, linenumber, message.Trim()),
-                isError));
+                sb.AppendFormat(message, symbol);
+            
+            errors_.Add(new Tuple<string, bool>(sb.ToString(), isError));
         }
 
         /// <summary>
