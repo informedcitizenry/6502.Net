@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -154,7 +154,7 @@
     <value>Symbol '{0}' not found</value>
   </data>
   <data name="LabelNotValid" xml:space="preserve">
-    <value>Symbol '{0}' is not a valid label</value>
+    <value>Symbol '{0}' is not a valid label name</value>
   </data>
   <data name="LabelRedefinition" xml:space="preserve">
     <value>Redefinition of label '{0}'</value>
