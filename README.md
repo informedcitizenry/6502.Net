@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 and related CPU architectures. It is written for .Net (Version 4.5.1) and supports all of the published (legal) instructions of 6502-based CPUs. The MOS 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. 
+The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 and related CPU architectures. It is written for .Net (Version 4.5.1) and supports all of the published (legal) instructions of 6502-based CPUs. The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
 
 ## Legal
 
@@ -21,7 +21,7 @@ You can specify as many source files as assembly input as needed. For instance, 
 ## General Features
 ### Mathematical and Numerical Expressions
 
-Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal numbers are written as is, hex are prefixed with a `$` and binary are prefixed with a `%`. Constant characters are enclosed in single-quotes:
+Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal numbers are written as is, while hex numbers are prefixed with a `$` and binary numbers are prefixed with a `%`. Constant characters are enclosed in single-quotes:
 ```
             65490 = 65490
             $ffd2 = 65490
@@ -65,11 +65,6 @@ Operands can also be mathematical expressions, even referencing labels. Math exp
 <tr><td>^</td><td>Bankbyte (third byte)</td></tr>
 </table>
 
-Expressions evaluate internally as 64-bit signed integers, but **must** fit to match the expected operand size.
-```
-    lda #4*23       ; okay
-    sta $1000<<8    ; will not assemble!
-```
 There are several math functions that can also be called as part of the expressions. 
 ```
     lda #sqrt(25)
@@ -162,7 +157,7 @@ done        rts
             
             jsr increment ; will produce an assembler error
 ```
-In addition to explicit blocks, any label with a leading underscore is considered "local" to the most recent label without an underscore
+In addition to explicit blocks, any label with a leading underscore is considered "local" to the most recent label without an underscore.
 ```
 printmessage    ldx #0
 _loop           lda msg_ptr,x       ; _loop is local to printmessage
@@ -177,7 +172,7 @@ _loop           lda color_ptr,x     ; This _loop is local to colormessage
                 beq _done           ; as is this _done
                 ...
 ```
-Anonymous labels allow one to do away with the need to think of unique label names altogether. There are two types of anonymous labels: forward and backward. Forward anonymous labels are declared with a `+`, while backward anonymous labels are declared using a `-`. They are forward or backward to the current assembly line. They are referenced in the operand with one or more `+` or `-` symbols:
+Anonymous labels allow one to do away with the need to think of unique label names altogether. There are two types of anonymous labels: forward and backward. Forward anonymous labels are declared with a `+`, while backward anonymous labels are declared using a `-`. They are forward or backward to the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
 ```
 printmessage    ldx #0
 -               lda msg_ptr,x
@@ -196,7 +191,7 @@ As you can see anonymous labels, though convenient, would hinder readability if 
 ```
 ## Non-code (data) assembly
 
-In addition to 6502 assembly, data can also be assembled. If the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
+In addition to 6502 assembly, data can also be assembled. Expressions evaluate internally as 64-bit signed integers, but **must** fit to match the expected operand size; if the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
 
 <table>
 <tr><th>Directive</th><th>Size</th></tr>
@@ -215,7 +210,7 @@ In addition to 6502 assembly, data can also be assembled. If the value given in 
 <tr><td><code>.repeat</code></td><td>One or more bytes</td></tr>
 </table>
 
-Multi-byte directives assemble in little-endian (least significant byte first). Data is comma-separated, and each value can be a constant or expression:
+Multi-byte directives assemble in little-endian order (the least significant byte first), which conforms to the 6502 architecture. Data is comma-separated, and each value can be a constant or expression:
 ```
 sprite      .byte %......##,%########,%##......
 jump        .word sub1, sub2, sub3, sub4
@@ -229,16 +224,15 @@ The `.addr` and `.rta` directives are the same as `.word`, but `.rta` is the exp
             rts         ; do the jump
 jump        .rta $0800  ; = $07ff
 ```
-For `.fill` and `.align`, the assembler accepts either one or two arguments. The first is the quantity, the second is the value. If the second is not given then it is assumed to be uninitialized data (see below). For `.fill`, quantity is number of bytes, for `.align` it is the number of bytes by which the program counter can be divided with no remainder:
+For `.fill` and `.align`, the assembler accepts either one or two arguments. The first is the quantity, while the second is the value. If the second is not given then it is assumed to be uninitialized data (see below). For `.fill`, quantity is number of bytes, for `.align` it is the number of bytes by which the program counter can be divided with no remainder:
 ```
 unused      .fill 256,0 ; Assemble 256 bytes with the value 0
 
 atpage      .align 256  ; The program counter is guaranteed to be at a page boundary
 ```
-Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, this is useful for program variables. Use the `?` instead of an expression:
+Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, for program variables. Use the `?` instead of an expression:
 ```
 highscore   .dword ?    ; set the symbol highscore to the program counter,
-                        ; but do not output any bytes 
                         ; but do not output any bytes 
 ```                             
 Note that if uninitialized data is defined, but thereafter initialized data is defined, the output will fill bytes to the program counter from the occurrence of the uninitialized symbol:
@@ -334,7 +328,7 @@ finish          rts
 ```
 ## Macros and segments
 
-One of the more powerful features of the 6502.Net cross assembler is the ability to re-use code segments in multiple places in your source. You define a macro or segment once, and then can invoke it multiple times later in your source; the assembler simply expands the definition where it is invoked as if it is part of the source. Macros have the additional benefit of allowing you to pass parameters, so that the final outputted code can be easily modified for certain contexts. For instance, one of the more common operations in 6502 assembly is to do a 16-bit increment. You could use a macro for this purpose like this:
+One of the more powerful features of the 6502.Net cross assembler is the ability to re-use code segments in multiple places in your source. You define a macro or segment once, and then can invoke it multiple times later in your source; the assembler simply expands the definition where it is invoked as if it is part of the source. Macros have the additional benefit of allowing you to pass parameters, so that the final outputted code can be easily modified for different contexts, behaving much like a function call in a high level language. For instance, one of the more common operations in 6502 assembly is to do a 16-bit increment. You could use a macro for this purpose like this:
 ```
 inc16   .macro  address
         inc \address
@@ -424,7 +418,7 @@ rts,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
 
 Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops. A pseudo-op is similar to a mnemonic in that it tells the assembler to output some number of bytes, but different in that it is not part of the CPU's instruction set. For each pseudo-op description is its name, any aliases, a definition, arguments, and examples of usage. Optional arguments are in square brackets (`[` and `]`).
 
-Note that every argument, unless specified, can be any legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. Anonymous labels should be referenced in parantheses, otherwise the expression engine might misinterpret them. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
+Note that every argument, unless specified, is a legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. Anonymous labels should be referenced in parantheses, otherwise the expression engine might misinterpret them. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
 
 <p align="center"><b>Data/text insertions</b></p>
 <table>
@@ -535,7 +529,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.fill</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Fill the assembly by the specified amount. Similar to align, if only one argument then space is merely reserved. Otherwise the optional second argument indicates the assembly should be filled with bytes making up the expression, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Fill the assembly by the specified amount. Similar to align, that if only one argument is passed then space is merely reserved. Otherwise the optional second argument indicates the assembly should be filled with bytes making up the expression, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>amount[, fillvalue]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -780,8 +774,8 @@ done    rts
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td> Set the text encoding, how to interpret character literals. Currently only relevant to Commodore  targets. Three options are available:
 <ul>
-        <li><code>petscii</code> - convert ASCII/UTF8 to Commodore PETSCII</li>
-        <li><code>screen</code>  - convert ASCII/UTF8 to Commodore screen codes</li>
+        <li><code>petscii</code> - convert ASCII/UTF-8 to Commodore PETSCII</li>
+        <li><code>screen</code>  - convert ASCII/UTF-8 to Commodore screen codes</li>
         <li><code>none</code>    - treat as raw ASCII/UTF-8</li>
 </ul>
 </td></tr>
