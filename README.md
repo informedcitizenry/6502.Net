@@ -1371,15 +1371,13 @@ Some features may be introduced in a future release, such as conditional assembl
 
 `error: option requires a value` -  An option was passed in the command-line that expected an argument that was not supplied.
 
-`File previously included. Possible circular reference?` - A directive was issued to include a source file that was previously included, thereby causing a circular reference.
+`File previously included. Possible circular reference?` - An input file was given in the command-line or a directive was issued to include a source file that was previously include.
 
 `Filename not specified` - A directive expected a filename that was not provided.
 
 `General syntax error` - A general syntax error.
 
 `Illegal quantity` - The expression value is larger than the allowable size.
-
-`Input file was previously added` - An attempt was made to process an input file that was previously added (either in the command line or in an `.include` directive).
 
 `Invalid constant assignment` - The constant could not be assigned to the expression.
 
