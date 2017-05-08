@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -114,7 +114,7 @@ namespace Asm6502.Net
             binaryRegex_ = new Regex(@"%([01]+)", RegexOptions.Compiled);
             unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_\.\)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_\.]+)", RegexOptions.Compiled);
 
-            evalImpl_ = new Mathos.Parser.MathParser();
+            evalImpl_ = new Mathos.Parser.MathParser(true, true, false);
 
             evalImpl_.OperatorList.Add("{");
             evalImpl_.OperatorList.Add("}");
