@@ -770,7 +770,7 @@ namespace Asm6502.Net
             {
                 if (processor.FileRegistry.Add(file) == false)
                 {
-                    throw new Exception("Input file \"" + file + "\" was previously added.");
+                    throw new Exception(string.Format(Resources.ErrorStrings.FilePreviouslyIncluded, file));
                 }
                 source.AddRange(processor.ConvertToSource(file));
 

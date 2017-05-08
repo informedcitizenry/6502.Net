@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -246,7 +246,7 @@ namespace Asm6502.Net
                     }
                     if (FileRegistry.Add(filename.Trim('"')) == false)
                     {
-                        throw new Exception("File '" + line.Operand + "' previously included. Possible circular reference?");
+                        throw new Exception(string.Format(Resources.ErrorStrings.FilePreviouslyIncluded, line.Operand));
                     }
                     var inclistings = ConvertToSource(filename.Trim('"'));
                     processedLines.AddRange(inclistings);
@@ -270,7 +270,7 @@ namespace Asm6502.Net
                         }
                         if (FileRegistry.Add(line.Operand.Trim('"')) == false)
                         {
-                            throw new Exception("File " + line.Operand + " previously included. Possible circular reference?");
+                            throw new Exception(string.Format(Resources.ErrorStrings.FilePreviouslyIncluded, line.Operand));
                         }
 
                         openblock.Label = label;
