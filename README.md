@@ -1357,6 +1357,8 @@ Some features may be introduced in a future release, such as conditional assembl
 
 ### Error messages
 
+`Attempted to divide by zero..` - The expression attempted a division by zero.
+
 `Cannot resolve anonymous label` - The assembler cannot find the reference to the anonymous label.
 
 `Closure does not close a block` - A block closure is present but no block opening.
