@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -67,9 +67,12 @@ namespace Asm6502.Net
         private string DisassembleFileLine(SourceLine line)
         {
             string lineinfo = line.Filename;
-            if (lineinfo.Length > 14)
+            if (string.IsNullOrEmpty(lineinfo) == false)
+            {
+                if (lineinfo.Length > 14)
                 lineinfo = lineinfo.Substring(0, 11) + "...";
-            lineinfo += "(" + line.LineNumber.ToString() + ")";
+                lineinfo += "(" + line.LineNumber.ToString() + ")";
+            }
             return string.Format("{0,-20}:", lineinfo);
         }
 
@@ -89,7 +92,7 @@ namespace Asm6502.Net
             if (line.Instruction == "=" || line.Instruction.Equals(".equ", Controller.Options.StringComparison))
             {
                 Int64 value = 0;
-                if (line.Label == "*")
+                if (line.Label == "*" || Controller.Options.NoSource)
                     return string.Empty;
                 if (string.IsNullOrEmpty(line.Operand) || line.Operand == "*" || line.Label == "-" || line.Label == "+")
                 {
@@ -141,7 +144,7 @@ namespace Asm6502.Net
                     pc += 8;
                     if (i < subdisasms.Count - 1)
                     {
-                        string format = ">{0:x4}  ";
+                        string format = ">{0:x4}    ";
                         if (Controller.Options.VerboseList)
                             format = "                    :" + format;
                         sb.AppendFormat(format, pc);
@@ -171,7 +174,6 @@ namespace Asm6502.Net
                 return;// printing has been suppressed
 
             string sourcestr = line.SourceString;
-
             if (!Controller.Options.VerboseList)
             {
                 if (line.DoNotAssemble || Reserved.IsReserved(line.Instruction))
@@ -185,33 +187,54 @@ namespace Asm6502.Net
                 else if (Controller.Options.NoSource)
                 {
                     sourcestr = string.Empty;
-                } 
+                }
                 else if (string.IsNullOrWhiteSpace(line.Label + line.Instruction))
+                {
                     return;
+                }
             }
             else
             {
                 if (string.IsNullOrEmpty(sourcestr))
-                    sourcestr = line.Instruction;
+                    return;
                 else if (Controller.Options.NoSource)
                     sourcestr = string.Empty;
                 sb.Append(DisassembleFileLine(line));
             }
-            sb.AppendFormat("{0,-7}", DisassembleAddress(line));
+            sb.AppendFormat("{0,-9}", DisassembleAddress(line));
 
-            string asm = DisassembleAsm(line, sourcestr);
-            if (asm.Length > 24)
+            if (Controller.Options.NoAssembly == false)
             {
-                sb.Append(asm);
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
-                    sb.AppendFormat("{0,-29}{1,-10}", asm, sourcestr).AppendLine();
+                string asm = DisassembleAsm(line, sourcestr);
+                if (asm.Length > 24)
+                {
+                    sb.Append(asm);
+                    return;
+                }
+                else if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
+                {
+                    sb.AppendFormat("{0,-29}", asm);
+                }
                 else
-                    sb.AppendFormat("{0,-13}{1,-16}{2,-10}", asm, line.Disassembly, sourcestr)
-                      .AppendLine();
+                {
+                    sb.AppendFormat("{0,-13}", asm);
+                }
             }
+            
+            if (Controller.Options.NoDissasembly == false)
+            {
+                if (string.IsNullOrEmpty(line.Disassembly) == false)
+                    sb.AppendFormat("{0,-16}", line.Disassembly);
+                else if (Controller.Options.NoAssembly)
+                    sb.AppendFormat("{0,-28}", line.Disassembly);
+            }
+
+            if (Controller.Options.NoSource == false)
+                sb.AppendFormat("{0,-10}", sourcestr);
+            else if (string.IsNullOrEmpty(line.Disassembly) && line.Assembly.Count == 0)
+                sb.TrimEnd();
+            
+            sb.AppendLine();
         }
 
         /// <summary>
