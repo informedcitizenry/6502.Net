@@ -1,4 +1,4 @@
-﻿using Asm6502.Net;
+using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -38,7 +38,7 @@ namespace NUnitTest6502.Net
 
             string disasm = disasm_.DisassembleLine(line);
 
-            string expected = @"testdisasm.a65(30)  :.c025   a2 00       ldx #$00        " +
+            string expected = @"testdisasm.a65(30)  :.c025     a2 00       ldx #$00        " +
                                 line.SourceString +
                                 Environment.NewLine;
 
@@ -60,7 +60,7 @@ namespace NUnitTest6502.Net
             test_.Labels.Add("FLAG", "52");
 
             string expected =
-@"testdisasm.a65(73)  :=$34                                               FLAG         =   $34             " + Environment.NewLine;
+@"testdisasm.a65(73)  :=$34                                                 FLAG         =   $34             " + Environment.NewLine;
             string result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
@@ -82,7 +82,7 @@ namespace NUnitTest6502.Net
             line.Filename = "testdisasm.a65";
             line.LineNumber = 32;
 
-            string expected = "testdisasm.a65(32)  :                                    stdout      .block" + Environment.NewLine;
+            string expected = "testdisasm.a65(32)  :                                      stdout      .block" + Environment.NewLine;
             string result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
@@ -92,7 +92,7 @@ namespace NUnitTest6502.Net
             line.Instruction = string.Empty;
             line.LineNumber = 33;
 
-            expected = "testdisasm.a65(33)  :                                    thisguy   " + Environment.NewLine;
+            expected = "testdisasm.a65(33)  :                                      thisguy   " + Environment.NewLine;
             result = disasm_.DisassembleLine(line);
             
             Assert.AreEqual(expected, result);
@@ -112,10 +112,10 @@ namespace NUnitTest6502.Net
             line.Operand = "9*3,%........";
 
             string expected =
-"testdisasm.a65(68)  :>093e   00 00 00 00 00 00 00 00                                 .fill 9*3,%........" + Environment.NewLine +
-"                    :>0946   00 00 00 00 00 00 00 00" + Environment.NewLine +
-"                    :>094e   00 00 00 00 00 00 00 00" + Environment.NewLine +
-"                    :>0956   00 00 00" + Environment.NewLine;
+"testdisasm.a65(68)  :>093e     00 00 00 00 00 00 00 00                                 .fill 9*3,%........" + Environment.NewLine +
+"                    :>0946     00 00 00 00 00 00 00 00" + Environment.NewLine +
+"                    :>094e     00 00 00 00 00 00 00 00" + Environment.NewLine +
+"                    :>0956     00 00 00" + Environment.NewLine;
 
             string result = disasm_.DisassembleLine(line);
 
@@ -129,7 +129,7 @@ namespace NUnitTest6502.Net
             line.Assembly.Clear();
             line.Assembly.AddRange(Enumerable.Repeat(Convert.ToByte(0), 8));
 
-            expected = "testdisasm.a65(41)  :>c03c   00 00 00 00 00 00 00 00     somelabel   .fill 8,0" + Environment.NewLine;
+            expected = "testdisasm.a65(41)  :>c03c     00 00 00 00 00 00 00 00     somelabel   .fill 8,0" + Environment.NewLine;
 
             result = disasm_.DisassembleLine(line);
             Assert.AreEqual(expected, result);
@@ -139,8 +139,8 @@ namespace NUnitTest6502.Net
             line.Assembly.Add(0);
 
             expected =
-"testdisasm.a65(41)  :>c03c   00 00 00 00 00 00 00 00     somelabel   .fill 9,0" + Environment.NewLine +
-"                    :>c044   00" + Environment.NewLine;
+"testdisasm.a65(41)  :>c03c     00 00 00 00 00 00 00 00     somelabel   .fill 9,0" + Environment.NewLine +
+"                    :>c044     00" + Environment.NewLine;
             result = disasm_.DisassembleLine(line);
             Assert.AreEqual(expected, result);
         }
@@ -161,15 +161,15 @@ namespace NUnitTest6502.Net
             line.PC = 0xc03c;
 
             string expected =
-"testdisasm.a65(41)  :>c03c   68 65 6c 6c 6f 2c 20 77                 .string \"HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!\"" + Environment.NewLine +
-"                    :>c044   6f 72 6c 64 21 20 6d 79" + Environment.NewLine +
-"                    :>c04c   20 6e 61 6d 65 20 69 73" + Environment.NewLine +
-"                    :>c054   20 6f 70 70 65 6e 68 65" + Environment.NewLine +
-"                    :>c05c   69 6d 65 72 20 69 20 68" + Environment.NewLine +
-"                    :>c064   61 76 65 20 62 65 63 6f" + Environment.NewLine +
-"                    :>c06c   6d 65 20 64 65 73 74 72" + Environment.NewLine +
-"                    :>c074   6f 79 65 72 20 6f 66 20" + Environment.NewLine +
-"                    :>c07c   77 6f 72 64 73 21 21" + Environment.NewLine;
+"testdisasm.a65(41)  :>c03c     68 65 6c 6c 6f 2c 20 77                 .string \"HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!\"" + Environment.NewLine +
+"                    :>c044     6f 72 6c 64 21 20 6d 79" + Environment.NewLine +
+"                    :>c04c     20 6e 61 6d 65 20 69 73" + Environment.NewLine +
+"                    :>c054     20 6f 70 70 65 6e 68 65" + Environment.NewLine +
+"                    :>c05c     69 6d 65 72 20 69 20 68" + Environment.NewLine +
+"                    :>c064     61 76 65 20 62 65 63 6f" + Environment.NewLine +
+"                    :>c06c     6d 65 20 64 65 73 74 72" + Environment.NewLine +
+"                    :>c074     6f 79 65 72 20 6f 66 20" + Environment.NewLine +
+"                    :>c07c     77 6f 72 64 73 21 21" + Environment.NewLine;
 
             string result = disasm_.DisassembleLine(line);
             Assert.AreEqual(expected, result);
@@ -201,10 +201,10 @@ namespace NUnitTest6502.Net
             line.Operand = "9*3,%........";
 
             string expected =
-">093e   00 00 00 00 00 00 00 00                                 .fill 9*3,%........" + Environment.NewLine +
-">0946   00 00 00 00 00 00 00 00" + Environment.NewLine +
-">094e   00 00 00 00 00 00 00 00" + Environment.NewLine +
-">0956   00 00 00" + Environment.NewLine;
+">093e     00 00 00 00 00 00 00 00                                 .fill 9*3,%........" + Environment.NewLine +
+">0946     00 00 00 00 00 00 00 00" + Environment.NewLine +
+">094e     00 00 00 00 00 00 00 00" + Environment.NewLine +
+">0956     00 00 00" + Environment.NewLine;
 
             string result = disasm_.DisassembleLine(line);
 
@@ -216,7 +216,7 @@ namespace NUnitTest6502.Net
             line.Assembly.Clear();
             line.Assembly.AddRange(Enumerable.Repeat(Convert.ToByte(0), 8));
            
-            expected = ">c03c   00 00 00 00 00 00 00 00     somelabel   .fill 8,0" + Environment.NewLine;
+            expected = ">c03c     00 00 00 00 00 00 00 00     somelabel   .fill 8,0" + Environment.NewLine;
             result = disasm_.DisassembleLine(line);
             Assert.AreEqual(expected, result);
             
@@ -226,8 +226,8 @@ namespace NUnitTest6502.Net
             line.Assembly.Add(0);
 
             expected =
-">c03c   00 00 00 00 00 00 00 00     somelabel   .fill 9,0" + Environment.NewLine +
-">c044   00" + Environment.NewLine;
+">c03c     00 00 00 00 00 00 00 00     somelabel   .fill 9,0" + Environment.NewLine +
+">c044     00" + Environment.NewLine;
             result = disasm_.DisassembleLine(line);            
             Assert.AreEqual(expected, result);
         }
@@ -246,15 +246,15 @@ namespace NUnitTest6502.Net
             line.PC = 0xc03c;
 
             string expected =
-">c03c   68 65 6c 6c 6f 2c 20 77                 .string \"HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!\"" + Environment.NewLine +
-">c044   6f 72 6c 64 21 20 6d 79" + Environment.NewLine +
-">c04c   20 6e 61 6d 65 20 69 73" + Environment.NewLine +
-">c054   20 6f 70 70 65 6e 68 65" + Environment.NewLine +
-">c05c   69 6d 65 72 20 69 20 68" + Environment.NewLine +
-">c064   61 76 65 20 62 65 63 6f" + Environment.NewLine +
-">c06c   6d 65 20 64 65 73 74 72" + Environment.NewLine +
-">c074   6f 79 65 72 20 6f 66 20" + Environment.NewLine +
-">c07c   77 6f 72 64 73 21 21" + Environment.NewLine;
+">c03c     68 65 6c 6c 6f 2c 20 77                 .string \"HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!\"" + Environment.NewLine +
+">c044     6f 72 6c 64 21 20 6d 79" + Environment.NewLine +
+">c04c     20 6e 61 6d 65 20 69 73" + Environment.NewLine +
+">c054     20 6f 70 70 65 6e 68 65" + Environment.NewLine +
+">c05c     69 6d 65 72 20 69 20 68" + Environment.NewLine +
+">c064     61 76 65 20 62 65 63 6f" + Environment.NewLine +
+">c06c     6d 65 20 64 65 73 74 72" + Environment.NewLine +
+">c074     6f 79 65 72 20 6f 66 20" + Environment.NewLine +
+">c07c     77 6f 72 64 73 21 21" + Environment.NewLine;
 
             string result = disasm_.DisassembleLine(line);
             Assert.AreEqual(expected, result);
@@ -273,7 +273,7 @@ namespace NUnitTest6502.Net
             line.Disassembly = string.Empty;
             line.IsDefinition = true;
 
-            string expected = "                                    stdout    " + Environment.NewLine;
+            string expected = "                                      stdout    " + Environment.NewLine;
             string result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
@@ -282,7 +282,7 @@ namespace NUnitTest6502.Net
             line.SourceString = "thisguy";
             line.Instruction = string.Empty;
 
-            expected = "                                    thisguy   " + Environment.NewLine;
+            expected = "                                      thisguy   " + Environment.NewLine;
             result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
@@ -301,7 +301,7 @@ namespace NUnitTest6502.Net
             test_.Labels.Add("FLAG", "52");
 
             string expected =
-@"=$34                                               FLAG         =   $34 " + Environment.NewLine;
+@"=$34                                                 FLAG         =   $34 " + Environment.NewLine;
             string result = disasm_.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
@@ -322,7 +322,7 @@ namespace NUnitTest6502.Net
 
             string disasm = disasm_.DisassembleLine(line);
 
-            string expected = @".c000   a2 00       ldx #$00        " + 
+            string expected = @".c000     a2 00       ldx #$00        " + 
                                 line.SourceString + 
                                 Environment.NewLine;
 
