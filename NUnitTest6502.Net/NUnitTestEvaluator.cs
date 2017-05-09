@@ -221,6 +221,7 @@ namespace NUnitTest6502.Net
             Assert.AreEqual((1 < 3), simple);
             Assert.AreEqual((5 + 2 > 6 && 4 + 3 != 12), compound);
             Assert.AreEqual(((1 < 3) || !(4 > 6) && (13 * 2 != 4 || 8 > 0)), complex);
+            Assert.AreEqual(0x8000 > 0x6900 - (16 * 3 + 32 * 2), tricky);
         }
     }
 }
