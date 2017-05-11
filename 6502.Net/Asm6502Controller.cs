@@ -82,7 +82,7 @@ namespace Asm6502.Net
             evaluator_ = new ExpressionEvaluator();
             evaluator_.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_\.]*)(?!\()", GetLabelValue);
             evaluator_.SymbolLookups.Add(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
-            evaluator_.SymbolLookups.Add(@"(?<=[^a-zA-Z0-9_\.\)]|^)\*(?=[^a-zA-Z0-9_\.\(]|$)", (str, ix, obj) => Output.GetPC().ToString());
+            evaluator_.SymbolLookups.Add(@"(?<![a-zA-Z0-9_\.)])\*(?![a-zA-Z0-9_\.(])", (str, ix, obj) => Output.GetPC().ToString());
             evaluator_.AllowAlternateBinString = true;
 
             Output.Reset();
