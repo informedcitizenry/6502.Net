@@ -152,7 +152,7 @@ namespace Asm6502.Net
             }
 
             // otherwise...
-            return Regex.IsMatch(token, "^_?[a-zA-Z][a-zA-Z_.0-9]*$");
+            return Regex.IsMatch(token, @"^_?[a-zA-Z][a-zA-Z0-9_\.]*$");
         }
 
         /// <summary>
