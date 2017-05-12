@@ -1,4 +1,4 @@
-﻿using Asm6502.Net;
+using Asm6502.Net;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -101,20 +101,20 @@ namespace NUnitTest6502.Net
             // is within the given range.
             Assert.IsTrue(random >= -3 && random <= 2047);
 
-            Assert.AreEqual(Convert.ToInt64(Math.Exp(15.0)), exp);
-            Assert.AreEqual(Convert.ToInt64(Math.Floor(-4.8)), floor);
-            Assert.AreEqual(Convert.ToInt64(Math.Floor(Math.Log(2048.0))), ln);
-            Assert.AreEqual(Convert.ToInt64(Math.Floor(Math.Log10(0x7fffff) + Math.Log10(3 * 4) + (12 * 3))), log10);
-            Assert.AreEqual(Convert.ToInt64(Math.Pow(2, 16)), pow);
-            Assert.AreEqual(Convert.ToInt64(Math.Round(18.21, 0)), round);
-            Assert.AreEqual(Convert.ToInt64(Math.Sign(-8.0)), negsgn);
-            Assert.AreEqual(Convert.ToInt64(Math.Sign(14.0)), possgn);
-            Assert.AreEqual(Convert.ToInt64(Math.Sign(0)), nosgn);
-            Assert.AreEqual(Convert.ToInt64(Math.Sin(1003.9) * 14), sin);
-            Assert.AreEqual(Convert.ToInt64(Math.Sinh(0.0)), sinh);
-            Assert.AreEqual(Convert.ToInt64(Math.Sqrt(65536) - 1), sqrt);
-            Assert.AreEqual(Convert.ToInt64(Math.Tan(444.0) * 5.0), tan);
-            Assert.AreEqual(Convert.ToInt64(Math.Tanh(0.0)), tanh);
+            Assert.AreEqual((long)Math.Exp(15.0), exp);
+            Assert.AreEqual((long)Math.Floor(-4.8), floor);
+            Assert.AreEqual((long)Math.Log(2048.0), ln);
+            Assert.AreEqual((long)(Math.Log10(0x7fffff) + Math.Log10(3 * 4) + (12 * 3)), log10);
+            Assert.AreEqual((long)Math.Pow(2, 16), pow);
+            Assert.AreEqual((long)Math.Round(18.21, 0), round);
+            Assert.AreEqual((long)Math.Sign(-8.0), negsgn);
+            Assert.AreEqual((long)Math.Sign(14.0), possgn);
+            Assert.AreEqual((long)Math.Sign(0), nosgn);
+            Assert.AreEqual((long)(Math.Sin(1003.9) * 14), sin);
+            Assert.AreEqual((long)Math.Sinh(0.0), sinh);
+            Assert.AreEqual((long)(Math.Sqrt(65536) - 1), sqrt);
+            Assert.AreEqual((long)(Math.Tan(444.0) * 5.0), tan);
+            Assert.AreEqual((long)Math.Tanh(0.0), tanh);
         }
 
         [Test]
@@ -140,9 +140,9 @@ namespace NUnitTest6502.Net
             Assert.AreEqual(42 * 49152, result3);
             Assert.AreEqual(49152 * 42, result4);
             Assert.AreEqual(49152 + 42, result5);
-            Assert.AreEqual(Convert.ToInt64(Math.Pow(42, 3)), result6);
+            Assert.AreEqual((long)Math.Pow(42, 3), result6);
             Assert.AreEqual(42 + 49152 / 256 + 0, result7);
-            Assert.AreEqual(Convert.ToInt64(Math.Floor(Math.Sin(1009.3) * 42 * 49152)), result8);
+            Assert.AreEqual((long)(Math.Sin(1009.3) * 42 * 49152), result8);
             Assert.AreEqual(49152 * 3, result9);
             Assert.AreEqual(49152 * 3, result10);
             Assert.AreEqual(Math.Pow(49152, 2), result11);
