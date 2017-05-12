@@ -112,7 +112,7 @@ namespace Asm6502.Net
 
             hexRegex_ = new Regex(@"\$([a-fA-F0-9]+)", RegexOptions.Compiled);
             binaryRegex_ = new Regex(@"%([01]+)", RegexOptions.Compiled);
-            unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_\.\)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_\.]+)", RegexOptions.Compiled);
+            unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_\.)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_\.]+)", RegexOptions.Compiled);
 
             evalImpl_ = new Mathos.Parser.MathParser(true, true, false);
 
