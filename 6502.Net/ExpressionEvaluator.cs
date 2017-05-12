@@ -236,10 +236,7 @@ namespace Asm6502.Net
                 if (string.IsNullOrWhiteSpace(expression))
                     throw new ExpressionException(expression);
 
-                var evalD = evalImpl_.Parse(pre_eval);
-
-                long resultD = Convert.ToInt64(Math.Floor(evalD));
-                return resultD;
+                return (long)evalImpl_.Parse(pre_eval);
             }
             catch (DivideByZeroException ex)
             {
