@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -186,7 +186,7 @@ namespace Asm6502.Net
 
             if (format.Equals(".lsstring", Controller.Options.StringComparison))
             {
-                Controller.Output.ChangeLast(lastbyte + 1, 1);
+                Controller.Output.ChangeLast(lastbyte | 1, 1);
             }
             else if (format.Equals(".nstring", Controller.Options.StringComparison))
             {
