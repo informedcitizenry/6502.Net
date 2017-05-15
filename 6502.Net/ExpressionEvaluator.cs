@@ -112,7 +112,7 @@ namespace Asm6502.Net
 
             hexRegex_ = new Regex(@"\$([a-fA-F0-9]+)", RegexOptions.Compiled);
             binaryRegex_ = new Regex(@"%([01]+)", RegexOptions.Compiled);
-            unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_\.)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_\.]+)", RegexOptions.Compiled);
+            unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_.)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_.]+)", RegexOptions.Compiled);
 
             evalImpl_ = new Mathos.Parser.MathParser(true, true, false);
 
@@ -423,7 +423,7 @@ namespace Asm6502.Net
         /// <returns>Returns the "sanitized"/normally expression ready for final evaluation.</returns>
         private string PreEvaluate(string expression)
         {
-            var char_pattern = @"(?<![a-zA-Z0-9_\)])'(.)'(?![a-zA-Z0-9_\(])";
+            var char_pattern = @"(?<![a-zA-Z0-9_)])'(.)'(?![a-zA-Z0-9_(])";
             var func_pattern = @"([a-zA-Z][a-zA-Z0-9]*)\((.*?)\)";
             var altbin_pattern = @"%([\.#]+)";
 
@@ -456,8 +456,8 @@ namespace Asm6502.Net
                         m => Convert.ToInt32(m.Groups[1].Value, 2).ToString());
 
                 // convert unary bitwise complement
-                if (Regex.IsMatch(expression, @"(?<![a-zA-Z0-9_\)<>])~(\(.+\)|[a-zA-Z0-9_\.]+)"))
-                    expression = Regex.Replace(expression, @"(?<![a-zA-Z0-9_\)<>])~(\(.+\)|[a-zA-Z0-9_\.]+)", ConvertCompl);
+                if (Regex.IsMatch(expression, @"(?<![a-zA-Z0-9_)<>])~(\(.+\)|[a-zA-Z0-9_.]+)"))
+                    expression = Regex.Replace(expression, @"(?<![a-zA-Z0-9_)<>])~(\(.+\)|[a-zA-Z0-9_.]+)", ConvertCompl);
 
                 // convert log10(x) to log(x,10)
                 if (Regex.IsMatch(expression, @"log10(\(.+\))"))
@@ -549,7 +549,7 @@ namespace Asm6502.Net
                             if (string.IsNullOrEmpty(g.Value) == false)
                                 v = g.Value.Replace(g.Value, l.Value(m.Value, i, SymbolLookupObject));
                         }
-                        return v;//l.Value(m.Value, m. SymbolLookupObject);
+                        return v;
                     }
                     return m.Value;
                 }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
