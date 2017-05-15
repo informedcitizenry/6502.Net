@@ -80,9 +80,9 @@ namespace Asm6502.Net
             Options = new AsmCommandLineOptions();
 
             evaluator_ = new ExpressionEvaluator();
-            evaluator_.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_\.]*)(?!\()", GetLabelValue);
+            evaluator_.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_.]*)(?!\()", GetLabelValue);
             evaluator_.SymbolLookups.Add(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
-            evaluator_.SymbolLookups.Add(@"(?<![a-zA-Z0-9_\.)])\*(?![a-zA-Z0-9_\.(])", (str, ix, obj) => Output.GetPC().ToString());
+            evaluator_.SymbolLookups.Add(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str, ix, obj) => Output.GetPC().ToString());
             evaluator_.AllowAlternateBinString = true;
 
             Output.Reset();
@@ -152,7 +152,7 @@ namespace Asm6502.Net
             }
 
             // otherwise...
-            return Regex.IsMatch(token, @"^_?[a-zA-Z][a-zA-Z0-9_\.]*$");
+            return Regex.IsMatch(token, @"^_?[a-zA-Z][a-zA-Z0-9_.]*$");
         }
 
         /// <summary>
