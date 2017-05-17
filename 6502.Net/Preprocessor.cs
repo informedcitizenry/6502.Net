@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -401,7 +401,6 @@ namespace Asm6502.Net
         private void CheckBlocks(IEnumerable<SourceLine> lines)
         {
             this.Scope.Clear();
-            Stack<string> condscope = new Stack<string>();
             foreach (var line in lines)
             {
                 var b = line.Instruction.ToLower();
@@ -414,6 +413,7 @@ namespace Asm6502.Net
                         if (Scope.Count == 0 || Scope.Peek().ToLower() != b)
                         {
                             Controller.Log.LogEntry(line, Resources.ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
+                            continue;
                         }
                         Scope.Pop();
                         break;
@@ -421,7 +421,7 @@ namespace Asm6502.Net
                         break;
                 }
             }
-            if (condscope.Count != 0 || Scope.Count != 0)
+            if (Scope.Count != 0)
                 Controller.Log.LogEntry(lines.Last(), "End of file reached without closure closing block '" + Scope.Peek() + "'");
         }
         
