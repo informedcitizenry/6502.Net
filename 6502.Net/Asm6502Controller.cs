@@ -668,7 +668,7 @@ namespace Asm6502.Net
                     if (IsDefiningConstant(line) && string.IsNullOrEmpty(line.Operand) == false)
                     {
                         intval = evaluator_.Eval(line.Operand);
-                        if (intval < int.MaxValue || intval > uint.MaxValue)
+                        if (intval < int.MinValue || intval > uint.MaxValue)
                         {
                             Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, intval.ToString());
                             return false;
