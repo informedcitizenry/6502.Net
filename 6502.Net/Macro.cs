@@ -299,14 +299,14 @@ namespace Asm6502.Net
                                 {
                                     throw new MacroException(def, "Default parameter assignment error");
                                 }
-                                if (Regex.IsMatch(pname, @"[a-zA-Z][a-zA-Z0-9_]") == false)
+                                if (Regex.IsMatch(pname, @"[a-zA-Z][a-zA-Z0-9_]*") == false)
                                 {
                                     throw new MacroException(def, "Parameter name '" + pname + "' invalid");
                                 }
                                 parm.Name = pname;
                                 parm.DefaultValue = ps.Last().Trim();
                             }
-                            else if (Regex.IsMatch(p, @"[a-zA-Z][a-zA-Z0-9_]") == false)
+                            else if (Regex.IsMatch(p, @"[a-zA-Z][a-zA-Z0-9_]*") == false)
                             {
                                 throw new MacroException(def, "Parameter name '" + p + "' invalid");
                             }
@@ -351,7 +351,7 @@ namespace Asm6502.Net
                         }
                         foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
                         {
-                            if (Regex.IsMatch(c.ToString(), @"[A-Z0-9_.]", RegexOptions.IgnoreCase))
+                            if (Regex.IsMatch(c.ToString(), @"[a-zA-Z0-9_.]"))
                                 param += c;
                             else
                                 break;
