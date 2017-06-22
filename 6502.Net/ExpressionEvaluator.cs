@@ -532,7 +532,7 @@ namespace Asm6502.Net
                 string sym_pattern = l.Key;
 
                 // strip white-spaces between operators and symbols first
-                expression = Regex.Replace(expression, @"\s*(" + l.Key + @")\s*", m =>
+                expression = Regex.Replace(expression, @"\s*(" + sym_pattern + @")\s*", m =>
                 {
                     return m.Groups[1].Value;
                 });
