@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,6 +65,8 @@ namespace DotNetAsm
 
         #endregion
 
+        #region Methods
+
         public void AssembleLine(SourceLine line)
         {
             string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
@@ -105,6 +107,7 @@ namespace DotNetAsm
             if (instruction.Equals(".endif"))
             {
                 _resultStack.Pop();
+                _condLevel = _condStack.Count;
                 _doNotAsm = false;
             }
             else
@@ -161,5 +164,15 @@ namespace DotNetAsm
         {
             return Reserved.IsReserved(token);
         }
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Determines whether the
+        /// </summary>
+        public bool InConditionBlock { get { return _condLevel > 0; } }
+
+        #endregion
     }
 }
