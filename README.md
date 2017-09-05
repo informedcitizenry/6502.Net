@@ -12,7 +12,7 @@ The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 
 
 See LICENSE and LICENSE_third_party for licensing information.
 
-## Quick Overview
+## Overview
 
 The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
 
@@ -108,7 +108,7 @@ Block comments span multiple lines, enclosed in `.comment` and `.endcomment` dir
 ```
 ## Labels and Symbols
 
-When writing assembly code, it is preferable to use labels for branches and data than to use hard-coded addresses. Labels can be used to define constants, and as jump points in code. There is no restriction on name size, but all labels must begin with an underscore or letter, and can only contain underscores, letters, and digits, and they cannot be re-assigned:
+When writing assembly code, hand-coding branches, addresses and constants can be time-consuming and lead to errors. Labels take care of this work for you! There is no restriction on name size, but all labels must begin with an underscore or letter, and can only contain underscores, letters, and digits, and they cannot be re-assigned:
 ```
             black   =   0
     
@@ -157,21 +157,6 @@ done        rts
             
             jsr increment ; will produce an assembler error
 ```
-In addition to explicit blocks, any label with a leading underscore is considered "local" to the most recent label without an underscore.
-```
-printmessage    ldx #0
-_loop           lda msg_ptr,x       ; _loop is local to printmessage
-                beq _done           ; _done is local to printmessage
-                jsr chrout
-                inx
-                bne _loop           ; will jump to printmessage's _loop
-_done           rts                 
-
-colormessage    ldx #0
-_loop           lda color_ptr,x     ; This _loop is local to colormessage
-                beq _done           ; as is this _done
-                ...
-```
 Anonymous labels allow one to do away with the need to think of unique label names altogether. There are two types of anonymous labels: forward and backward. Forward anonymous labels are declared with a `+`, while backward anonymous labels are declared using a `-`. They are forward or backward to the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
 ```
 printmessage    ldx #0
@@ -207,7 +192,6 @@ In addition to 6502 assembly, data can also be assembled. Expressions evaluate i
 <tr><td><code>.dword</code></td><td>Four bytes unsigned</td></tr>
 <tr><td><code>.align</code></td><td>Zero or more bytes</td></tr>
 <tr><td><code>.fill</code></td><td>One or bytes</td></tr>
-<tr><td><code>.repeat</code></td><td>One or more bytes</td></tr>
 </table>
 
 Multi-byte directives assemble in little-endian order (the least significant byte first), which conforms to the 6502 architecture. Data is comma-separated, and each value can be a constant or expression:
@@ -263,7 +247,16 @@ start       = $c000
 
 startstr    .string str(start) ; assembles as $34,$39,$31,$35,$32
                                ; literally the digits "4","9","1","5","2"
-```                  
+```      
+In addition, the following architecture-specific string assembly instructions are available:
+
+<table>
+<tr><th>Directive</th><th>Meaning</th></tr>
+<tr><td><code>.atascreen</code></td><td>Standard string converted to Atari screen codes</td></tr>
+<tr><td><code>.cbmscreen</code></td><td>Standard string converted to CBM screen codes</td></tr>
+<tr><td><code>.petscii</code></td><td>CBM PETSCII representation of string bytes</td></tr>
+</table>
+
 ## Addressing model
 
 By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter. The assignment can be either a constant or expression:
@@ -402,7 +395,54 @@ variables   .byte ?
             * = $c000
             .code
 ```
-## Details
+## Conditional Assembly
+
+In cases where you want to control the flow of assembly based on certain conditions (environmental or target architecture), 6502.Net provides certain directives to handle this. Conditions can be nested, but expressions will be evaluated on first pass only.
+
+```
+    lda #$41
+    .ifdef APPLE2
+    jsr $fbfd
+    .else
+    jsr $ffd2
+    .endif
+    
+    .if * > $7fff   ; is program counter $8000 or more
+    .end            ; terminate assembly
+    .endif          ; end
+```
+## Repetitions
+
+On occasions where certain instructions will be repeatedly assembled, it is convenient to repeat their output in a loop. For instance, if you want to pad a series of `nop` instructions. The `.repeat` directive does just that. 
+
+```
+        ;; will assemble $ea ten times
+        .repeat 10
+        .nop
+        .endrepeat
+        
+```
+These repetitions can also be nested, as shown below.
+
+```
+        ;; print each letter of the alphabet 3 times
+        * = $c000
+        
+        lda #$41
+        .repeat 26
+            .repeat 3
+                jsr $ffd2
+            .endrepeat
+            tax
+            inx
+            txa
+        .endrepeat
+        .repeat 3
+           jsr $ffd2
+        .endrepeat
+        rts
+```
+## Reference
 ### Instruction set
 
 At this time, 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. Illegal opcodes must be invoked using the pseudo-ops .byte, .word, etc. The following mnemonics are recognized:
@@ -450,6 +490,19 @@ expressed bytes will be assembled until the point the program counter reaches it
 </pre>
 </td></tr></table>
 <table>
+<tr><td><b>Name</b></td><td><code>.atascreen</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Insert string into the assembly as Atari screen codes. Multiple arguments can be passed. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        * = 1000
+        .atascreen "HELLO, WORD!"   ; >1000 28 25 2c 2c 2f 2c 00 37
+                                    ; >1008 2f 32 2c 24 01
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.binary</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert a file as binary data into the assembly. Optional offset and file size arguments can be passed for greater flexibility.</td></tr>
@@ -478,6 +531,19 @@ expressed bytes will be assembled until the point the program counter reaches it
 </pre>
 </td></tr></table>
 <table>
+<tr><td><b>Name</b></td><td><code>.cbmscreen</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Insert string into the assembly as CBM screen codes. Multiple arguments can be passed. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        * = 1000
+        .cbmscreen "HELLO, WORD!"   ; >1000 08 05 0c 0c 0f 0c 20 17
+                                    ; >1008 0f 12 0c 04 21
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.char</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Insert an unsigned byte-sized value or values between -128 and 127 into the assembly. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
@@ -491,7 +557,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.cstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a C-style null-terminated string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a C-style null-terminated string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -587,7 +653,7 @@ message .lsstring "hello"   ; >c100 90 8a 98 98 9f
 <table>
 <tr><td><b>Name</b></td><td><code>.nstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the last byte. See example of how this format can be used. If the highest bit on the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the last byte. See example of how this format can be used. If the highest bit on the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -607,9 +673,22 @@ message .nstring "hello"    ; >c100 68 65 6c 6c ef
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.petscii</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Insert string into the assembly as Commodore PETSCII-encoded bytes. Multiple arguments can be passed. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        * = 1000
+        .petscii "hello, world!"      ; >1000 48 45 4c 4c 4f 4c 20 57
+                                      ; >1008 4f 52 4c 44 21
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.pstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a Pascal-style string into the assembly, the first byte indicating the full string size. Note this size includes all arguments in the expression. If the size is greater than 255, the assembler will error. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a Pascal-style string into the assembly, the first byte indicating the full string size. Note this size includes all arguments in the expression. If the size is greater than 255, the assembler will error. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -619,18 +698,6 @@ message .nstring "hello"    ; >c100 68 65 6c 6c ef
 </pre>
 </td></tr>
 </table>
-<table>
-<tr><td><b>Name</b></td><td><code>.repeat</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat the specified expression the specified number of times. The assembler outputs the expression repeatedly the minimum number of bytes required, in little-endian order. Similar to fill, except the first argument is a repeat amount (not a number of bytes to fill) and the second argument for the value to repeat is required.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>amount, repeatvalue</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-        * = $0400
-        .repeat 4,$ea       ; >0400 ea ea ea ea
-        .repeat 3,$ffd2     ; >0404 d2 ff d2 ff d2 ff
-</pre>
-</td></tr></table>
 <table>
 <tr><td><b>Name</b></td><td><code>.rta</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
@@ -670,7 +737,7 @@ mysub   lda #13             ; output newline
 <table>
 <tr><td><b>Name</b></td><td><code>.string</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -770,32 +837,6 @@ done    rts
 </td></tr>
 </table>
 <table>
-<tr><td><b>Name</b></td><td><code>.enc</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td> Set the text encoding, how to interpret character literals. Currently only relevant to Commodore  targets. Three options are available:
-<ul>
-        <li><code>petscii</code> - convert ASCII/UTF-8 to Commodore PETSCII</li>
-        <li><code>screen</code>  - convert ASCII/UTF-8 to Commodore screen codes</li>
-        <li><code>none</code>    - treat as raw ASCII/UTF-8</li>
-</ul>
-</td></tr>
-<tr><td><b>Arguments</b></td><td><code>encoding</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-       * = $4000
-      .enc screen
-      .byte 'A'                   ; >4000 01
-      .cstring "HELLO "           ; >4001 08 05 0c 0c 0f 20 00
-      .enc none
-      .string "goodbye, cruel"    ; >4008 67 6f 6f 64 62 79 65 2c             
-                                  ; >4010 20 63 72 75 65 6c                     
-      .enc petscii
-      .dword 'a'                  ; >4016 41 00 00 00
-      .pstring "world"            ; >401a 05 57 4f 52 4c 44 
-</pre>
-</td></tr>
-</table>
-<table>
 <tr><td><b>Name</b></td><td><code>.end</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Terminate the assembly.</td></tr>
@@ -848,6 +889,40 @@ start       ; same as start .equ *
 <code>.error "We haven't fixed this yet!" </code>
 </td></tr>
 </table>
+<table>
+<tr><td><b>Name</b></td><td><code>.if[[n]def]></code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>All source inside condition blocks are assembled if evaluated to true on the first pass. Conditional expressions follow C-style conventions. The following directives are available:
+    <ul>
+        <li><code>.if &lt;expression&gt;</code>   - Assemble if the expression is true</li>
+        <li><code>.ifdef &lt;symbol&gt;</code>    - Assemble if the symbol is defined</li>
+        <li><code>.ifndef &lt;symbol&gt;</code>   - Assemble if the symbol is not defined</li>
+        <li><code>.elif &lt;expression&gt;</code> - Assemble if expression is true and previous conditions are false</li>
+        <li><code>.elifdef &lt;symbol&gt;</code>  - Assemble if symbol is defined and previous conditions are false</li>
+        <li><code>.elifndef &lt;symbol&gt;</code> - Assemble if symbol is not defined and previous conditions are false</li>
+        <li><code>.else</code>                    - Assemble if previous conditions are false</li>
+        <li><code>.endif</code>                   - End of condition block
+    </ul>
+</td></tr>
+<tr><td><b>Arguments</b></td><td><code>Conditional Expression</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        * = $0400
+        
+        cycles = 1
+        
+        .if cycles == 1
+            nop
+        .elif cycles == 2
+            nop
+            nop
+        .endif
+        
+        ;; will result as:
+        ;;
+        ;; nop
+</pre>
+</td></tr></table>
 <table>
 <tr><td><b>Name</b></td><td><code>.include</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
@@ -954,6 +1029,29 @@ message     .cstring "HELLO, HIGH CODE!"
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.repeat</code>/<code>.endrepeat</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat the specified source the specified number of times. Can be nested, but must be terminated with an <code>.endrepeat</code>.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>repeatvalue</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        * = $0400
+        ldx #$00
+        .repeat 3
+        inx
+        .endrepeat
+        rts
+        
+        ;; will assemble as:
+        ;;
+        ;; ldx #$00
+        ;; inx
+        ;; inx
+        ;; inx
+        ;; rts
+</pre>
+</td></tr></table>
+<table>
 <tr><td><b>Name</b></td><td><code>.segment</code>/<code>.endsegment</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Defines a block of code as a segment, to be invoked and expanded elsewhere. Similar to macros but takes no parameters and symbols are not local. Useful for building large mix of source code and data without needing to relocate code manually. Segments can be defined within other segment block definitions, but are not considered "nested." Segment closures require the segment name after the directive.</td></tr>
@@ -1005,10 +1103,6 @@ glyph             ;12345678
 <code>.warn "We haven't fixed this yet!" </code>
 </td></tr>
 </table>
-
-## Future ideas
-
-Some features may be introduced in a future release, such as conditional assembly, for-next loops, and flow control, though there is no plan at this time.
 
 ## Appendix
 ### Built-In functions
@@ -1191,12 +1285,28 @@ Some features may be introduced in a future release, such as conditional assembl
 </td></tr>
 </table>
 <table>
+<tr><td><b>Option</b></td><td><code>--arch</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Specify the target architecture of the binary output. Four options are available. If architecture not specified, the default is <code>cbm</code>. The options:
+    <ul>
+        <li><code>apple2</code>    - Apple ][ binary with Apple DOS header</li>
+        <li><code>atari-xex</code> - Atari 8-bit binary with XEX header</li>
+        <li><code>cbm</code>       - Commodore DOS binary with load address header (default)</li>
+        <li><code>flat</code>      - Flat binary with no header</li>
+    </ul>
+</td></tr>
+<tr><td><b>Parameter</b></td><td><code>Architecture</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>/6502.Net myasm.asm -b --arch=flat flat.bin</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Option</b></td><td><code>-b</code></td></tr>
-<tr><td><b>Alias</b></td><td><code>--nostart</code></td></tr>
-<tr><td><b>Definition</b></td><td>Do not set the header of the output file to the start address of the assembly, which is the Commodore DOS format for executables.</td></tr>
+<tr><td><b>Alias</b></td><td><code>--big-endian</code></td></tr>
+<tr><td><b>Definition</b></td><td>Assemble multi-byte values in big-endian order (highest order magnitude first).</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
-<pre>/6502.Net myasm.asm -b -o notcbm.bin</pre>
+<pre>/6502.Net myasm.asm -b -o bigend.bin</pre>
 </td></tr>
 </table>
 <table>
@@ -1420,6 +1530,8 @@ Some features may be introduced in a future release, such as conditional assembl
 `Unable to find binary file` - A directive was given to include a binary file, but the binary file was not found, either due to filesystem error or file not found.
 
 `Unable to open source file` - A source file could not be opened, either due to filesystem error or file not found.
+
+`Unknown architecture specified` - An invalid or unknown parameter was supplied to the `--arch` option in the command-line. 
 
 `Unknown instruction or incorrect parameters for instruction` - An directive or instruction was encountered that was unknown, or the operand provided is incorrect.
 
