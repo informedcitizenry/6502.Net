@@ -3,3 +3,6 @@ solution: DotNetAsm.sln
 install:
   - nuget restore DotNetAsm.sln
   - nuget install Nunit.Runners -Version 3.6.1.0 -OutputDirectory testrunner
+script:
+  - xbuild /p:Configuration=Release DotNetAsm.sln
+  - mono ./testrunner/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe ./NUnit.Tests/bin/Release/NUnit.Tests.dll
