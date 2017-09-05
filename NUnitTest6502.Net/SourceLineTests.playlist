@@ -1,1 +1,0 @@
-<Playlist Version="1.0"><Add Test="NUnitTest6502.Net.SourceLineTest.TestFlags" /><Add Test="NUnitTest6502.Net.SourceLineTest.TestParse" /><Add Test="NUnitTest6502.Net.SourceLineTest.TestParseComment" /><Add Test="NUnitTest6502.Net.SourceLineTest.TestScope" /></Playlist>
