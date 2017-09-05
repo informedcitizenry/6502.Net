@@ -1,8 +1,8 @@
 language: csharp
-solution: 6502.Net.sln
+solution: DotNetAsmsln
 install:
-  - nuget restore 6502.Net.sln
+  - nuget restore DotNetAsm.sln
   - nuget install Nunit.Runners -Version 3.6.1.0 -OutputDirectory testrunner
 script:
-  - xbuild /p:Configuration=Release 6502.Net.sln
-  - mono ./testrunner/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe ./NUnitTest6502.Net/bin/Release/NUnitTest6502.Net.dll
+  - xbuild /p:Configuration=Release DotNetAsm.sln
+  - mono ./testrunner/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe ./NUnit.Tests/bin/Release/NUnitTest6502.Net.dll
