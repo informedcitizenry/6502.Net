@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,7 +46,7 @@ namespace DotNetAsm
         #endregion
 
         private List<ILineAssembler> _assemblers;
-        private ILineAssembler _conditionAssembler;
+        private ConditionAssembler _conditionAssembler;
         private ExpressionEvaluator _evaluator;
 
         private SourceLine _currentLine;
@@ -347,7 +347,7 @@ namespace DotNetAsm
                     Log.LogEntry(line, ErrorStrings.None);
                 }
             }
-            if (scope.Count > 0 || handler.IsProcessing)
+            if (scope.Count > 0 || handler.IsProcessing || _conditionAssembler.InConditionBlock)
             {
                 Log.LogEntry(ProcessedLines.Last(), ErrorStrings.MissingClosure);
             }
