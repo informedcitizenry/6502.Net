@@ -1,5 +1,5 @@
 language: csharp
-solution: DotNetAsmsln
+solution: DotNetAsm.sln
 install:
   - nuget restore DotNetAsm.sln
   - nuget install Nunit.Runners -Version 3.6.1.0 -OutputDirectory testrunner
