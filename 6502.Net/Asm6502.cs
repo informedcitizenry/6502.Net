@@ -20,9 +20,12 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+using DotNetAsm;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Asm6502.Net
 {
@@ -293,6 +296,8 @@ namespace Asm6502.Net
                 null                // ff
             };
 
+        private Regex _regInd;
+        private Regex _regXY;
 
         #endregion
 
@@ -336,229 +341,274 @@ namespace Asm6502.Net
                     "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
                     "ldy", "lsr", "rol", "ror", "stx", "sty"
                 });
+
+            RegexOptions ignore = Controller.Options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+
+            _regInd  = new Regex(@"^(\(.*\))$",     RegexOptions.Compiled | ignore);
+            _regXY   = new Regex(@"(.+)(,[xy])$", RegexOptions.Compiled | ignore);
         }
 
         #endregion
 
         #region Methods
 
-        private Tuple<string, string> GetOperandComponents(SourceLine line)
-        {
-            if (string.IsNullOrEmpty(line.Operand))
-                return new Tuple<string, string>(string.Empty, string.Empty);
-
-            if (Reserved.IsOneOf("Implied", line.Instruction) || IsImpliedAccumulator(line))
-                return null;
-
-            string opfmt = "${0:x4}";
-            string operand = line.Operand;
-
-            if (Reserved.IsOneOf("Branches", line.Instruction))
-            {
-                return new Tuple<string, string>(operand, opfmt);
-            }
-            
-            if (line.Operand.StartsWith("#"))
-            {
-                opfmt = "#${0:x2}";
-                operand = operand.Substring(1);
-                return new Tuple<string, string>(operand, opfmt);
-            }
-            else if (operand.StartsWith("("))
-            {
-                string firstparen = ExpressionEvaluator.FirstParenGroup(operand, false);
-                if (firstparen == operand)
-                {
-                    operand = line.Operand.TrimStart('(');
-                    if (operand.ToLower().EndsWith(",x)"))
-                    {
-                        opfmt = "(${0:x2},x)";
-                        operand = operand.Substring(0, operand.Length - 3);
-                    }
-                    else
-                    {
-                        opfmt = "(${0:x4})";
-                        operand = operand.TrimEnd(')');
-                    }
-                    return new Tuple<string, string>(operand, opfmt);
-                }
-                else if (firstparen.Length == operand.Length - 2 && operand.ToLower().EndsWith("),y"))
-                {
-                    operand = operand.TrimStart('(').Substring(0, operand.Length - 4);
-                    opfmt = "(${0:x2}),y";
-                    return new Tuple<string, string>(operand, opfmt);
-                }
-            }
-
-            string post = string.Empty;
-            if (operand.ToLower().EndsWith(",x") || operand.ToLower().EndsWith(",y"))
-            {
-                post = operand.Substring(operand.Length - 2);
-                operand = operand.Substring(0, operand.Length - 2);
-                if (string.IsNullOrEmpty(operand))
-                {
-                    return null;
-                }
-            }
-            long val = Controller.Evaluator.Eval(operand);
-
-            if (Reserved.IsOneOf("Jumps", line.Instruction) || 
-                (post.Equals(",y") && Reserved.IsOneOf("Accumulator", line.Instruction)))
-                opfmt = "${0:x4}" + post;
-            else
-                opfmt = "${0:x" + val.Size() * 2 + "}" + post;
-
-            return new Tuple<string, string>(operand, opfmt);
-        }
-
         // it is an allowed convention to include "a" as an operand in 
         // implied instructions on the accumulator, e.g. lsr a
         private bool IsImpliedAccumulator(SourceLine line)
         {
-            if (Reserved.IsOneOf("ImpliedAccumulator",line.Instruction) &&
+            if (Reserved.IsOneOf("ImpliedAccumulator", line.Instruction) &&
                 line.Operand.Equals("a", Controller.Options.StringComparison))
                 return string.IsNullOrEmpty(Controller.GetScopedLabelValue("a", line));
-            return false;
-        }
-
-        /// <summary>
-        /// Get the actual instruction opcode, including size.
-        /// </summary>
-        /// <param name="line">The SourceLine to assemble.</param>
-        /// <returns>A tuple containing the instruction's opcode bytes, size, 
-        /// and a string representation of the disassembly.</returns>
-        private Tuple<int, int, string> GetInstruction(SourceLine line)
-        {
-            string instr = line.Instruction;
-            string operand = line.Operand;//string.Empty;
-            string opfmt = string.Empty;
-            Int64 operval = 0;
-            int size = GetInstructionSize(line);
-
-            if (string.IsNullOrEmpty(line.Instruction))
-                return null;
-
-            if (string.IsNullOrEmpty(operand) == false)
-            {
-                if (IsImpliedAccumulator(line))
-                {
-                    int impl = opcodeFormats_.ToList().IndexOf(line.Instruction);
-                    return new Tuple<int, int, string>(impl, 1, opcodeFormats_[impl]);
-                }
-                Tuple<string, string> components = GetOperandComponents(line);
-                if (components == null)
-                {
-                    Controller.Log.LogEntry(line, Resources.ErrorStrings.None);
-                    return null;
-                }
-                operand = components.Item1;
-                if (operand.Trim() != operand)
-                {
-                    Controller.Log.LogEntry(line, Resources.ErrorStrings.BadExpression, operand);
-                    return null;
-                }
-                opfmt = components.Item2;
-                operval = Controller.Evaluator.Eval(operand);
-            }
-            if (Reserved.IsOneOf("Branches", instr))
-            {
-                operval = Controller.Output.GetRelativeOffset(Convert.ToUInt16(operval), Controller.Output.GetPC() + 2);//line.PC + 2);
-                if (operval > sbyte.MaxValue || operval < sbyte.MinValue)
-                {
-                    Controller.Log.LogEntry(line, Resources.ErrorStrings.RelativeBranchOutOfRange, operval.ToString());
-                    return null;
-                }
-            }
-
-            string fmt = opcodeFormats_.FirstOrDefault(
-                delegate(string op)
-                {
-                    if (string.IsNullOrEmpty(op))
-                        return false;
-                    if (string.IsNullOrEmpty(opfmt))
-                        return op.Equals(instr, Controller.Options.StringComparison);
-                    return op.Equals(instr + " " + opfmt, Controller.Options.StringComparison);
-                });
-
-            if (string.IsNullOrEmpty(fmt))
-            {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.UnknownInstruction, line.Instruction);
-                return null;
-            }
-           
-            int opcode = opcodeFormats_.ToList().IndexOf(fmt.ToLower());
-            if (opcode == -1) // just in case??
-            {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.UnknownInstruction);
-                return null;
-            }
-            if (operval.Size() > 2 || ((size == 3 || operval.Size() == 2) && fmt.Contains("x2")))
-            {
-                Controller.Log.LogEntry(line, Resources.ErrorStrings.IllegalQuantity, operval.ToString());
-                return null;
-            }
-            string disasm = string.Format(fmt, operval & (operval.AndMask()));
-            if (Reserved.IsOneOf("Branches", instr))
-            {
-                var rel = (Controller.Output.GetPC() + 2) + operval;
-                disasm = string.Format(fmt, (rel & ushort.MaxValue));
-            }
-            opcode += (Convert.ToInt32(operval) << 8);
-            return new Tuple<int, int, string>(opcode, size, disasm);
+            return string.IsNullOrEmpty(line.Operand);
         }
 
         #region ILineAssembler.Methods
 
-        /// <summary>
-        /// Assemble the line of source into 6502 instructions.
-        /// </summary>
-        /// <param name="line">The source line to assembler.</param>
         public void AssembleLine(SourceLine line)
         {
             if (Controller.Output.PCOverflow)
             {
-                Controller.Log.LogEntry(line, 
-                                        Resources.ErrorStrings.PCOverflow, 
+                Controller.Log.LogEntry(line,
+                                        ErrorStrings.PCOverflow,
                                         Controller.Output.GetPC().ToString());
                 return;
             }
-            var opcode = GetInstruction(line);
-            if (opcode == null)
-                return;
-            Controller.Output.Add(opcode.Item1, opcode.Item2);
-            line.Disassembly = opcode.Item3;
+            string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
+            var operparts = line.CommaSeparateOperand();
+            string operand = string.Empty, appendage = string.Empty;
+            if (operparts.Count > 0)
+            {
+                if (Reserved.IsOneOf("Implied", instruction))
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, instruction);
+                    return;
+                }
+                operand = Controller.Options.CaseSensitive ? operparts.First() : operparts.First().ToLower();//line.Operand : line.Operand.ToLower();
+                
+                if (operparts.Count > 1)
+                {
+                    if (Reserved.IsOneOf("Branches", instruction) ||
+                        Reserved.IsOneOf("Jumps", instruction))
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                        return;
+                    }
+                    appendage = Controller.Options.CaseSensitive ? operparts.Last() : operparts.Last().ToLower();
+                    if (!(appendage.Equals("x") || appendage.Equals("y")))
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                        return;
+                    }
+                }
+            }
+            StringBuilder instructionFormat = new StringBuilder(instruction);
+            string indy = string.Empty;
+            Int64 val = 0, abs = 0;
+            int size = 1;
+
+            if (!(Reserved.IsOneOf("Implied", instruction) || IsImpliedAccumulator(line)))
+            {
+                size++;
+                instructionFormat.Append(' ');
+                if (_regInd.IsMatch(operand))
+                {
+                    // everything in parantheses
+                    if (operand.Equals(ExpressionEvaluator.FirstParenGroup(operand)))
+                    {
+                        // no ,x/,y at the end
+                        if (string.IsNullOrWhiteSpace(operand.TrimStart('(').TrimEnd(')')))
+                        {
+                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, operand);
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(appendage))
+                        {
+                            if (operand.EndsWith(",x)"))
+                            {
+                                if (Reserved.IsOneOf("Accumulator", instruction))
+                                {
+                                    val = Controller.Evaluator.Eval(operand.Substring(1, operand.Length - 4));
+                                    instructionFormat.Append("(${0:x2},x)");
+                                }
+                                else
+                                {
+                                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                                    return;
+                                }
+                                
+                            }
+                            else if (instruction.Equals("jmp"))
+                            {
+                                val = Controller.Evaluator.Eval(operand);
+                                instructionFormat.Append("(${0:x4})");
+                                size++;
+                            }
+                            else
+                            {
+                                val = Controller.Evaluator.Eval(operand);
+                                size = val.Size();
+                                instructionFormat.AppendFormat("{0}{1}{2}",
+                                    "${0:x",
+                                    size * 2,
+                                    "}");
+                                size++;
+                            }
+                        }
+                        else if (appendage.Equals("y"))
+                        {
+                            val = Controller.Evaluator.Eval(operand);
+                            instructionFormat.Append("(${0:x2}),y");
+                        }
+                        else if (Reserved.IsOneOf("Accumulator", instruction) || instruction.Equals("ldy") || instruction.Equals("sty"))
+                        {
+                            val = Controller.Evaluator.Eval(operand);
+                            size = val.Size();
+                            instructionFormat.AppendFormat("{0}{1}{2}",
+                                "${0:x",
+                                size * 2,
+                                "}");
+                            size++;
+                        }
+                        else
+                        {
+                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, appendage);
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    // no parantheses
+                    if (operand.StartsWith("#"))
+                    {
+                        operand = operand.Substring(1);
+                        if (operand.TrimStart().Equals(operand) == false)
+                        {
+                            // no # xxx allowed
+                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, operand);
+                            return;
+                        }
+                        val = Controller.Evaluator.Eval(operand);
+                        instructionFormat.Append("#${0:x2}");
+                    }
+                    else
+                    {
+                        val = Controller.Evaluator.Eval(operand);
+                        if (AccumY(line))
+                        {
+                            instructionFormat.Append("${0:x4},y");
+                            size++;
+                        }
+                        else if (Reserved.IsOneOf("Branches", instruction) || Reserved.IsOneOf("Jumps", instruction))
+                        {
+                            instructionFormat.Append("${0:x4}");
+                            if (Reserved.IsOneOf("Branches", instruction))
+                            {
+                                abs = val;
+                                val = Controller.Output.GetRelativeOffset(Convert.ToUInt16(val), Controller.Output.GetPC() + 2);
+                                if (val > sbyte.MaxValue || val < sbyte.MinValue)
+                                {
+                                    Controller.Log.LogEntry(line, ErrorStrings.RelativeBranchOutOfRange, val.ToString());
+                                    return;
+                                }
+                            }
+                            if (Reserved.IsOneOf("Jumps", instruction))
+                            {
+                                size++;
+                            }
+                        }
+                        else
+                        {
+                            size = val.Size();
+                            instructionFormat.AppendFormat("{0}{1}{2}",
+                                    "${0:x",
+                                    size * 2,
+                                    "}");
+
+                            if (string.IsNullOrEmpty(appendage) == false)
+                                instructionFormat.AppendFormat(",{0}", appendage);
+
+                            size++;
+                        }
+                    }
+                }
+            }
+            string format = instructionFormat.ToString();
+            long opcode = opcodeFormats_.ToList().IndexOf(format);
+            if (opcode == -1)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.SourceString);
+            }
+            else if (val.Size() > 2 || ((size == 3 || val.Size() == 2) && format.Contains("x2")))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, val.ToString());
+            }
+            else
+            {
+                opcode = opcode | (val << 8);
+                if (Reserved.IsOneOf("Branches", instruction))
+                    val = abs;
+                if (val.Size() > 1) val = (ushort)val;
+                else val = (byte)val;
+                line.Disassembly = string.Format(format, val);
+                Controller.Output.Add(opcode, size);
+            }
         }
 
         /// <summary>
-        /// Gets the size of the instruction in the source line.
+        /// Determines if the instruction is y-indexed instruction on the accumulator.
         /// </summary>
-        /// <param name="line">The source line to query.</param>
-        /// <returns>Returns the size in bytes of the instruction or directive.</returns>
+        /// <param name="line">The DotNetAsm.SourceLine of the instruction</param>
+        /// <returns>True, if the instruction is y-indexed for the accumulator</returns>
+        private bool AccumY(SourceLine line)
+        {
+            return _regXY.IsMatch(line.Operand) &&
+                   !_regInd.IsMatch(line.Operand) &&
+                   line.Operand.EndsWith(",y", Controller.Options.StringComparison) &&
+                   Reserved.IsOneOf("Accumulator", line.Instruction);
+        }
+
         public int GetInstructionSize(SourceLine line)
         {
-            var components = GetOperandComponents(line);
-            if (components == null || string.IsNullOrEmpty(components.Item2))
+            string instruction = line.Instruction;
+            string operand = line.Operand;
+            if (Reserved.IsOneOf("Implied", instruction) || IsImpliedAccumulator(line))
                 return 1;
-            if (components.Item2.Contains("x4") && !Reserved.IsOneOf("Branches", line.Instruction))
+            if (Reserved.IsOneOf("Branches", instruction) || line.Operand.StartsWith("#"))
+                return 2;
+            if (Reserved.IsOneOf("Jumps", instruction))
                 return 3;
-            return 2;
+            if (operand.EndsWith(",x)") || operand.EndsWith(",X)"))
+                return 2;
+
+            var parts = line.CommaSeparateOperand();
+            operand = parts.First();
+            if (parts.Count > 1)
+            {
+                if (parts.Last().Equals("y", Controller.Options.StringComparison))
+                {
+                    if (_regInd.IsMatch(operand))
+                    {
+                        operand = _regInd.Match(operand).Groups[1].Value;
+
+                        if (operand.Equals(ExpressionEvaluator.FirstParenGroup(operand)))
+                            return 2;
+                    }
+                    if (AccumY(line))
+                        return 3;
+                }
+            }
+            return Controller.Evaluator.Eval(operand).Size() + 1;
         }
 
-        /// <summary>
-        /// Indicates whether this line assembler will assemble the 
-        /// given instruction or directive.
-        /// </summary>
-        /// <param name="instruction">The instruction.</param>
-        /// <returns>True, if the line assembler can assemble the source, 
-        /// otherwise false.</returns>
         public bool AssemblesInstruction(string instruction)
         {
             return Reserved.IsReserved(instruction);
         }
 
-        public bool HandleFirstPass(SourceLine line)
+        protected override bool IsReserved(string token)
         {
-            throw new NotImplementedException();
+            return Reserved.IsReserved(token);
         }
 
         #endregion

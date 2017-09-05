@@ -4,29 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{51438B28-BEFC-43F9-AF62-ECFD402426EB}</ProjectGuid>
+    <ProjectGuid>{C02D7237-58A4-4983-8E82-2DA5364CB997}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Asm6502.Net</RootNamespace>
     <AssemblyName>6502.Net</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkProfile />
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -48,15 +33,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MathParser">
-      <HintPath>.\MathParser.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.3.6.1\lib\net45\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -65,110 +43,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Asm6502.cs" />
-    <Compile Include="AsmCommandLineOptions.cs" />
-    <Compile Include="Directives6502.cs" />
-    <Compile Include="Disasm6502.cs" />
-    <Compile Include="HtmlOutput.cs" />
-    <Compile Include="IEvaluator.cs" />
-    <Compile Include="ILineAssembler.cs" />
-    <Compile Include="ILineDisassembler.cs" />
-    <Compile Include="Preprocessor.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="PseudoOps6502.cs" />
-    <Compile Include="Asm6502Controller.cs" />
-    <Compile Include="IAssemblyController.cs" />
-    <Compile Include="AssemblerBase.cs" />
-    <Compile Include="BinaryFile.cs" />
-    <Compile Include="Compilation.cs" />
-    <Compile Include="ErrorLog.cs" />
-    <Compile Include="ExpressionEvaluator.cs" />
-    <Compile Include="ExtensionMethods.cs" />
-    <Compile Include="Macro.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <DependentUpon>Settings.settings</DependentUpon>
-    </Compile>
-    <Compile Include="ReservedWords.cs" />
-    <Compile Include="Resources\ErrorStrings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ErrorStrings.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Settings.cs" />
-    <Compile Include="SourceLine.cs" />
-    <Compile Include="Misc.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\Argument.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentParser.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentToken.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\Argument_1.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\Enumerable.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\HelpTextGenerator.cs" />
-    <Compile Include="System.CommandLine\System\Strings.Designer.cs" />
+    <Compile Include="Pseudo6502.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="MSScriptControl">
-      <Guid>{0E59F1D2-1FBE-11D0-8FF2-00A0D10038BC}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
+    <ProjectReference Include="..\DotNetAsm\DotNetAsm.csproj">
+      <Project>{af1ed085-0d63-4dfd-ae98-612921d1f5ec}</Project>
+      <Name>DotNetAsm</Name>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.5 %28x86 and x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\ErrorStrings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ErrorStrings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="System.CommandLine\System\Strings.resx">
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
