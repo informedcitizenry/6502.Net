@@ -630,7 +630,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.lsstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the last byte. See example of how this format can be used. If the highest bit in each value is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order. The text encoding can be controlled using the <code>.enc</code> directive. By default text is treated as ASCII.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the last byte. See example of how this format can be used. If the highest bit in each value is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -644,9 +644,8 @@ expressed bytes will be assembled until the point the program counter reaches it
         inx                 ; increment pointer
         jmp -               ; get next
         ...
-        .enc petscii    ; turn on petscii-encoding
         * = $c100
-message .lsstring "hello"   ; >c100 90 8a 98 98 9f
+message .lsstring "HELLO"   ; >c100 90 8a 98 98 9f
 </pre>
 </td></tr>
 </table>
