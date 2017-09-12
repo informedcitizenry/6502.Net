@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -143,7 +143,19 @@ namespace Asm6502.Net
 
             if (instruction.Equals(".rta"))
             {
-                AssembleValues(line, -1, UInt16.MaxValue - 1, 2);
+                var csv = line.CommaSeparateOperand();
+                foreach(string rta in csv)
+                {
+                    if (rta.Equals("?"))
+                    { 
+                        Controller.Output.AddUninitialized(2); 
+                    }
+                    else
+                    {
+                        long val = Controller.Evaluator.Eval(rta, ushort.MinValue, ushort.MaxValue + 1);
+                        Controller.Output.Add(val - 1, 2);
+                    }
+                }
                 return;
             }
 
