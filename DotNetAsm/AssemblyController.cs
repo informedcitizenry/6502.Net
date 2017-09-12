@@ -81,6 +81,8 @@ namespace DotNetAsm
                     OPEN_SCOPE, CLOSE_SCOPE
                 });
 
+            Reserved.DefineType("UserDefined");
+
             Log = new ErrorLog();
             Options = new AsmCommandLineOptions();
             FileRegistry = new HashSet<string>();
@@ -432,13 +434,14 @@ namespace DotNetAsm
         /// </summary>
         private void SecondPass()
         {
+            const int MAX_PASSES = 4;
             bool passNeeded = true;
             bool finalPass = false;
             _passes++;
 
             var assembleLines = ProcessedLines.Where(l => l.DoNotAssemble == false);
 
-            while (_passes <= 4 && Log.HasErrors == false)
+            while (_passes <= MAX_PASSES && Log.HasErrors == false)
             {
                 passNeeded = false;
                 Output.Reset();
@@ -468,25 +471,22 @@ namespace DotNetAsm
                 _passes++;
                 finalPass = !passNeeded;
             }
-            if (_passes > 4)
+            if (_passes > MAX_PASSES)
             {
                 throw new Exception("Too many passes attempted.");
             }
         }
 
-        /// <summary>
-        /// Add a line assembler to the IAssemblyController's list of assemblers.
-        /// </summary>
-        /// <param name="lineAssembler">The DotNetAsm.ILineAssembler</param>
-        public void Add(ILineAssembler lineAssembler)
+        public void AddAssembler(ILineAssembler lineAssembler)
         {
             _assemblers.Add(lineAssembler);
         }
 
-        /// <summary>
-        /// Assembles a SourceLine to output.
-        /// </summary>
-        /// <param name="line">A SourceLine.</param>
+        public void AddSymbol(string symbol)
+        {
+            Reserved.AddWord("UserDefined", symbol);
+        }
+
         public void AssembleLine(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Instruction))
