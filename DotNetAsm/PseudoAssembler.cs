@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -121,15 +121,16 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    Int64 val = Controller.Evaluator.Eval(t);
-                    if (line.Instruction.ToLower().Equals(".rta"))
-                        val -= 1;
-                    if (val < minval || val > maxval)
+                    try
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, val.ToString());
-                        return;
+                        Int64 val = Controller.Evaluator.Eval(t, minval, maxval);
+                        Controller.Output.Add(val, size);
                     }
-                    Controller.Output.Add(val, size);
+                    catch(OverflowException ex)
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, ex.Message);
+
+                    }
                 }
             }
         }
