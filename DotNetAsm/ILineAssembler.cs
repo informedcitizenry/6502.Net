@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,7 +37,8 @@ namespace DotNetAsm
         void AssembleLine(SourceLine line);
 
         /// <summary>
-        /// Gets the size of the instruction in the source line.
+        /// Gets the size of the instruction in the source line. This value might not be valid
+        /// on first pass, but is guaranteed to be valid before final pass.
         /// </summary>
         /// <param name="line">The source line to query.</param>
         /// <returns>Returns the size in bytes of the instruction or directive.</returns>
