@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,6 +65,30 @@ namespace DotNetAsm
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Add a reserved word to a defined type.
+        /// </summary>
+        /// <param name="type">The defined type</param>
+        /// <param name="word">The reserved word to include</param>
+        /// <exception cref="System.Collections.Generic.KeyNotFoundException">System.Collections.Generic.KeyNotFoundException
+        /// </exception>
+        public void AddWord(string type, string word)
+        {
+            var t = types_[type];
+            t.Add(word);
+            _values.Add(word);
+        }
+
+        /// <summary>
+        /// Defie a type of reserved words.
+        /// </summary>
+        /// <param name="type">The type name.</param>
+        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        public void DefineType(string type)
+        {
+            types_.Add(type, new HashSet<string>());
+        }
 
         /// <summary>
         /// Define a type of reserved words.
