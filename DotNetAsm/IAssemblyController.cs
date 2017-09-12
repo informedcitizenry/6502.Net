@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,10 +33,17 @@ namespace DotNetAsm
     public interface IAssemblyController
     {
         /// <summary>
-        /// Add a line assembler to the IAssemblyController's list of assemblers.
+        /// Add a line assembler to the DotNetAsm.IAssemblyController's list of assemblers.
         /// </summary>
         /// <param name="lineAssembler">The DotNetAsm.ILineAssembler</param>
-        void Add(ILineAssembler lineAssembler);
+        void AddAssembler(ILineAssembler lineAssembler);
+
+        /// <summary>
+        /// Add a user-defined symbol to the DotNetAsm.IAssemblyController's reserved words.
+        /// </summary>
+        /// <param name="symbol"></param>
+        void AddSymbol(string symbol);
+
 
         /// <summary>
         /// Performs assembly operations based on the command line arguments passed,
