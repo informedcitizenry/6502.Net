@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -216,6 +216,7 @@ namespace DotNetAsm
         /// <param name="expression">The string representation of the mathematical expression.</param>
         /// <returns>The result of the expression evaluation.</returns>
         /// <exception cref="ExpressionEvaluator.ExpressionException">ExpressionEvaluator.ExpressionException</exception>
+        /// <exception cref="System.DivideByZeroException">System.DivideByZeroException</exception>
         public long Eval(string expression)
         {
             try
@@ -235,6 +236,26 @@ namespace DotNetAsm
             {
                 throw new ExpressionException(expression);
             }
+        }
+
+        /// <summary>
+        /// Evaluates a text string as a mathematical expression.
+        /// </summary>
+        /// <param name="expression">The string representation of the mathematical expression.</param>
+        /// <param name="minval">The minimum value of expression. If the evaluated value is
+        /// lower, a System.OverflowException will occur.</param>
+        /// <param name="maxval">The maximum value of the expression. If the evaluated value 
+        /// is higher, a System.OverflowException will occur.</param>
+        /// <returns>The result of the expression evaluation.</returns>
+        /// <exception cref="ExpressionEvaluator.ExpressionException">ExpressionEvaluator.ExpressionException</exception>
+        /// <exception cref="System.DivideByZeroException">System.DivideByZeroException</exception>
+        /// <exception cref="System.OverflowException">System.OverflowException</exception>
+        public long Eval(string expression, long minval, long maxval)
+        {
+            long result = Eval(expression);
+            if (result < minval || result > maxval)
+                throw new OverflowException(expression);
+            return result;
         }
 
         /// <summary>
