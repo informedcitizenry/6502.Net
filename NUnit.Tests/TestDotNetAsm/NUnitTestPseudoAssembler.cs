@@ -458,3 +458,4 @@ namespace NUnit.Tests.TestDotNetAsm
         }
     }
 }
+
