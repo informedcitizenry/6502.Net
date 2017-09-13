@@ -1,4 +1,4 @@
-﻿using DotNetAsm;
+using DotNetAsm;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -89,7 +89,12 @@ namespace NUnit.Tests.TestDotNetAsm
             private set;
         }
 
-        public void Add(ILineAssembler asm)
+        public void AddAssembler(ILineAssembler asm)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddSymbol(string symbol)
         {
             throw new NotImplementedException();
         }
