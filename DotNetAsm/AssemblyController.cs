@@ -956,9 +956,6 @@ namespace DotNetAsm
         /// Used by the expression evaluator to get the actual value of the symbol.
         /// </summary>
         /// <param name="symbol">The symbol to look up.</param>
-        /// <param name="notused">The match group (not used)</param>
-        /// <param name="obj">A helper object, usually a SourceLine to establish the current
-        /// scope.</param>
         /// <returns>The underlying value of the symbol.</returns>
         private string GetLabelValue(string symbol)
         {
