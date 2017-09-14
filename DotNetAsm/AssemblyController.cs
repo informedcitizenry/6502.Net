@@ -1030,22 +1030,6 @@ namespace DotNetAsm
             return id;
         }
 
-        /// <summary>
-        /// Tabulates all anonymous labels in the ProcessedLines.
-        /// </summary>
-        private void GetAnonymousLabels(IEnumerable<SourceLine> lines)
-        {
-            int id = 0;
-            lines.ToList().ForEach(l => l.Id = ++id);
-            foreach (var line in lines)
-            {
-                if (line.Label == "+")
-                    AnonPlus.Add(line.Id);
-                else if (line.Label == "-")
-                    AnonMinus.Add(line.Id);
-            }
-        }
-
         public AsmCommandLineOptions Options { get; private set; }
 
         public Compilation Output {  get; private set; }
