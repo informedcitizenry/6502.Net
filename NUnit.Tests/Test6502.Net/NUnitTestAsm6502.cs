@@ -1101,7 +1101,8 @@ namespace NUnit.Tests.Test6502.Net
             SourceLine line = new SourceLine();
             line.Instruction = "lda";
             line.Operand = "# 34";
-            TestForFailure(line);
+            //TestForFailure(line);
+            TestInstruction(line, 0x0002, new byte[] { 0xa9, 0x22 }, "lda #$22");
 
             line.Operand = "($34),y";
             TestInstruction(line, 0x0002, new byte[] { 0xb1, 0x34 }, "lda ($34),y");
@@ -1155,7 +1156,8 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");
 
             line.Operand = "()";
-            TestForFailure(line);
+            //TestForFailure(line);
+            TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x00, 0x00 }, "jmp ($0000)");
 
             line.Operand = "0xffd2"; // oops wrong architecture!
             Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
