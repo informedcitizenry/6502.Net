@@ -49,6 +49,7 @@
     <Compile Include="Compilation.cs" />
     <Compile Include="ConditionAssembler.cs" />
     <Compile Include="Disassembler.cs" />
+    <Compile Include="CharEncoding.cs" />
     <Compile Include="ErrorLog.cs" />
     <Compile Include="ErrorStrings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -64,6 +65,7 @@
     <Compile Include="Macro.cs" />
     <Compile Include="Misc.cs" />
     <Compile Include="MiscAssembler.cs" />
+    <Compile Include="Opcode.cs" />
     <Compile Include="Preprocessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PseudoAssembler.cs" />
