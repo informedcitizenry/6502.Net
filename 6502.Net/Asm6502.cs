@@ -36,7 +36,9 @@ namespace Asm6502.Net
     {
         #region Members
 
-        private string[] opcodeFormats_ = 
+        private FormatBuilder[] _builders;
+
+        private string[] _opcodeFormats = 
             {
                 "brk",              // 00
                 "ora (${0:x2},x)",  // 01
@@ -346,6 +348,15 @@ namespace Asm6502.Net
 
             _regInd  = new Regex(@"^(\(.*\))$",     RegexOptions.Compiled | ignore);
             _regXY   = new Regex(@"(.+)(,[xy])$", RegexOptions.Compiled | ignore);
+
+            _builders = new FormatBuilder[]
+            {
+                new FormatBuilder(@"^#(.+)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive),
+                new FormatBuilder(@"^\(\s*(.+),\s*x\s*\)$()", "({2},x)", "${0:x2}", string.Empty, 2,2,1,2, Controller.Options.CaseSensitive ),
+                new FormatBuilder(@"^(.+)\s*,\s*y$()", "{2},y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive, true ),
+                new FormatBuilder(@"^(.+)\s*,\s*x$()", "{2},x", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive),
+                new FormatBuilder(@"^(.+)$()", "{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive, true )
+            };
         }
 
         #endregion
@@ -364,6 +375,7 @@ namespace Asm6502.Net
 
         #region ILineAssembler.Methods
 
+
         public void AssembleLine(SourceLine line)
         {
             if (Controller.Output.PCOverflow)
@@ -374,184 +386,103 @@ namespace Asm6502.Net
                 return;
             }
             string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
-            var operparts = line.CommaSeparateOperand();
-            string operand = string.Empty, appendage = string.Empty;
-            if (operparts.Count > 0)
-            {
-                if (Reserved.IsOneOf("Implied", instruction))
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, instruction);
-                    return;
-                }
-                operand = Controller.Options.CaseSensitive ? operparts.First() : operparts.First().ToLower();//line.Operand : line.Operand.ToLower();
-                
-                if (operparts.Count > 1)
-                {
-                    if (Reserved.IsOneOf("Branches", instruction) ||
-                        Reserved.IsOneOf("Jumps", instruction))
-                    {
-                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
-                        return;
-                    }
-                    appendage = Controller.Options.CaseSensitive ? operparts.Last() : operparts.Last().ToLower();
-                    if (!(appendage.Equals("x") || appendage.Equals("y")))
-                    {
-                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
-                        return;
-                    }
-                }
-            }
-            StringBuilder instructionFormat = new StringBuilder(instruction);
-            string indy = string.Empty;
-            Int64 val = 0, abs = 0;
-            int size = 1;
+            string operand = line.Operand;
+            if (Reserved.IsOneOf("ImpliedAccumulator", line.Instruction))
+                operand = Regex.Replace(operand, @"^a$", string.Empty);
 
-            if (!(Reserved.IsOneOf("Implied", instruction) || IsImpliedAccumulator(line)))
+            OperandFormat fmt = null;
+            int opc = -1;
+            int size = 1;
+            long eval = long.MinValue, evalAbs = 0;
+            try
             {
-                size++;
-                instructionFormat.Append(' ');
-                if (_regInd.IsMatch(operand))
+                if (string.IsNullOrEmpty(operand))
                 {
-                    // everything in parantheses
-                    if (operand.Equals(ExpressionEvaluator.FirstParenGroup(operand)))
-                    {
-                        // no ,x/,y at the end
-                        if (string.IsNullOrWhiteSpace(operand.TrimStart('(').TrimEnd(')')))
-                        {
-                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, operand);
-                            return;
-                        }
-                        if (string.IsNullOrEmpty(appendage))
-                        {
-                            if (operand.EndsWith(",x)"))
-                            {
-                                if (Reserved.IsOneOf("Accumulator", instruction))
-                                {
-                                    val = Controller.Evaluator.Eval(operand.Substring(1, operand.Length - 4));
-                                    instructionFormat.Append("(${0:x2},x)");
-                                }
-                                else
-                                {
-                                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
-                                    return;
-                                }
-                                
-                            }
-                            else if (instruction.Equals("jmp"))
-                            {
-                                val = Controller.Evaluator.Eval(operand);
-                                instructionFormat.Append("(${0:x4})");
-                                size++;
-                            }
-                            else
-                            {
-                                val = Controller.Evaluator.Eval(operand);
-                                size = val.Size();
-                                instructionFormat.AppendFormat("{0}{1}{2}",
-                                    "${0:x",
-                                    size * 2,
-                                    "}");
-                                size++;
-                            }
-                        }
-                        else if (appendage.Equals("y"))
-                        {
-                            val = Controller.Evaluator.Eval(operand);
-                            instructionFormat.Append("(${0:x2}),y");
-                        }
-                        else if (Reserved.IsOneOf("Accumulator", instruction) || instruction.Equals("ldy") || instruction.Equals("sty"))
-                        {
-                            val = Controller.Evaluator.Eval(operand);
-                            size = val.Size();
-                            instructionFormat.AppendFormat("{0}{1}{2}",
-                                "${0:x",
-                                size * 2,
-                                "}");
-                            size++;
-                        }
-                        else
-                        {
-                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, appendage);
-                            return;
-                        }
-                    }
+                    fmt = new OperandFormat();
+                    fmt.FormatString = instruction;
+                    opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats);
                 }
                 else
                 {
-                    // no parantheses
-                    if (operand.StartsWith("#"))
+                    foreach (FormatBuilder builder in _builders)
                     {
-                        operand = operand.Substring(1);
-                        if (operand.TrimStart().Equals(operand) == false)
+                        fmt = builder.GetFormat(operand);
+                        if (fmt == null)
+                            continue;
+                        string instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
+                        opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                        if (opc != -1 && fmt.FormatString.Contains("${0:x2}"))
                         {
-                            // no # xxx allowed
-                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, operand);
-                            return;
+                            eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
+                            if (eval.Size() == 2)
+                            {
+                                instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
+                                opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                            }
                         }
-                        val = Controller.Evaluator.Eval(operand);
-                        instructionFormat.Append("#${0:x2}");
+                        if (opc == -1)
+                        {
+                            if (!instruction.Equals("jmp") && 
+                                fmt.FormatString.StartsWith("(") && 
+                                fmt.FormatString.EndsWith(")") && 
+                                !fmt.FormatString.EndsWith(",x)"))
+                            {
+                                fmt.FormatString = fmt.FormatString.Replace("(", string.Empty).Replace(")", string.Empty);
+                                instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
+                            }
+                            else
+                            {
+                                instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
+                            }
+
+                            opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                        }
+                        fmt.FormatString = instrFmt;
+                        break;
                     }
-                    else
+                }
+
+                if (fmt == null)
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                    return;
+                }
+                if (opc == -1)
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(fmt.Expression1) == false)
+                {
+                    size++;
+                    if (fmt.FormatString.Contains("${0:x4}"))
                     {
-                        val = Controller.Evaluator.Eval(operand);
-                        if (AccumY(line))
+                        if (eval == long.MinValue)
+                            eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
+                        evalAbs = eval & 0xFFFF;
+                        if (Reserved.IsOneOf("Branches", line.Instruction))
                         {
-                            instructionFormat.Append("${0:x4},y");
-                            size++;
-                        }
-                        else if (Reserved.IsOneOf("Branches", instruction) || Reserved.IsOneOf("Jumps", instruction))
-                        {
-                            instructionFormat.Append("${0:x4}");
-                            if (Reserved.IsOneOf("Branches", instruction))
-                            {
-                                abs = val;
-                                val = Controller.Output.GetRelativeOffset(Convert.ToUInt16(val), Controller.Output.GetPC() + 2);
-                                if (val > sbyte.MaxValue || val < sbyte.MinValue)
-                                {
-                                    Controller.Log.LogEntry(line, ErrorStrings.RelativeBranchOutOfRange, val.ToString());
-                                    return;
-                                }
-                            }
-                            if (Reserved.IsOneOf("Jumps", instruction))
-                            {
-                                size++;
-                            }
+                            eval = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)evalAbs, Controller.Output.GetPC() + 2));
                         }
                         else
                         {
-                            size = val.Size();
-                            instructionFormat.AppendFormat("{0}{1}{2}",
-                                    "${0:x",
-                                    size * 2,
-                                    "}");
-
-                            if (string.IsNullOrEmpty(appendage) == false)
-                                instructionFormat.AppendFormat(",{0}", appendage);
-
                             size++;
                         }
                     }
+                    else
+                    {
+                        eval = Controller.Evaluator.Eval(fmt.Expression1, sbyte.MinValue, byte.MaxValue);
+                        evalAbs = eval & 0xFF;
+                    }
+
                 }
+                line.Disassembly = string.Format(_opcodeFormats[opc], evalAbs);
+                Controller.Output.Add(opc | (int)eval << 8, size);
             }
-            string format = instructionFormat.ToString();
-            long opcode = opcodeFormats_.ToList().IndexOf(format);
-            if (opcode == -1)
+            catch (OverflowException)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.SourceString);
-            }
-            else if (val.Size() > 2 || ((size == 3 || val.Size() == 2) && format.Contains("x2")))
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, val.ToString());
-            }
-            else
-            {
-                opcode = opcode | (val << 8);
-                if (Reserved.IsOneOf("Branches", instruction))
-                    val = abs;
-                if (val.Size() > 1) val = (ushort)val;
-                else val = (byte)val;
-                line.Disassembly = string.Format(format, val);
-                Controller.Output.Add(opcode, size);
+                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, line.Operand);
             }
         }
 
