@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,6 +45,8 @@ namespace DotNetAsm
 
         #endregion
 
+        #region Members
+
         private List<ILineAssembler> _assemblers;
         private ConditionAssembler _conditionAssembler;
         private ExpressionEvaluator _evaluator;
@@ -54,6 +56,10 @@ namespace DotNetAsm
         private int _passes;
 
         private Regex _specialLabels;
+
+        #endregion
+
+        #region Constructors
 
         /// <summary>
         /// Constructs an instance of a DotNetAsm.AssemblyController, which controls the 
@@ -114,6 +120,10 @@ namespace DotNetAsm
             _assemblers.Add(new PseudoAssembler(this));
             _assemblers.Add(new MiscAssembler(this));
         }
+
+        #endregion
+
+        #region Methods
 
         /// <summary>
         /// Used by the expression evaluator to convert an anonymous symbol
@@ -812,7 +822,7 @@ namespace DotNetAsm
             if (!string.IsNullOrEmpty(Options.ListingFile))
             {
                 listing = GetListing();
-                using (StreamWriter writer = new StreamWriter(Options.ListingFile, false))
+                using (StreamWriter writer = new StreamWriter(Options.ListingFile))
                 {
                     string exec = Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location);
                     string argstring = string.Join(" ", Options.Arguments);
@@ -1026,6 +1036,9 @@ namespace DotNetAsm
             }
             return id;
         }
+        #endregion
+
+        #region Properties
 
         public AsmCommandLineOptions Options { get; private set; }
 
@@ -1069,5 +1082,7 @@ namespace DotNetAsm
         /// are backward-reference anonymous symbols.
         /// </summary>
         private HashSet<int> AnonMinus { get; set; }
+
+        #endregion
     }
 }

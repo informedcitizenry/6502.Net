@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -84,16 +84,16 @@ namespace DotNetAsm
 
         #region Members
 
-        private MathParser evalImpl_;
+        private MathParser _evalImpl;
 
-        private System.Random rng_;
+        private System.Random _rng;
 
-        private Dictionary<string, string> cache_;
+        private Dictionary<string, string> _expCache;
 
         // instantiate compiled regexes for most common replacements (performance advantage?)
-        private Regex hexRegex_;
-        private Regex binaryRegex_;
-        private Regex unaryRegex_;
+        private Regex _hexRegex;
+        private Regex _binaryRegex;
+        private Regex _unaryRegex;
 
         #endregion
 
@@ -107,43 +107,43 @@ namespace DotNetAsm
         {
             IgnoreCase = ignoreCase;
             SymbolLookups = new Dictionary<string, Func<string, string>>();
-            cache_ = new Dictionary<string, string>();
-            rng_ = new Random();
+            _expCache = new Dictionary<string, string>();
+            _rng = new Random();
 
-            hexRegex_ = new Regex(@"\$([a-fA-F0-9]+)", RegexOptions.Compiled);
-            binaryRegex_ = new Regex(@"%([01]+)", RegexOptions.Compiled);
-            unaryRegex_ = new Regex(@"(?<![a-zA-Z0-9_.)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_.]+)", RegexOptions.Compiled);
+            _hexRegex = new Regex(@"\$([a-fA-F0-9]+)", RegexOptions.Compiled);
+            _binaryRegex = new Regex(@"%([01]+)", RegexOptions.Compiled);
+            _unaryRegex = new Regex(@"(?<![a-zA-Z0-9_.)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_.]+)", RegexOptions.Compiled);
 
-            evalImpl_ = new Mathos.Parser.MathParser(true, true, false);
+            _evalImpl = new Mathos.Parser.MathParser(true, true, false);
 
-            evalImpl_.OperatorList.Add("{");
-            evalImpl_.OperatorList.Add("}");
-            evalImpl_.OperatorList.Add(";");
-            evalImpl_.OperatorList.Add("&");
-            evalImpl_.OperatorList.Add("|");
-            evalImpl_.OperatorList.Add("~");
+            _evalImpl.OperatorList.Add("{");
+            _evalImpl.OperatorList.Add("}");
+            _evalImpl.OperatorList.Add(";");
+            _evalImpl.OperatorList.Add("&");
+            _evalImpl.OperatorList.Add("|");
+            _evalImpl.OperatorList.Add("~");
 
             // repurpose the caret operator to bitwise XOR
-            evalImpl_.OperatorAction.Remove("^");
+            _evalImpl.OperatorAction.Remove("^");
 
-            evalImpl_.OperatorAction.Add("{", (x, y) => (decimal)((int)x << (int)y));
-            evalImpl_.OperatorAction.Add("}", (x, y) => (decimal)((int)x >> (int)y));
-            evalImpl_.OperatorAction.Add(";", (x, y) => (decimal)Math.Pow((double)x, (double)y));
-            evalImpl_.OperatorAction.Add("^", (x, y) => (decimal)((int)x ^ (int)y));
-            evalImpl_.OperatorAction.Add("&", (x, y) => (decimal)((int)x & (int)y));
-            evalImpl_.OperatorAction.Add("|", (x, y) => (decimal)((int)x | (int)y));
+            _evalImpl.OperatorAction.Add("{", (x, y) => (decimal)((int)x << (int)y));
+            _evalImpl.OperatorAction.Add("}", (x, y) => (decimal)((int)x >> (int)y));
+            _evalImpl.OperatorAction.Add(";", (x, y) => (decimal)Math.Pow((double)x, (double)y));
+            _evalImpl.OperatorAction.Add("^", (x, y) => (decimal)((int)x ^ (int)y));
+            _evalImpl.OperatorAction.Add("&", (x, y) => (decimal)((int)x & (int)y));
+            _evalImpl.OperatorAction.Add("|", (x, y) => (decimal)((int)x | (int)y));
 
-            evalImpl_.LocalFunctions.Add("cbrt", x => (decimal)Math.Pow((double)x[0], 0.333333333333333333));
-            evalImpl_.LocalFunctions.Add("hypot", x => (decimal)Math.Sqrt(Math.Pow((double)x[0], 2) + Math.Pow((double)x[1], 2)));
-            evalImpl_.LocalFunctions.Add("random", x => (decimal)rng_.Next((int)x[0], (int)x[1]));
-            evalImpl_.LocalFunctions.Add("frac", x => Math.Abs(x[0] - Math.Abs(Math.Round(x[0], 0))));
-            evalImpl_.LocalFunctions.Add("acos", x => (decimal)Math.Acos((double)x[0]));
-            evalImpl_.LocalFunctions.Add("atan", x => (decimal)Math.Atan((double)x[0]));
-            evalImpl_.LocalFunctions.Add("ceil", x => (decimal)Math.Ceiling((double)x[0]));
-            evalImpl_.LocalFunctions.Add("deg", x => (decimal)(x[0] * 180 / (decimal)Math.PI));
-            evalImpl_.LocalFunctions.Add("rad", x => (decimal)(x[0] * (decimal)Math.PI / 180));
-            evalImpl_.LocalFunctions.Add("ln", x => (decimal)Math.Log((double)x[0]));
-            evalImpl_.LocalFunctions.Add("sgn", x => (decimal)Math.Sign((double)x[0]));
+            _evalImpl.LocalFunctions.Add("cbrt", x => (decimal)Math.Pow((double)x[0], 0.333333333333333333));
+            _evalImpl.LocalFunctions.Add("hypot", x => (decimal)Math.Sqrt(Math.Pow((double)x[0], 2) + Math.Pow((double)x[1], 2)));
+            _evalImpl.LocalFunctions.Add("random", x => (decimal)_rng.Next((int)x[0], (int)x[1]));
+            _evalImpl.LocalFunctions.Add("frac", x => Math.Abs(x[0] - Math.Abs(Math.Round(x[0], 0))));
+            _evalImpl.LocalFunctions.Add("acos", x => (decimal)Math.Acos((double)x[0]));
+            _evalImpl.LocalFunctions.Add("atan", x => (decimal)Math.Atan((double)x[0]));
+            _evalImpl.LocalFunctions.Add("ceil", x => (decimal)Math.Ceiling((double)x[0]));
+            _evalImpl.LocalFunctions.Add("deg", x => (decimal)(x[0] * 180 / (decimal)Math.PI));
+            _evalImpl.LocalFunctions.Add("rad", x => (decimal)(x[0] * (decimal)Math.PI / 180));
+            _evalImpl.LocalFunctions.Add("ln", x => (decimal)Math.Log((double)x[0]));
+            _evalImpl.LocalFunctions.Add("sgn", x => (decimal)Math.Sign((double)x[0]));
         }
 
         /// <summary>
@@ -226,7 +226,7 @@ namespace DotNetAsm
                 if (string.IsNullOrWhiteSpace(expression))
                     throw new ExpressionException(expression);
 
-                return (long)evalImpl_.Parse(pre_eval);
+                return (long)_evalImpl.Parse(pre_eval);
             }
             catch (DivideByZeroException ex)
             {
@@ -422,15 +422,15 @@ namespace DotNetAsm
             var char_pattern = @"(?<![a-zA-Z0-9_)])'(.)'(?![a-zA-Z0-9_(])";
             var func_pattern = @"([a-zA-Z][a-zA-Z0-9]*)\((.*?)\)";
             var altbin_pattern = @"%([\.#]+)";
-
-            if (!cache_.ContainsKey(expression))
+            
+            if (!_expCache.ContainsKey(expression))
             {
                 string key = expression;
 
-                if (hexRegex_.IsMatch(expression))
+                if (_hexRegex.IsMatch(expression))
                 {
                     // convert hex e.g. $FFD2
-                    expression = hexRegex_.Replace(expression,
+                    expression = _hexRegex.Replace(expression,
                         m => Convert.ToInt64(m.Groups[1].Value, 16).ToString());
 
                 }
@@ -447,8 +447,8 @@ namespace DotNetAsm
                 }
 
                 // convert bin e.g. %0110101
-                if (binaryRegex_.IsMatch(expression))
-                    expression = binaryRegex_.Replace(expression,
+                if (_binaryRegex.IsMatch(expression))
+                    expression = _binaryRegex.Replace(expression,
                         m => Convert.ToInt32(m.Groups[1].Value, 2).ToString());
 
                 // convert unary bitwise complement
@@ -473,8 +473,8 @@ namespace DotNetAsm
                 }
 
                 // convert LSB/MSB/bankbyte to (x % 256), x/256, or x/65536 respectively
-                if (unaryRegex_.IsMatch(expression))
-                    expression = unaryRegex_.Replace(expression, ConvertUnary);
+                if (_unaryRegex.IsMatch(expression))
+                    expression = _unaryRegex.Replace(expression, ConvertUnary);
 
                 // convert functions (but not their arguments) to lowercase if we
                 // are ignoring case
@@ -482,11 +482,11 @@ namespace DotNetAsm
                     expression = Regex.Replace(expression, func_pattern, m =>
                         m.Groups[1].Value.ToLower() + "(" + m.Groups[2].Value + ")");
 
-                cache_.Add(key, expression);
+                _expCache.Add(key, expression);
             }
             else
             {
-                expression = cache_[expression];
+                expression = _expCache[expression];
             }
 
             // convert char constant to numeric (we can't cache this because 
