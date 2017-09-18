@@ -49,7 +49,6 @@
     <Compile Include="Compilation.cs" />
     <Compile Include="ConditionAssembler.cs" />
     <Compile Include="Disassembler.cs" />
-    <Compile Include="CharEncoding.cs" />
     <Compile Include="ErrorLog.cs" />
     <Compile Include="ErrorStrings.Designer.cs">
       <AutoGen>True</AutoGen>
