@@ -286,15 +286,6 @@ namespace DotNetAsm {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Relative branch out of range &apos;{0}&apos;.
-        /// </summary>
-        public static string RelativeBranchOutOfRange {
-            get {
-                return ResourceManager.GetString("RelativeBranchOutOfRange", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Too few arguments for directive &apos;{0}&apos;.
         /// </summary>
         public static string TooFewArguments {
