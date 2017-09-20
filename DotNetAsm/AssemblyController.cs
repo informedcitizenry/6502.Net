@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -346,6 +346,14 @@ namespace DotNetAsm
                         id++;
                     }
                 }
+                catch (ExpressionEvaluator.ExpressionException exprEx)
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
+                }
+                catch (OverflowException overflowEx)
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, overflowEx.Message);
+                }
                 catch (Compilation.InvalidPCAssignmentException ex)
                 {
                     Log.LogEntry(line, ErrorStrings.InvalidPCAssignment, ex.Message);
@@ -470,6 +478,18 @@ namespace DotNetAsm
                         if (!passNeeded)
                             passNeeded = needpass;
 
+                    }
+                    catch (ExpressionEvaluator.ExpressionException exprEx)
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
+                    }
+                    catch (OverflowException overflowEx)
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, overflowEx.Message);
+                    }
+                    catch (Compilation.InvalidPCAssignmentException ex)
+                    {
+                        Log.LogEntry(line, ErrorStrings.InvalidPCAssignment, ex.Message);
                     }
                     catch (Exception ex)
                     {
@@ -867,7 +887,7 @@ namespace DotNetAsm
                 labelname = labelname.Substring(labelname.Length - maxlen, maxlen);
                 var val = Convert.ToInt64(label.Value);
                 var size = val.Size() * 2;
-                listing.AppendFormat("{0,-30} = ${1,-4:x" + size.ToString() + "} ({2})",
+                listing.AppendFormat("{0,-30} = ${1,-4:x" + size.ToString() + "} ; ({2})",
                     labelname,
                     val,
                     label.Value)
