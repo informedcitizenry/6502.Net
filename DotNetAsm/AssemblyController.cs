@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -784,7 +784,7 @@ namespace DotNetAsm
             {
                 Console.WriteLine("\n********************************");
                 Console.WriteLine("Assembly start: ${0:X4}", Output.ProgramStart);
-                Console.WriteLine("Assembly end:   ${0:X4}", Output.GetPC());
+                Console.WriteLine("Assembly end:   ${0:X4}", Output.ProgramEnd);
                 Console.WriteLine("Passes: {0}", _passes);
             }
             else
