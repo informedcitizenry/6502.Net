@@ -1,4 +1,4 @@
-using DotNetAsm;
+﻿using DotNetAsm;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -158,14 +158,14 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0002, 2, new byte[] { 0x00, 0xff });
 
             line.Operand = "-123";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".char";
             line.Operand = "-128,127";
             TestInstruction(line, 0x0002, 2, new byte[] { 0x80, 0x7f });
 
             line.Operand = "192";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
         }
 
         [Test]
@@ -177,28 +177,28 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0004, 4, new byte[] { 0x00, 0x80, 0xff, 0x7f });
 
             line.Operand = "$ffd2";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".word";
             TestInstruction(line, 0x0002, 2, new byte[] { 0xd2, 0xff });
 
             line.Operand = "-1";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".addr";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Operand = "65232 , $c000";
             TestInstruction(line, 0x0004, 4, new byte[] { 0xd0, 0xfe, 0x00, 0xc0 });
 
             line.Operand = "$010000";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".word";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".sint";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
         }
 
         [Test]
@@ -210,13 +210,13 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0008, 8, new byte[] { 0x00, 0x00, 0x00, 0x80, 
                                                           0xff, 0xff, 0xff, 0x7f});
             line.Operand = uint.MaxValue.ToString();
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".dword";
             TestInstruction(line, 0x0004, 4, new byte[] { 0xff, 0xff, 0xff, 0xff });
 
             line.Operand = "-32342";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
         }
 
         [Test]
@@ -229,13 +229,13 @@ namespace NUnit.Tests.TestDotNetAsm
                                                           0xff, 0xff, 0x7f});
 
             line.Operand = "16777215";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = ".long";
             TestInstruction(line, 0x0003, 3, new byte[] { 0xff, 0xff, 0xff });
 
             line.Operand = "$01000000";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
         }
 
         [Test]
@@ -458,4 +458,3 @@ namespace NUnit.Tests.TestDotNetAsm
         }
     }
 }
-
