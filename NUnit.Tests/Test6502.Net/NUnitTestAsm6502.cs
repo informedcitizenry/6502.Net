@@ -47,15 +47,15 @@ namespace NUnit.Tests.Test6502.Net
             Controller.Output.Reset();
 
             line.Operand = "$ff81";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
             Controller.Log.ClearErrors();
 
             line.Operand = "$0082";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
             Controller.Log.ClearErrors();
 
             line.Operand = "$1000";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
             Controller.Log.ClearErrors();
         }
 
@@ -1115,7 +1115,7 @@ namespace NUnit.Tests.Test6502.Net
 
             line.Instruction = "sta";
             line.Operand = "$1000<<8";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Instruction = "tyx";
             line.Operand = string.Empty;
@@ -1126,7 +1126,7 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "$10000";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Operand = "$1000|$100";
             TestInstruction(line, 0x0003, new byte[] { 0xad, 0x00, 0x11 }, "lda $1100");
@@ -1150,7 +1150,7 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x12, 0x00 }, "jmp ($0012)");
 
             line.Operand = "(65535+1)";
-            TestForFailure(line);
+            Assert.Throws<OverflowException>(() => TestForFailure(line));
 
             line.Operand = "(65535)";
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");
