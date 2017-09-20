@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -223,13 +223,13 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Add the bytes for an ASCII-encoded string to the compilation
+        /// Add the bytes for an UTF8-encoded string to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
         public void Add(string value)
         {
-            byte[] asciibytes = Encoding.ASCII.GetBytes(value);
-            AddBytes(asciibytes);
+            byte[] utf8bytes = Encoding.UTF8.GetBytes(value);
+            AddBytes(utf8bytes);
         }
 
         /// <summary>
@@ -472,6 +472,18 @@ namespace DotNetAsm
         /// when compilation first occurred.
         /// </summary>
         public int ProgramStart { get; private set; }
+
+        /// <summary>
+        /// Gets the program end address, which is the address of the final assembled byte
+        /// from the program start.
+        /// </summary>
+        public int ProgramEnd 
+        {
+            get
+            {
+                return ProgramStart + (Bytes.Count - 1);
+            }
+        }
 
         /// <summary>
         /// Gets or sets a the collections of functions that apply transforms to the bytes before
