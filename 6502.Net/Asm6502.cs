@@ -394,96 +394,96 @@ namespace Asm6502.Net
             int opc = -1;
             int size = 1;
             long eval = long.MinValue, evalAbs = 0;
-            try
+            if (string.IsNullOrEmpty(operand))
             {
-                if (string.IsNullOrEmpty(operand))
+                fmt = new OperandFormat();
+                fmt.FormatString = instruction;
+                opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats);
+            }
+            else
+            {
+                foreach (FormatBuilder builder in _builders)
                 {
-                    fmt = new OperandFormat();
-                    fmt.FormatString = instruction;
-                    opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats);
-                }
-                else
-                {
-                    foreach (FormatBuilder builder in _builders)
+                    fmt = builder.GetFormat(operand);
+                    if (fmt == null)
+                        continue;
+                    string instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
+                    opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                    if (opc != -1 && fmt.FormatString.Contains("${0:x2}"))
                     {
-                        fmt = builder.GetFormat(operand);
-                        if (fmt == null)
-                            continue;
-                        string instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
-                        opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
-                        if (opc != -1 && fmt.FormatString.Contains("${0:x2}"))
+                        eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
+                        if (eval.Size() == 2)
                         {
-                            eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
-                            if (eval.Size() == 2)
-                            {
-                                instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                                opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
-                            }
-                        }
-                        if (opc == -1)
-                        {
-                            if (!instruction.Equals("jmp") && 
-                                fmt.FormatString.StartsWith("(") && 
-                                fmt.FormatString.EndsWith(")") && 
-                                !fmt.FormatString.EndsWith(",x)"))
-                            {
-                                fmt.FormatString = fmt.FormatString.Replace("(", string.Empty).Replace(")", string.Empty);
-                                instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
-                            }
-                            else
-                            {
-                                instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                            }
-
+                            instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
                             opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
                         }
-                        fmt.FormatString = instrFmt;
-                        break;
                     }
-                }
-
-                if (fmt == null)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
-                    return;
-                }
-                if (opc == -1)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(fmt.Expression1) == false)
-                {
-                    size++;
-                    if (fmt.FormatString.Contains("${0:x4}"))
+                    if (opc == -1)
                     {
-                        if (eval == long.MinValue)
-                            eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
-                        evalAbs = eval & 0xFFFF;
-                        if (Reserved.IsOneOf("Branches", line.Instruction))
+                        if (!instruction.Equals("jmp") &&
+                            fmt.FormatString.StartsWith("(") &&
+                            fmt.FormatString.EndsWith(")") &&
+                            !fmt.FormatString.EndsWith(",x)"))
                         {
-                            eval = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)evalAbs, Controller.Output.GetPC() + 2));
+                            fmt.FormatString = fmt.FormatString.Replace("(", string.Empty).Replace(")", string.Empty);
+                            instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
                         }
                         else
                         {
-                            size++;
+                            instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
+                        }
+
+                        opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                    }
+                    fmt.FormatString = instrFmt;
+                    break;
+                }
+            }
+
+            if (fmt == null)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                return;
+            }
+            if (opc == -1)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(fmt.Expression1) == false)
+            {
+                size++;
+                if (fmt.FormatString.Contains("${0:x4}"))
+                {
+                    if (eval == long.MinValue)
+                        eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
+                    evalAbs = eval & 0xFFFF;
+                    if (Reserved.IsOneOf("Branches", line.Instruction))
+                    {
+                        try
+                        {
+                            eval = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)evalAbs, Controller.Output.GetPC() + 2));
+                        }
+                        catch
+                        {
+                            throw new OverflowException(eval.ToString());
                         }
                     }
                     else
                     {
-                        eval = Controller.Evaluator.Eval(fmt.Expression1, sbyte.MinValue, byte.MaxValue);
-                        evalAbs = eval & 0xFF;
+                        size++;
                     }
-
                 }
-                line.Disassembly = string.Format(_opcodeFormats[opc], evalAbs);
-                Controller.Output.Add(opc | (int)eval << 8, size);
+                else
+                {
+                    eval = Controller.Evaluator.Eval(fmt.Expression1, sbyte.MinValue, byte.MaxValue);
+                    evalAbs = eval & 0xFF;
+                }
+
             }
-            catch (OverflowException)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, line.Operand);
-            }
+            line.Disassembly = string.Format(_opcodeFormats[opc], evalAbs);
+            Controller.Output.Add(opc | (int)eval << 8, size);
         }
 
         /// <summary>
