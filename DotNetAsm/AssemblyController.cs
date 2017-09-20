@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -723,12 +723,7 @@ namespace DotNetAsm
             {
                 if (IsDefiningConstant(line))
                 {
-                    val = Evaluator.Eval(line.Operand);
-                    if (val < UInt16.MinValue || val > UInt16.MaxValue)
-                    {
-                        Log.LogEntry(line, ErrorStrings.IllegalQuantity, val.ToString());
-                        return;
-                    }
+                    val = Evaluator.Eval(line.Operand, UInt16.MinValue, UInt16.MaxValue);
                     Output.SetPC(Convert.ToUInt16(val));
                 }
                 else
