@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,22 +32,22 @@ namespace DotNetAsm
     {
         #region Members
 
-        private IReadOnlyList<string> source_;
-        private IReadOnlyList<string> defines_;
-        private string arch_;
-        private string listingFile_;
-        private string labelFile_;
-        private string outputFile_;
-        private bool bigendian_;
-        private bool quiet_;
-        private bool verbose_;
-        private bool werror_;
-        private bool nowarn_;
-        private bool casesensitive_;
-        private bool noassembly_;
-        private bool nosource_;
-        private bool printversion_;
-        private bool nodisassembly_;
+        private IReadOnlyList<string> _source;
+        private IReadOnlyList<string> _defines;
+        private string _arch;
+        private string _listingFile;
+        private string _labelFile;
+        private string _outputFile;
+        private bool _bigEndian;
+        private bool _quiet;
+        private bool _verboseDasm;
+        private bool _werror;
+        private bool _noWarn;
+        private bool _caseSensitive;
+        private bool _noAssembly;
+        private bool _noSource;
+        private bool _printVersion;
+        private bool _noDisassembly;
 
         #endregion
 
@@ -58,22 +58,22 @@ namespace DotNetAsm
         /// </summary>
         public AsmCommandLineOptions()
         {
-            source_ = new List<string>();
-            defines_ = new List<string>();
-            arch_ =
-            listingFile_ =
-            labelFile_ =
-            outputFile_ = string.Empty;
-            bigendian_ =
-            verbose_ =
-            werror_ =
-            nowarn_ =
-            nodisassembly_ =
-            nosource_ =
-            noassembly_ =
-            quiet_ =
-            printversion_ =
-            casesensitive_ = false;
+            _source = new List<string>();
+            _defines = new List<string>();
+            _arch =
+            _listingFile =
+            _labelFile =
+            _outputFile = string.Empty;
+            _bigEndian =
+            _verboseDasm =
+            _werror =
+            _noWarn =
+            _noDisassembly =
+            _noSource =
+            _noAssembly =
+            _quiet =
+            _printVersion =
+            _caseSensitive = false;
         }
 
         #endregion
@@ -96,22 +96,22 @@ namespace DotNetAsm
             args.CopyTo(Arguments, 0);
             var result = ArgumentSyntax.Parse(args, syntax =>
             {
-                syntax.DefineOption("o|output", ref outputFile_, "Output assembly to <arg>");
-                syntax.DefineOption("b|big-endian", ref bigendian_, "Set byte order of output to big-endian");
-                syntax.DefineOption("arch", ref arch_, "Specify architecture-specific options");
-                syntax.DefineOptionList("D|define", ref defines_, "Assign value to a global symbol/label in <arg>");
-                syntax.DefineOption("q|quiet", ref quiet_, "Assemble in quiet mode (no console messages)");
-                syntax.DefineOption("w|no-warn", ref nowarn_, "Suppress all warnings");
-                syntax.DefineOption("werror", ref werror_, "Treat all warnings as errors");
-                syntax.DefineOption("l|labels", ref labelFile_, "Output label definitions to <arg>");
-                syntax.DefineOption("L|list", ref listingFile_, "Output listing to <arg>");
-                syntax.DefineOption("a|no-assembly", ref noassembly_, "Suppress assembled bytes from assembly listing");
-                syntax.DefineOption("d|no-disassembly", ref nodisassembly_, "Suppress disassembly from assembly listing");
-                syntax.DefineOption("s|no-source", ref nosource_, "Suppress original source from assembly listing");
-                syntax.DefineOption("verbose-asm", ref verbose_, "Expand listing to include all directives and comments");
-                syntax.DefineOption("C|case-sensitive", ref casesensitive_, "Treat all symbols as case sensitive");
-                syntax.DefineOption("V|version", ref printversion_, "Print current version");
-                syntax.DefineParameterList("source", ref source_, "The source files to assemble");
+                syntax.DefineOption("o|output", ref _outputFile, "Output assembly to <arg>");
+                syntax.DefineOption("b|big-endian", ref _bigEndian, "Set byte order of output to big-endian");
+                syntax.DefineOption("arch", ref _arch, "Specify architecture-specific options");
+                syntax.DefineOptionList("D|define", ref _defines, "Assign value to a global symbol/label in <arg>");
+                syntax.DefineOption("q|quiet", ref _quiet, "Assemble in quiet mode (no console messages)");
+                syntax.DefineOption("w|no-warn", ref _noWarn, "Suppress all warnings");
+                syntax.DefineOption("werror", ref _werror, "Treat all warnings as errors");
+                syntax.DefineOption("l|labels", ref _labelFile, "Output label definitions to <arg>");
+                syntax.DefineOption("L|list", ref _listingFile, "Output listing to <arg>");
+                syntax.DefineOption("a|no-assembly", ref _noAssembly, "Suppress assembled bytes from assembly listing");
+                syntax.DefineOption("d|no-disassembly", ref _noDisassembly, "Suppress disassembly from assembly listing");
+                syntax.DefineOption("s|no-source", ref _noSource, "Suppress original source from assembly listing");
+                syntax.DefineOption("verbose-asm", ref _verboseDasm, "Expand listing to include all directives and comments");
+                syntax.DefineOption("C|case-sensitive", ref _caseSensitive, "Treat all symbols as case sensitive");
+                syntax.DefineOption("V|version", ref _printVersion, "Print current version");
+                syntax.DefineParameterList("source", ref _source, "The source files to assemble");
             });
         }
 
@@ -127,7 +127,7 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the target architecture information.
         /// </summary>
-        public string Architecture { get { return arch_; } }
+        public string Architecture { get { return _arch; } }
 
         /// <summary>
         /// Gets the value determining whether output file should be generated, 
@@ -138,10 +138,10 @@ namespace DotNetAsm
         {
             get
             {
-                return source_.Count > 0 &&
+                return _source.Count > 0 &&
                      (
-                      !string.IsNullOrEmpty(outputFile_) ||
-                      (string.IsNullOrEmpty(labelFile_) && string.IsNullOrEmpty(listingFile_))
+                      !string.IsNullOrEmpty(_outputFile) ||
+                      (string.IsNullOrEmpty(_labelFile) && string.IsNullOrEmpty(_listingFile))
                      );
             }
         }
@@ -149,37 +149,37 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the read-only list of input filenames.
         /// </summary>
-        public IReadOnlyList<string> InputFiles { get { return source_; } }
+        public IReadOnlyList<string> InputFiles { get { return _source; } }
 
         /// <summary>
         /// Gets the read-only list of label defines.
         /// </summary>
-        public IReadOnlyList<string> LabelDefines { get { return defines_; } }
+        public IReadOnlyList<string> LabelDefines { get { return _defines; } }
 
         /// <summary>
         /// Gets the output filename.
         /// </summary>
-        public string OutputFile { get { return outputFile_; } }
+        public string OutputFile { get { return _outputFile; } }
 
         /// <summary>
         /// The assembly listing filename.
         /// </summary>
-        public string ListingFile { get { return listingFile_; } }
+        public string ListingFile { get { return _listingFile; } }
 
         /// <summary>
         /// Gets the label listing filename.
         /// </summary>
-        public string LabelFile { get { return labelFile_; } }
+        public string LabelFile { get { return _labelFile; } }
 
         /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
-        public bool Quiet { get { return quiet_; } }
+        public bool Quiet { get { return _quiet; } }
 
         /// <summary>
         /// Gets the flag that indicates warnings should be suppressed.
         /// </summary>
-        public bool NoWarnings { get { return nowarn_; } }
+        public bool NoWarnings { get { return _noWarn; } }
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
@@ -188,8 +188,8 @@ namespace DotNetAsm
         {
             get
             {
-                if (!nowarn_)
-                    return werror_;
+                if (!_noWarn)
+                    return _werror;
                 return false;
             }
         }
@@ -198,13 +198,13 @@ namespace DotNetAsm
         /// Gets a flag indicating that assembly listing should be 
         /// verbose.
         /// </summary>
-        public bool VerboseList { get { return verbose_; } }
+        public bool VerboseList { get { return _verboseDasm; } }
 
         /// <summary>
         /// Gets a flag that indicates the source should be processed as
         /// case-sensitive.
         /// </summary>
-        public bool CaseSensitive { get { return casesensitive_; } }
+        public bool CaseSensitive { get { return _caseSensitive; } }
 
         /// <summary>
         /// Gets the System.StringComparison, which is based on the case-sensitive flag.
@@ -213,7 +213,7 @@ namespace DotNetAsm
         {
             get
             {
-                return casesensitive_ ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
+                return _caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
             }
         }
 
@@ -224,7 +224,7 @@ namespace DotNetAsm
         {
             get
             {
-                return casesensitive_ ? StringComparer.InvariantCulture : StringComparer.InvariantCultureIgnoreCase;
+                return _caseSensitive ? StringComparer.InvariantCulture : StringComparer.InvariantCultureIgnoreCase;
             }
         }
 
@@ -235,34 +235,34 @@ namespace DotNetAsm
         {
             get
             {
-                return casesensitive_ ? System.Text.RegularExpressions.RegexOptions.None : System.Text.RegularExpressions.RegexOptions.IgnoreCase;
+                return _caseSensitive ? System.Text.RegularExpressions.RegexOptions.None : System.Text.RegularExpressions.RegexOptions.IgnoreCase;
             }
         }
 
         /// <summary>
         /// Gets a flag that indicates that the output should be in big-endian byte order.
         /// </summary>
-        public bool BigEndian { get { return bigendian_; } }
+        public bool BigEndian { get { return _bigEndian; } }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress original source.
         /// </summary>
-        public bool NoSource { get { return nosource_; } }
+        public bool NoSource { get { return _noSource; } }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress 6502 disassembly.
         /// </summary>
-        public bool NoDissasembly { get { return nodisassembly_; } }
+        public bool NoDissasembly { get { return _noDisassembly; } }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress assembly bytes.
         /// </summary>
-        public bool NoAssembly { get { return noassembly_; } }
+        public bool NoAssembly { get { return _noAssembly; } }
 
         /// <summary>
         /// Gets a flag indicating the full version of the assembler should be printed.
         /// </summary>
-        public bool PrintVersion { get { return printversion_; } }
+        public bool PrintVersion { get { return _printVersion; } }
 
         #endregion
     }
