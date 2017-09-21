@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,7 +32,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        private IAssemblyController controller_;
+        private IAssemblyController _controller;
 
         #endregion
 
@@ -82,10 +82,10 @@ namespace DotNetAsm
         /// </summary>
         protected IAssemblyController Controller
         {
-            get { return controller_; }
+            get { return _controller; }
             set
             {
-                controller_ = value;
+                _controller = value;
             }
         }
 
