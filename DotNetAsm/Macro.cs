@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -42,7 +42,7 @@ namespace DotNetAsm
         {
             #region Exception.Members
 
-            private string message_;
+            private string _macroExceptMsg;
 
             #endregion
 
@@ -56,7 +56,7 @@ namespace DotNetAsm
             public MacroException(SourceLine line, string message)
             {
                 Line = line;
-                message_ = message;
+                _macroExceptMsg = message;
             }
 
             #endregion
@@ -70,7 +70,7 @@ namespace DotNetAsm
             {
                 get
                 {
-                    return message_;
+                    return _macroExceptMsg;
                 }
             }
 
