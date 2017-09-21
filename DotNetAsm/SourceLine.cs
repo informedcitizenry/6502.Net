@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -54,9 +54,9 @@ namespace DotNetAsm
 
         #region Members
 
-        private bool doNotAssemble_;
+        private bool _doNotAssemble;
 
-        private bool comment_;
+        private bool _comment;
 
         #endregion
 
@@ -392,22 +392,22 @@ namespace DotNetAsm
         /// </summary>
         public bool IsComment
         {
-            get { return comment_; }
+            get { return _comment; }
             set
             {
-                comment_ = value;
-                if (comment_)
-                    doNotAssemble_ = comment_;
+                _comment = value;
+                if (_comment)
+                    _doNotAssemble = _comment;
             }
         }
 
         public bool DoNotAssemble
         {
-            get { return doNotAssemble_; }
+            get { return _doNotAssemble; }
             set
             {
                 if (!IsComment)
-                    doNotAssemble_ = value;
+                    _doNotAssemble = value;
             }
         }
 
