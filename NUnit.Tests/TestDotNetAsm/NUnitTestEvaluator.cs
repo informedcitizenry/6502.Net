@@ -121,8 +121,9 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestSymbolLookup()
         {
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
-            evaluator.SymbolLookups.Add(@"testvar", (str) => "42");
-            evaluator.SymbolLookups.Add(@"(?<=[^a-zA-Z0-9_\.\)]|^)\*(?=[^a-zA-Z0-9_\.\(]|$)", (str) => "49152");
+            evaluator.DefineSymbolLookup(@"testvar", (str) => "42");
+            evaluator.DefineSymbolLookup(@"(?<=[^a-zA-Z0-9_\.\)]|^)\*(?=[^a-zA-Z0-9_\.\(]|$)", (str) => "49152");
+            
             long result1 = evaluator.Eval("testvar");
             long result2 = evaluator.Eval("testvar*12");
             long result3 = evaluator.Eval("testvar**");
@@ -147,8 +148,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(49152 * 3, result10);
             Assert.AreEqual(Math.Pow(49152, 2), result11);
 
-            evaluator.SymbolLookups.Remove(@"testvar");
-            evaluator.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_]*)(?!\()",
+            evaluator.DefineSymbolLookup(@"(?>_?[a-zA-Z][a-zA-Z0-9_]*)(?!\()",
                 (str) =>
                 {
                     if (str.Equals("var1"))
@@ -169,7 +169,8 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
             int myvar = 548;
-            evaluator.SymbolLookups.Add("myvar", (s) => myvar.ToString());
+            evaluator.DefineSymbolLookup("myvar", (s) => myvar.ToString());
+            
             long notZero = evaluator.Eval("~0");
             long not255 = evaluator.Eval("~255");
             long notmyvar = evaluator.Eval("~(myvar*2)%256");
@@ -195,8 +196,8 @@ namespace NUnit.Tests.TestDotNetAsm
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
 
             int myvar = 224;
-            evaluator.SymbolLookups.Add("myvar", (s) => myvar.ToString());
-
+            evaluator.DefineSymbolLookup("myvar", (s) => myvar.ToString());
+            
             long and = evaluator.Eval("myvar&$e0");
             long or = evaluator.Eval("myvar|$0f");
             long xor = evaluator.Eval("myvar^$ef");
