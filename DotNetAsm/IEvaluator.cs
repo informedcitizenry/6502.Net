@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,19 +57,11 @@ namespace DotNetAsm
         bool EvalCondition(string expression);
 
         /// <summary>
-        /// Determines whether the expression can be evaluated from the current
-        /// symbol lookup state of the calling client.
+        /// Defines a symbol lookup for the evaluator to translate symbols (such as 
+        /// variables) in expressions.
         /// </summary>
-        /// <param name="expression">The expression to test whether it can be evaluated.</param>
-        /// <returns>True, if the expression can be evaluated, otherwise false.</returns>
-        bool CanEvaluate(string expression);
-
-        /// <summary>
-        /// Gets the symbol lookup helpers for the evaluator to translate symbols
-        /// in expressions. The key for each dictionary entry is a regular expression (regex)
-        /// that provides lookup information. The value is a callback function to provide the 
-        /// lookup.
-        /// </summary
-        IDictionary<string, Func<string, string>> SymbolLookups { get; }
+        /// <param name="regex">A regex pattern for the symbol</param>
+        /// <param name="lookupfunc">The lookup function to define the symbol</param>
+        void DefineSymbolLookup(string regex, Func<string, string> lookupfunc);
     }
 }

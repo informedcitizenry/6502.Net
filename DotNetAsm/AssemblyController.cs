@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -109,9 +109,9 @@ namespace DotNetAsm
             _assemblers = new List<ILineAssembler>();
             _evaluator = new ExpressionEvaluator(!Options.CaseSensitive);
 
-            _evaluator.SymbolLookups.Add(@"(?>_?[a-zA-Z][a-zA-Z0-9_.]*)(?!\()", GetLabelValue);
-            _evaluator.SymbolLookups.Add(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
-            _evaluator.SymbolLookups.Add(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str) => Output.GetPC().ToString());
+            _evaluator.DefineSymbolLookup(@"(?>_?[a-zA-Z][a-zA-Z0-9_.]*)(?!\()", GetLabelValue);
+            _evaluator.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
+            _evaluator.DefineSymbolLookup(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str) => Output.GetPC().ToString());
 
             _evaluator.AllowAlternateBinString = true;
 

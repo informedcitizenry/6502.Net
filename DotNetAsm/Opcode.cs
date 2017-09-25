@@ -333,7 +333,7 @@ namespace DotNetAsm
                 }
                 if (_treatParenEnclosureAsExpr && fmt.Expression1.StartsWith("(") && fmt.Expression1.EndsWith(")"))
                 {
-                    if (ExpressionEvaluator.FirstParenGroup(fmt.Expression1).Equals(fmt.Expression1))
+                    if (fmt.Expression1.Equals(fmt.Expression1.FirstParenEnclosure()))
                         exp1Format = "(" + _exp1Format + ")";
                 }
                 fmt.FormatString = string.Format(_format,

@@ -94,6 +94,7 @@ namespace DotNetAsm
         private Regex _hexRegex;
         private Regex _binaryRegex;
         private Regex _unaryRegex;
+        private Dictionary<string, Tuple<Func<string, string>, Regex>> _symbolLookups;
 
         #endregion
 
@@ -106,7 +107,7 @@ namespace DotNetAsm
         public ExpressionEvaluator(bool ignoreCase)
         {
             IgnoreCase = ignoreCase;
-            SymbolLookups = new Dictionary<string, Func<string, string>>();
+            _symbolLookups = new Dictionary<string, Tuple<Func<string, string>, Regex>>();
             _expCache = new Dictionary<string, string>();
             _rng = new Random();
 
@@ -153,57 +154,6 @@ namespace DotNetAsm
             : this(false)
         {
 
-        }
-
-        #endregion
-
-        #region Static Methods
-
-        /// <summary>
-        /// Capture and return the first parenthetical group in the string. 
-        /// </summary>
-        /// <param name="value">The string expression.</param>
-        /// <returns>Returns the first instance of a parenthetical group.</returns>
-        public static string FirstParenGroup(string value)
-        {
-            int parens = 0;
-            string parengroup = string.Empty;
-            string evaluated;
-            char open = '(', close = ')';
-            evaluated = value;
-            bool quote_enclosed = false;
-            foreach (var c in evaluated)
-            {
-                if (parens >= 1)
-                    parengroup += c.ToString();
-
-                if (c == '"')
-                {
-                    quote_enclosed = !quote_enclosed;
-                }
-                if (quote_enclosed)
-                    continue;
-
-                if (c == open)
-                {
-                    if (parens == 0)
-                        parengroup += c.ToString();
-                    parens++;
-                }
-                else if (c == close)
-                {
-                    parens--;
-                    if (parens == 0)
-                    {
-                        return parengroup;
-                    }
-                    if (parens < 0)
-                        throw new FormatException();
-                }
-            }
-            if (parens > 0)
-                throw new FormatException();
-            return value;
         }
 
         #endregion
@@ -256,17 +206,6 @@ namespace DotNetAsm
             if (result < minval || result > maxval)
                 throw new OverflowException(expression);
             return result;
-        }
-
-        /// <summary>
-        /// Determines whether the expression can be evaluated from the current
-        /// symbol lookup state of the calling client.
-        /// </summary>
-        /// <param name="expression">The expression to test whether it can be evaluated.</param>
-        /// <returns>True, if the expression can be evaluated, otherwise false.</returns>
-        public bool CanEvaluate(string expression)
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -353,7 +292,7 @@ namespace DotNetAsm
         {
             if (rval.StartsWith("("))
             {
-                string firstparen_r = FirstParenGroup(rval);
+                string firstparen_r = rval.FirstParenEnclosure();
                 if (firstparen_r != rval)
                 {
                     post = rval.Substring(firstparen_r.Length) + post;
@@ -372,7 +311,7 @@ namespace DotNetAsm
         private string ConvertCompl(Match match)
         {
             var post = string.Empty;
-            var first_paren = FirstParenGroup(match.Groups[1].Value);
+            var first_paren = match.Groups[1].Value.FirstParenEnclosure();
             if (first_paren != match.Groups[1].Value)
                 post = match.Groups[1].Value.Substring(first_paren.Length);
             var compl = Eval(first_paren);
@@ -461,7 +400,7 @@ namespace DotNetAsm
                     expression = Regex.Replace(expression, @"log10(\(.+\))", m =>
                     {
                         string post = string.Empty;
-                        var first_paren = FirstParenGroup(m.Groups[1].Value);
+                        var first_paren = m.Groups[1].Value.FirstParenEnclosure();
                         if (first_paren != m.Groups[1].Value)
                         {
                             post = PreEvaluate(m.Groups[1].Value.Substring(first_paren.Length));
@@ -520,42 +459,51 @@ namespace DotNetAsm
         private string ReplaceSymbols(string expression)
         {
             // convert client-defined symbols into values
-            foreach (var l in SymbolLookups)
+            foreach(var lookup in _symbolLookups)
             {
-                string sym_pattern = l.Key;
+
+                var f = lookup.Value.Item1;
+                Regex r = lookup.Value.Item2;
 
                 // strip white-spaces between operators and symbols first
-                expression = Regex.Replace(expression, @"\s*(" + l.Key + @")\s*", m =>
+                expression = Regex.Replace(expression, @"\s*(" + r.ToString() + @")\s*", m =>
                 {
                     return m.Groups[1].Value;
                 });
 
-                expression = Regex.Replace(expression, sym_pattern, delegate(Match m)
+                expression = r.Replace(expression, m =>
                 {
-                    if (l.Value != null && !string.IsNullOrEmpty(m.Value))
-                    {
-                        string v = expression;
-                        return m.Value.Replace(m.Value, l.Value(m.Value));
-                    }
-                    return m.Value;
-                }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+                    string match = m.Value;
+                    if (f != null && !string.IsNullOrEmpty(match))
+                        return f(match);
+                    return match;
+                });
+                if (expression.Contains(EVAL_FAIL))
+                    return string.Empty;
             }
-            if (expression.Contains(EVAL_FAIL))
-                return string.Empty;
             return expression;
+        }
+
+        /// <summary>
+        /// Defines a symbol lookup for the evaluator to translate symbols (such as 
+        /// variables) in expressions.
+        /// </summary>
+        /// <param name="regex">A regex pattern for the symbol</param>
+        /// <param name="lookupfunc">The lookup function to define the symbol</param>
+        public void DefineSymbolLookup(string regex, Func<string, string> lookupfunc)
+        {
+            Tuple<Func<string, string>, Regex> val =
+                new Tuple<Func<string, string>, Regex>(lookupfunc,
+                    new Regex(regex, RegexOptions.Compiled | (IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None)));
+            if (_symbolLookups.ContainsKey(regex))
+                _symbolLookups[regex] = val;
+            else
+                _symbolLookups.Add(regex, val);
         }
 
         #endregion
 
         #region Properties
-
-        /// <summary>
-        /// Gets the symbol lookup helpers for the evaluator to translate symbols
-        /// in expressions. The key for each dictionary entry is a regular expression (regex)
-        /// that provides lookup information. The value is a callback function to provide the 
-        /// lookup.
-        /// </summary>
-        public IDictionary<string, Func<string, string>> SymbolLookups { get; private set; }
 
         /// <summary>
         /// Ignore case of symbols, such as variables and function calls.

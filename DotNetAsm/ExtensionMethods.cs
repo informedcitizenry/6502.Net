@@ -128,6 +128,52 @@ namespace DotNetAsm
             }
             return enclosed;
         }
+
+        /// <summary>
+        /// Capture and return the first parenthetical group in the string. 
+        /// </summary>
+        /// <param name="str">The string to evaluate</param>
+        /// <returns>Returns the first instance of a parenthetical group</returns>
+        /// <exception cref="System.FormatException">System.FormatException</exception>
+        public static string FirstParenEnclosure(this string str)
+        {
+            int parens = 0;
+            string parengroup = string.Empty;
+            char open = '(', close = ')';
+            bool quote_enclosed = false;
+            foreach (var c in str)
+            {
+                if (parens >= 1)
+                    parengroup += c.ToString();
+
+                if (c == '"')
+                {
+                    quote_enclosed = !quote_enclosed;
+                }
+                if (quote_enclosed)
+                    continue;
+
+                if (c == open)
+                {
+                    if (parens == 0)
+                        parengroup += c.ToString();
+                    parens++;
+                }
+                else if (c == close)
+                {
+                    parens--;
+                    if (parens == 0)
+                    {
+                        return parengroup;
+                    }
+                    if (parens < 0)
+                        throw new FormatException();
+                }
+            }
+            if (parens > 0)
+                throw new FormatException();
+            return str;
+        }
     }
 
     public static class Int64_Extension
