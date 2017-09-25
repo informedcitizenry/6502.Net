@@ -490,6 +490,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="regex">A regex pattern for the symbol</param>
         /// <param name="lookupfunc">The lookup function to define the symbol</param>
+        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
         public void DefineSymbolLookup(string regex, Func<string, string> lookupfunc)
         {
             Tuple<Func<string, string>, Regex> val =
