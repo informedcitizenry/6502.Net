@@ -466,7 +466,7 @@ namespace DotNetAsm
                 Regex r = lookup.Value.Item2;
 
                 // strip white-spaces between operators and symbols first
-                expression = Regex.Replace(expression, @"\s*(" + r.ToString() + @")\s*", m =>
+                expression = Regex.Replace(expression, @"\s*(" + lookup.Key + @")\s*", m =>
                 {
                     return m.Groups[1].Value;
                 });
