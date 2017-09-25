@@ -522,7 +522,7 @@ namespace Asm6502.Net
                     {
                         operand = _regInd.Match(operand).Groups[1].Value;
 
-                        if (operand.Equals(ExpressionEvaluator.FirstParenGroup(operand)))
+                        if (operand.Equals(operand.FirstParenEnclosure()))
                             return 2;
                     }
                     if (AccumY(line))

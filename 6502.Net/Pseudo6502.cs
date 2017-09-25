@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -60,7 +60,7 @@ namespace Asm6502.Net
                     ".rta"
                 });
 
-            controller.Evaluator.SymbolLookups.Add(@"(atascreen|cbmscreen|petscii)\(.+\)", EncodeStringFunc);
+            controller.Evaluator.DefineSymbolLookup(@"(atascreen|cbmscreen|petscii)\(.+\)", EncodeStringFunc);
         }
         #endregion
 
@@ -81,8 +81,7 @@ namespace Asm6502.Net
             Int64 val = Convert.ToInt64(expression);
             if (val < byte.MinValue || val > byte.MaxValue)
             {
-                throw new ExpressionEvaluator.ExpressionException(
-                    string.Format(ErrorStrings.IllegalQuantity, expression));
+                throw new OverflowException(expression);
             }
             if (opix == 9)
             {
