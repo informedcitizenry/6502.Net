@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -274,8 +274,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The amount to fill</param>
         /// <param name="value">The fill value</param>
-        /// <param name="repeatNotFill">Repeat the value not fill to the amount.</param>
-        public void Fill(int amount, Int64 value, bool repeatNotFill)
+        public void Fill(int amount, Int64 value)
         {
             int size = value.Size();
             byte[] fillbytes;
@@ -301,10 +300,7 @@ namespace DotNetAsm
                     repeated.Add(fillbytes[j]);
 
             }
-            if (repeatNotFill)
-                AddBytes(repeated, true);
-            else
-                AddBytes(repeated.GetRange(0, amount), true);
+            AddBytes(repeated.GetRange(0, amount), true);
         }
 
         /// <summary>
@@ -328,7 +324,7 @@ namespace DotNetAsm
         public int Align(int amount, long value)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
-            Fill(align, value, false);
+            Fill(align, value);
             return align;
         }
 

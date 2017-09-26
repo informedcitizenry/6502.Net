@@ -91,10 +91,10 @@ namespace DotNetAsm
         private Dictionary<string, string> _expCache;
 
         // instantiate compiled regexes for most common replacements (performance advantage?)
-        private Regex _hexRegex;
         private Regex _binaryRegex;
         private Regex _unaryRegex;
         private Dictionary<string, Tuple<Func<string, string>, Regex>> _symbolLookups;
+        private List<Regex> _hexRegexes;
 
         #endregion
 
@@ -103,15 +103,17 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of the ExpressionEvaluator class.
         /// </summary>
+        /// <param name="hexPattern">The default hexadecimal pattern used to identify hexadecimal
+        /// strings in an expression</param>
         /// <param name="ignoreCase">Ignore the case of symbols, such as variables and function calls.</param>
-        public ExpressionEvaluator(bool ignoreCase)
+        public ExpressionEvaluator(string hexPattern, bool ignoreCase)
         {
             IgnoreCase = ignoreCase;
             _symbolLookups = new Dictionary<string, Tuple<Func<string, string>, Regex>>();
             _expCache = new Dictionary<string, string>();
             _rng = new Random();
+            _hexRegexes = new List<Regex>() { new Regex(hexPattern, RegexOptions.Compiled) };
 
-            _hexRegex = new Regex(@"\$([a-fA-F0-9]+)", RegexOptions.Compiled);
             _binaryRegex = new Regex(@"%([01]+)", RegexOptions.Compiled);
             _unaryRegex = new Regex(@"(?<![a-zA-Z0-9_.)<>])(<|>|\^)(\(.+\)|[a-zA-Z0-9_.]+)", RegexOptions.Compiled);
 
@@ -145,6 +147,27 @@ namespace DotNetAsm
             _evalImpl.LocalFunctions.Add("rad", x => (decimal)(x[0] * (decimal)Math.PI / 180));
             _evalImpl.LocalFunctions.Add("ln", x => (decimal)Math.Log((double)x[0]));
             _evalImpl.LocalFunctions.Add("sgn", x => (decimal)Math.Sign((double)x[0]));
+        }
+
+        /// <summary>
+        /// Constructs an instance of the ExpressionEvaluator class.
+        /// </summary>
+        /// <param name="hexPattern">The default hexadecimal pattern used to identify hexadecimal
+        /// strings in an expression</param>
+        public ExpressionEvaluator(string hexPattern)
+            : this(hexPattern, false)
+        {
+
+        }
+
+        /// <summary>
+        /// Constructs an instance of the ExpressionEvaluator class.
+        /// </summary>
+        /// <param name="ignoreCase">Ignore the case of symbols, such as variables and function calls.</param>
+        public ExpressionEvaluator(bool ignoreCase)
+            : this(@"0x([a-fA-F0-9]+)", ignoreCase)
+        {
+            
         }
 
         /// <summary>
@@ -366,12 +389,11 @@ namespace DotNetAsm
             {
                 string key = expression;
 
-                if (_hexRegex.IsMatch(expression))
+                // convert hex e.g. $FFD2
+                foreach(var hex in _hexRegexes)
                 {
-                    // convert hex e.g. $FFD2
-                    expression = _hexRegex.Replace(expression,
+                    expression = hex.Replace(expression,
                         m => Convert.ToInt64(m.Groups[1].Value, 16).ToString());
-
                 }
 
                 // if allowed also convert alt bin, e.g. %..##.#..
@@ -386,30 +408,25 @@ namespace DotNetAsm
                 }
 
                 // convert bin e.g. %0110101
-                if (_binaryRegex.IsMatch(expression))
-                    expression = _binaryRegex.Replace(expression,
+                expression = _binaryRegex.Replace(expression,
                         m => Convert.ToInt32(m.Groups[1].Value, 2).ToString());
 
                 // convert unary bitwise complement
-                if (Regex.IsMatch(expression, @"(?<![a-zA-Z0-9_)<>])~(\(.+\)|[a-zA-Z0-9_.]+)"))
-                    expression = Regex.Replace(expression, @"(?<![a-zA-Z0-9_)<>])~(\(.+\)|[a-zA-Z0-9_.]+)", ConvertCompl);
+                expression = Regex.Replace(expression, @"(?<![a-zA-Z0-9_)<>])~(\(.+\)|[a-zA-Z0-9_.]+)", ConvertCompl);    
 
                 // convert log10(x) to log(x,10)
-                if (Regex.IsMatch(expression, @"log10(\(.+\))", IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None)) 
+                expression = Regex.Replace(expression, @"log10(\(.+\))", m =>
                 {
-                    expression = Regex.Replace(expression, @"log10(\(.+\))", m =>
+                    string post = string.Empty;
+                    var first_paren = m.Groups[1].Value.FirstParenEnclosure();
+                    if (first_paren != m.Groups[1].Value)
                     {
-                        string post = string.Empty;
-                        var first_paren = m.Groups[1].Value.FirstParenEnclosure();
-                        if (first_paren != m.Groups[1].Value)
-                        {
-                            post = PreEvaluate(m.Groups[1].Value.Substring(first_paren.Length));
-                        }
-                        first_paren = first_paren.TrimEnd(')') + ",10)";
-                        return string.Format("log{0}{1}", first_paren, post);
+                        post = PreEvaluate(m.Groups[1].Value.Substring(first_paren.Length));
+                    }
+                    first_paren = first_paren.TrimEnd(')') + ",10)";
+                    return string.Format("log{0}{1}", first_paren, post);
 
-                    }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
-                }
+                }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
 
                 // convert LSB/MSB/bankbyte to (x % 256), x/256, or x/65536 respectively
                 if (_unaryRegex.IsMatch(expression))
@@ -461,7 +478,6 @@ namespace DotNetAsm
             // convert client-defined symbols into values
             foreach(var lookup in _symbolLookups)
             {
-
                 var f = lookup.Value.Item1;
                 Regex r = lookup.Value.Item2;
 
@@ -482,6 +498,16 @@ namespace DotNetAsm
                     return string.Empty;
             }
             return expression;
+        }
+
+        /// <summary>
+        /// Add a hexadecimal format for the DotNetAsm.ExpressionEvalutor to interpret as
+        /// a hexadecimal string.
+        /// </summary>
+        /// <param name="regex">The regex pattern</param>
+        public void AddHexFormat(string regex)
+        {
+            _hexRegexes.Add(new Regex(regex, RegexOptions.Compiled));
         }
 
         /// <summary>

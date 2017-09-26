@@ -33,7 +33,7 @@ namespace DotNetAsm
     /// </summary>
     public class PseudoAssembler : StringAssemblerBase, ILineAssembler
     {
-        private HashSet<BinaryFile> includedBinaries_;
+        private HashSet<BinaryFile> _includedBinaries;
 
         #region Constructors
 
@@ -44,7 +44,7 @@ namespace DotNetAsm
         public PseudoAssembler(IAssemblyController controller) :
             base(controller)
         {
-            includedBinaries_ = new HashSet<BinaryFile>();
+            _includedBinaries = new HashSet<BinaryFile>();
 
             Reserved.DefineType("PseudoOps", new string[]
                 {
@@ -66,13 +66,8 @@ namespace DotNetAsm
         {
             var csv = line.CommaSeparateOperand();
 
-            Int64 alignval = Controller.Evaluator.Eval(csv.First());
-            if (alignval < 1)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.BadExpression, alignval.ToString());
-                return;
-            }
-
+            int alignval = (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
+            
             if (csv.Count > 1 && csv.Last().Equals("?") == false)
             {
                 if (csv.Count > 2)
@@ -80,26 +75,19 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
-                Int64 fillval = Controller.Evaluator.Eval(csv.Last());
+                Int64 fillval = Controller.Evaluator.Eval(csv.Last(), int.MinValue, uint.MaxValue);
 
                 if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
-                {
-                    Controller.Output.Align(Convert.ToUInt16(alignval), fillval);
-                }
+                    Controller.Output.Align(alignval, fillval);
                 else
-                {
-                    bool repeat = line.Instruction.Equals(".rep", Controller.Options.StringComparison);
-                    Controller.Output.Fill(Convert.ToUInt16(alignval), fillval, repeat);
-                }
+                    Controller.Output.Fill(alignval, fillval);
             }
             else
             {
-                if (line.Instruction.ToLower().Equals(".rep"))
-                    Controller.Log.LogEntry(line, ErrorStrings.None);
-                else if (line.Instruction.ToLower().Equals(".align"))
-                    Controller.Output.Align(Convert.ToUInt16(alignval));
+                if (line.Instruction.ToLower().Equals(".align"))
+                    Controller.Output.Align(alignval);
                 else
-                    Controller.Output.Fill(Convert.ToUInt16(alignval));
+                    Controller.Output.Fill(alignval);
             }
         }
 
@@ -134,16 +122,21 @@ namespace DotNetAsm
         private void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.CommaSeparateOperand();
-            var binary = includedBinaries_.FirstOrDefault(b => b.Filename.Equals(args[0].Trim('"')));
+            if (args.Count > 3)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                return;
+            }
+            var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].Trim('"')));
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
-            Int64 offs = 0, size = binary.Data.Count;
+            int offs = 0, size = binary.Data.Count;
 
             if (args.Count >= 2)
             {
-                offs = Controller.Evaluator.Eval(args[1]);
+                offs = (int)Controller.Evaluator.Eval(args[1], ushort.MinValue, ushort.MaxValue);
                 if (args.Count == 3)
-                    size = Controller.Evaluator.Eval(args[2]);
+                    size = (int)Controller.Evaluator.Eval(args[2], ushort.MinValue, ushort.MaxValue);
             }
             if (offs > binary.Data.Count - 1)
                 offs = binary.Data.Count - 1;
@@ -154,7 +147,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size.ToString());
                 return;
             }
-            Controller.Output.AddBytes(binary.Data.Skip(Convert.ToUInt16(offs)), Convert.ToUInt16(size));
+            Controller.Output.AddBytes(binary.Data.Skip(offs), size);
         }
 
         /// <summary>
@@ -179,7 +172,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Operand);
             }
             string filename = args.First().Trim('"');
-            BinaryFile binary = includedBinaries_.FirstOrDefault(b => b.Filename.Equals(filename));
+            BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
 
             if (binary == null)
             {
@@ -190,7 +183,7 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
                     return null;
                 }
-                includedBinaries_.Add(binary);
+                _includedBinaries.Add(binary);
             }
             return binary;
         }
@@ -213,7 +206,6 @@ namespace DotNetAsm
                     break;
                 case ".align":
                 case ".fill":
-                case ".rep":
                     AssembleFills(line);
                     break;
                 case ".binary":
@@ -304,19 +296,7 @@ namespace DotNetAsm
                 case ".dint":
                     return csv.Count * 4;
                 case ".fill":
-                    return Convert.ToUInt16(Controller.Evaluator.Eval(csv.First()));
-                case ".rep":
-                    {
-                        var fillamount = Controller.Evaluator.Eval(csv.First());
-                        if (csv.Count < 2)
-                        {
-                            Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
-                            return 0;
-                        }
-                        var fillval = Controller.Evaluator.Eval(csv[1]);
-                        var size = fillval.Size() * fillamount;
-                        return Convert.ToUInt16(size);
-                    }
+                    return (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
                 case ".long":
                 case ".lint":
                     return csv.Count * 3;

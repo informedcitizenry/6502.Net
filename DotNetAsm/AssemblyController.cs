@@ -107,12 +107,11 @@ namespace DotNetAsm
             _specialLabels = new Regex(@"^\*|\+|-$", RegexOptions.Compiled);
 
             _assemblers = new List<ILineAssembler>();
-            _evaluator = new ExpressionEvaluator(!Options.CaseSensitive);
 
+            _evaluator = new ExpressionEvaluator(@"\$([a-fA-F0-9]+)", !Options.CaseSensitive);
             _evaluator.DefineSymbolLookup(@"(?>_?[a-zA-Z][a-zA-Z0-9_.]*)(?!\()", GetLabelValue);
             _evaluator.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
             _evaluator.DefineSymbolLookup(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str) => Output.GetPC().ToString());
-
             _evaluator.AllowAlternateBinString = true;
 
             _conditionAssembler = new ConditionAssembler(this);
