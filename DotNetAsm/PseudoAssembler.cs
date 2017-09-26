@@ -276,7 +276,7 @@ namespace DotNetAsm
                         var binary = IncludeBinary(line, csv);
                         int bsize = binary.Data.Count;
                         GetBinaryOffsetSize(csv, bsize, ref boffset, ref bsize);
-                        return Convert.ToUInt16(bsize);
+                        return bsize;
                     }
                 case ".byte":
                 case ".char":
