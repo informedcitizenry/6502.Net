@@ -170,7 +170,7 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 else
                     Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
-                return null;
+                return BinaryFile;
             }
             else if (args.Count > 3)
             {
