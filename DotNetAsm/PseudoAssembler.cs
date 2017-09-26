@@ -122,11 +122,6 @@ namespace DotNetAsm
         private void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.CommaSeparateOperand();
-            if (args.Count > 3)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-                return;
-            }
             var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].Trim('"')));
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
