@@ -183,10 +183,10 @@ namespace DotNetAsm
             {
                 binary = new BinaryFile(args.First());
 
-                if (binary.Open() == false)
-                    Controller.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
-                else
+                if (binary.Open())
                     _includedBinaries.Add(binary);
+                else
+                    Controller.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
             }
             return binary;
         }
