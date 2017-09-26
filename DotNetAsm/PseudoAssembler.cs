@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -116,6 +116,27 @@ namespace DotNetAsm
         }
 
         /// <summary>
+        /// Get the offset and size of the operand of a .binary file
+        /// </summary>
+        /// <param name="args">The System.Collections.Generic.List&lt;string&gt; arguments</param>
+        /// <param name="binarysize">The size of the binary file</param>
+        /// <param name="offs">The offset</param>
+        /// <param name="size">The size</param>
+        private void GetBinaryOffsetSize(List<string> args, int binarysize, ref int offs, ref int size)
+        {
+            if (args.Count >= 2)
+            {
+                offs = (int)Controller.Evaluator.Eval(args[1], ushort.MinValue, ushort.MaxValue);
+                if (args.Count == 3)
+                    size = (int)Controller.Evaluator.Eval(args[2], ushort.MinValue, ushort.MaxValue);
+            }
+            if (offs > binarysize - 1)
+                offs = binarysize - 1;
+            if (size > binarysize - offs)
+                size = binarysize - offs;
+        }
+
+        /// <summary>
         /// Assemble an included binary file's bytes.
         /// </summary>
         /// <param name="line">The SourceLine to assemble.</param>
@@ -126,17 +147,7 @@ namespace DotNetAsm
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
             int offs = 0, size = binary.Data.Count;
-
-            if (args.Count >= 2)
-            {
-                offs = (int)Controller.Evaluator.Eval(args[1], ushort.MinValue, ushort.MaxValue);
-                if (args.Count == 3)
-                    size = (int)Controller.Evaluator.Eval(args[2], ushort.MinValue, ushort.MaxValue);
-            }
-            if (offs > binary.Data.Count - 1)
-                offs = binary.Data.Count - 1;
-            if (size > binary.Data.Count - offs)
-                size = binary.Data.Count - offs;
+            GetBinaryOffsetSize(args, size, ref offs, ref size);
             if (size > ushort.MaxValue)
             {
                 Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size.ToString());
@@ -151,9 +162,8 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The SourceLine to assemble.</param>
         /// <returns>Returns a binary file.</returns>
-        private BinaryFile IncludeBinary(SourceLine line)
+        private BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
-            var args = line.CommaSeparateOperand();
             if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
             {
                 if (args.Count == 0)
@@ -264,24 +274,10 @@ namespace DotNetAsm
                     }
                 case ".binary":
                     {
-                        Int64 boffset = 0;
-                        var binary = IncludeBinary(line);
-                        Int64 bsize = binary.Data.Count;
-                        if (csv.Count > 1)
-                        {
-                            boffset = Controller.Evaluator.Eval(csv[1]);
-                            if (boffset < 0)
-                            {
-                                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, boffset.ToString());
-                                return 0;
-                            }
-                            if (csv.Count > 2)
-                                bsize = Controller.Evaluator.Eval(csv.Last());
-                            else
-                                bsize = binary.Data.Count;
-                            if (bsize > binary.Data.Count - boffset)
-                                bsize = binary.Data.Count - boffset;
-                        }
+                        int boffset = 0;
+                        var binary = IncludeBinary(line, csv);
+                        int bsize = binary.Data.Count;
+                        GetBinaryOffsetSize(csv, bsize, ref boffset, ref bsize);
                         return Convert.ToUInt16(bsize);
                     }
                 case ".byte":
