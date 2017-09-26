@@ -135,8 +135,6 @@ namespace DotNetAsm
                                                         // not assembling correlates directly to the last result
                          if (_doNotAsm)
                         return;
-                    else if (instruction.Equals(".else"))
-                        _doNotAsm = !_doNotAsm;
                     else if (instruction.Equals(".elifdef"))
                         _doNotAsm = !Controller.Labels.ContainsKey(line.Operand);
                     else if (instruction.Equals(".elifndef"))
