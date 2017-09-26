@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
@@ -26,9 +26,52 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
+        public void TestRegex()
+        {
+            string expression = "log10(34)";
+
+            bool IgnoreCase = true;
+
+            expression = Regex.Replace(expression, @"log10(\(.+\))", m =>
+            {
+                string post = string.Empty;
+                var first_paren = m.Groups[1].Value.FirstParenEnclosure();
+                if (first_paren != m.Groups[1].Value)
+                {
+                    post = m.Groups[1].Value.Substring(first_paren.Length);
+                }
+                first_paren = first_paren.TrimEnd(')') + ",10)";
+                return string.Format("log{0}{1}", first_paren, post);
+
+            }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+
+            Assert.AreEqual("log(34,10)", expression);
+
+            expression = "log532";
+
+            expression = Regex.Replace(expression, @"log10(\(.+\))", m =>
+            {
+                string post = string.Empty;
+                var first_paren = m.Groups[1].Value.FirstParenEnclosure();
+                if (first_paren != m.Groups[1].Value)
+                {
+                    post = m.Groups[1].Value.Substring(first_paren.Length);
+                }
+                first_paren = first_paren.TrimEnd(')') + ",10)";
+                return string.Format("log{0}{1}", first_paren, post);
+
+            }, IgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+
+            Assert.AreEqual("log532", expression);
+
+            expression = "log10(32)";
+        }
+
+        [Test]
         public void TestBinHex()
         {
             ExpressionEvaluator evaluator = new ExpressionEvaluator();
+            evaluator.AddHexFormat(@"\$([a-fA-F0-9]+)");
             long hex = evaluator.Eval("$ffd2");
             long bin = evaluator.Eval("%01111111");
             Assert.AreEqual(0xffd2, hex);
@@ -37,6 +80,13 @@ namespace NUnit.Tests.TestDotNetAsm
             evaluator.AllowAlternateBinString = true;
             bin = evaluator.Eval("%.#######");
             Assert.AreEqual(Convert.ToInt64("01111111", 2), bin);
+
+            evaluator.AddHexFormat(@"([0-9][a-fA-F0-9]*)[hH]");
+            hex = evaluator.Eval("0ffd2h");
+            Assert.AreEqual(0xffd2, hex);
+            
+            hex = evaluator.Eval("0xffd2");
+            Assert.AreEqual(0xffd2, hex);
         }
 
         [Test]
@@ -167,7 +217,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test()]
         public void TestUnaryExpressions()
         {
-            ExpressionEvaluator evaluator = new ExpressionEvaluator();
+            ExpressionEvaluator evaluator = new ExpressionEvaluator(@"\$([a-fA-F0-9]+)");
             int myvar = 548;
             evaluator.DefineSymbolLookup("myvar", (s) => myvar.ToString());
             
@@ -193,7 +243,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestBitwiseExpressions()
         {
-            ExpressionEvaluator evaluator = new ExpressionEvaluator();
+            ExpressionEvaluator evaluator = new ExpressionEvaluator(@"\$([a-fA-F0-9]+)");
 
             int myvar = 224;
             evaluator.DefineSymbolLookup("myvar", (s) => myvar.ToString());
@@ -214,7 +264,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestConditionalExpressions()
         {
-            ExpressionEvaluator evaluator = new ExpressionEvaluator();
+            ExpressionEvaluator evaluator = new ExpressionEvaluator(@"\$([a-fA-F0-9]+)");
             bool simple = evaluator.EvalCondition("1 < 3");
             bool compound = evaluator.EvalCondition("5+2 > 6 && 4+3 != 12");
             bool complex = evaluator.EvalCondition("((1<3)||!(4>6)&&(13*2!=4||8>0))");

@@ -54,7 +54,7 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
-        public void TestAlignFillRepeat()
+        public void TestAlignFill()
         {
             Compilation output = new Compilation();
             output.SetPC(0x4015);
@@ -74,7 +74,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.IsTrue(expected1.SequenceEqual(bytes1));
 
             output.Reset();
-            output.Fill(7, foragoodtime, false);
+            output.Fill(7, foragoodtime);
 
             Assert.AreEqual(0x0007, output.GetPC());
 
@@ -85,21 +85,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.IsTrue(expected2.SequenceEqual(bytes2));
 
             output.Reset();
-
-            output.Fill(7, foragoodtime, true);
-
-            Assert.AreEqual(0x0015, output.GetPC());
-
-            var bytes3 = output.GetCompilation();
-            var expected3 = new byte[] { 0x20, 0xd2, 0xff,
-                                         0x20, 0xd2, 0xff,
-                                         0x20, 0xd2, 0xff,
-                                         0x20, 0xd2, 0xff,
-                                         0x20, 0xd2, 0xff,
-                                         0x20, 0xd2, 0xff,
-                                         0x20, 0xd2, 0xff };
-
-            Assert.IsTrue(expected3.SequenceEqual(bytes3));
         }
 
         [Test]

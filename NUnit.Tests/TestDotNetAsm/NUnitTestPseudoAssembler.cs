@@ -29,7 +29,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Log = new ErrorLog();
 
-            Evaluator = new ExpressionEvaluator(true);
+            Evaluator = new ExpressionEvaluator(@"\$([a-fA-F0-9]+)", true);
 
             Labels = new Dictionary<string, string>();
 
@@ -387,33 +387,6 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Operand = "$100, $10, $02";
             TestForFailure(line);
-        }
-
-        [Test]
-        public void TestRep()
-        {
-            SourceLine line = new SourceLine();
-
-            line.Instruction = ".rep";
-            line.Operand = "4, $ffd220";
-            TestInstruction(line, 0x000c, 12, new byte[] { 0x20, 0xd2, 0xff,
-                                                           0x20, 0xd2, 0xff,
-                                                           0x20, 0xd2, 0xff,
-                                                           0x20, 0xd2, 0xff});
-
-            // can't use repeat for uninitialized
-            line.Operand = "4, ?";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
-            Controller.Output.Reset();
-
-            // can't have less than two args
-            line.Operand = "4";
-            TestForFailure(line);
-
-            line.Operand = string.Empty;
-            Assert.Throws<InvalidOperationException>(() => TestForFailure(line));
-            Controller.Output.Reset();
-            Controller.Log.ClearErrors();
         }
 
         [Test]
