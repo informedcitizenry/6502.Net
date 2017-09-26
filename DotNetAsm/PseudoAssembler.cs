@@ -33,7 +33,11 @@ namespace DotNetAsm
     /// </summary>
     public class PseudoAssembler : StringAssemblerBase, ILineAssembler
     {
+        #region Members
+        
         private HashSet<BinaryFile> _includedBinaries;
+        
+        #endregion
 
         #region Constructors
 
