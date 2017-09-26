@@ -184,11 +184,9 @@ namespace DotNetAsm
                 binary = new BinaryFile(args.First());
 
                 if (binary.Open() == false)
-                {
                     Controller.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
-                    return null;
-                }
-                _includedBinaries.Add(binary);
+                else
+                    _includedBinaries.Add(binary);
             }
             return binary;
         }
