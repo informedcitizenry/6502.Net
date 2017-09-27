@@ -331,40 +331,21 @@ namespace DotNetAsm
                             var processedLines = handler.ProcessedLines;
                             foreach (SourceLine l in processedLines)
                             {
-                                l.Id = id;
+                                l.Id = id++;
                                 FirstPassLine(l, scope, ref anon);
-                                id++;
                             }
                             handler.Reset();
                         }
                     }
                     else
                     {
-                        line.Id = id;
+                        line.Id = id++;
                         FirstPassLine(line, scope, ref anon);
-                        id++;
                     }
                 }
                 catch (ExpressionEvaluator.ExpressionException exprEx)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
-                }
-                catch (OverflowException overflowEx)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, overflowEx.Message);
-                }
-                catch (Compilation.InvalidPCAssignmentException ex)
-                {
-                    Log.LogEntry(line, ErrorStrings.InvalidPCAssignment, ex.Message);
-                }
-                catch (StackOverflowException)
-                {
-                    _passes = 4;
-                }
-                catch (DivideByZeroException)
-                {
-                    // we don't care about this exception on first pass
-                    ProcessedLines.Add(line);
+                    Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
                 }
                 catch (Exception)
                 {
@@ -386,16 +367,34 @@ namespace DotNetAsm
         /// <param name="anon">The counter of anonymous blocks</param>
         private void FirstPassLine(SourceLine line, Stack<string> scope, ref int anon)
         {
-            UpdatePC(line);
+            try
+            {
+                UpdatePC(line);
 
-            line.PC = Output.GetPC();
+                line.PC = Output.GetPC();
 
-            DefineLabel(line, scope, ref anon);
+                DefineLabel(line, scope, ref anon);
 
-            if (!IsDefiningConstant(line))
-                Output.AddUninitialized(GetInstructionSize(line));
-            
-            ProcessedLines.Add(line);
+                if (!IsDefiningConstant(line))
+                    Output.AddUninitialized(GetInstructionSize(line));
+            }
+            catch (Exception ex)
+            {
+                // most expressions resulting from calculations we don't care
+                // about until final pass, since they are subject to correction
+                if (ex is DivideByZeroException ||
+                    ex is Compilation.InvalidPCAssignmentException ||
+                    ex is OverflowException)
+                { } // do nothing
+                else
+                    throw;
+            }
+            finally
+            {
+                // always add
+                ProcessedLines.Add(line);
+            }
+
         }
 
         /// <summary>
@@ -485,15 +484,17 @@ namespace DotNetAsm
                     }
                     catch (ExpressionEvaluator.ExpressionException exprEx)
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
+                        Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
                     }
                     catch (OverflowException overflowEx)
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, overflowEx.Message);
+                        if (finalPass)
+                            Log.LogEntry(line, ErrorStrings.IllegalQuantity, overflowEx.Message);
                     }
                     catch (Compilation.InvalidPCAssignmentException ex)
                     {
-                        Log.LogEntry(line, ErrorStrings.InvalidPCAssignment, ex.Message);
+                        if (finalPass)
+                            Log.LogEntry(line, ErrorStrings.InvalidPCAssignment, ex.Message);
                     }
                     catch (Exception ex)
                     {
