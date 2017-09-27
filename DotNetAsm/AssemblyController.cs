@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -360,6 +360,11 @@ namespace DotNetAsm
                 catch (StackOverflowException)
                 {
                     _passes = 4;
+                }
+                catch (DivideByZeroException)
+                {
+                    // we don't care about this exception on first pass
+                    ProcessedLines.Add(line);
                 }
                 catch (Exception)
                 {
