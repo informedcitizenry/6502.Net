@@ -889,7 +889,7 @@ start       ; same as start .equ *
 </td></tr>
 </table>
 <table>
-<tr><td><b>Name</b></td><td><code>.[el]if[[n]def]</code></td></tr>
+<tr><td><b>Name</b></td><td><code>.[el]if[[n]def]</code>/<code>.endif</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>All source inside condition blocks are assembled if evaluated to true on the first pass. Conditional expressions follow C-style conventions. The following directives are available:
     <ul>
