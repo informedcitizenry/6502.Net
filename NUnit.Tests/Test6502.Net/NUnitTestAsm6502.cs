@@ -27,8 +27,7 @@ namespace NUnit.Tests.Test6502.Net
             line.Instruction = mnemonic;
             line.Operand = "$0002";
             TestInstruction(line, 0x0000, new byte[] { opcode, 0x02 }, mnemonic + " " + line.Operand);
-            Controller.Output.Reset();
-
+            
             line.Operand = "$fffe";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0xfc }, mnemonic + " " + line.Operand);
             Controller.Output.Reset();
@@ -40,23 +39,18 @@ namespace NUnit.Tests.Test6502.Net
 
             line.Operand = "$ff82";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0x80 }, mnemonic + " " + line.Operand);
-            Controller.Output.Reset();
-
+            
             line.Operand = "$0081";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0x7f }, mnemonic + " " + line.Operand);
-            Controller.Output.Reset();
-
+            
             line.Operand = "$ff81";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
-            Controller.Log.ClearErrors();
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "$0082";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
-            Controller.Log.ClearErrors();
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "$1000";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
-            Controller.Log.ClearErrors();
+            TestForFailure<OverflowException>(line);
         }
 
         private void TestImplied(string mnemonic, byte opcode)
@@ -923,6 +917,21 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
+        public void TestRta()
+        {
+            SourceLine line = new SourceLine();
+            line.Instruction = ".rta";
+            line.Operand = "$0000";
+            TestInstruction(line, 0x0002, 2, new byte[] { 0xff, 0xff });
+
+            line.Operand = "$ffff";
+            TestInstruction(line, 0x0002, 2, new byte[] { 0xfe, 0xff });
+
+            line.Operand = "?";
+            TestInstruction(line, 0x0002, 2, null);
+        }
+
+        [Test]
         public void TestRti()
         {
             TestImplied("rti", 0x40);
@@ -1101,8 +1110,7 @@ namespace NUnit.Tests.Test6502.Net
             SourceLine line = new SourceLine();
             line.Instruction = "lda";
             line.Operand = "# 34";
-            //TestForFailure(line);
-            TestInstruction(line, 0x0002, new byte[] { 0xa9, 0x22 }, "lda #$22");
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = "($34),y";
             TestInstruction(line, 0x0002, new byte[] { 0xb1, 0x34 }, "lda ($34),y");
@@ -1115,7 +1123,7 @@ namespace NUnit.Tests.Test6502.Net
 
             line.Instruction = "sta";
             line.Operand = "$1000<<8";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = "tyx";
             line.Operand = string.Empty;
@@ -1126,7 +1134,7 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "$10000";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "$1000|$100";
             TestInstruction(line, 0x0003, new byte[] { 0xad, 0x00, 0x11 }, "lda $1100");
@@ -1150,24 +1158,73 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x12, 0x00 }, "jmp ($0012)");
 
             line.Operand = "(65535+1)";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "(65535)";
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");
 
             line.Operand = "()";
-            //TestForFailure(line);
-            TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x00, 0x00 }, "jmp ($0000)");
-
+            TestForFailure<ExpressionException>(line);
+            
             line.Operand = "0xffd2"; // oops wrong architecture!
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
-            Controller.Output.Reset();
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = "pow(2,4)";
             TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x10, 0x00 }, "jmp $0010");
 
             line.Operand = "2**4";
             TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x10, 0x00 }, "jmp $0010");
+        }
+
+        [Test]
+        public void TestEncodings()
+        {
+            PseudoAssembler stringAsm = new PseudoAssembler(this.Controller);
+            SourceLine line = new SourceLine();
+            string teststring = "\"hello, world\"";
+
+            var ascbytes = Encoding.ASCII.GetBytes(teststring.Trim('"'));
+            var petbytes = Encoding.ASCII.GetBytes(teststring.Trim('"').ToUpper());
+            var cbmscreenbytes = petbytes.Select(b =>
+            {
+                if (b >= '@' && b <= 'Z')
+                    b -= 0x40;
+                return b;
+            });
+            var atascreenbytes = ascbytes.Select(b =>
+            {
+                if (b < 96)
+                    return Convert.ToByte(b - 32);
+                return b;
+            });
+
+            line.Instruction = ".encoding";
+            line.Operand = "petscii";
+            stringAsm.AssembleLine(line);
+
+            line.Instruction = ".string";
+            line.Operand = teststring;
+            TestInstruction(line, stringAsm, petbytes.Count(), petbytes.Count(), petbytes);
+
+            line.Instruction = ".byte";
+            line.Operand = "'└'";
+            TestInstruction(line, stringAsm, 0x0001, 1, new byte[] { 0xad });
+
+            line.Instruction = ".encoding";
+            line.Operand = "atascreen";
+            stringAsm.AssembleLine(line);
+
+            line.Instruction = ".string";
+            line.Operand = teststring;
+            TestInstruction(line, stringAsm, atascreenbytes.Count(), atascreenbytes.Count(), atascreenbytes.ToArray());
+
+            line.Instruction = ".encoding";
+            line.Operand = "cbmscreen";
+            stringAsm.AssembleLine(line);
+
+            line.Instruction = ".string";
+            line.Operand = teststring.ToUpper();
+            TestInstruction(line, stringAsm, cbmscreenbytes.Count(), cbmscreenbytes.Count(), cbmscreenbytes.ToArray());
         }
     }
 }
