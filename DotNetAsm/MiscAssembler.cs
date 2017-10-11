@@ -42,7 +42,8 @@ namespace DotNetAsm
         {
             Reserved.DefineType("Directives", new string[]
                 {
-                    ".eor", ".error", ".cerror", 
+                    "assert", ".eor", ".target",
+                    ".error", ".cerror", 
                     ".cwarn", ".warn"
                 });
         }
@@ -60,24 +61,20 @@ namespace DotNetAsm
             var csv = line.CommaSeparateOperand();
             if (csv.Count < 2)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments);
-                return;
+                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
             }
-            if (Controller.Evaluator.EvalCondition(csv.First()))
+            else if (csv.Count > 2)
             {
-                string message = string.Empty;
-                for (int i = 1; i < csv.Count; i++)
-                {
-                    if (csv[i].EnclosedInQuotes())
-                    {
-                        message += csv[i].Trim('"');
-                    }
-                    else
-                    {
-                        var value = Controller.Evaluator.Eval(csv[i]);
-                        message += value.ToString();
-                    }
-                }
+                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+            }
+            else if (csv.Last().EnclosedInQuotes() == false)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+            }
+            else if (Controller.Evaluator.EvalCondition(csv.First()))
+            {
+                string message = csv.Last().Trim('"');
+                
                 if (line.Instruction.Equals(".cerror", Controller.Options.StringComparison))
                     Controller.Log.LogEntry(line, message);
                 else
@@ -118,6 +115,9 @@ namespace DotNetAsm
             string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
             switch (instruction)
             {
+                case ".assert":
+                    DoAssert(line);
+                    break;
                 case ".cwarn":
                 case ".cerror":
                     ThrowConditional(line);
@@ -127,20 +127,52 @@ namespace DotNetAsm
                     break;
                 case ".error":
                     if (!line.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression);
+                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                     else
                         Controller.Log.LogEntry(line, line.Operand.Trim('"'));
                     break;
                 case ".warn":
                     if (!line.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression);
+                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                     else
                         Controller.Log.LogEntry(line.Filename, line.LineNumber, line.Operand.Trim('"'), Controller.Options.WarningsAsErrors);
                     break;
-                case ".cpu":
+                case ".target":
+                    if (!line.Operand.EnclosedInQuotes())
+                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                    else
+                        Controller.Options.Architecture = line.Operand.Trim('"');
                     break;
                 default:
                     break;
+            }
+        }
+
+        private void DoAssert(SourceLine line)
+        {
+            var parms = line.CommaSeparateOperand();
+            if (parms.Count == 0)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+            }
+            else if (parms.Count > 2)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+            }
+            else if (!Controller.Evaluator.EvalCondition(parms.First()))
+            {
+                if (parms.Count > 1)
+                {
+                    string message = parms.Last();
+                    if (message.EnclosedInQuotes() == false)
+                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                    else
+                        Controller.Log.LogEntry(line, message.Trim('"'));
+                }
+                else
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.AssertionFailure, line.Operand);
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -58,6 +58,15 @@ namespace DotNetAsm
 
         private bool _comment;
 
+        #region Static Members
+
+        private static Regex _regThree;
+        private static Regex _regThreeAlt;
+        private static Regex _regTwo;
+        private static Regex _regOne;
+
+        #endregion
+
         #endregion
 
         #region Constructors
@@ -87,62 +96,44 @@ namespace DotNetAsm
         public SourceLine() :
             this(string.Empty, 0, string.Empty)
         {
-
+            
         }
+
+        #region Static Constructors
+
+        /// <summary>
+        /// Initializes the DotNetAsm.SourceLine class.
+        /// </summary>
+        static SourceLine()
+        {
+            _regThree    = new Regex(@"^([^\s]+)\s+(([^\s]+)\s+(.+))$", RegexOptions.Compiled);
+            _regThreeAlt = new Regex(@"^([^\s]+)\s*(=)\s*(.+)$",        RegexOptions.Compiled);
+            _regTwo      = new Regex(@"^([^\s]+)\s+(.+)$",              RegexOptions.Compiled);
+            _regOne      = new Regex(@"^([^\s]+)$",                     RegexOptions.Compiled);
+        }
+
+        #endregion
 
         #endregion
 
         #region Methods
 
         /// <summary>
-        /// Take the token and determine whether it is a label, instruction, or operand 
-        /// component of the source.
-        /// </summary>
-        /// <param name="checkReserved">A callback to test if the token is a reserved word,
-        /// and thus is an instruction.</param>
-        /// <param name="checkSymbol">A callback to test if the token is a symbol, 
-        /// and thus is a label.</param>
-        /// <param name="token">The token to parse.</param>
-        private void SetLineToken(Func<string, bool> checkReserved, Func<string, bool> checkSymbol, string token)
-        {
-            var trimmed = token.Trim();
-            if (string.IsNullOrEmpty(Instruction) &&
-                (checkReserved(trimmed) || trimmed.EndsWith("=")))
-            {
-                if (trimmed.EndsWith("="))
-                {
-                    if (string.IsNullOrEmpty(Label))
-                        Label = trimmed.Trim('=');
-                    trimmed = "=";
-                }
-                Instruction = trimmed;
-            }
-            else if (string.IsNullOrEmpty(Label) && string.IsNullOrEmpty(Instruction) &&
-            (checkSymbol(trimmed) || Regex.IsMatch(trimmed, @"[-\+\*]")))
-                Label = trimmed;
-            else
-                Operand += token;
-        }
-
-        /// <summary>
         /// Parse the SourceLine's SourceString property into its component line,
         /// instruction and operand.
         /// </summary>
-        /// <param name="checkReserved">A callback to determine which part of the source
+        /// <param name="checkInstruction">A callback to determine which part of the source
         /// is the instruction.</param>
-        /// <param name="checkSymbol">A callback to determinw which part of the source
-        /// is a label.</param>
         /// <exception cref="SourceLine.QuoteNotEnclosedException">SourceLine.QuoteNotEnclosedException</exception>
-        public void Parse(Func<string, bool> checkReserved, Func<string, bool> checkSymbol)
+        public void Parse(Func<string, bool> checkInstruction)
         {
-            if (string.IsNullOrWhiteSpace(SourceString)) return;
             bool double_enclosed = false;
             bool single_enclosed = false;
-            StringBuilder sb = new StringBuilder();
-            string unprocessedTrim = SourceString.Trim();
-            for (int n = 0; n < unprocessedTrim.Length; n++)
+
+            int length = 0;
+            for (; length < SourceString.Length; length++)
             {
-                char c = unprocessedTrim[n];
+                char c = SourceString[length];
                 if (!single_enclosed && !double_enclosed && c == ';')
                     break;
                 if (c == '"' && !single_enclosed)
@@ -150,26 +141,62 @@ namespace DotNetAsm
                 else if (c == '\'' && !double_enclosed)
                     single_enclosed = !single_enclosed;
 
-                sb.Append(c);
+            }
 
-                if ((char.IsWhiteSpace(c) || c == '=') && !double_enclosed && !single_enclosed)
+            string processed = SourceString.Substring(0, length).Trim();
+            Match m = _regThree.Match(processed);
+            if (string.IsNullOrEmpty(m.Value) == false)
+            {
+                if (checkInstruction(m.Groups[1].Value))
                 {
-                    if (string.IsNullOrEmpty(Label) ||
-                        string.IsNullOrEmpty(Instruction) ||
-                        string.IsNullOrEmpty(Operand))
-                    {
-                        SetLineToken(checkReserved, checkSymbol, sb.ToString());
-                        sb.Clear();
-                    }
+                    Instruction = m.Groups[1].Value;
+                    Operand = m.Groups[2].Value;
+                }
+                else
+                {
+                    Label = m.Groups[1].Value;
+                    Instruction = m.Groups[3].Value;
+                    Operand = m.Groups[4].Value;
                 }
             }
-            if (single_enclosed || double_enclosed)
+            else
             {
-                throw new QuoteNotEnclosedException();
-            }
-            SetLineToken(checkReserved, checkSymbol, sb.ToString());
-            Label = Label.TrimEnd(':');
-            Operand = Operand.Trim();
+                m = _regThreeAlt.Match(processed);
+                if (string.IsNullOrEmpty(m.Value) == false)
+                {
+                    Label = m.Groups[1].Value;
+                    Instruction = m.Groups[2].Value;
+                    Operand = m.Groups[3].Value;
+                }
+                else
+                {
+                    m = _regTwo.Match(processed);
+                    if (string.IsNullOrEmpty(m.Value) == false)
+                    {
+                        if (checkInstruction(m.Groups[2].Value))
+                        {
+                            Label = m.Groups[1].Value;
+                            Instruction = m.Groups[2].Value;
+                        }
+                        else
+                        {
+                            Instruction = m.Groups[1].Value;
+                            Operand = m.Groups[2].Value;
+                        }
+                    }
+                    else
+                    {
+                        m = _regOne.Match(processed);
+                        if (string.IsNullOrEmpty(m.Value) == false)
+                        {
+                            if (checkInstruction(m.Groups[1].Value))
+                                Instruction = m.Groups[1].Value;
+                            else
+                                Label = m.Groups[1].Value;
+                        }
+                    }
+                }
+            } 
         }
 
         /// <summary>
@@ -190,6 +217,8 @@ namespace DotNetAsm
 
             StringBuilder sb = new StringBuilder();
 
+            int charExpCount = 0;
+
             for (int i = 0; i < Operand.Length; i++)
             {
                 char c = Operand[i];
@@ -205,12 +234,19 @@ namespace DotNetAsm
                 }
                 else if (single_enclosed)
                 {
+                    charExpCount++;
                     sb.Append(c);
                     if (c == '\'')
                     {
-                        single_enclosed = false;
-                        if (i == Operand.Length - 1)
-                            csv.Add(sb.ToString().Trim());
+                        if (charExpCount == 2)
+                        {
+                            // don't set single quote closed unless we 
+                            // have consumed the char in single quote.
+                            charExpCount = 0;
+                            single_enclosed = false;
+                            if (i == Operand.Length - 1)
+                                csv.Add(sb.ToString().Trim());
+                        }
                     }
                 }
                 else if (paren_enclosed)
@@ -256,6 +292,10 @@ namespace DotNetAsm
                     if (i == Operand.Length - 1)
                         csv.Add(sb.ToString().Trim());
                 }
+            }
+            if (double_enclosed || single_enclosed)
+            {
+                throw new QuoteNotEnclosedException();
             }
             if (Operand.Last().Equals(','))
                 csv.Add(string.Empty);

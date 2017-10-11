@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -127,7 +127,7 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the target architecture information.
         /// </summary>
-        public string Architecture { get { return _arch; } }
+        public string Architecture { get { return _arch; } set { _arch = value; } }
 
         /// <summary>
         /// Gets the value determining whether output file should be generated, 

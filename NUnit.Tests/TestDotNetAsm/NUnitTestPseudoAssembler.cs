@@ -29,8 +29,13 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Log = new ErrorLog();
 
-            Evaluator = new ExpressionEvaluator(@"\$([a-fA-F0-9]+)", true);
+            Evaluator = new Evaluator(@"\$([a-fA-F0-9]+)");
 
+            Encoding = new AsmEncoding();
+
+            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
+                Encoding.GetTranslation(chr.Trim('\'').First()).ToString());
+            
             Labels = new Dictionary<string, string>();
 
             if (args != null)
@@ -78,6 +83,12 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         public IDictionary<string, string> Labels
+        {
+            get;
+            private set;
+        }
+
+        public AsmEncoding Encoding
         {
             get;
             private set;
@@ -158,14 +169,14 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0002, 2, new byte[] { 0x00, 0xff });
 
             line.Operand = "-123";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".char";
             line.Operand = "-128,127";
             TestInstruction(line, 0x0002, 2, new byte[] { 0x80, 0x7f });
 
             line.Operand = "192";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
         }
 
         [Test]
@@ -177,28 +188,28 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0004, 4, new byte[] { 0x00, 0x80, 0xff, 0x7f });
 
             line.Operand = "$ffd2";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".word";
             TestInstruction(line, 0x0002, 2, new byte[] { 0xd2, 0xff });
 
             line.Operand = "-1";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".addr";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "65232 , $c000";
             TestInstruction(line, 0x0004, 4, new byte[] { 0xd0, 0xfe, 0x00, 0xc0 });
 
             line.Operand = "$010000";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".word";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".sint";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
         }
 
         [Test]
@@ -210,13 +221,13 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0008, 8, new byte[] { 0x00, 0x00, 0x00, 0x80, 
                                                           0xff, 0xff, 0xff, 0x7f});
             line.Operand = uint.MaxValue.ToString();
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".dword";
             TestInstruction(line, 0x0004, 4, new byte[] { 0xff, 0xff, 0xff, 0xff });
 
             line.Operand = "-32342";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
         }
 
         [Test]
@@ -229,13 +240,13 @@ namespace NUnit.Tests.TestDotNetAsm
                                                           0xff, 0xff, 0x7f});
 
             line.Operand = "16777215";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
 
             line.Instruction = ".long";
             TestInstruction(line, 0x0003, 3, new byte[] { 0xff, 0xff, 0xff });
 
             line.Operand = "$01000000";
-            Assert.Throws<OverflowException>(() => TestForFailure(line));
+            TestForFailure<OverflowException>(line);
         }
 
         [Test]
@@ -291,12 +302,10 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, test.Count(), test.Count(), test);
 
             line.Operand = line.Operand + "$80";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() =>
-                TestForFailure(line));
-            Controller.Output.Reset();
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = string.Format("42, ?, ?, \"{0}\", $80", teststring);
-            TestForFailure(line);
+            TestForFailure<OverflowException>(line);
 
             test.Clear();
             test.AddRange(BitConverter.GetBytes(0x0d0d).Take(2));
@@ -311,7 +320,83 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, test.Count(), test.Count(), test);
 
             line.Operand += ",$80";
-            TestForFailure(line);
+            TestForFailure<OverflowException>(line);
+        }
+
+        [Test]
+        public void TestEncodingDefine()
+        {
+            SourceLine line = new SourceLine();
+            
+            line.Instruction = ".encoding";
+            line.Operand = "test";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".map";
+            line.Operand = "\"A\", \"a\"";
+            LineAssembler.AssembleLine(line);
+
+            char translated = (char)Controller.Encoding.GetTranslation('A');
+            Assert.AreEqual('a', translated);
+
+            line.Instruction = ".byte";
+            line.Operand = "'A'";
+            TestInstruction(line, 0x0001, 1, new byte[] { (byte)'a' });
+
+            line.Instruction = ".unmap";
+            line.Operand = "$41";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".byte";
+            line.Operand = "'A'";
+            TestInstruction(line, 0x0001, 1, new byte[] { (byte)'A' });
+
+            line.Instruction = ".encoding";
+            line.Operand = "none";
+            LineAssembler.AssembleLine(line);
+
+            translated = (char)Controller.Encoding.GetTranslation('A');
+            Assert.AreEqual('A', translated);
+
+            line.Instruction = ".byte";
+            line.Operand = "'A'";
+            TestInstruction(line, 0x0001, 1, new byte[] { (byte)'A' });
+
+            line.Instruction = ".encoding";
+            line.Operand = "test";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".map";
+            line.Operand = "\"az\", \"A\"";
+            LineAssembler.AssembleLine(line);
+
+            string test = "hello reality";
+            line.Instruction = ".string";
+            line.Operand = string.Format("\"{0}\"", test);
+            TestInstruction(line, test.Length, test.Length, Encoding.UTF8.GetBytes(test.ToUpper()));
+
+            line.Instruction = ".unmap";
+            line.Operand = "\"az\"";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".string";
+            line.Operand = string.Format("\"{0}\"", test);
+            TestInstruction(line, test.Length, test.Length, Encoding.UTF8.GetBytes(test));
+
+            line.Instruction = ".map";
+            line.Operand = "$80, $ff, '\0'";
+            LineAssembler.AssembleLine(line);
+
+            translated = (char)Controller.Encoding.GetTranslation('\xc1');
+            Assert.AreEqual('A', translated);
+
+            line.Instruction = ".map";
+            line.Operand = "\"π\", $5e";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".byte";
+            line.Operand = "'π'";
+            TestInstruction(line, 0x0001, 0x0001, new byte[] { (byte)'^' });
         }
 
         [Test]
@@ -323,7 +408,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "0";
             LineAssembler.AssembleLine(line);
             Assert.IsFalse(Controller.Log.HasErrors);
-            Assert.AreEqual(0x0001, Controller.Output.GetPC());
+            Assert.AreEqual(0x0001, Controller.Output.LogicalPC);
             Assert.IsTrue(Controller.Output.GetCompilation().Count == 1);
 
             // test uninitialized
@@ -341,9 +426,8 @@ namespace NUnit.Tests.TestDotNetAsm
                                                            0xea, 0xea, 0xea, 0xea, 0xea});
 
             line.Operand = string.Empty;
-            Assert.Throws<InvalidOperationException>(() => TestForFailure(line));
-            Controller.Output.Reset();
-
+            TestForFailure<InvalidOperationException>(line);
+            
             line.Operand = "10, $ea, $20";
             TestForFailure(line);
 
@@ -359,7 +443,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.PC = 1;
             LineAssembler.AssembleLine(line);
             Assert.IsFalse(Controller.Log.HasErrors);
-            Assert.AreEqual(0x0001, Controller.Output.GetPC());
+            Assert.AreEqual(0x0001, Controller.Output.LogicalPC);
             Assert.IsTrue(Controller.Output.GetCompilation().Count == 1);
 
             // align to nearest page, uninitialized
@@ -382,9 +466,8 @@ namespace NUnit.Tests.TestDotNetAsm
 
 
             line.Operand = string.Empty;
-            Assert.Throws<InvalidOperationException>(() => TestForFailure(line));
-            Controller.Output.Reset();
-
+            TestForFailure<InvalidOperationException>(line);
+           
             line.Operand = "$100, $10, $02";
             TestForFailure(line);
         }
@@ -395,23 +478,17 @@ namespace NUnit.Tests.TestDotNetAsm
             SourceLine line = new SourceLine();
             line.Instruction = ".byte";
             line.Operand = "3,";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = "3,,2";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
-            Controller.Output.Reset();
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = "pow(3,2)";
             TestInstruction(line, 0x0001, 1, new byte[] { 0x09 });
 
-            line.Instruction = ".enc";
-            line.Operand = "ascii";
-            TestForFailure(line);
-
             line.Instruction = ".char";
             line.Operand = "%34";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
-            Controller.Output.Reset();
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = "256%34";
             TestInstruction(line, 0x0001, 1, new byte[] { 0x12 });
@@ -419,15 +496,21 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "%0101";
             TestInstruction(line, 0x0001, 1, new byte[] { 0x05 });
 
-            line.Operand = "'''";
-            TestInstruction(line, 0x0001, 1, new byte[] { 0x27 });
+            line.Operand = "'";
+            TestForFailure<SourceLine.QuoteNotEnclosedException>(line);
 
             line.Operand = "-?";
-            Assert.Throws<ExpressionEvaluator.ExpressionException>(() => TestForFailure(line));
-            Controller.Output.Reset();
-
+            TestForFailure<ExpressionException>(line);
+            
             line.Operand = "-1,?";
             TestInstruction(line, 0x0002, 2, new byte[] { 0xff });
+
+            line.Instruction = ".string";
+            line.Operand = "\"hello, \",\"world";
+            TestForFailure<SourceLine.QuoteNotEnclosedException>(line);
+
+            line.Operand = "\"'''\"";
+            TestInstruction(line, 0x0003, 3, new byte[] { 0x27, 0x27, 0x27 });
         }
     }
 }

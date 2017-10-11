@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace DotNetAsm
 {
@@ -99,6 +100,11 @@ namespace DotNetAsm
         /// Gets expression evaluator for the controller.
         /// </summary>
         IEvaluator Evaluator { get; }
+
+        /// <summary>
+        /// Gets the custom DotNetAsm.AsmEncoding for encoding text strings
+        /// </summary>
+        AsmEncoding Encoding { get; }
 
         /// <summary>
         /// Gets or sets the banner text used at start of compilation.

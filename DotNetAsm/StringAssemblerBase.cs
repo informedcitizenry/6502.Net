@@ -34,7 +34,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        private Regex _regStrFunc;
+        private Regex _regStrFunc, _regEncName;
 
         #endregion
 
@@ -54,8 +54,17 @@ namespace DotNetAsm
                     ".cstring", ".lsstring", ".nstring", ".pstring", ".string"
                 });
 
+            Reserved.DefineType("Encoding", new string[]
+                {
+                    ".encoding", ".map", ".unmap"
+                });
+
             _regStrFunc = new Regex(@"str(\(.+\))",
                 Controller.Options.RegexOption | RegexOptions.Compiled);
+
+            _regEncName = new Regex(@"^_?[a-z][a-z0-9_]*$",
+                Controller.Options.RegexOption | RegexOptions.Compiled);
+
         }
 
         #endregion
@@ -63,26 +72,136 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Converts an expression to a string.
+        /// Update the controller's encoding
+        /// </summary>
+        /// <param name="line">The SourceLine containing the encoding update</param>
+        private void UpdateEncoding(SourceLine line)
+        {
+            line.DoNotAssemble = true;
+            string instruction = line.Instruction.ToLower();
+            string encoding = Controller.Options.CaseSensitive ? line.Operand : line.Operand.ToLower();
+            if (instruction.Equals(".encoding"))
+            {
+                if (!_regEncName.IsMatch(line.Operand))
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.EncodingNameNotValid, line.Operand);
+                    return;
+                }
+                Controller.Encoding.SelectEncoding(encoding);
+            }
+            else
+            {
+                var parms = line.CommaSeparateOperand();
+                if (parms.Count == 0)
+                    throw new ArgumentException(line.Operand);
+                try
+                {
+                    string firstparm = parms.First();
+                    string mapstring = string.Empty;
+                    if (firstparm.EnclosedInQuotes() && firstparm.Length > 3)
+                    {
+                        if (firstparm.Length > 4)
+                            throw new ArgumentException(firstparm);
+                        mapstring = firstparm.Trim('"');
+                    }
+                    if (instruction.Equals(".map"))
+                    {
+                        if (parms.Count < 2 || parms.Count > 3)
+                            throw new ArgumentException(line.Operand);
+                        char translation = EvalEncodingParam(parms.Last());
+                   
+                        if (parms.Count == 2)
+                        {
+                            if (string.IsNullOrEmpty(mapstring) == false)
+                            {
+                                Controller.Encoding.Map(mapstring, translation);
+                            }
+                            else
+                            {
+                                char mapchar = EvalEncodingParam(firstparm);
+                                Controller.Encoding.Map(mapchar, translation);
+                            }
+                        }
+                        else
+                        {
+                            char firstRange = EvalEncodingParam(firstparm);
+                            char lastRange = EvalEncodingParam(parms[1]);
+                            Controller.Encoding.Map(firstRange, lastRange, translation);
+                        }
+                    }
+                    else
+                    {
+                        if (parms.Count > 2)
+                            throw new ArgumentException(line.Operand);
+                        
+                        if (parms.Count == 1)
+                        {
+                            if (string.IsNullOrEmpty(mapstring))
+                            {
+                                char unmap = EvalEncodingParam(firstparm);
+                                Controller.Encoding.Unmap(unmap);
+                            }
+                            else
+                            {
+                                Controller.Encoding.Unmap(mapstring);
+                            }
+                        }
+                        else
+                        {
+                            char firstunmap = EvalEncodingParam(firstparm);
+                            char lastunmap = EvalEncodingParam(parms[1]);
+                            Controller.Encoding.Unmap(firstunmap, lastunmap);
+                        }
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Evaluate parameter the string as either a char literal or expression
+        /// </summary>
+        /// <param name="p">The string parameter</param>
+        /// <returns>A char representation of the parameter</returns>
+        private char EvalEncodingParam(string p)
+        {
+            // if char literal return the char itself
+            if (p.EnclosedInQuotes())
+            {
+                if (p.Length != 3)
+                    throw new ArgumentException(p);
+                return p.Trim('"').First();
+            }
+            
+            // else return the evaluated expression
+            return (char)Controller.Evaluator.Eval(p);
+        }
+
+        /// <summary>
+        /// Converts the numerical constant of a mathematical expression or to a string.
         /// </summary>
         /// <param name="line">The DotNetAsm.SourceLine associated to the expression</param>
         /// <param name="arg">The string expression to convert</param>
         /// <returns></returns>
-        private string StringFromExpression(SourceLine line, string arg)
+        private string ExpressionToString(SourceLine line, string arg)
         {
             if (_regStrFunc.IsMatch(arg))
             {
                 var m = _regStrFunc.Match(arg);
                 string strval = m.Groups[1].Value;
                 var param = strval.TrimStart('(').TrimEnd(')');
-                if (string.IsNullOrEmpty(strval))
+                if (string.IsNullOrEmpty(strval) || 
+                    strval.FirstParenEnclosure() != m.Groups[1].Value)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.None);
                     return string.Empty;
                 }
                 else
                 {
-                    var val = Controller.Evaluator.Eval(param);
+                    var val = Controller.Evaluator.Eval(param, int.MinValue, uint.MaxValue);
                     return val.ToString();
                 }
             }
@@ -96,13 +215,17 @@ namespace DotNetAsm
         /// <returns>The size in bytes of the string expression</returns>
         protected int GetExpressionSize(SourceLine line)
         {
+            if (Reserved.IsOneOf("Encoding", line.Instruction))
+                return 0;
+
             var csvs = line.CommaSeparateOperand();
             int size = 0;
-            foreach(string s in csvs)
+            foreach (string s in csvs)
             {
                 if (s.EnclosedInQuotes())
                 {
-                    size += s.Length - 2;
+                    //var encodedString = Encoder.TranslateString(CurrentEncoding, s.Trim('"'));
+                    size += Controller.Encoding.GetByteCount(s.Trim('"'));//encodedString.Count();
                 }
                 else
                 {
@@ -112,7 +235,7 @@ namespace DotNetAsm
                     }
                     else
                     {
-                        string atoi = StringFromExpression(line, s);
+                        string atoi = ExpressionToString(line, s);
                         if (string.IsNullOrEmpty(atoi))
                         {
                             var v = Controller.Evaluator.Eval(s);
@@ -133,7 +256,8 @@ namespace DotNetAsm
 
         protected override bool IsReserved(string token)
         {
-            return Reserved.IsOneOf("Directives", token);
+            return Reserved.IsOneOf("Directives", token) || 
+                   Reserved.IsOneOf("Encoding", token);
         }
 
         /// <summary>
@@ -142,39 +266,31 @@ namespace DotNetAsm
         /// <param name="line">The SourceLine to assemble.</param>
         protected void AssembleStrings(SourceLine line)
         {
-            string format = line.Instruction;
-
-            if (format.Equals(".pstring", Controller.Options.StringComparison))
+            if (Reserved.IsOneOf("Encoding", line.Instruction))
             {
-                // we need to get the instruction size for the whole length, including all args
-                int length = GetExpressionSize(line) - 1;
-                if (length > 255)
+                UpdateEncoding(line);
+                return;
+            }
+            string format = line.Instruction.ToLower();
+
+            if (format.Equals(".pstring"))
+            {
+                try
+                {
+                    // we need to get the instruction size for the whole length, including all args
+                    line.Assembly = Controller.Output.Add(Convert.ToByte(GetExpressionSize(line) - 1), 1);
+                }
+                catch (OverflowException)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.PStringSizeTooLarge);
                     return;
                 }
-                else if (length < 0)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments);
-                    return;
-                }
-                else
-                {
-                    Controller.Output.Add(length, 1);
-                }
             }
-            else if (format.Equals(".lsstring", Controller.Options.StringComparison))
+            else if (format.Equals(".lsstring"))
             {
-                Controller.Output.Transforms.Push(delegate(byte b)
-                {
-                    if (b > 0x7F)
-                    {
-                        Controller.Log.LogEntry(line, ErrorStrings.MSBShouldNotBeSet, b.ToString());
-                        return 0;
-                    }
-                    return b <<= 1;
-                });
+                Controller.Output.Transforms.Push(b => Convert.ToByte(b << 1));
             }
+
             string operand = line.Operand;
 
             var args = line.CommaSeparateOperand();
@@ -188,16 +304,16 @@ namespace DotNetAsm
                         Controller.Output.AddUninitialized(1);
                         continue;
                     }
-                    string atoi = StringFromExpression(line, arg);
+                    string atoi = ExpressionToString(line, arg);
 
                     if (string.IsNullOrEmpty(atoi))
                     {
                         var val = Controller.Evaluator.Eval(arg);
-                        Controller.Output.Add(val, val.Size());
+                        line.Assembly.AddRange(Controller.Output.Add(val, val.Size()));
                     }
                     else
                     {
-                        Controller.Output.Add(atoi);
+                        line.Assembly.AddRange(Controller.Output.Add(atoi));
                     }
                 }
                 else
@@ -208,29 +324,31 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments);
                         return;
                     }
-                    Controller.Output.Add(noquotes);
+                    line.Assembly.AddRange(Controller.Output.Add(noquotes, Controller.Encoding));
                 }
             }
             var lastbyte = Controller.Output.GetCompilation().Last();
 
-            if (format.Equals(".lsstring", Controller.Options.StringComparison))
+            if (format.Equals(".lsstring"))
             {
+                line.Assembly[line.Assembly.Count - 1] = (byte)(lastbyte | 1);
                 Controller.Output.ChangeLast(lastbyte | 1, 1);
             }
-            else if (format.Equals(".nstring", Controller.Options.StringComparison))
+            else if (format.Equals(".nstring"))
             {
-                if (lastbyte > 0x7F)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.MSBShouldNotBeSet, lastbyte.ToString());
-                    return;
-                }
-                Controller.Output.ChangeLast(lastbyte | 0x80, 1);
+                line.Assembly[line.Assembly.Count - 1] = Convert.ToByte((lastbyte + 128));
+                Controller.Output.ChangeLast(Convert.ToByte(lastbyte + 128), 1);
             }
 
-            if (format.Equals(".cstring", Controller.Options.StringComparison))
+            if (format.Equals(".cstring"))
+            {
+                line.Assembly.Add(0);
                 Controller.Output.Add(0, 1);
-            else if (format.Equals(".lsstring", Controller.Options.StringComparison))
+            }
+            else if (format.Equals(".lsstring"))
+            {
                 Controller.Output.Transforms.Pop(); // clean up again :)
+            }
         }
         #endregion
     }

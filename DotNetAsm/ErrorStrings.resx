@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AssertionFailure" xml:space="preserve">
+    <value>Assertion Failed: '{0}'</value>
+  </data>
   <data name="BadExpression" xml:space="preserve">
     <value>Unknown or invalid expression: '{0}'</value>
   </data>
@@ -134,6 +137,9 @@
   </data>
   <data name="DirectiveTakesNoArguments" xml:space="preserve">
     <value>Directive '{0}' takes no arguments</value>
+  </data>
+  <data name="EncodingNameNotValid" xml:space="preserve">
+    <value>Encoding '{0}' is not a name or option</value>
   </data>
   <data name="FilenameNotSpecified" xml:space="preserve">
     <value>Filename not specified</value>
@@ -173,9 +179,6 @@
   </data>
   <data name="MissingClosureMacro" xml:space="preserve">
     <value>Missing closure for {0}</value>
-  </data>
-  <data name="MSBShouldNotBeSet" xml:space="preserve">
-    <value>Most significant bit should not be set '{0}'</value>
   </data>
   <data name="None" xml:space="preserve">
     <value>General syntax error</value>

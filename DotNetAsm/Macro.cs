@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -167,7 +167,6 @@ namespace DotNetAsm
         /// parameters in source.</returns>
         public IEnumerable<SourceLine> Expand(SourceLine macrocall)
         {
-            List<SourceLine> processed = new List<SourceLine>();
             List<Param> parms = new List<Param>(Params);
 
             if (IsSegment == false)
@@ -206,23 +205,16 @@ namespace DotNetAsm
                 }
             }
             if (!string.IsNullOrEmpty(macrocall.Label))
-                processed.Add(new SourceLine
-                {
-                    Label = macrocall.Label,
-                    Scope = macrocall.Scope
-                });
+                yield return new SourceLine 
+                { 
+                    Label = macrocall.Label, 
+                    Scope = macrocall.Scope 
+                };
 
             foreach (var src in Source)
             {
                 SourceLine repl = src.Clone() as SourceLine;
-                /*
-                if (object.ReferenceEquals(src, Source.First()))
-                {
-                    // if there is a label for the macro invocation, 
-                    // put the scope into that.
-                    repl.Label = macrocall.Label;
-                }
-                */
+
                 if (IsSegment == false)
                 {
                     var insertedparm = parms.FirstOrDefault(pa =>
@@ -237,10 +229,8 @@ namespace DotNetAsm
                             insertedparm.Passed, RegexOptions.IgnoreCase); ;
                     }
                 }
-
-                processed.Add(repl);
+                yield return repl;
             }
-            return processed;
         }
 
         #endregion

@@ -61,6 +61,15 @@ namespace DotNetAsm {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Assertion Failed: &apos;{0}&apos;.
+        /// </summary>
+        public static string AssertionFailure {
+            get {
+                return ResourceManager.GetString("AssertionFailure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unknown or invalid expression: &apos;{0}&apos;.
         /// </summary>
         public static string BadExpression {
@@ -111,6 +120,15 @@ namespace DotNetAsm {
         public static string DirectiveTakesNoArguments {
             get {
                 return ResourceManager.GetString("DirectiveTakesNoArguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encoding &apos;{0}&apos; is not a name or option.
+        /// </summary>
+        public static string EncodingNameNotValid {
+            get {
+                return ResourceManager.GetString("EncodingNameNotValid", resourceCulture);
             }
         }
         
@@ -228,15 +246,6 @@ namespace DotNetAsm {
         public static string MissingClosureMacro {
             get {
                 return ResourceManager.GetString("MissingClosureMacro", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Most significant bit should not be set &apos;{0}&apos;.
-        /// </summary>
-        public static string MSBShouldNotBeSet {
-            get {
-                return ResourceManager.GetString("MSBShouldNotBeSet", resourceCulture);
             }
         }
         

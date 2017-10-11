@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -40,8 +41,10 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="format">The disassembly format to use to lookup the opcode</param>
         /// <param name="opcodes">The System.Collections.Generic.IEnumerable&lt;Opcode&gt; to look in</param>
+        /// <param name="comparison">A System.StringComparison enumeration value of how 
+        /// the strings will be compared</param>
         /// <returns>The DotNetAsm.Opcode matching the format</returns>
-        public static Opcode LookupOpcode(string format, IEnumerable<Opcode> opcodes)
+        public static Opcode LookupOpcode(string format, IEnumerable<Opcode> opcodes, StringComparison comparison)
         {
             Opcode opc = null;
 
@@ -53,7 +56,7 @@ namespace DotNetAsm
                     continue;
                 if (opcList[i].Extension != null)
                 {
-                    Opcode result = LookupOpcode(format, opcList[i].Extension.ToArray());
+                    Opcode result = LookupOpcode(format, opcList[i].Extension.ToArray(), comparison);
                     if (result != null)
                     {
                         opc = result;
@@ -61,7 +64,7 @@ namespace DotNetAsm
                         break;
                     }
                 }
-                else if (opcList[i].DisasmFormat.Equals(format))
+                else if (opcList[i].DisasmFormat.Equals(format, comparison))
                 {
                     opc = opcList[i];
                     opc.Index = i;
@@ -69,6 +72,54 @@ namespace DotNetAsm
                 }
             }
             return opc;
+        }
+
+        /// <summary>
+        /// Lookup an opcode from a supplied System.Collections.Generic.IEnumerable&lt;Opcode&gt;
+        /// by its disassembly format.
+        /// </summary>
+        /// <param name="format">The disassembly format to use to lookup the opcode</param>
+        /// <param name="opcodes">The System.Collections.Generic.IEnumerable&lt;Opcode&gt; to look in</param>
+        /// <returns>The DotNetAsm.Opcode matching the format</returns>
+        public static Opcode LookupOpcode(string format, IEnumerable<Opcode> opcodes)
+        {
+            return LookupOpcode(format, opcodes, StringComparison.CurrentCulture);
+        }
+
+        /// <summary>
+        /// Lookup the index of an opcode in a supplied System.Collections.Generic.IEnumerable&lt;Opcode&gt;
+        /// from its disassembly format.
+        /// </summary>
+        /// <param name="format">The disassembly format to use to lookup the opcode</param>
+        /// <param name="opcodes">The System.Collections.Generic.IEnumerable&lt;Opcode&gt; to look in</param>
+        /// <param name="comparison">A System.StringComparison enumeration value of how 
+        /// the strings will be compared</param>
+        /// <returns>The index of the DotNetAsm.Opcode matching the format</returns>
+        public static int LookupOpcodeIndex(string format, IEnumerable<Opcode> opcodes, StringComparison comparison)
+        {
+            Opcode[] opcList = opcodes.ToArray();
+            int index = -1;
+
+            for (int i = 0; i < 0x100; i++)
+            {
+                if (opcList[i] == null)
+                    continue;
+                if (opcList[i].Extension != null)
+                {
+                    Opcode result = LookupOpcode(format, opcList[i].Extension.ToArray(), comparison);
+                    if (result != null)
+                    {
+                        index = i | (result.Index << 8);
+                        break;
+                    }
+                }
+                else if (opcList[i].DisasmFormat.Equals(format, comparison))
+                {
+                    index = i;
+                    break;
+                }
+            }
+            return index;
         }
 
         /// <summary>
@@ -80,29 +131,27 @@ namespace DotNetAsm
         /// <returns>The index of the DotNetAsm.Opcode matching the format</returns>
         public static int LookupOpcodeIndex(string format, IEnumerable<Opcode> opcodes)
         {
-            Opcode[] opcList = opcodes.ToArray();
-            int index = -1;
+            return LookupOpcodeIndex(format, opcodes, StringComparison.CurrentCulture);
+        }
 
-            for (int i = 0; i < 0x100; i++)
+        /// <summary>
+        /// Lookup an opcode from a supplied System.Collections.Generic.IEnumerable&lt;string&gt;
+        /// by its disassembly format.
+        /// </summary>
+        /// <param name="format">The disassembly format to use to lookup the opcode</param>
+        /// <param name="opcodes">The System.Collections.Generic.IEnumerable&lt;string&gt; to look in</param>
+        /// <param name="comparison">A System.StringComparison enumeration value of how 
+        /// the strings will be compared</param>
+        /// <returns>The index of the DotNetAsm.Opcode matching the format</returns>
+        public static int LookupOpcodeIndex(string format, IEnumerable<string> opcodes, StringComparison comparison)
+        {
+            string[] opcList = opcodes.ToArray();
+            for (int i = 0; i < opcList.Length; i++ )
             {
-                if (opcList[i] == null)
-                    continue;
-                if (opcList[i].Extension != null)
-                {
-                    Opcode result = LookupOpcode(format, opcList[i].Extension.ToArray());
-                    if (result != null)
-                    {
-                        index = i | (result.Index << 8);
-                        break;
-                    }
-                }
-                else if (opcList[i].DisasmFormat.Equals(format))
-                {
-                    index = i;
-                    break;
-                }
+                if (format.Equals(opcList[i], comparison))
+                    return i;
             }
-            return index;
+            return -1;
         }
 
         /// <summary>
@@ -114,13 +163,7 @@ namespace DotNetAsm
         /// <returns>The index of the DotNetAsm.Opcode matching the format</returns>
         public static int LookupOpcodeIndex(string format, IEnumerable<string> opcodes)
         {
-            string[] opcList = opcodes.ToArray();
-            for (int i = 0; i < opcList.Length; i++ )
-            {
-                if (format.Equals(opcList[i]))
-                    return i;
-            }
-            return -1;
+            return LookupOpcodeIndex(format, opcodes, StringComparison.CurrentCulture);
         }
 
         #endregion
@@ -208,16 +251,15 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="caseSensitive">Indicates the evaluation is case-sensitive</param>
+        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
         /// <param name="treatParenAsExpr">If the first subexpression is enclosed in 
         /// paranetheses, enclose the subexpression's position in the final format
         /// inside paranetheses as well</param>
         /// <param name="evaluator">If not null, a DotNetAsm.IEvaluator to evaluate the second 
         /// subexpression as part of the final format</param>
-        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, bool caseSensitive, bool treatParenAsExpr, IEvaluator evaluator)
+        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions, bool treatParenAsExpr, IEvaluator evaluator)
         {
-            RegexOptions options = caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
-            _regex = new Regex(regex, options | RegexOptions.Compiled);
+            _regex = new Regex(regex, regexOptions | RegexOptions.Compiled);
             _format = format;
             _exp1Format = exp1format;
             _exp2Format = exp2format;
@@ -228,7 +270,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of a z80DotNet.z80Asm.FormatBuilder class.
+        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
         /// </summary>
         /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
@@ -245,18 +287,18 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="caseSensitive">Indicates the evaluation is case-sensitive</param>
+        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
         /// <param name="treatParenAsExpr">If the first subexpression is enclosed in 
         /// paranetheses, enclose the subexpression's position in the final format
         /// inside paranetheses as well</param>
-        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, bool caseSensitive, bool treatParenAsExpr)
-            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, caseSensitive, treatParenAsExpr, null)
+        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions, bool treatParenAsExpr)
+            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, regexOptions, treatParenAsExpr, null)
         {
 
         }
 
         /// <summary>
-        /// Constructs an instance of a z80DotNet.z80Asm.FormatBuilder class.
+        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
         /// </summary>
         /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
@@ -273,17 +315,17 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="caseSensitive">Indicates the evaluation is case-sensitive</param>
+        /// <param name="regOptions">Any System.Text.RegularExpressions.RegexOptions</param>
         /// <param name="evaluator">If not null, a DotNetAsm.IEvaluator to evaluate the second 
         /// subexpression as part of the final format</param>
-        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, bool caseSensitive, IEvaluator evaluator)
-            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, caseSensitive, false, evaluator)
+        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions, IEvaluator evaluator)
+            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, regexOptions, false, evaluator)
         {
 
         }
 
         /// <summary>
-        /// Constructs an instance of a z80DotNet.z80Asm.FormatBuilder class.
+        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
         /// </summary>
         /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
@@ -300,14 +342,40 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="caseSensitive">Indicates the evaluation is case-sensitive</param>
-        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, bool caseSensitive)
-            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, caseSensitive, false, null)
+        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
+        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions)
+            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, regexOptions, false, null)
+        {
+
+        }
+
+        /// <summary>
+        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
+        /// </summary>
+        /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
+        /// <param name="format">The final format of the operand as a valid .Net 
+        /// System.String format</param>
+        /// <param name="exp1format">The format of the first subexpression as a valid .Net
+        /// System.String format</param>
+        /// <param name="exp2format">The format of the second subexpression as a valid .Net
+        /// System.String format</param>
+        /// <param name="reg1">The index of the first register's matching group in the
+        /// regex pattern</param>
+        /// <param name="reg2">The index of the second register's matching group in the
+        /// regex pattern</param>
+        /// <param name="exp1">The index of the first subexpression's matching group in
+        /// the regex pattern</param>
+        /// <param name="exp2">The index of the second subexpression's matching group in
+        /// the regex pattern</param>
+        public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2)
+            : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, RegexOptions.None, false, null)
         {
 
         }
 
         #endregion
+
+        #region Methods
 
         /// <summary>
         /// Evaluates an operand expression and returns a DotNetAsm.OperandFormat
@@ -350,6 +418,6 @@ namespace DotNetAsm
         {
             return _regex.ToString();
         }
+        #endregion
     }
-
 }

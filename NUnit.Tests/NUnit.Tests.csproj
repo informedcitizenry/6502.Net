@@ -38,14 +38,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Test6502.Net\NUnitTestAsm6502.cs" />
-    <Compile Include="Test6502.Net\NUnitTestPseudo6502.cs" />
     <Compile Include="TestDotNetAsm\NUnitAsmTestBase.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestCharEncoding.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestCompilation.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestDisassembler.cs" />
-    <Compile Include="TestDotNetAsm\NUnitTestEvaluator.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestMisc.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestOpcode.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestPseudoAssembler.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestRepetitionHandler.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestEvaluation.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestSourceLine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

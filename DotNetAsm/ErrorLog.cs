@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
@@ -122,7 +123,7 @@ namespace DotNetAsm
             else
             {
                 if (isError)
-                    sb.AppendFormat("Syntax error in file '{0}' at line {1}: ", filename, linenumber);
+                    sb.AppendFormat("Error in file '{0}' at line {1}: ", filename, linenumber);
                 else
                     sb.AppendFormat("Warning in file '{0}' at line {1}: ", filename, linenumber);
             }
@@ -194,6 +195,11 @@ namespace DotNetAsm
         #endregion
 
         #region Properties
+
+        /// <summary>
+        /// Gets the log entries
+        /// </summary>
+        public ReadOnlyCollection<string> Entries { get { return errors_.Select(e => e.Item1).ToList().AsReadOnly(); } }
 
         /// <summary>
         /// Gets if the log has errors.

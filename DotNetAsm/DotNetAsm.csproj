@@ -49,13 +49,13 @@
     <Compile Include="Compilation.cs" />
     <Compile Include="ConditionAssembler.cs" />
     <Compile Include="Disassembler.cs" />
+    <Compile Include="AsmEncoding.cs" />
     <Compile Include="ErrorLog.cs" />
     <Compile Include="ErrorStrings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ErrorStrings.resx</DependentUpon>
     </Compile>
-    <Compile Include="ExpressionEvaluator.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="IAssemblyController.cs" />
     <Compile Include="IEvaluator.cs" />
@@ -70,6 +70,7 @@
     <Compile Include="PseudoAssembler.cs" />
     <Compile Include="RepetitionHandler.cs" />
     <Compile Include="ReservedWords.cs" />
+    <Compile Include="Evaluator.cs" />
     <Compile Include="SourceLine.cs" />
     <Compile Include="StringAssemblerBase.cs" />
     <Compile Include="System.CommandLine\System\CommandLine\Argument.cs" />

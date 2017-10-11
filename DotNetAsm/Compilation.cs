@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
@@ -56,11 +57,13 @@ namespace DotNetAsm
 
         #region Members
 
-        int log_pc_;
+        List<byte> _bytes;
 
-        int pc_;
+        int _logicalPc;
 
-        bool overflow_;
+        int _pc;
+
+        bool _overflow;
 
         #endregion
 
@@ -74,7 +77,7 @@ namespace DotNetAsm
         {
             Transforms = new Stack<Func<byte, byte>>();
             IsLittleEndian = isLittleEndian;
-            Bytes = new List<byte>();
+            _bytes = new List<byte>();
             Reset();
         }
 
@@ -113,37 +116,10 @@ namespace DotNetAsm
         /// </summary>
         public void Reset()
         {
-            Bytes.Clear();
-            pc_ = log_pc_ = 0;
+            _bytes.Clear();
+            _pc = _logicalPc = 0;
             MaxAddress = ushort.MaxValue;
-            overflow_ = false;
-        }
-
-        /// <summary>
-        /// Gets the current logical Program Counter.
-        /// </summary>
-        /// <returns></returns>
-        public int GetPC()
-        {
-            return LogicalPC;
-        }
-
-        /// <summary>
-        /// Change the first value in the compilation
-        /// </summary>
-        /// <param name="value">The value of the first compiled data</param>
-        /// <param name="size">The size of the data to change</param>
-        public void ChangeFirst(int value, int size)
-        {
-            if ((size % 5) > Bytes.Count)
-                size = Bytes.Count;
-            if (size == 0)
-                return;
-            var bytes = BitConverter.GetBytes(value).ToList().GetRange(0, size);
-            if (BitConverter.IsLittleEndian != this.IsLittleEndian)
-                bytes.Reverse();
-            Bytes.RemoveRange(0, size);
-            Bytes.InsertRange(0, bytes);
+            _overflow = false;
         }
 
         /// <summary>
@@ -153,20 +129,20 @@ namespace DotNetAsm
         /// <param name="size">The size of the data to change</param>
         public void ChangeLast(int value, int size)
         {
-            if ((size % 5) > Bytes.Count)
-                size = Bytes.Count;
+            if ((size % 5) > _bytes.Count)
+                size = _bytes.Count;
             if (size == 0)
                 return;
-            var ix = Bytes.Count - size;
+            var ix = _bytes.Count - size;
             var bytes = BitConverter.GetBytes(value).ToList().GetRange(0, size);
             if (BitConverter.IsLittleEndian != this.IsLittleEndian)
                 bytes.Reverse();
-            Bytes.RemoveAt(ix);
-            Bytes.AddRange(bytes);
+            _bytes.RemoveAt(ix);
+            _bytes.AddRange(bytes);
         }
 
         /// <summary>
-        /// Set the logical Program Counter. Also sets the internal Program Counter.
+        /// Sets both the logical and real Program Counters.
         /// </summary>
         /// <param name="value">The program counter value</param>
         /// <exception cref="InvallidPCAssignmentException"></exception>
@@ -184,7 +160,7 @@ namespace DotNetAsm
         {
             if (value < 0 || value > MaxAddress)
                 throw new InvalidPCAssignmentException(value);
-            log_pc_ = value;
+            _logicalPc = value;
         }
 
         /// <summary>
@@ -195,7 +171,7 @@ namespace DotNetAsm
         public int SynchPC()
         {
             //LogicalPC = ProgramCounter;
-            log_pc_ = ProgramCounter;
+            _logicalPc = ProgramCounter;
             return LogicalPC;
         }
 
@@ -204,10 +180,11 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="value">The value to add</param>
         /// <param name="size">The size, in bytes, of the value</param>
-        public void Add(Int64 value, int size)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Add(Int64 value, int size)
         {
             var bytes = BitConverter.GetBytes(value);
-            AddBytes(bytes, size, false);
+            return AddBytes(bytes, size, false);
         }
 
         /// <summary>
@@ -223,40 +200,54 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Add the bytes for an UTF8-encoded string to the compilation
+        /// Add the bytes for a UTF-8 encoded string to the compilation
         /// </summary>
-        /// <param name="value">The value to add</param>
-        public void Add(string value)
+        /// <param name="s">The string to add</param>
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Add(string s)
         {
-            byte[] utf8bytes = Encoding.UTF8.GetBytes(value);
-            AddBytes(utf8bytes);
+            return Add(s, Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Add the bytes for a UTF-8 encoded string to the compilation
+        /// </summary>
+        /// <param name="s">The string to add</param>
+        /// <param name="encoding">The System.Text.Encoding class to encode the output</param>
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Add(string s, Encoding encoding)
+        {
+            return AddBytes(encoding.GetBytes(s));
         }
 
         /// <summary>
         /// Add a 32-bit integral value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
-        public void Add(int value)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Add(int value)
         {
-            Add(value, 4);
+            return Add(value, 4);
         }
 
         /// <summary>
         /// Add a byte value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
-        public void Add(byte value)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Add(byte value)
         {
-            Add(Convert.ToInt32(value), 1);
+            return Add(Convert.ToInt32(value), 1);
         }
 
         /// <summary>
         /// Add a 16-bit integral value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
-        public void Add(ushort value)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Add(ushort value)
         {
-            Add(Convert.ToInt32(value), 2);
+            return Add(Convert.ToInt32(value), 2);
         }
 
         /// <summary>
@@ -274,7 +265,8 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The amount to fill</param>
         /// <param name="value">The fill value</param>
-        public void Fill(int amount, Int64 value)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Fill(int amount, Int64 value)
         {
             int size = value.Size();
             byte[] fillbytes;
@@ -300,7 +292,7 @@ namespace DotNetAsm
                     repeated.Add(fillbytes[j]);
 
             }
-            AddBytes(repeated.GetRange(0, amount), true);
+            return AddBytes(repeated.GetRange(0, amount), true);
         }
 
         /// <summary>
@@ -308,9 +300,10 @@ namespace DotNetAsm
         /// This can be used to create re-locatable code.
         /// </summary>
         /// <param name="amount">The offset amount</param>
-        public void Offset(int amount)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Offset(int amount)
         {
-            AddBytes(new List<byte>(amount), amount, true, false);
+            return AddBytes(new List<byte>(amount), amount, true, false);
         }
 
         /// <summary>
@@ -320,12 +313,11 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The amount to align the compilation</param>
         /// <param name="value">The value to fill before the alignment</param>
-        /// <returns>Returns the offset needed to align the Program Counter</returns>
-        public int Align(int amount, long value)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> Align(int amount, long value)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
-            Fill(align, value);
-            return align;
+            return Fill(align, value);
         }
 
         /// <summary>
@@ -334,12 +326,12 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The amount to align</param>
         /// <returns>Returns the offset needed to align the Program Counter</returns>
-        public int Align(int amount)
+        public void Align(int amount)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
             LogicalPC += align;
             ProgramCounter += align;
-            return align;
+            //return align;
         }
 
         /// <summary>
@@ -349,7 +341,8 @@ namespace DotNetAsm
         /// <param name="size">The number of bytes in the collection to add</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
         /// <param name="updateProgramCounter">Update the Program Counter automatically</param>
-        public void AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian, bool updateProgramCounter)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian, bool updateProgramCounter)
         {
             if (CompilingHasStarted == false)
             {
@@ -357,9 +350,9 @@ namespace DotNetAsm
             }
             else
             {
-                int diff = ProgramCounter - (ProgramStart + Bytes.Count);
+                int diff = ProgramCounter - (ProgramStart + _bytes.Count);
                 if (diff > 0)
-                    Bytes.AddRange(new byte[diff]);
+                    _bytes.AddRange(new byte[diff]);
             }
 
             if (updateProgramCounter)
@@ -373,17 +366,20 @@ namespace DotNetAsm
 
             if (Transforms.Count > 0)
             {
-                var transformed = bytes.ToList();
+                var transformed = bytes.ToList().GetRange(0, size);
                 for (int i = 0; i < size; i++)
                 {
                     foreach (var t in Transforms)
                         transformed[i] = t(transformed[i]);
                 }
-                Bytes.AddRange(transformed.GetRange(0, size));
+                _bytes.AddRange(transformed);
+                return transformed;
             }
             else
             {
-                Bytes.AddRange(bytes.ToList().GetRange(0, size));
+                var bytesAdded = bytes.ToList().GetRange(0, size);
+                _bytes.AddRange(bytesAdded);
+                return bytesAdded;
             }
         }
 
@@ -393,9 +389,10 @@ namespace DotNetAsm
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="size">The number of bytes in the collection to add</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        public void AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
         {
-            AddBytes(bytes, size, ignoreEndian, true);
+            return AddBytes(bytes, size, ignoreEndian, true);
         }
 
         /// <summary>
@@ -403,9 +400,10 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        public void AddBytes(IEnumerable<byte> bytes, bool ignoreEndian)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> AddBytes(IEnumerable<byte> bytes, bool ignoreEndian)
         {
-            AddBytes(bytes, bytes.Count(), ignoreEndian);
+            return AddBytes(bytes, bytes.Count(), ignoreEndian);
         }
 
         /// <summary>
@@ -413,27 +411,29 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="size">The number of bytes in the collection to add</param>
-        public void AddBytes(IEnumerable<byte> bytes, int size)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> AddBytes(IEnumerable<byte> bytes, int size)
         {
-            AddBytes(bytes, size, true);
+            return AddBytes(bytes, size, true);
         }
 
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
         /// <param name="Bytes">The collection of bytes to add</param>
-        public void AddBytes(IEnumerable<byte> bytes)
+        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        public List<byte> AddBytes(IEnumerable<byte> bytes)
         {
-            AddBytes(bytes, true);
+            return AddBytes(bytes, true);
         }
 
         /// <summary>
         /// Get the compilation bytes
         /// </summary>
         /// <returns>The bytes of the compilation.</returns>
-        public System.Collections.ObjectModel.ReadOnlyCollection<byte> GetCompilation()
+        public ReadOnlyCollection<byte> GetCompilation()
         {
-            return Bytes.AsReadOnly();
+            return _bytes.AsReadOnly();
         }
 
         /// <summary>
@@ -477,7 +477,7 @@ namespace DotNetAsm
         {
             get
             {
-                return ProgramStart + (Bytes.Count - 1);
+                return ProgramStart + (_bytes.Count - 1);
             }
         }
 
@@ -495,26 +495,21 @@ namespace DotNetAsm
         public int MaxAddress { get; set; }
 
         /// <summary>
-        /// Gets or sets the byte buffer of the compilation
-        /// </summary>
-        List<byte> Bytes { get; set; }
-
-        /// <summary>
         /// Gets the status of the compilation, if it is currently compiling
         /// </summary>
-        bool CompilingHasStarted { get { return Bytes.Count > 0; } }
+        bool CompilingHasStarted { get { return _bytes.Count > 0; } }
 
         /// <summary>
-        /// Gets the actual Program Counter
+        /// Gets the real Program Counter
         /// </summary>
         public int ProgramCounter
         {
-            get { return pc_; }
+            get { return _pc; }
             private set
             {
-                if (value < 0 || value < pc_)
+                if (value < 0 || value < _pc)
                     throw new InvalidPCAssignmentException(value);
-                pc_ = value & MaxAddress;
+                _pc = value & MaxAddress;
             }
         }
 
@@ -527,21 +522,21 @@ namespace DotNetAsm
         /// Gets a flag that indicates if a PC overflow has occurred. This flag will 
         /// only be cleared with a call to the Reset method.
         /// </summary>
-        public bool PCOverflow { get { return overflow_; } }
+        public bool PCOverflow { get { return _overflow; } }
 
         /// <summary>
-        /// Gets or sets the logical Program Counter
+        /// Gets the current logical Program Counter
         /// </summary>
-        int LogicalPC
+        public int LogicalPC
         {
-            get { return log_pc_; }
-            set
+            get { return _logicalPc; }
+            private set
             {
-                if (value < 0 || value < log_pc_)
+                if (value < 0 || value < _logicalPc)
                     throw new InvalidPCAssignmentException(value);
-                if (!overflow_)
-                    overflow_ = value > MaxAddress;
-                log_pc_ = value & MaxAddress;
+                if (!_overflow)
+                    _overflow = value > MaxAddress;
+                _logicalPc = value & MaxAddress;
             }
         }
 

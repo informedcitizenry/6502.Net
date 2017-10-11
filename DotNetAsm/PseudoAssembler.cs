@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -34,9 +34,9 @@ namespace DotNetAsm
     public class PseudoAssembler : StringAssemblerBase, ILineAssembler
     {
         #region Members
-        
+
         private HashSet<BinaryFile> _includedBinaries;
-        
+
         #endregion
 
         #region Constructors
@@ -71,7 +71,7 @@ namespace DotNetAsm
             var csv = line.CommaSeparateOperand();
 
             int alignval = (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
-            
+
             if (csv.Count > 1 && csv.Last().Equals("?") == false)
             {
                 if (csv.Count > 2)
@@ -82,9 +82,9 @@ namespace DotNetAsm
                 Int64 fillval = Controller.Evaluator.Eval(csv.Last(), int.MinValue, uint.MaxValue);
 
                 if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
-                    Controller.Output.Align(alignval, fillval);
+                    line.Assembly = Controller.Output.Align(alignval, fillval);
                 else
-                    Controller.Output.Fill(alignval, fillval);
+                    line.Assembly = Controller.Output.Fill(alignval, fillval);
             }
             else
             {
@@ -114,7 +114,7 @@ namespace DotNetAsm
                 else
                 {
                     Int64 val = Controller.Evaluator.Eval(t, minval, maxval);
-                    Controller.Output.Add(val, size);
+                    line.Assembly.AddRange(Controller.Output.Add(val, size));
                 }
             }
         }
@@ -157,7 +157,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size.ToString());
                 return;
             }
-            Controller.Output.AddBytes(binary.Data.Skip(offs), size);
+            line.Assembly = Controller.Output.AddBytes(binary.Data.Skip(offs), size);
         }
 
         /// <summary>
@@ -195,17 +195,16 @@ namespace DotNetAsm
             return binary;
         }
 
-        public virtual void AssembleLine(SourceLine line)
+        public void AssembleLine(SourceLine line)
         {
             if (Controller.Output.PCOverflow)
             {
-                Controller.Log.LogEntry(line, 
-                                        ErrorStrings.PCOverflow, 
-                                        Controller.Output.GetPC().ToString());
+                Controller.Log.LogEntry(line,
+                                        ErrorStrings.PCOverflow,
+                                        Controller.Output.LogicalPC.ToString());
                 return;
             }
-            string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
-            switch (instruction)
+            switch (line.Instruction.ToLower())
             {
                 case ".addr":
                 case ".word":
@@ -224,13 +223,6 @@ namespace DotNetAsm
                 case ".char":
                     AssembleValues(line, sbyte.MinValue, sbyte.MaxValue, 1);
                     break;
-                case ".cstring":
-                case ".lsstring":
-                case ".nstring":
-                case ".pstring":
-                case ".string":
-                    AssembleStrings(line);
-                    break;
                 case ".dint":
                     AssembleValues(line, int.MinValue, int.MaxValue, 4);
                     break;
@@ -247,7 +239,7 @@ namespace DotNetAsm
                     AssembleValues(line, short.MinValue, short.MaxValue, 2);
                     break;
                 default:
-                    Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+                    AssembleStrings(line);
                     break;
             }
         }
@@ -266,8 +258,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return 0;
             }
-            string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
-            switch (instruction)
+            switch (line.Instruction.ToLower())
             {
                 case ".align":
                     {
