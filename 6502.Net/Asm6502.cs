@@ -32,277 +32,8 @@ namespace Asm6502.Net
     /// <summary>
     /// A line assembler that will assemble into 6502 instructions.
     /// </summary>
-    public class Asm6502 : AssemblerBase, ILineAssembler
+    public partial class Asm6502 : AssemblerBase, ILineAssembler
     {
-        #region Members
-
-        private FormatBuilder[] _builders;
-
-        private string[] _opcodeFormats = 
-            {
-                "brk",              // 00
-                "ora (${0:x2},x)",  // 01
-                null,               // 02
-                null,               // 03
-                null,               // 04
-                "ora ${0:x2}",      // 05
-                "asl ${0:x2}",      // 06
-                null,               // 07
-                "php",              // 08
-                "ora #${0:x2}",     // 09
-                "asl",              // 0a
-                null,               // 0b
-                null,               // 0c
-                "ora ${0:x4}",      // 0d
-                "asl ${0:x4}",      // 0e
-                null,               // 0f
-                "bpl ${0:x4}",      // 10
-                "ora (${0:x2}),y",  // 11
-                null,               // 12
-                null,               // 13
-                null,               // 14
-                "ora ${0:x2},x",    // 15
-                "asl ${0:x2},x",    // 16
-                null,               // 17
-                "clc",              // 18
-                "ora ${0:x4},y",    // 19
-                null,               // 1a
-                null,               // 1b
-                null,               // 1c
-                "ora ${0:x4},x",    // 1d
-                "asl ${0:x4},x",    // 1e
-                null,               // 1f
-                "jsr ${0:x4}",      // 20
-                "and (${0:x2},x)",  // 21
-                null,               // 22
-                null,               // 23
-                "bit ${0:x2}",      // 24
-                "and ${0:x2}",      // 25
-                "rol ${0:x2}",      // 26
-                null,               // 27
-                "plp",              // 28
-                "and #${0:x2}",     // 29
-                "rol",              // 2a
-                null,               // 2b
-                "bit ${0:x4}",      // 2c
-                "and ${0:x4}",      // 2d
-                "rol ${0:x4}",      // 2e
-                null,               // 2f
-                "bmi ${0:x4}",      // 30
-                "and (${0:x2}),y",  // 31
-                null,               // 32
-                null,               // 33
-                null,               // 34
-                "and ${0:x2},x",    // 35
-                "rol ${0:x2},x",    // 36
-                null,               // 37
-                "sec",              // 38
-                "and ${0:x4},y",    // 39
-                null,               // 3a
-                null,               // 3b
-                null,               // 3c
-                "and ${0:x4},x",    // 3d
-                "rol ${0:x4},x",    // 3e
-                null,               // 3f
-                "rti",              // 40
-                "eor (${0:x2},x)",  // 41
-                null,               // 42
-                null,               // 43
-                null,               // 44
-                "eor ${0:x2}",      // 45
-                "lsr ${0:x2}",      // 46
-                null,               // 47
-                "pha",              // 48
-                "eor #${0:x2}",     // 49
-                "lsr",              // 4a
-                null,               // 4b
-                "jmp ${0:x4}",      // 4c
-                "eor ${0:x4}",      // 4d
-                "lsr ${0:x4}",      // 4e
-                null,               // 4f
-                "bvc ${0:x4}",      // 50
-                "eor (${0:x2}),y",  // 51
-                null,               // 52
-                null,               // 53
-                null,               // 54
-                "eor ${0:x2},x",    // 55
-                "lsr ${0:x2},x",    // 56
-                null,               // 57
-                "cli",              // 58
-                "eor ${0:x4},y",    // 59
-                null,               // 5a
-                null,               // 5b
-                null,               // 5c
-                "eor ${0:x4},x",    // 5d
-                "lsr ${0:x4},x",    // 5e
-                null,               // 5f
-                "rts",              // 60
-                "adc (${0:x2},x)",  // 61
-                null,               // 62
-                null,               // 63
-                null,               // 64
-                "adc ${0:x2}",      // 65
-                "ror ${0:x2}",      // 66
-                null,               // 67
-                "pla",              // 68
-                "adc #${0:x2}",     // 69
-                "ror",              // 6a
-                null,               // 6b
-                "jmp (${0:x4})",    // 6c
-                "adc ${0:x4}",      // 6d
-                "ror ${0:x4}",      // 6e
-                null,               // 6f
-                "bvs ${0:x4}",      // 70
-                "adc (${0:x2}),y",  // 71
-                null,               // 72
-                null,               // 73
-                null,               // 74
-                "adc ${0:x2},x",    // 75
-                "ror ${0:x2},x",    // 76
-                null,               // 77
-                "sei",              // 78
-                "adc ${0:x4},y",    // 79
-                null,               // 7a
-                null,               // 7b
-                null,               // 7c
-                "adc ${0:x4},x",    // 7d
-                "ror ${0:x4},x",    // 7e
-                null,               // 7f
-                null,               // 80
-                "sta (${0:x2},x)",  // 81
-                null,               // 82
-                null,               // 83
-                "sty ${0:x2}",      // 84
-                "sta ${0:x2}",      // 85
-                "stx ${0:x2}",      // 86
-                null,               // 87
-                "dey",              // 88
-                null,               // 89
-                "txa",              // 8a
-                null,               // 8b
-                "sty ${0:x4}",      // 8c
-                "sta ${0:x4}",      // 8d
-                "stx ${0:x4}",      // 8e
-                null,               // 8f
-                "bcc ${0:x4}",      // 90
-                "sta (${0:x2}),y",  // 91
-                null,               // 92
-                null,               // 93
-                "sty ${0:x2},x",    // 94
-                "sta ${0:x2},x",    // 95
-                "stx ${0:x2},y",    // 96
-                null,               // 97
-                "tya",              // 98
-                "sta ${0:x4},y",    // 99
-                "txs",              // 9a
-                null,               // 9b
-                null,               // 9c
-                "sta ${0:x4},x",    // 9d
-                null,               // 9e
-                null,               // 9f
-                "ldy #${0:x2}",     // a0
-                "lda (${0:x2},x)",  // a1
-                "ldx #${0:x2}",     // a2
-                null,               // a3
-                "ldy ${0:x2}",      // a4
-                "lda ${0:x2}",      // a5
-                "ldx ${0:x2}",      // a6
-                null,               // a7
-                "tay",              // a8
-                "lda #${0:x2}",     // a9
-                "tax",              // aa
-                null,               // ab
-                "ldy ${0:x4}",      // ac
-                "lda ${0:x4}",      // ad
-                "ldx ${0:x4}",      // ae
-                null,               // af
-                "bcs ${0:x4}",      // b0
-                "lda (${0:x2}),y",  // b1
-                null,               // b2
-                null,               // b3
-                "ldy ${0:x2},x",    // b4
-                "lda ${0:x2},x",    // b5
-                "ldx ${0:x2},y",    // b6
-                null,               // b7
-                "clv",              // b8
-                "lda ${0:x4},y",    // b9
-                "tsx",              // ba
-                null,               // bb
-                "ldy ${0:x4},x",    // bc
-                "lda ${0:x4},x",    // bd
-                "ldx ${0:x4},y",    // be
-                null,               // bf
-                "cpy #${0:x2}",     // c0
-                "cmp (${0:x2},x)",  // c1
-                null,               // c2
-                null,               // c3
-                "cpy ${0:x2}",      // c4
-                "cmp ${0:x2}",      // c5
-                "dec ${0:x2}",      // c6
-                null,               // c7
-                "iny",              // c8
-                "cmp #${0:x2}",     // c9
-                "dex",              // ca
-                null,               // cb
-                "cpy ${0:x4}",      // cc
-                "cmp ${0:x4}",      // cd
-                "dec ${0:x4}",      // ce
-                null,               // cf
-                "bne ${0:x4}",      // d0
-                "cmp (${0:x2}),y",  // d1
-                null,               // d2
-                null,               // d3
-                null,               // d4
-                "cmp ${0:x2},x",    // d5
-                "dec ${0:x2},x",    // d6
-                null,               // d7
-                "cld",              // d8
-                "cmp ${0:x4},y",    // d9
-                null,               // da
-                null,               // db
-                null,               // dc
-                "cmp ${0:x4},x",    // dd
-                "dec ${0:x4},x",    // de
-                null,               // df
-                "cpx #${0:x2}",     // e0
-                "sbc (${0:x2},x)",  // e1
-                null,               // e2
-                null,               // e3
-                "cpx ${0:x2}",      // e4
-                "sbc ${0:x2}",      // e5
-                "inc ${0:x2}",      // e6
-                null,               // e7
-                "inx",              // e8
-                "sbc #${0:x2}",     // e9
-                "nop",              // ea
-                null,               // eb
-                "cpx ${0:x4}",      // ec
-                "sbc ${0:x4}",      // ed
-                "inc ${0:x4}",      // ee
-                null,               // ef
-                "beq ${0:x4}",      // f0
-                "sbc (${0:x2}),y",  // f1
-                null,               // f2
-                null,               // f3
-                null,               // f4
-                "sbc ${0:x2},x",    // f5
-                "inc ${0:x2},x",    // f6
-                null,               // f7
-                "sed",              // f8
-                "sbc ${0:x4},y",    // f9
-                null,               // fa
-                null,               // fb
-                null,               // fc
-                "sbc ${0:x4},x",    // fd
-                "inc ${0:x4},x",    // fe
-                null                // ff
-            };
-
-        private Regex _regInd;
-        private Regex _regXY;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -344,19 +75,122 @@ namespace Asm6502.Net
                     "ldy", "lsr", "rol", "ror", "stx", "sty"
                 });
 
+            Reserved.DefineType("ReturnAddress", new string[]
+                {
+                    ".rta"
+                });
+
             RegexOptions ignore = Controller.Options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
 
-            _regInd  = new Regex(@"^(\(.*\))$",     RegexOptions.Compiled | ignore);
-            _regXY   = new Regex(@"(.+)(,[xy])$", RegexOptions.Compiled | ignore);
+            _regInd = new Regex(@"^(\(.*\))$", RegexOptions.Compiled | ignore);
+            _regXY = new Regex(@"(.+)(,[xy])$", RegexOptions.Compiled | ignore);
 
             _builders = new FormatBuilder[]
             {
-                new FormatBuilder(@"^#(.+)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive),
-                new FormatBuilder(@"^\(\s*(.+),\s*x\s*\)$()", "({2},x)", "${0:x2}", string.Empty, 2,2,1,2, Controller.Options.CaseSensitive ),
-                new FormatBuilder(@"^(.+)\s*,\s*y$()", "{2},y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive, true ),
-                new FormatBuilder(@"^(.+)\s*,\s*x$()", "{2},x", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive),
-                new FormatBuilder(@"^(.+)$()", "{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.CaseSensitive, true )
+                new FormatBuilder(@"^#([^\s].*)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
+                new FormatBuilder(@"^\(\s*([^\s]+)\s*,\s*x\s*\)$()", "({2},x)", "${0:x2}", string.Empty, 2,2,1,2, Controller.Options.RegexOption ),
+                new FormatBuilder(@"^([^\s]+)\s*,\s*y$()", "{2},y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption, true ),
+                new FormatBuilder(@"^([^\s]+)\s*,\s*x$()", "{2},x", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
+                new FormatBuilder(@"^(.+)$()", "{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption, true )
             };
+
+            // set architecture specific encodings
+            Controller.Encoding.SelectEncoding("petscii");
+            Controller.Encoding.Map("az", 'A');
+            Controller.Encoding.Map("AZ", 'a');
+            Controller.Encoding.Map('£', '\\');
+            Controller.Encoding.Map('↑', '^');
+            Controller.Encoding.Map('←', '_');
+            Controller.Encoding.Map('▌', '¡');
+            Controller.Encoding.Map('▄', '¢');
+            Controller.Encoding.Map('▔', '£');
+            Controller.Encoding.Map('▁', '☼');
+            Controller.Encoding.Map('▏', '¥');
+            Controller.Encoding.Map('▒', '▌');
+            Controller.Encoding.Map('▕', '§');
+            Controller.Encoding.Map('◤', '\xa9');
+            Controller.Encoding.Map('├', '«');
+            Controller.Encoding.Map('└', '\xad');
+            Controller.Encoding.Map('┐', '\xae');
+            Controller.Encoding.Map('▂', '\xaf');
+            Controller.Encoding.Map('┌', '°');
+            Controller.Encoding.Map('┴', '±');
+            Controller.Encoding.Map('┬', '²');
+            Controller.Encoding.Map('┤', '\xb3');
+            Controller.Encoding.Map('▎', '\xb4');
+            Controller.Encoding.Map('▍', 'µ');
+            Controller.Encoding.Map('▃', '\xb9');
+            Controller.Encoding.Map('✓', 'º');
+            Controller.Encoding.Map('┘', '½');
+            Controller.Encoding.Map('━', '\xc0');
+            Controller.Encoding.Map('♠', '\xc1');
+            Controller.Encoding.Map('│', '\xc2');
+            Controller.Encoding.Map('╮', 'É');
+            Controller.Encoding.Map('╰', '\xca');
+            Controller.Encoding.Map('╯', '\xcb');
+            Controller.Encoding.Map('╲', '\xcd');
+            Controller.Encoding.Map('╱', '\xce');
+            Controller.Encoding.Map('●', 'Ñ');
+            Controller.Encoding.Map('♥', '\xd3');
+            Controller.Encoding.Map('╭', '\xd5');
+            Controller.Encoding.Map('╳', 'Ö');
+            Controller.Encoding.Map('○', '\xd7');
+            Controller.Encoding.Map('♣', '\xd8');
+            Controller.Encoding.Map('♦', '\xda');
+            Controller.Encoding.Map('┼', '\xdb');
+            Controller.Encoding.Map('π', '\xde');
+            Controller.Encoding.Map('◥', 'ß');
+
+            Controller.Encoding.SelectEncoding("cbmscreen");
+            Controller.Encoding.Map("@Z", '\0');
+            Controller.Encoding.Map("az", 'A');
+            Controller.Encoding.Map('£', '\\');
+            Controller.Encoding.Map('π', '^'); // π is $5e in unshifted
+            Controller.Encoding.Map('↑', '^'); // ↑ is $5e in shifted
+            Controller.Encoding.Map('←', '_');
+            Controller.Encoding.Map('▌', '`');
+            Controller.Encoding.Map('▄', 'a');
+            Controller.Encoding.Map('▔', 'b');
+            Controller.Encoding.Map('▁', 'c');
+            Controller.Encoding.Map('▏', 'd');
+            Controller.Encoding.Map('▒', 'e');
+            Controller.Encoding.Map('▕', 'f');
+            Controller.Encoding.Map('◤', 'i');
+            Controller.Encoding.Map('├', 'k');
+            Controller.Encoding.Map('└', 'm');
+            Controller.Encoding.Map('┐', 'n');
+            Controller.Encoding.Map('▂', 'o');
+            Controller.Encoding.Map('┌', 'p');
+            Controller.Encoding.Map('┴', 'q');
+            Controller.Encoding.Map('┬', 'r');
+            Controller.Encoding.Map('┤', 's');
+            Controller.Encoding.Map('▎', 't');
+            Controller.Encoding.Map('▍', 'u');
+            Controller.Encoding.Map('▃', 'y');
+            Controller.Encoding.Map('✓', 'z');
+            Controller.Encoding.Map('┘', '}');
+            Controller.Encoding.Map('━', '@');
+            Controller.Encoding.Map('♠', 'A');
+            Controller.Encoding.Map('│', 'B');
+            Controller.Encoding.Map('╮', 'I');
+            Controller.Encoding.Map('╰', 'J');
+            Controller.Encoding.Map('╯', 'K');
+            Controller.Encoding.Map('╲', 'M');
+            Controller.Encoding.Map('╱', 'N');
+            Controller.Encoding.Map('●', 'Q');
+            Controller.Encoding.Map('♥', 'S');
+            Controller.Encoding.Map('╭', 'U');
+            Controller.Encoding.Map('╳', 'V');
+            Controller.Encoding.Map('○', 'W');
+            Controller.Encoding.Map('♣', 'X');
+            Controller.Encoding.Map('♦', 'Z');
+            Controller.Encoding.Map('┼', '[');
+            Controller.Encoding.Map('◥', '_');
+            
+            Controller.Encoding.SelectEncoding("atascreen");
+            Controller.Encoding.Map(" _", '\0');
+
+            Controller.Encoding.SelectDefaultEncoding();
         }
 
         #endregion
@@ -382,10 +216,15 @@ namespace Asm6502.Net
             {
                 Controller.Log.LogEntry(line,
                                         ErrorStrings.PCOverflow,
-                                        Controller.Output.GetPC().ToString());
+                                        Controller.Output.LogicalPC.ToString());
                 return;
             }
-            string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
+            if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
+            {
+                AssembleRta(line);
+                return;
+            }
+            string instruction = line.Instruction.ToLower();
             string operand = line.Operand;
             if (Reserved.IsOneOf("ImpliedAccumulator", line.Instruction))
                 operand = Regex.Replace(operand, @"^a$", string.Empty);
@@ -398,7 +237,7 @@ namespace Asm6502.Net
             {
                 fmt = new OperandFormat();
                 fmt.FormatString = instruction;
-                opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats);
+                opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats, Controller.Options.StringComparison);
             }
             else
             {
@@ -408,14 +247,14 @@ namespace Asm6502.Net
                     if (fmt == null)
                         continue;
                     string instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
-                    opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                    opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats, Controller.Options.StringComparison);
                     if (opc != -1 && fmt.FormatString.Contains("${0:x2}"))
                     {
                         eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
                         if (eval.Size() == 2)
                         {
                             instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                            opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                            opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats, Controller.Options.StringComparison);
                         }
                     }
                     if (opc == -1)
@@ -433,7 +272,7 @@ namespace Asm6502.Net
                             instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
                         }
 
-                        opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats);
+                        opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats, Controller.Options.StringComparison);
                     }
                     fmt.FormatString = instrFmt;
                     break;
@@ -463,7 +302,7 @@ namespace Asm6502.Net
                     {
                         try
                         {
-                            eval = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)evalAbs, Controller.Output.GetPC() + 2));
+                            eval = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)evalAbs, Controller.Output.LogicalPC + 2));
                         }
                         catch
                         {
@@ -483,7 +322,25 @@ namespace Asm6502.Net
 
             }
             line.Disassembly = string.Format(_opcodeFormats[opc], evalAbs);
-            Controller.Output.Add(opc | (int)eval << 8, size);
+            line.Assembly = Controller.Output.Add(opc | (int)eval << 8, size);
+        }
+
+        private void AssembleRta(SourceLine line)
+        {
+            var csv = line.CommaSeparateOperand();
+
+            foreach (string rta in csv)
+            {
+                if (rta.Equals("?"))
+                {
+                    Controller.Output.AddUninitialized(2);
+                }
+                else
+                {
+                    long val = Controller.Evaluator.Eval(rta, ushort.MinValue, ushort.MaxValue + 1);
+                    line.Assembly.AddRange(Controller.Output.Add(val - 1, 2));
+                }
+            }
         }
 
         /// <summary>
@@ -503,6 +360,8 @@ namespace Asm6502.Net
         {
             string instruction = line.Instruction;
             string operand = line.Operand;
+            if (Reserved.IsOneOf("ReturnAddress", instruction))
+                return line.CommaSeparateOperand().Count * 2;
             if (Reserved.IsOneOf("Implied", instruction) || IsImpliedAccumulator(line))
                 return 1;
             if (Reserved.IsOneOf("Branches", instruction) || line.Operand.StartsWith("#"))

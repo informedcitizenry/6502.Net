@@ -43,9 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Asm6502.cs" />
+    <Compile Include="Asm6502Members.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Pseudo6502.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

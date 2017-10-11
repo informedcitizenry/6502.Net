@@ -1,4 +1,4 @@
-using DotNetAsm;
+﻿using DotNetAsm;
 using System;
 using System.IO;
 using System.Reflection;
@@ -67,9 +67,8 @@ namespace Asm6502.Net
             try
             {
                 IAssemblyController controller = new AssemblyController(args);
-                
+
                 controller.AddAssembler(new Asm6502(controller));
-                controller.AddAssembler(new Pseudo6502(controller));
                 controller.HeaderOutputAction = targetHeader;
                 SetBannerTexts(controller);
 
