@@ -1,4 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
+## Version 1.3
 
 ## Introduction
 
@@ -1156,6 +1157,19 @@ glyph             ;12345678
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.target</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Set the target architecture for the assembly output. See the <code>--arch</code> option in the command-line notes below for the available architectures.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>architecture</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      .target "apple2"
+      ;; the output binary will have an Apple DOS header
+      ...
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.unmap</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Unmaps a custom codepoint for a character or range of characters in the selected encoding and reverts to UTF-8 encoding for output. Note: <code>none</code> is default and will not be affected by <code>.map</code> and <code>.unmap</code> directives. It is recommended to represent individual char literals as strings.
@@ -1375,7 +1389,7 @@ glyph             ;12345678
         <li><code>flat</code>      - Flat binary with no header</li>
     </ul>
 </td></tr>
-<tr><td><b>Parameter</b></td><td><code>Architecture</code></td></tr>
+<tr><td><b>Parameter</b></td><td><code>architecture</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>/6502.Net myasm.asm -b --arch=flat flat.bin</pre>
 </td></tr>
