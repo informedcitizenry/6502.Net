@@ -11,23 +11,18 @@ namespace NUnit.Tests.TestDotNetAsm
     [TestFixture]
     public class SourceLineTest
     {
+        
         [Test]
         public void TestParse()
         {
             SourceLine line = new SourceLine("myfile", 1, ".text \"He said, \",'\"',\"Hello, World!\"");
-            line.Parse(s => s.Equals(".text"), s => false);
+            line.Parse(s => s.Equals(".text"));
             Assert.AreEqual(".text", line.Instruction);
             Assert.AreEqual("\"He said, \",'\"',\"Hello, World!\"", line.Operand);
 
-            line.SourceString = "\"hello\" = \"32\"";
-            line.Label = line.Instruction = line.Operand = string.Empty;
-            line.Parse(s => false, s => false);
-
-            Assert.AreEqual(string.Empty, line.Label);
-
             line.SourceString = "*=something";
             line.Label = line.Instruction = line.Operand = string.Empty;
-            line.Parse(s => s.Equals("="), s => s.Equals("*"));
+            line.Parse(s => false);
 
             Assert.AreEqual("*", line.Label);
             Assert.AreEqual("=", line.Instruction);
@@ -35,7 +30,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "*= something";
-            line.Parse(s => false, s => false);
+            line.Parse(s => false);
 
             Assert.AreEqual("*", line.Label);
             Assert.AreEqual("=", line.Instruction);
@@ -43,18 +38,68 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "mylabel =something";
-            line.Parse(s => false, s => s.Equals("mylabel"));
+            line.Parse(s => false);
 
             Assert.AreEqual("mylabel", line.Label);
             Assert.AreEqual("=", line.Instruction);
             Assert.AreEqual("something", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "   .block";
+            line.Parse(s => s.Equals(".block"));
+            Assert.IsTrue(string.IsNullOrEmpty(line.Label));
+            Assert.AreEqual(".block", line.Instruction);
+            Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "label .block";
+            line.Parse(s => s.Equals(".block"));
+
+            Assert.AreEqual("label", line.Label);
+            Assert.AreEqual(".block", line.Instruction);
+            Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "    .segment   code";
+            line.Parse(s => s.Equals(".segment"));
+
+            Assert.IsTrue(string.IsNullOrEmpty(line.Label));
+            Assert.AreEqual(".segment", line.Instruction);
+            Assert.AreEqual("code", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "            .BYTE TASKS.PRNTMAZE    ; DRAW MAZE";
+            line.Parse(s => s.Equals(".BYTE") ||
+                System.Text.RegularExpressions.Regex.IsMatch(s, @"^\.[a-zA-Z][a-zA-Z0-9]*$"));
+
+            Assert.IsTrue(string.IsNullOrEmpty(line.Label));
+            Assert.AreEqual(".BYTE", line.Instruction);
+            Assert.AreEqual("TASKS.PRNTMAZE", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "            .BYTE %10000000 | MESSAGES.READY";
+            line.Parse(s => s.Equals(".BYTE") ||
+                System.Text.RegularExpressions.Regex.IsMatch(s, @"^\.[a-zA-Z][a-zA-Z0-9]*$"));
+
+            Assert.IsTrue(string.IsNullOrEmpty(line.Label));
+            Assert.AreEqual(".BYTE", line.Instruction);
+            Assert.AreEqual("%10000000 | MESSAGES.READY", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "            and a               ; is a == 0?";
+            line.Parse(s => s.Equals("and") ||
+                System.Text.RegularExpressions.Regex.IsMatch(s, @"^\.[a-zA-Z][a-zA-Z0-9]*$"));
+
+            Assert.IsTrue(string.IsNullOrEmpty(line.Label));
+            Assert.AreEqual("and", line.Instruction);
+            Assert.AreEqual("a", line.Operand);
         }
 
         [Test]
         public void TestParseComment()
         {
             SourceLine line = new SourceLine("myfile", 1, "mylabel .byte 1,2,3;,4,5");
-            line.Parse(s => s.Equals(".byte"), s => s.Equals("mylabel"));
+            line.Parse(s => s.Equals(".byte"));
             Assert.AreEqual(line.Label, "mylabel");
             Assert.AreEqual(line.Instruction, ".byte");
             Assert.AreEqual(line.Operand, "1,2,3");
@@ -63,7 +108,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.SourceString = "mylabel .byte 1,2,';',3";
             line.Label = line.Instruction = line.Operand = string.Empty;
 
-            line.Parse(instr => instr.Equals(".byte"), lbl => lbl.Equals("mylabel"));
+            line.Parse(instr => instr.Equals(".byte"));
             Assert.AreEqual(line.Operand, "1,2,';',3");
         }
 
