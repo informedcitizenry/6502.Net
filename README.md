@@ -1027,9 +1027,8 @@ print       .macro  value = 13, printsub = $ffd2
       .map "A", "a"
       .map "π", $5e
       .byte 'A', 'π' ;; >> 61 5e
-      
       .map "09", $00
-      .string "2017" >> ;; 02 00 01 07
+      .string "2017" ;; >> 02 00 01 07
 </pre>
 </td></tr>
 </table>
@@ -1182,9 +1181,8 @@ glyph             ;12345678
       .unmap "A"
       .unmap "π"        ;; revert to UTF-8 encoding
       .byte 'A', 'π'    ;; >> 41 cf 80
-      
       .unmap "09"
-      .string "2017" >> ;; 32 30 31 37
+      .string "2017"    ;; >> 32 30 31 37
 </pre>
 </td></tr>
 </table>
