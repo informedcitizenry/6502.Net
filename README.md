@@ -453,11 +453,9 @@ In cases where you want to control the flow of assembly based on certain conditi
     .else
     jsr $ffd2
     .endif
-    
-    .if * > $7fff   ; is program counter $8000 or more
-    .end            ; terminate assembly
-    .endif          ; end
 ```
+*CAUTION:* Be careful not to use the `.end` directive inside an conditional block, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
+
 ## Repetitions
 
 On occasions where certain instructions will be repeatedly assembled, it is convenient to repeat their output in a loop. For instance, if you want to pad a series of `nop` instructions. The `.repeat` directive does just that. 
