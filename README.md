@@ -273,7 +273,7 @@ Text encodings are modified using the `.map` and `.unmap` directives. After sele
             ;; > 00 42 43
             
             ;; char literals are also affected
-            ld #'A'    ;; a9 00
+            lda #'A'    ;; a9 00
 ```
 
 Note `.map` changes *code point* of the mapped character, not the encoding itself (binary output), which is still UTF-8. For one-byte code points, this is an irrelevant distinction, since the encoding is the same. 
