@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
-## Version 1.3
+### Version 1.3
 
 ## Introduction
 
