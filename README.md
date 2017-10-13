@@ -225,7 +225,7 @@ highscore   .dword ?    ; uninitialized highscore variables
             lda #0      ; The output is now 6 bytes in size 
 ``` 
 ### Text processing and encoding
-In addition to integral values, z80DotNet can assemble text. Text strings are enclosed in double quotes, character literals in single quotes. Escapes are not recognized, so embedded quotation marks must be "broken out" as separate operands:
+In addition to integral values, 6502.Net can assemble text. Text strings are enclosed in double quotes, character literals in single quotes. Escapes are not recognized, so embedded quotation marks must be "broken out" as separate operands:
 ```
 "He said, ",'"',"How are you?",'"'
 ```
