@@ -276,7 +276,7 @@ Text encodings are modified using the `.map` and `.unmap` directives. After sele
             lda #'A'    ;; a9 00
 ```
 
-Note `.map` changes *code point* of the mapped character, not the encoding itself (binary output), which is still UTF-8. For one-byte code points, this is an irrelevant distinction, since the encoding and code points match. 
+Note `.map` changes the *code point* of the mapped character, not the encoding itself (binary output), which is still UTF-8. For one-byte code points, this is an irrelevant distinction, since the encoding and code points match. 
 
 Entire character sets can also be mapped, with the re-mapped code point treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions. 
 
@@ -647,7 +647,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.lsstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the last byte. See example of how this format can be used. If the highest bit in each value is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the last byte. See example of how this format can be used. If the highest bit of any output byte is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -669,7 +669,7 @@ message .lsstring "HELLO"   ; >c100 90 8a 98 98 9f
 <table>
 <tr><td><b>Name</b></td><td><code>.nstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the last byte. See example of how this format can be used. If the highest bit on the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the last byte. See example of how this format can be used. If the highest bit of the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
