@@ -249,7 +249,7 @@ start       = $c000
 startstr    .string str(start) ; assembles as $34,$39,$31,$35,$32
                                ; literally the digits "4","9","1","5","2"
 ```      
-Assembly source text is assumed to be UTF-8, and by default the output is also encoded as UTF-8. The output encoding can be changed. Use the `.encoding` directive to select an encoding, either one pre-defined or custom. The encoding name follows the same rules as labels. There are four pre-defined encodings:
+Assembly source text is processed as UTF-8, and by default the output is encoded as such. The output encoding can be changed. Use the `.encoding` directive to select an encoding, either one pre-defined or custom. The encoding name follows the same rules as labels. There are four pre-defined encodings:
 
 | Encoding      | Output bytes       |       
 | ------------- |--------------------|
@@ -276,7 +276,7 @@ Text encodings are modified using the `.map` and `.unmap` directives. After sele
             lda #'A'    ;; a9 00
 ```
 
-Note `.map` changes *code point* of the mapped character, not the encoding itself (binary output), which is still UTF-8. For one-byte code points, this is an irrelevant distinction, since the encoding is the same. 
+Note `.map` changes *code point* of the mapped character, not the encoding itself (binary output), which is still UTF-8. For one-byte code points, this is an irrelevant distinction, since the encoding and code points match. 
 
 Entire character sets can also be mapped, with the re-mapped code point treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions. 
 
