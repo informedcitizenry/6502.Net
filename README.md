@@ -590,7 +590,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <table>
 <tr><td><b>Name</b></td><td><code>.dint</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a signed 32-bit value or values between −2147483648 and 2147483647 into the assembly, little-endian Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a signed 32-bit value or values between −2147483648 and 2147483647 into the assembly, little-endian. Multiple arguments can be passed as needed. If <code>?</code> is passed then the data is uninitialized.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -761,9 +761,7 @@ mysub   lda #13             ; output newline
         * = $0800
         nop
         .assert 5 == 6              ; standard assertion error thrown
-        .assert * < $0801, "Uh oh!" ; if program counter
-                                    ; is not less than 2049,
-                                    ; raise a custom error
+        .assert * < $0801, "Uh oh!" ; custom error output
 </pre>
 </td></tr>
 </table>
