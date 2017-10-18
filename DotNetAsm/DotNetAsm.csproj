@@ -44,7 +44,7 @@
     <Compile Include="AssemblyController.cs" />
     <Compile Include="BinaryFile.cs" />
     <Compile Include="Compilation.cs" />
-    <Compile Include="ConditionAssembler.cs" />
+    <Compile Include="ConditionHandler.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="AsmEncoding.cs" />
     <Compile Include="ErrorLog.cs" />
@@ -55,10 +55,12 @@
     </Compile>
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="IAssemblyController.cs" />
+    <Compile Include="IBlockHandler.cs" />
     <Compile Include="IEvaluator.cs" />
     <Compile Include="ILineAssembler.cs" />
     <Compile Include="ILineDisassembler.cs" />
     <Compile Include="Macro.cs" />
+    <Compile Include="MacroHandler.cs" />
     <Compile Include="Misc.cs" />
     <Compile Include="MiscAssembler.cs" />
     <Compile Include="Opcode.cs" />
@@ -68,6 +70,11 @@
     <Compile Include="RepetitionHandler.cs" />
     <Compile Include="ReservedWords.cs" />
     <Compile Include="Evaluator.cs" />
+    <Compile Include="Patterns.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Patterns.resx</DependentUpon>
+    </Compile>
     <Compile Include="SourceLine.cs" />
     <Compile Include="StringAssemblerBase.cs" />
     <Compile Include="System.CommandLine\System\CommandLine\Argument.cs" />
@@ -89,6 +96,10 @@
     <EmbeddedResource Include="ErrorStrings.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorStrings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Patterns.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Patterns.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="System.CommandLine\System\Strings.resx" />
   </ItemGroup>

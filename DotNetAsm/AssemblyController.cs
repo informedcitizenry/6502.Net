@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -48,9 +48,7 @@ namespace DotNetAsm
         #region Members
 
         private Stack<ILineAssembler> _assemblers;
-        private ConditionAssembler _conditionAssembler;
-
-
+        private List<IBlockHandler> _blockHandlers;
         private List<SourceLine> _processedLines;
         private SourceLine _currentLine;
 
@@ -82,9 +80,9 @@ namespace DotNetAsm
 
             Reserved.DefineType("Functions", new string[]
                 {
-                     "abs", "acos", "asin", "atan", "cbrt", "ceil", "cos", "cosh", "deg", 
+                     "abs", "acos", "asin", "atan", "cbrt", "ceil", "cos", "cosh", "count", "deg", 
                      "exp", "floor", "frac", "hypot", "ln", "log10", "pow", "rad", "random", 
-                     "round", "sgn", "sin", "sinh", "sqrt", "tan", "tanh", "trunc"
+                     "round", "sgn", "sin", "sinh", "sizeof", "sqrt", "tan", "tanh", "trunc"
                 });
 
             Reserved.DefineType("Blocks", new string[]
@@ -101,43 +99,55 @@ namespace DotNetAsm
             _anonMinus = new HashSet<int>();
             _processedLines = new List<SourceLine>();
 
-            Disassembler = new Disassembler(this);
-
             Options.ProcessArgs(args);
 
-            Labels = new Dictionary<string, string>(Options.StringComparar);
             Reserved.Comparer = Options.StringComparison;
             Output = new Compilation(!Options.BigEndian);
 
             _specialLabels = new Regex(@"^\*|\+|-$", RegexOptions.Compiled);
-
-            _assemblers = new Stack<ILineAssembler>();
+            Labels = new Dictionary<string, string>(Options.StringComparar);
 
             Encoding = new AsmEncoding(Options.CaseSensitive);
 
             Evaluator = new Evaluator(@"\$([a-fA-F0-9]+)");
-
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", GetCharValue);
             if (!Options.CaseSensitive)
-                Evaluator.DefineSymbolLookup(@"[a-zA-Z][a-zA-Z0-9]*\(", (fnc) => fnc.ToLower());
-            Evaluator.DefineSymbolLookup(@"(?>_?[a-zA-Z][a-zA-Z0-9_.]*)(?!\()", GetLabelValue);
+                Evaluator.DefineSymbolLookup(Patterns.SymbolBasic + @"\(", (fnc) => fnc.ToLower());
+            Evaluator.DefineSymbolLookup(@"(?>" + Patterns.SymbolUnicodeDot + @")(?!\()", GetLabelValue);
             Evaluator.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
-            Evaluator.DefineSymbolLookup(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str) => Output.LogicalPC.ToString());
-           
-            _conditionAssembler = new ConditionAssembler(this);
+            Evaluator.DefineSymbolLookup(@"(?<![\p{Ll}\p{Lu}\p{Lt}0-9_.)])\*(?![\p{Ll}\p{Lu}\p{Lt}0-9_.(])", (str) => Output.LogicalPC.ToString());
 
-            _assemblers.Push(new PseudoAssembler(this));
+            _assemblers = new Stack<ILineAssembler>();
+            _assemblers.Push(new PseudoAssembler(this, arg =>
+                {
+                    return IsReserved(arg) || Labels.Keys.Any(delegate(string key)
+                    {
+                        return Regex.IsMatch(key, @"(?<=\w\.|^)" + arg + "$");
+                    });
+                }));
             _assemblers.Push(new MiscAssembler(this));
-        }
 
-        private string GetCharValue(string chr)
-        {
-            return Encoding.GetTranslation(chr.Trim('\'').First()).ToString();
+            _blockHandlers = new List<IBlockHandler>();
+            _blockHandlers.Add(new ConditionHandler(this));
+            _blockHandlers.Add(new MacroHandler(this, IsInstruction));
+            _blockHandlers.Add(new RepetitionHandler(this));
+
+            Disassembler = new Disassembler(this);
         }
 
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Get the encoded value of the character and return it as a string.
+        /// </summary>
+        /// <param name="chr">The character to encode.</param>
+        /// <returns>The encoded value as a string.</returns>
+        private string GetCharValue(string chr)
+        {
+            return Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString();
+        }
 
         /// <summary>
         /// Used by the expression evaluator to convert an anonymous symbol
@@ -165,23 +175,12 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="token">The token to check</param>
         /// <returns>True, if the token is an instruction or directive</returns>
-        private bool IsInstruction(string token)
+        public bool IsInstruction(string token)
         {
             bool reserved = Reserved.IsOneOf("Directives", token) ||
                             Reserved.IsOneOf("Blocks", token) ||
-                            _conditionAssembler.AssemblesInstruction(token);
-
-            if (!reserved)
-            {
-                foreach (var asm in _assemblers)
-                {
-                    if (asm.AssemblesInstruction(token))
-                    {
-                        reserved = true;
-                        break;
-                    }
-                }
-            }
+                            _blockHandlers.Any(handler => handler.Processes(token)) ||
+                            _assemblers.Any(assembler => assembler.AssemblesInstruction(token));
             return reserved;
         }
 
@@ -227,7 +226,7 @@ namespace DotNetAsm
             }
 
             // otherwise...
-            return Regex.IsMatch(token, @"^_?[a-zA-Z][a-zA-Z0-9_.]*$");
+            return Regex.IsMatch(token, Patterns.SymbolUnicodeFull);
         }
 
         /// <summary>
@@ -242,7 +241,6 @@ namespace DotNetAsm
             source.AddRange(ProcessDefinedLabels());
 
             Preprocessor processor = new Preprocessor(this,
-                                                      IsInstruction,
                                                       s => IsSymbolName(s.TrimEnd(':'), true, false));
             processor.FileRegistry = _fileRegistry;
             foreach (var file in Options.InputFiles)
@@ -259,12 +257,10 @@ namespace DotNetAsm
 
             if (Log.HasErrors == false)
             {
-                var processed = processor.ExpandMacros(source);
-
-                processed.ForEach(line => 
+                source.ForEach(line =>
                     line.Operand = Regex.Replace(line.Operand, @"\s?\*\s?", "*"));
 
-                return processed;
+                return source;
             }
             return null;
         }
@@ -332,14 +328,14 @@ namespace DotNetAsm
             _passes = 0;
 
             Stack<string> scope = new Stack<string>();
-
+            
             int anon = 0;
             int id = 0;
-
-            RepetitionHandler handler = new RepetitionHandler(this);
-
-            foreach (SourceLine line in source)
+            bool inHandler = false;
+            List<SourceLine> sourceList = source.ToList();
+            for(int i = 0; i < sourceList.Count; i++)
             {
+                SourceLine line = sourceList[i];
                 try
                 {
                     if (line.DoNotAssemble)
@@ -350,29 +346,26 @@ namespace DotNetAsm
                     }
                     _currentLine = line;
 
-                    _conditionAssembler.AssembleLine(line);
-
-                    if (line.DoNotAssemble)
-                        continue;
-
                     if (line.Instruction.Equals(".end", Options.StringComparison))
                         break;
 
-                    if (handler.Processes(line.Instruction) || handler.IsProcessing)
+                    inHandler = false;
+                    foreach(IBlockHandler handler in _blockHandlers)
                     {
-                        handler.Process(line);
-                        if (handler.IsProcessing == false)
+                        if (handler.Processes(line.Instruction) || handler.IsProcessing())
                         {
-                            var processedLines = handler.ProcessedLines;
-                            foreach (SourceLine l in processedLines)
+                            sourceList.RemoveAt(i--);
+                            handler.Process(line);
+                            if (handler.IsProcessing() == false)
                             {
-                                l.Id = id++;
-                                FirstPassLine(l, scope, ref anon);
+                                sourceList.InsertRange(i + 1, handler.GetProcessedLines());
+                                handler.Reset();
                             }
-                            handler.Reset();
+                            inHandler = true;
+                            break;
                         }
                     }
-                    else
+                    if (!inHandler)
                     {
                         line.Id = id++;
                         FirstPassLine(line, scope, ref anon);
@@ -387,7 +380,8 @@ namespace DotNetAsm
                     Log.LogEntry(line, ErrorStrings.None);
                 }
             }
-            if (scope.Count > 0 || handler.IsProcessing || _conditionAssembler.InConditionBlock)
+  
+            if (scope.Count > 0 || _blockHandlers.Any(h => h.IsProcessing()))
             {
                 Log.LogEntry(_processedLines.Last(), ErrorStrings.MissingClosure);
             }
@@ -581,7 +575,7 @@ namespace DotNetAsm
                 }
             }
         }
- 
+
         /// <summary>
         /// Gets all subscopes from the current parent scope.
         /// </summary>
@@ -723,7 +717,7 @@ namespace DotNetAsm
             {
                 if (scope.Count < 1)
                 {
-                    Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock);
+                    Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Operand);
                     return;
                 }
                 scope.Pop();
@@ -765,7 +759,7 @@ namespace DotNetAsm
                         val = Evaluator.Eval(line.Operand);
                         if (val < UInt16.MinValue || val > UInt16.MaxValue)
                         {
-                            Log.LogEntry(line, ErrorStrings.IllegalQuantity, val.ToString());
+                            Log.LogEntry(line, ErrorStrings.IllegalQuantity, val);
                             return;
                         }
                         Output.SetLogicalPC(Convert.ToUInt16(val));

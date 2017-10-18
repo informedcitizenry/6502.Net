@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,6 +36,8 @@ namespace DotNetAsm
         #region Members
 
         private HashSet<BinaryFile> _includedBinaries;
+        private Dictionary<string, string> _typeDefs;
+        private Func<string, bool> _reservedSymbol;
 
         #endregion
 
@@ -45,17 +47,21 @@ namespace DotNetAsm
         /// Constructs an instance of a 6502.Net Pseudo-operation line assembler.
         /// </summary>
         /// <param name="controller">The assembly controller</param>
-        public PseudoAssembler(IAssemblyController controller) :
+        /// <param name="reservedSymbolFunc">A function callback to determine if the given token 
+        /// is a symbol name.</param>
+        public PseudoAssembler(IAssemblyController controller, Func<string, bool> reservedSymbolFunc) :
             base(controller)
         {
             _includedBinaries = new HashSet<BinaryFile>();
 
             Reserved.DefineType("PseudoOps", new string[]
                 {
-                    ".addr", ".align", ".binary", ".byte", ".char",   
+                    ".addr", ".align", ".binary", ".byte", ".sbyte",   
                     ".dint", ".dword", ".fill", ".lint", ".long", 
-                    ".sint", ".word"
+                    ".sint", ".typedef", ".word"
                 });
+            _typeDefs = new Dictionary<string, string>();
+            _reservedSymbol = reservedSymbolFunc;
         }
 
         #endregion
@@ -154,7 +160,7 @@ namespace DotNetAsm
             GetBinaryOffsetSize(args, size, ref offs, ref size);
             if (size > ushort.MaxValue)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size.ToString());
+                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size);
                 return;
             }
             line.Assembly = Controller.Output.AddBytes(binary.Data.Skip(offs), size);
@@ -178,7 +184,7 @@ namespace DotNetAsm
             }
             else if (args.Count > 3)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Operand);
+                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
             }
             string filename = args.First().Trim('"');
             BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
@@ -201,10 +207,17 @@ namespace DotNetAsm
             {
                 Controller.Log.LogEntry(line,
                                         ErrorStrings.PCOverflow,
-                                        Controller.Output.LogicalPC.ToString());
+                                        Controller.Output.LogicalPC);
                 return;
             }
-            switch (line.Instruction.ToLower())
+            string instruction;
+
+            if (_typeDefs.ContainsKey(line.Instruction))
+                instruction = _typeDefs[line.Instruction].ToLower();
+            else
+                instruction = line.Instruction.ToLower();
+
+            switch (instruction)
             {
                 case ".addr":
                 case ".word":
@@ -220,7 +233,7 @@ namespace DotNetAsm
                 case ".byte":
                     AssembleValues(line, byte.MinValue, byte.MaxValue, 1);
                     break;
-                case ".char":
+                case ".sbyte":
                     AssembleValues(line, sbyte.MinValue, sbyte.MaxValue, 1);
                     break;
                 case ".dint":
@@ -238,10 +251,57 @@ namespace DotNetAsm
                 case ".sint":
                     AssembleValues(line, short.MinValue, short.MaxValue, 2);
                     break;
+                case ".typedef":
+                    DefineType(line);
+                    break;
                 default:
                     AssembleStrings(line);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Define an existing type to a user-defined type.
+        /// </summary>
+        /// <param name="line">The line to assemble.</param>
+        private void DefineType(SourceLine line)
+        {
+            if (string.IsNullOrEmpty(line.Label) == false)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.None);
+                return;
+            }
+            var csvs = line.CommaSeparateOperand();
+            if (csvs.Count != 2)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.None);
+                return;
+            }
+            string currtype = csvs.First();
+            if (!Controller.IsInstruction(currtype))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.DefininingUnknownType, currtype);
+                return;
+            }
+
+            string newtype = csvs.Last();
+            if (!Regex.IsMatch(newtype, @"^\.?" + Patterns.SymbolUnicode + "$"))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.None);
+                return;
+            }
+            else if (Controller.IsInstruction(newtype))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TypeDefinitionError, newtype);
+                return;
+            }
+            else if (_reservedSymbol(newtype))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TypeNameReserved, newtype);
+                return;
+            }
+            _typeDefs.Add(newtype, currtype);
+            line.DoNotAssemble = true;
         }
 
         public virtual int GetInstructionSize(SourceLine line)
@@ -274,7 +334,7 @@ namespace DotNetAsm
                         return bsize;
                     }
                 case ".byte":
-                case ".char":
+                case ".sbyte":
                     return csv.Count;
                 case ".dword":
                 case ".dint":
@@ -301,7 +361,9 @@ namespace DotNetAsm
 
         public virtual bool AssemblesInstruction(string instruction)
         {
-            return Reserved.IsOneOf("PseudoOps", instruction) || base.IsReserved(instruction);
+            return Reserved.IsOneOf("PseudoOps", instruction) ||
+                base.IsReserved(instruction) ||
+                _typeDefs.ContainsKey(instruction);
         }
         #endregion
     }

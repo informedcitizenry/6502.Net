@@ -135,6 +135,9 @@
   <data name="CouldNotProcessBinary" xml:space="preserve">
     <value>Could not process binary file '{0}'</value>
   </data>
+  <data name="DefininingUnknownType" xml:space="preserve">
+    <value>Type definition for unknown type '{0}'</value>
+  </data>
   <data name="DirectiveTakesNoArguments" xml:space="preserve">
     <value>Directive '{0}' takes no arguments</value>
   </data>
@@ -200,6 +203,12 @@
   </data>
   <data name="TooManyArguments" xml:space="preserve">
     <value>Too many arguments for directive '{0}'</value>
+  </data>
+  <data name="TypeDefinitionError" xml:space="preserve">
+    <value>Cannot redefine type to '{0}' because it is already a type</value>
+  </data>
+  <data name="TypeNameReserved" xml:space="preserve">
+    <value>Type name '{0}' is a reserved symbol name</value>
   </data>
   <data name="UnknownInstruction" xml:space="preserve">
     <value>Unknown instruction or incorrect parameters for instruction '{0}'</value>

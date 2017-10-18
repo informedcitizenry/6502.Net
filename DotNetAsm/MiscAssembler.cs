@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -42,9 +42,9 @@ namespace DotNetAsm
         {
             Reserved.DefineType("Directives", new string[]
                 {
-                    "assert", ".eor", ".target",
-                    ".error", ".cerror", 
-                    ".cwarn", ".warn"
+                    "assert", ".eor", ".echo", ".target",
+                    ".error", ".errorif", 
+                    ".warnif", ".warn"
                 });
         }
 
@@ -75,7 +75,7 @@ namespace DotNetAsm
             {
                 string message = csv.Last().Trim('"');
                 
-                if (line.Instruction.Equals(".cerror", Controller.Options.StringComparison))
+                if (line.Instruction.Equals(".errorif", Controller.Options.StringComparison))
                     Controller.Log.LogEntry(line, message);
                 else
                     Controller.Log.LogEntry(line.Filename, line.LineNumber, message, Controller.Options.WarningsAsErrors);
@@ -90,7 +90,7 @@ namespace DotNetAsm
         {
             if (string.IsNullOrEmpty(line.Operand))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.BadExpression);
+                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return;
             }
             Int64 eor = Controller.Evaluator.Eval(line.Operand);
@@ -98,7 +98,7 @@ namespace DotNetAsm
             if (eor < 0) eor += 256;
             if (eor > 255 || eor < 0)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity);
+                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, eor);
                 return;
             }
 
@@ -118,9 +118,15 @@ namespace DotNetAsm
                 case ".assert":
                     DoAssert(line);
                     break;
-                case ".cwarn":
-                case ".cerror":
+                case ".warnif":
+                case ".errorif":
                     ThrowConditional(line);
+                    break;
+                case ".echo":
+                    if (!line.Operand.EnclosedInQuotes())
+                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                    else
+                        Console.WriteLine(line.Operand.Trim('"'));
                     break;
                 case ".eor":
                     SetEor(line);

@@ -54,7 +54,7 @@ namespace NUnit.Tests.TestDotNetAsm
             SourceLine line = new SourceLine();
             line.LineNumber = 1;
             line.Filename = "test";
-            line.Instruction = ".cerror";
+            line.Instruction = ".errorif";
             line.Operand = "5 != 6, \"5 doesn't equal 6!\"";
             LineAssembler.AssembleLine(line);
 

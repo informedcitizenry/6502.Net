@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -97,49 +97,49 @@ namespace Asm6502.Net
             // set architecture specific encodings
             Controller.Encoding.SelectEncoding("petscii");
             Controller.Encoding.Map("az", 'A');
-            Controller.Encoding.Map("AZ", 'a');
+            Controller.Encoding.Map("AZ", 0xc1);
             Controller.Encoding.Map('£', '\\');
             Controller.Encoding.Map('↑', '^');
             Controller.Encoding.Map('←', '_');
-            Controller.Encoding.Map('▌', '¡');
-            Controller.Encoding.Map('▄', '¢');
-            Controller.Encoding.Map('▔', '£');
-            Controller.Encoding.Map('▁', '☼');
-            Controller.Encoding.Map('▏', '¥');
-            Controller.Encoding.Map('▒', '▌');
-            Controller.Encoding.Map('▕', '§');
-            Controller.Encoding.Map('◤', '\xa9');
-            Controller.Encoding.Map('├', '«');
-            Controller.Encoding.Map('└', '\xad');
-            Controller.Encoding.Map('┐', '\xae');
-            Controller.Encoding.Map('▂', '\xaf');
-            Controller.Encoding.Map('┌', '°');
-            Controller.Encoding.Map('┴', '±');
-            Controller.Encoding.Map('┬', '²');
-            Controller.Encoding.Map('┤', '\xb3');
-            Controller.Encoding.Map('▎', '\xb4');
-            Controller.Encoding.Map('▍', 'µ');
-            Controller.Encoding.Map('▃', '\xb9');
-            Controller.Encoding.Map('✓', 'º');
-            Controller.Encoding.Map('┘', '½');
-            Controller.Encoding.Map('━', '\xc0');
-            Controller.Encoding.Map('♠', '\xc1');
-            Controller.Encoding.Map('│', '\xc2');
-            Controller.Encoding.Map('╮', 'É');
-            Controller.Encoding.Map('╰', '\xca');
-            Controller.Encoding.Map('╯', '\xcb');
-            Controller.Encoding.Map('╲', '\xcd');
-            Controller.Encoding.Map('╱', '\xce');
-            Controller.Encoding.Map('●', 'Ñ');
-            Controller.Encoding.Map('♥', '\xd3');
-            Controller.Encoding.Map('╭', '\xd5');
-            Controller.Encoding.Map('╳', 'Ö');
-            Controller.Encoding.Map('○', '\xd7');
-            Controller.Encoding.Map('♣', '\xd8');
-            Controller.Encoding.Map('♦', '\xda');
-            Controller.Encoding.Map('┼', '\xdb');
-            Controller.Encoding.Map('π', '\xde');
-            Controller.Encoding.Map('◥', 'ß');
+            Controller.Encoding.Map('▌', 0xa1);
+            Controller.Encoding.Map('▄', 0xa2);
+            Controller.Encoding.Map('▔', 0xa3);
+            Controller.Encoding.Map('▁', 0xa4);
+            Controller.Encoding.Map('▏', 0xa5);
+            Controller.Encoding.Map('▒', 0xa6);
+            Controller.Encoding.Map('▕', 0xa7);
+            Controller.Encoding.Map('◤', 0xa9);
+            Controller.Encoding.Map('├', 0xab);
+            Controller.Encoding.Map('└', 0xad);
+            Controller.Encoding.Map('┐', 0xae);
+            Controller.Encoding.Map('▂', 0xaf);
+            Controller.Encoding.Map('┌', 0xb0);
+            Controller.Encoding.Map('┴', 0xb1);
+            Controller.Encoding.Map('┬', 0xb2);
+            Controller.Encoding.Map('┤', 0xb3);
+            Controller.Encoding.Map('▎', 0xb4);
+            Controller.Encoding.Map('▍', 0xb5);
+            Controller.Encoding.Map('▃', 0xb9);
+            Controller.Encoding.Map('✓', 0xba);
+            Controller.Encoding.Map('┘', 0xbd);
+            Controller.Encoding.Map('━', 0xc0);
+            Controller.Encoding.Map('♠', 0xc1);
+            Controller.Encoding.Map('│', 0xc2);
+            Controller.Encoding.Map('╮', 0xc9);
+            Controller.Encoding.Map('╰', 0xca);
+            Controller.Encoding.Map('╯', 0xcb);
+            Controller.Encoding.Map('╲', 0xcd);
+            Controller.Encoding.Map('╱', 0xce);
+            Controller.Encoding.Map('●', 0xd1);
+            Controller.Encoding.Map('♥', 0xd3);
+            Controller.Encoding.Map('╭', 0xd5);
+            Controller.Encoding.Map('╳', 0xd6);
+            Controller.Encoding.Map('○', 0xd7);
+            Controller.Encoding.Map('♣', 0xd8);
+            Controller.Encoding.Map('♦', 0xda);
+            Controller.Encoding.Map('┼', 0xdb);
+            Controller.Encoding.Map('π', 0xde);
+            Controller.Encoding.Map('◥', 0xdf);
 
             Controller.Encoding.SelectEncoding("cbmscreen");
             Controller.Encoding.Map("@Z", '\0');
@@ -216,7 +216,7 @@ namespace Asm6502.Net
             {
                 Controller.Log.LogEntry(line,
                                         ErrorStrings.PCOverflow,
-                                        Controller.Output.LogicalPC.ToString());
+                                        Controller.Output.LogicalPC);
                 return;
             }
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))

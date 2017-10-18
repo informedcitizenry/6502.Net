@@ -39,9 +39,12 @@
   <ItemGroup>
     <Compile Include="Test6502.Net\NUnitTestAsm6502.cs" />
     <Compile Include="TestDotNetAsm\NUnitAsmTestBase.cs" />
+    <Compile Include="TestDotNetAsm\NUnitHandlerTestBase.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestCharEncoding.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestCompilation.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestConditionHandler.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestDisassembler.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestMacros.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestMisc.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestOpcode.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestPseudoAssembler.cs" />

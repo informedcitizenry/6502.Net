@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,8 +22,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -64,6 +64,7 @@ namespace DotNetAsm
         private static Regex _regThreeAlt;
         private static Regex _regTwo;
         private static Regex _regOne;
+        private static Regex _regUnicode;
 
         #endregion
 
@@ -110,6 +111,8 @@ namespace DotNetAsm
             _regThreeAlt = new Regex(@"^([^\s]+)\s*(=)\s*(.+)$",        RegexOptions.Compiled);
             _regTwo      = new Regex(@"^([^\s]+)\s+(.+)$",              RegexOptions.Compiled);
             _regOne      = new Regex(@"^([^\s]+)$",                     RegexOptions.Compiled);
+            _regUnicode  = new Regex(@"(\\u[a-fA-F0-9]{4}|\\U[a-fA-F0-9]{8})", 
+                                                                        RegexOptions.Compiled);
         }
 
         #endregion
@@ -117,6 +120,20 @@ namespace DotNetAsm
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Convert escaped code point expressions to actual Unicode strings.
+        /// </summary>
+        /// <param name="labelOperand">The label or operand string to convert</param>
+        /// <returns>A string with unicode characters converted from code points</returns>
+        private string ConvertEscapedUnicode(string labelOperand)
+        {
+            return _regUnicode.Replace(labelOperand, match =>
+            {
+                int codepoint = int.Parse(match.Value.Substring(2), NumberStyles.HexNumber);
+                return char.ConvertFromUtf32(codepoint);
+            });
+        }
 
         /// <summary>
         /// Parse the SourceLine's SourceString property into its component line,
@@ -196,7 +213,10 @@ namespace DotNetAsm
                         }
                     }
                 }
-            } 
+            }
+            // both label and operand may contain escaped Unicode characters
+            Label = ConvertEscapedUnicode(Label);
+            Operand = ConvertEscapedUnicode(Operand);
         }
 
         /// <summary>

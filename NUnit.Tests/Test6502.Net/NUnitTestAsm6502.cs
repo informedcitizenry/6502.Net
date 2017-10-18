@@ -1179,7 +1179,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestEncodings()
         {
-            PseudoAssembler stringAsm = new PseudoAssembler(this.Controller);
+            PseudoAssembler stringAsm = new PseudoAssembler(this.Controller, s => false);
             SourceLine line = new SourceLine();
             string teststring = "\"hello, world\"";
 

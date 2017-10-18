@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,17 +28,17 @@ using System.Text;
 namespace DotNetAsm
 {
     /// <summary>
-    /// Manages custom text translations from standard ASCII/UTF-8
+    /// Manages custom text codes from UTF-8 source
     /// to target architectures with different character encoding
     /// schemes.
     /// </summary>
-    public class AsmEncoding : Encoding
+    public sealed class AsmEncoding : Encoding
     {
         #region Members
         
-        private Dictionary<string, Dictionary<char, UInt32>> _maps;
+        private Dictionary<string, Dictionary<char, int>> _maps;
 
-        private Dictionary<char, UInt32> _currentMap;
+        private Dictionary<char, int> _currentMap;
 
         #endregion
 
@@ -46,7 +46,7 @@ namespace DotNetAsm
 
         /// <summary>
         /// Constructs an instance of the DotNetAsm.AsmEncoding class, used to encode 
-        /// strings from ASCII/UTF-8 source to architecture-specific character set.
+        /// strings from UTF-8 source to architecture-specific encodings.
         /// </summary>
         /// <param name="caseSensitive">Indicates whether encoding names 
         /// should be treated as case-sensitive. Note: This has no effect on how character
@@ -54,13 +54,13 @@ namespace DotNetAsm
         public AsmEncoding(bool caseSensitive)
         {
             StringComparer comparer = caseSensitive ? StringComparer.CurrentCulture : StringComparer.CurrentCultureIgnoreCase;
-            _maps = new Dictionary<string, Dictionary<char, uint>>(comparer);
+            _maps = new Dictionary<string, Dictionary<char, int>>(comparer);
             SelectEncoding("none");
         }
 
         /// <summary>
         /// Constructs an instance of the DotNetAsm.AsmEncoding class, used to encode 
-        /// strings from ASCII/UTF-8 source to architecture-specific character set.
+        /// strings from UTF-8 source to architecture-specific encodings.
         /// </summary>
         public AsmEncoding() :
             this(false)
@@ -73,32 +73,64 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
+        /// Get the actual encoded bytes for a given character.
+        /// </summary>
+        /// <param name="chr">The character to encode.</param>
+        /// <returns>An array of encoded bytes for the character.</returns>
+        private byte[] GetCharBytes(char chr)
+        {
+            if (_currentMap.ContainsKey(chr))
+            {
+                long code = _currentMap[chr];
+                var codebytes = BitConverter.GetBytes(code);
+                return codebytes.Take(code.Size()).ToArray();
+            }
+            return Encoding.UTF8.GetBytes(new char[] { chr });
+        }
+
+        /// <summary>
+        /// Get the encoded binary value of the given character.
+        /// </summary>
+        /// <param name="chr">The character to encode.</param>
+        /// <returns>An unsigned 32-bit integer representing the 
+        /// encoding of the character.</returns>
+        public int GetEncodedValue(char chr)
+        {
+            if (_currentMap.ContainsKey(chr))
+                return _currentMap[chr];
+            byte[] charbytes = GetCharBytes(chr);
+            byte[] paddedcodebytes = new byte[4];
+            Array.Copy(GetCharBytes(chr), paddedcodebytes, charbytes.Length);
+            return BitConverter.ToInt32(paddedcodebytes, 0);
+        }
+
+        /// <summary>
         /// Adds a character mapping to translate from source to object
         /// </summary>
         /// <param name="mapping">The char to map</param>
-        /// <param name="translation">The corresponding translation</param>
-        public void Map(char mapping, char translation)
+        /// <param name="code">The corresponding code</param>
+        public void Map(char mapping, int code)
         {
             // the default encoding cannot be changed
             if (_currentMap != _maps.First().Value)
-                _currentMap.Add(mapping, translation);
+                _currentMap.Add(mapping, code);
         }
 
         /// <summary>
         /// Adds a character mapping to translate from source to object
         /// </summary>
         /// <param name="range">The range of characters to map</param>
-        /// <param name="firstTranslation">The first char translation</param>
+        /// <param name="firstcode">The first char code</param>
         /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        public void Map(string range, char firstTranslation)
+        public void Map(string range, int firstcode)
         {
             var rangeChars = range.ToCharArray();
             if (rangeChars.Length != 2)
                 throw new ArgumentException(range);
 
             Map(System.Convert.ToInt32(rangeChars.First()),
-                       System.Convert.ToInt32(rangeChars.Last()),
-                       firstTranslation);
+                System.Convert.ToInt32(rangeChars.Last()),
+                firstcode);
         }
 
         /// <summary>
@@ -106,9 +138,9 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="firstRange">The first character in the mapping range</param>
         /// <param name="lastRange">The last character in the mapping range</param>
-        /// <param name="firstTranslation">The first char translation</param>
+        /// <param name="firstcode">The first char code</param>
         /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        public void Map(int firstRange, int lastRange, char firstTranslation)
+        public void Map(int firstRange, int lastRange, int firstcode)
         {
             if (firstRange > lastRange)
                 throw new ArgumentException(firstRange.ToString());
@@ -117,23 +149,23 @@ namespace DotNetAsm
             if (_currentMap == _maps.First().Value)
                 return;
 
-            int displace = firstTranslation - firstRange;
+            int displace = firstcode - firstRange;
 
             while (firstRange <= lastRange)
             {
                 var charMap = System.Convert.ToChar(firstRange);
-                var translation = System.Convert.ToUInt32(firstRange + displace);
-                _currentMap.Add(charMap, translation);
+                var code = System.Convert.ToInt32(firstRange + displace);
+                _currentMap.Add(charMap, code);
                 firstRange++;
             }
         }
 
         /// <summary>
-        /// Get the char translation from its corresponding mapping
+        /// Get the encoding of the mapped character.
         /// </summary>
-        /// <param name="mapping">The mapped char</param>
-        /// <returns>The translated char</returns>
-        public uint GetTranslation(char mapping)
+        /// <param name="mapping">The mapped character</param>
+        /// <returns>The mapped character encoding</returns>
+        public int GetCode(char mapping)
         {
             if (_currentMap.ContainsKey(mapping))
                 return _currentMap[mapping];
@@ -193,7 +225,7 @@ namespace DotNetAsm
         public void SelectEncoding(string encodingName)
         {
             if (!_maps.ContainsKey(encodingName))
-                _maps.Add(encodingName, new Dictionary<char, UInt32>());
+                _maps.Add(encodingName, new Dictionary<char, int>());
             _currentMap = _maps[encodingName];
         }
 
@@ -207,38 +239,16 @@ namespace DotNetAsm
         /// <param name="index">The index of the first character to encode</param>
         /// <param name="count">The number of characters to encode</param>
         /// <returns>The number of bytes produced by encoding the specified characters.</returns>
+        /// <exception cref="System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetByteCount(char[] chars, int index, int count)
         {
-            return Encoding.UTF8.GetByteCount(chars);
-        }
-
-        /// <summary>
-        /// Encodes all the characters in the specified string into a sequence of bytes.
-        /// </summary>
-        /// <param name="s">The string containing the characters to encode</param>
-        /// <returns>A byte array containing the results of encoding the 
-        /// specified set of characters.</returns>
-        public override byte[] GetBytes(string s)
-        {
-            byte[] bytes = new byte[s.Length];
-            GetBytes(s.ToCharArray(), 0, s.Length, bytes, 0);
-            return bytes;
-        }
-
-        /// <summary>
-        /// Encodes a set of characters from the specified string 
-        /// into the specified byte array.
-        /// </summary>
-        /// <param name="s">The string containing the characters to encode</param>
-        /// <param name="charIndex">The index of the first character to encode</param>
-        /// <param name="charCount">The number of characters to encode</param>
-        /// <param name="bytes">The byte array to contain the resulting sequence of bytes</param>
-        /// <param name="byteIndex">The index at which to start writing the resulting 
-        /// sequence of bytes</param>
-        /// <returns>The actual number of bytes written into bytes.</returns>
-        public override int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
-        {
-            return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
+            int numbytes = 0;
+            for (int i = 0; i < count; i++)
+            {
+                byte[] bytechars = GetCharBytes(chars[i + index]);
+                numbytes += bytechars.Length; 
+            }
+            return numbytes;
         }
 
         /// <summary>
@@ -252,19 +262,18 @@ namespace DotNetAsm
         /// <param name="byteIndex">The index at which to start writing the resulting 
         /// sequence of bytes</param>
         /// <returns>The actual number of bytes written into bytes.</returns>
+        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
+        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             int j = byteIndex;
-            int bytecount = GetByteCount(chars);
-            if (bytes.Length < bytecount)
-                Array.Resize<byte>(ref bytes, bytecount);
-
-            for (int i = charIndex; i < charCount; i++)
+            int bytecount = GetMaxByteCount(charCount);
+            
+            for (int i = 0; i < charCount; i++)
             {
-                char transChar = chars[i];
-                if (_currentMap.ContainsKey(chars[i]))
-                     transChar = (char)_currentMap[chars[i]];
-                byte[] transBytes = Encoding.UTF8.GetBytes(new char[] { transChar });
+                byte[] transBytes = GetCharBytes(chars[i + charIndex]);
                 foreach (byte b in transBytes)
                     bytes[j++] = b;
             }
@@ -279,14 +288,18 @@ namespace DotNetAsm
         /// <param name="index">The index of the first byte to decode</param>
         /// <param name="count">The number of bytes to decode</param>
         /// <returns>The number of characters produced by decoding the specified sequence of bytes.</returns>
+        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
+        /// <exception cref="System.Text.TextDecoderFallbackException"></exception>
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
-            return Encoding.UTF8.GetCharCount(bytes, index, count);
+            char[] chars = new char[GetMaxCharCount(count)];
+            return GetChars(bytes, index, count, chars, 0);
         }
 
         /// <summary>
-        /// decodes a sequence of bytes from the specified byte array 
-        /// into the specified character array.
+        /// Decodes a sequence of bytes from the specified byte array 
+        /// into the specified character array. 
         /// </summary>
         /// <param name="bytes">The byte array containing the sequence of bytes to decode</param>
         /// <param name="byteIndex">The index of the first byte to decode</param>
@@ -294,18 +307,70 @@ namespace DotNetAsm
         /// <param name="chars">The character array to contain the resulting set of characters</param>
         /// <param name="charIndex">The index at which to start writing the resulting set of characters</param>
         /// <returns>The actual number of characters written into chars.</returns>
+        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
+        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            char[] utfChars = Encoding.UTF8.GetChars(bytes, byteIndex, byteCount);
-
-            for(int i = 0, j = charIndex; i < utfChars.Length; i++, j++)
+            int j = charIndex;
+            int i = 0;
+            int bsize = bytes.Length;
+            while (i < byteCount)
             {
-                var utfChar = utfChars[i];
-                chars[j] = _currentMap.FirstOrDefault(m => m.Value.Equals(utfChar)).Key;
-                if (chars[j].Equals('\0'))
-                    chars[j] = utfChar;
+                int displ = 0;
+                int encoding = 0;
+                if (i + 3 + byteIndex < bsize)
+                {
+                    encoding = bytes[i + byteIndex] | 
+                               (bytes[i + 1 + byteIndex] * 0x100) | 
+                               (bytes[i + 2 + byteIndex] * 0x10000) |
+                               (bytes[i + 3 + byteIndex] * 0x1000000);
+                    if (_currentMap.ContainsValue(encoding))
+                    {
+                        displ = 4;
+                        goto SetChar;
+                    }
+                }
+                if (i + 2 + byteIndex < bsize)
+                {
+                    encoding = bytes[i + byteIndex] |
+                               (bytes[i + 1 + byteIndex] * 0x100) |
+                               (bytes[i + 2 + byteIndex] * 0x10000);
+                    if (_currentMap.ContainsValue(encoding))
+                    {
+                        displ = 3;
+                        goto SetChar;
+                    }
+                }
+                if (i + 1 + byteIndex < bsize)
+                {
+                    encoding = bytes[i + byteIndex] |
+                               (bytes[i + 1 + byteIndex] * 0x100);
+                    if (_currentMap.ContainsValue(encoding))
+                    {
+                        displ = 2;
+                        goto SetChar;
+                    }
+                }
+                encoding = bytes[i + byteIndex];
+                if (_currentMap.ContainsValue(encoding))
+                {
+                    displ = 1;
+                    goto SetChar;
+                }
+                else
+                {
+                    var utfChar = UTF8.GetChars(bytes.Skip(i).ToArray(), 0, byteCount - i).First();
+                    chars[j++] = utfChar;
+                    i += UTF8.GetByteCount(new char[] { utfChar }, 0, 1);
+                }
+                continue;
+            SetChar:
+                chars[j++] = _currentMap.First(e => e.Value.Equals(encoding)).Key;
+                i += displ;
             }
-            return utfChars.Length;
+            return j - charIndex;
         }
 
         /// <summary>
@@ -317,7 +382,7 @@ namespace DotNetAsm
         /// encoding the specified number of characters.</returns>
         public override int GetMaxByteCount(int charCount)
         {
-            return Encoding.UTF8.GetMaxByteCount(charCount);
+            return charCount * sizeof(uint);
         }
 
         /// <summary>
@@ -329,7 +394,7 @@ namespace DotNetAsm
         /// decoding the specified number of bytes.</returns>
         public override int GetMaxCharCount(int byteCount)
         {
-            return Encoding.UTF8.GetMaxCharCount(byteCount);
+            return byteCount;
         }
 
         #endregion

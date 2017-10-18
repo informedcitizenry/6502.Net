@@ -170,7 +170,6 @@ namespace DotNetAsm
         /// <returns>Returns the new logical Program Counter</returns>
         public int SynchPC()
         {
-            //LogicalPC = ProgramCounter;
             _logicalPc = ProgramCounter;
             return LogicalPC;
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -84,7 +84,7 @@ namespace DotNetAsm
         public Evaluator(string hexPattern)
         {
             _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
-            _regFcn        = new Regex(@"([a-zA-Z][a-zA-Z0-9]*)(\(.+\))",             RegexOptions.Compiled);
+            _regFcn        = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))",    RegexOptions.Compiled);
             _regUnary      = new Regex(@"(?<![0-9.)<>])([!\-~^<>])(\(.+\)|[0-9.]+)",  RegexOptions.Compiled);
             _regBinary     = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))",           RegexOptions.Compiled);
             

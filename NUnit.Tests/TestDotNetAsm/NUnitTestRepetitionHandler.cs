@@ -31,7 +31,7 @@ namespace NUnit.Tests.TestDotNetAsm
             }
 
             List<SourceLine> processed = new List<SourceLine>();
-            processed.AddRange(handler.ProcessedLines);
+            processed.AddRange(handler.GetProcessedLines());
 
             Assert.AreEqual(5, processed.Count);
         }
@@ -54,12 +54,12 @@ namespace NUnit.Tests.TestDotNetAsm
             
             foreach(SourceLine line in source)
             {
-                if (handler.Processes(line.Instruction) || handler.IsProcessing)
+                if (handler.Processes(line.Instruction) || handler.IsProcessing())
                 {
                     handler.Process(line);
-                    if (handler.IsProcessing == false)
+                    if (handler.IsProcessing() == false)
                     {
-                        processed.AddRange(handler.ProcessedLines);
+                        processed.AddRange(handler.GetProcessedLines());
                     }
                 }
                 else
@@ -92,12 +92,12 @@ namespace NUnit.Tests.TestDotNetAsm
 
             foreach (SourceLine line in source)
             {
-                if (handler.Processes(line.Instruction) || handler.IsProcessing)
+                if (handler.Processes(line.Instruction) || handler.IsProcessing())
                 {
                     handler.Process(line);
-                    if (handler.IsProcessing == false)
+                    if (handler.IsProcessing() == false)
                     {
-                        processed.AddRange(handler.ProcessedLines);
+                        processed.AddRange(handler.GetProcessedLines());
                     }
                 }
                 else
@@ -149,12 +149,12 @@ namespace NUnit.Tests.TestDotNetAsm
 
             foreach (SourceLine line in source)
             {
-                if (handler.Processes(line.Instruction) || handler.IsProcessing)
+                if (handler.Processes(line.Instruction) || handler.IsProcessing())
                 {
                     handler.Process(line);
-                    if (handler.IsProcessing == false)
+                    if (handler.IsProcessing() == false)
                     {
-                        processed.AddRange(handler.ProcessedLines);
+                        processed.AddRange(handler.GetProcessedLines());
                     }
                 }
                 else

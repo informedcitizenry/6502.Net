@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -107,9 +107,9 @@ namespace DotNetAsm
         /// <param name="filename">The source file.</param>
         /// <param name="linenumber">The source line number.</param>
         /// <param name="message">The custom string message.</param>
-        /// <param name="symbol">The instruction, directive, or expression causing the error.</param>
+        /// <param name="source">The error source.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(string filename, int linenumber, string message, string symbol, bool isError = true)
+        public void LogEntry(string filename, int linenumber, string message, object source, bool isError = true)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -127,11 +127,10 @@ namespace DotNetAsm
                 else
                     sb.AppendFormat("Warning in file '{0}' at line {1}: ", filename, linenumber);
             }
-
-            if (string.IsNullOrEmpty(symbol))
+            if (source == null)
                 sb.Append(message.Replace(" '{0}'", string.Empty).Trim());
             else if (message.Contains("'{0}'"))
-                sb.AppendFormat(message, symbol);
+                sb.AppendFormat(message, source);
 
             errors_.Add(new Tuple<string, bool>(sb.ToString(), isError));
         }
@@ -145,7 +144,7 @@ namespace DotNetAsm
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
         public void LogEntry(string filename, int linenumber, string message, bool isError = true)
         {
-            LogEntry(filename, linenumber, message, string.Empty, isError);
+            LogEntry(filename, linenumber, message, null, isError);
         }
 
         /// <summary>
@@ -164,11 +163,11 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The SourceLine.</param>
         /// <param name="message">The custom string message.</param>
-        /// <param name="symbol">The instruction, directive, or expression causing the error.</param>
+        /// <param name="source">The error source.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(SourceLine line, string message, string symbol, bool isError = true)
+        public void LogEntry(SourceLine line, string message, object source, bool isError = true)
         {
-            LogEntry(line.Filename, line.LineNumber, message, symbol, isError);
+            LogEntry(line.Filename, line.LineNumber, message, source, isError);
         }
 
         /// <summary>
@@ -179,7 +178,7 @@ namespace DotNetAsm
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
         public void LogEntry(SourceLine line, string message, bool isError = true)
         {
-            LogEntry(line.Filename, line.LineNumber, message, string.Empty, isError);
+            LogEntry(line.Filename, line.LineNumber, message, null, isError);
         }
 
         /// <summary>

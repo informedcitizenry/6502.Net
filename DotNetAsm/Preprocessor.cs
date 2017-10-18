@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,12 +43,10 @@ namespace DotNetAsm
         /// mnemonics or pseudo-ops.</param>
         /// <param name="checkSymbol">A function to check for symbols such as labels.</param>
         public Preprocessor(IAssemblyController controller,
-                            Func<string, bool> checkReserved,
                             Func<string, bool> checkSymbol)
             : base(controller)
         {
             FileRegistry = new HashSet<string>();
-            ReservedFunc = checkReserved;
             SymbolNameFunc = checkSymbol;
             Macros = new Dictionary<string, Macro>();
             Scope = new Stack<string>();
@@ -57,8 +55,6 @@ namespace DotNetAsm
                 {
                     ".binclude", ".include",
                     ".comment",  ".endcomment",
-                    ".macro",    ".endmacro",
-                    ".segment",  ".endsegment" 
                 });
         }
 
@@ -202,10 +198,6 @@ namespace DotNetAsm
         {
             // we can't do this check until all commenting has been processed
             CheckQuotes(ProcessBlocks(sourcelines, sourcelines.ToList(), ".comment", ".endcomment", ProcessCommentBlocks, true));
-
-            sourcelines = ProcessBlocks(sourcelines, sourcelines.ToList(), ".segment", ".endsegment", DefineSegments, false);
-            sourcelines = ProcessBlocks(sourcelines, sourcelines.ToList(), ".macro", ".endmacro", DefineMacro, false);
-
             return ProcessIncludes(sourcelines);
         }
 
@@ -281,140 +273,6 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Define macros from the source list.
-        /// </summary>
-        /// <param name="source">The SourceLines.</param>
-        private void DefineMacro(IEnumerable<SourceLine> source)
-        {
-            var def = source.First();
-            if (def.IsComment == false)
-            {
-                if (def.Label.StartsWith("_") || SymbolNameFunc(def.Label) == false ||
-                ReservedFunc(def.Label) || Reserved.IsReserved(def.Label))
-                {
-                    Controller.Log.LogEntry(def, ErrorStrings.LabelNotValid, def.Label);
-                    return;
-                }
-                if (Macros.ContainsKey("." + def.Label))
-                {
-                    Controller.Log.LogEntry(def, ErrorStrings.MacroRedefinition, def.Label);
-                    return;
-                }
-                try
-                {
-                    Macros.Add("." + def.Label, Macro.Create(source,
-                                                             Controller.Options.StringComparison,
-                                                             AssemblyController.OPEN_SCOPE,
-                                                             AssemblyController.CLOSE_SCOPE,
-                                                             false));
-                }
-                catch (Macro.MacroException ex)
-                {
-                    Controller.Log.LogEntry(ex.Line, ex.Message);
-                    return;
-                }
-                def.DoNotAssemble = true; //def.IsDefinition = true;
-            }
-            def = source.Last();
-            def.DoNotAssemble = true; // def.IsDefinition = true;
-        }
-
-        /// <summary>
-        /// Define segments from the SourceLines.
-        /// </summary>
-        /// <param name="source">The source listing.</param>
-        private void DefineSegments(IEnumerable<SourceLine> source)
-        {
-            var nocomments = source.Where(l => !l.IsComment);
-            Stack<string> root = new Stack<string>();
-            foreach (var line in nocomments)
-            {
-                if (line.Instruction.Equals(".segment", Controller.Options.StringComparison))
-                {
-                    if (line.Operand.StartsWith("_") || SymbolNameFunc(line.Operand) == false)
-                    {
-                        Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Operand);
-                        return;
-                    }
-                    if (string.IsNullOrEmpty(line.Label) == false)
-                    {
-                        Controller.Log.LogEntry(line, ErrorStrings.None);
-                        return;
-                    }
-                    if (Macros.ContainsKey(line.Operand))
-                    {
-                        Controller.Log.LogEntry(line, "Re-definition of macro or segment '" + line.Operand + "'");
-                        return;
-                    }
-                    line.DoNotAssemble = true;
-                    string segmentname = "." + line.Operand;
-                    Macros.Add(segmentname, new Macro());
-                    root.Push(segmentname);
-                    Macros[root.Peek()].IsSegment = true;
-                }
-                else if (line.Instruction.Equals(".endsegment", Controller.Options.StringComparison))
-                {
-                    if (line.Operand.Equals(root.Peek().TrimStart('.')))
-                    {
-                        line.DoNotAssemble = true;
-                        root.Pop();
-                    }
-                    else
-                    {
-                        Controller.Log.LogEntry(line, "Segment closure does not close current segment");
-                    }
-
-                }
-                else if (root.Peek().Equals(line.Instruction, Controller.Options.StringComparison))
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.RecursiveMacro);
-                    continue;
-                }
-                else
-                {
-                    Macros[root.Peek()].Source.Add(line);
-                }
-            }
-        }
-
-
-        /// <summary>
-        /// Expand all macro invocations in the source listing.
-        /// </summary>
-        /// <param name="listing">The SourceLine listing.</param>
-        /// <returns>The modified source with macros expanded.</returns>
-        public List<SourceLine> ExpandMacros(IEnumerable<SourceLine> listing)
-        {
-            List<SourceLine> processed = new List<SourceLine>();
-            foreach (var line in listing)
-            {
-                var instruction = line.Instruction;
-                var matches = Macros.Keys.Where(k => k.Equals(instruction, Controller.Options.StringComparison));
-
-                processed.Add(line);
-                if (matches.Count() == 0 || line.DoNotAssemble)
-                {
-                    continue;
-                }
-                line.DoNotAssemble = true;
-                var macname = matches.First();
-                var macro = Macros[macname];
-
-                if (macro.IsSegment == true)
-                {
-                    processed.AddRange(macro.Source);
-                    processed = ExpandMacros(processed);
-                }
-                else
-                {
-                    var expanded = macro.Expand(line);
-                    processed.AddRange(expanded);
-                }
-            }
-            return processed;
-        }
-
-        /// <summary>
         /// Marks all SourceLines within comment blocks as comments.
         /// </summary>
         /// <param name="source">The source listing.</param>
@@ -452,8 +310,8 @@ namespace DotNetAsm
                             line.Parse(
                                 delegate(string token)
                                 {
-                                    return ReservedFunc(token) || Reserved.IsReserved(token) ||
-                                        Regex.IsMatch(token, @"^\.[a-zA-Z][a-zA-Z0-9]*$") ||
+                                    return Controller.IsInstruction(token) || Reserved.IsReserved(token) ||
+                                        Regex.IsMatch(token, @"^\.[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9]*$") ||
                                         token == "=";
                                 });
                             sourcelines.Add(line);
@@ -514,13 +372,6 @@ namespace DotNetAsm
         /// being processed is a label/symbol.
         /// </summary>
         private Func<string, bool> SymbolNameFunc { get; set; }
-
-        /// <summary>
-        /// Gets or sets the helper function that will determine if a given token
-        /// being processed is a reserved word, such as an instruction or 
-        /// assembler directive.
-        /// </summary>
-        private Func<string, bool> ReservedFunc { get; set; }
 
         #endregion
     }

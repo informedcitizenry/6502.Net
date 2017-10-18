@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -237,44 +237,40 @@ namespace DotNetAsm
 
         #region Static Methods
 
-        /// <summary>
-        /// Define a macro from source.
-        /// </summary>
-        /// <param name="source">The source that defines the macro.</param>
-        /// <param name="comparer">A string comparer (to support macro name resolution).</param>
-        /// <param name="openBlock">The keyword or symbol for the scoped block opening.</param>
-        /// <param name="closeBlock">The keyword or symbol for the scoped block closure.</param>
-        /// <param name="isSegment">Sets whether the macro is a segment. Segments do not 
-        /// enclose their expanded source upon invocation into local blocks, nor do they
-        /// take parameters.</param>
-        /// <returns>Returns a macro definition.</returns>
-        public static Macro Create(IEnumerable<SourceLine> source,
+        public static Macro Create(SourceLine definition,
+                                   SourceLine closure,
+                                   IEnumerable<SourceLine> source,
                                    StringComparison comparer,
                                    string openBlock,
-                                   string closeBlock,
-                                   bool isSegment)
+                                   string closeBlock)
         {
-            var def = source.First();
             var macro = new Macro();
-            string name = def.Label;
-            string class_ = isSegment ? "Segment" : "Macro";
-            if (def.IsComment == false)
+            string name = definition.Label;
+            string class_ = ".macro";
+            bool isSegment = false;
+            if (definition.Instruction.Equals(".segment", comparer))
+            {
+                isSegment = true;
+                name = definition.Operand;
+                class_ = ".segment";
+            }
+            if (definition.IsComment == false)
             {
 
                 macro.IsSegment = isSegment;
                 if (macro.IsSegment == false)
                 {
                     macro.Source.Add(new SourceLine());
-                    macro.Source.First().Filename = def.Filename;
-                    macro.Source.First().LineNumber = def.LineNumber;
+                    macro.Source.First().Filename = definition.Filename;
+                    macro.Source.First().LineNumber = definition.LineNumber;
                     macro.Source.First().Instruction = openBlock;
 
-                    if (string.IsNullOrEmpty(def.Operand) == false)
+                    if (string.IsNullOrEmpty(definition.Operand) == false)
                     {
-                        var parms = def.CommaSeparateOperand();
+                        var parms = definition.CommaSeparateOperand();
                         if (parms == null)
                         {
-                            throw new MacroException(def, "Invalid parameter(s) (" + def.Operand + ")");
+                            throw new MacroException(definition, "Invalid parameter(s) (" + definition.Operand + ")");
                         }
                         for (int i = 0; i < parms.Count; i++)
                         {
@@ -287,18 +283,18 @@ namespace DotNetAsm
                                 string pname = ps.First().Trim();
                                 if (ps.Count() != 2)
                                 {
-                                    throw new MacroException(def, "Default parameter assignment error");
+                                    throw new MacroException(definition, "Default parameter assignment error");
                                 }
-                                if (Regex.IsMatch(pname, @"[a-zA-Z][a-zA-Z0-9_]*") == false)
+                                if (Regex.IsMatch(pname, Patterns.SymbolUnicode) == false)
                                 {
-                                    throw new MacroException(def, "Parameter name '" + pname + "' invalid");
+                                    throw new MacroException(definition, "Parameter name '" + pname + "' invalid");
                                 }
                                 parm.Name = pname;
                                 parm.DefaultValue = ps.Last().Trim();
                             }
-                            else if (Regex.IsMatch(p, @"[a-zA-Z][a-zA-Z0-9_]*") == false)
+                            else if (Regex.IsMatch(p, Patterns.SymbolUnicode) == false)
                             {
-                                throw new MacroException(def, "Parameter name '" + p + "' invalid");
+                                throw new MacroException(definition, "Parameter name '" + p + "' invalid");
                             }
                             else
                             {
@@ -308,7 +304,7 @@ namespace DotNetAsm
                             // check for duplicate param names
                             if (macro.Params.Any(prm => parm.Name.Equals(prm.Name, comparer)))
                             {
-                                throw new MacroException(def, "Duplicate parameter name found: " + parm.Name);
+                                throw new MacroException(definition, "Duplicate parameter name found: " + parm.Name);
                             }
                             macro.Params.Add(parm);
                         }
@@ -318,10 +314,11 @@ namespace DotNetAsm
 
             foreach (var line in source.Where(l => !l.IsComment))
             {
-                if (object.ReferenceEquals(source.First(), line) ||
-                    object.ReferenceEquals(source.Last(), line)) continue;
+                if (object.ReferenceEquals(definition, line) ||
+                    object.ReferenceEquals(closure, line)) continue;
 
-                if (def.Label.Equals(line.Instruction, comparer))
+                if ((isSegment && line.Instruction.Equals("." + name, comparer))
+                    || line.Instruction.Equals("." + name, comparer))
                 {
                     throw new MacroException(line, string.Format(ErrorStrings.RecursiveMacro, line.Label));
                 }
@@ -341,7 +338,7 @@ namespace DotNetAsm
                         }
                         foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
                         {
-                            if (Regex.IsMatch(c.ToString(), @"[a-zA-Z0-9_.]"))
+                            if (Regex.IsMatch(c.ToString(), Patterns.SymbolUnicodeChar))
                                 param += c;
                             else
                                 break;
@@ -384,28 +381,27 @@ namespace DotNetAsm
                 }
                 macro.Source.Add(line);
             }
-            def = source.Last();
+            if (closure.IsComment)
+                throw new MacroException(closure, string.Format(ErrorStrings.MissingClosureMacro, class_));
 
-            if (def.IsComment)
-                throw new MacroException(def, string.Format(ErrorStrings.MissingClosureMacro, class_));
-
-            if (string.IsNullOrEmpty(def.Operand) == false)
+            if (string.IsNullOrEmpty(closure.Operand) == false)
             {
-                if (isSegment && !name.Equals(def.Operand, comparer))
-                    throw new MacroException(def, string.Format(ErrorStrings.ClosureDoesNotCloseMacro, def.Instruction, "segment"));
-                else
-                    throw new MacroException(def, string.Format(ErrorStrings.DirectiveTakesNoArguments, def.Instruction));
+                if (isSegment && !name.Equals(closure.Operand, comparer))
+                    throw new MacroException(closure, string.Format(ErrorStrings.ClosureDoesNotCloseMacro, definition.Instruction, "segment"));
+                else if (!isSegment)
+                    throw new MacroException(closure, string.Format(ErrorStrings.DirectiveTakesNoArguments, definition.Instruction));
             }
             if (macro.IsSegment == false)
             {
                 macro.Source.Add(new SourceLine());
-                macro.Source.Last().Filename = def.Filename;
-                macro.Source.Last().LineNumber = def.LineNumber;
-                macro.Source.Last().Label = def.Label;
+                macro.Source.Last().Filename = closure.Filename;
+                macro.Source.Last().LineNumber = closure.LineNumber;
+                macro.Source.Last().Label = closure.Label;
                 macro.Source.Last().Instruction = closeBlock;
             }
             return macro;
         }
+
         #endregion
 
         #region Properties

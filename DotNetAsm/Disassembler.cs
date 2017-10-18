@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,8 +46,8 @@ namespace DotNetAsm
                 });
             Reserved.DefineType("Directives", new string[]
                 {
-                    ".elif", ".else", ".endif", ".eor", ".error", ".cerror", ".if", ".ifdef", 
-                    ".cwarn", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
+                    ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef", 
+                    ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
                 });
         }
 
@@ -86,7 +86,7 @@ namespace DotNetAsm
                 line.DoNotAssemble)
                 return string.Empty;
                       
-            if (line.Instruction == "=" || line.Instruction.Equals(".equ", Controller.Options.StringComparison))
+            if (line.Instruction == "=" || line.Instruction.Equals(".equ"))
             {
                 Int64 value = 0;
                 if (line.Label == "*" || Controller.Options.NoSource)
@@ -162,9 +162,9 @@ namespace DotNetAsm
         {
             if (!line.DoNotAssemble)
             {
-                if (line.Instruction.Equals(".pron", Controller.Options.StringComparison))
+                if (line.Instruction.Equals(".pron"))
                     PrintingOn = true;
-                else if (line.Instruction.Equals(".proff", Controller.Options.StringComparison))
+                else if (line.Instruction.Equals(".proff"))
                     PrintingOn = false;
             }
             if (!PrintingOn)
@@ -208,7 +208,7 @@ namespace DotNetAsm
                     sb.Append(asm);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Disassembly) || Controller.Options.NoDissasembly)
+                else if (string.IsNullOrEmpty(line.Disassembly) && Controller.Options.NoDissasembly == false)
                 {
                     sb.AppendFormat("{0,-29}", asm);
                 }

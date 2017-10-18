@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -321,7 +321,7 @@ namespace DotNetAsm
                     string noquotes = arg.Trim('"');
                     if (string.IsNullOrEmpty(noquotes))
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments);
+                        Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                         return;
                     }
                     line.Assembly.AddRange(Controller.Output.Add(noquotes, Controller.Encoding));

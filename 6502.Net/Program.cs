@@ -1,4 +1,4 @@
-﻿using DotNetAsm;
+using DotNetAsm;
 using System;
 using System.IO;
 using System.Reflection;
@@ -63,7 +63,7 @@ namespace Asm6502.Net
         }
 
         static void Main(string[] args)
-        {
+        {          
             try
             {
                 IAssemblyController controller = new AssemblyController(args);

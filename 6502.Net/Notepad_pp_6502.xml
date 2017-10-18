@@ -25,10 +25,10 @@
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
             <Keywords name="Keywords1">adc and asl bcc bcs beq bit bmi bne bpl brk bvc bvs clc cld cli clv cmp cpx cpy dec dex dey eor inc inx iny jmp jsr lda ldx ldy lsr nop ora pha php pla plp rol ror rti rts sbc sec sed sei sta stx sty tax tay tsx txa txs tya</Keywords>
-            <Keywords name="Keywords2">.binary .binclude .block .cerror .cwarn .else .elif .elifdef .elifndef .end .endblock .endif .endmacro .endrepeat .endsegment .eor .error .if .ifdef .ifndef .include .macro .relocate .segment .warn .weak</Keywords>
-            <Keywords name="Keywords3">.addr .align .atascreen .byte .cbmscreen .char .cstring .dint .dword .fill .lint .long .lsstring .petscii .pstring .nstring .rta .sint .string .word</Keywords>
+            <Keywords name="Keywords2">.assert .binary .binclude .block .else .elif .elifdef .elifndef .end .endblock .endif .endmacro .endrelocate .endrepeat .endsegment .eor .error .errorif .if .ifdef .ifndef .include .macro .pseudo .real .relocate .repeat .segment .target .warn .warnif</Keywords>
+            <Keywords name="Keywords3">.addr .align .byte .cstring .dint .dword .encoding .fill .lint .long .lsstring .map .pstring .nstring .rta .sbyte .sint .string .typedef .unmap .word</Keywords>
             <Keywords name="Keywords4">$ %</Keywords>
-            <Keywords name="Keywords5">floor round ceil trunc frac sqrt cbrt log10 ln exp pow sin asin sinh cos acos cosh tan atan tanh rad deg hypot atan2 abs sgn all any format len random range repr size str atascreen cbmscreen petscii</Keywords>
+            <Keywords name="Keywords5">floor round ceil trunc frac sqrt cbrt log10 ln exp pow sin asin sinh cos acos cosh tan atan tanh rad deg hypot atan2 abs sgn all any format len random range repr size str</Keywords>
             <Keywords name="Keywords6">.</Keywords>
             <Keywords name="Keywords7"></Keywords>
             <Keywords name="Keywords8"></Keywords>
@@ -62,4 +62,3 @@
         </Styles>
     </UserLang>
 </NotepadPlus>
-

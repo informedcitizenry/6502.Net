@@ -115,6 +115,15 @@ namespace DotNetAsm {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Type definition for unknown type &apos;{0}&apos;.
+        /// </summary>
+        public static string DefininingUnknownType {
+            get {
+                return ResourceManager.GetString("DefininingUnknownType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Directive &apos;{0}&apos; takes no arguments.
         /// </summary>
         public static string DirectiveTakesNoArguments {
@@ -309,6 +318,24 @@ namespace DotNetAsm {
         public static string TooManyArguments {
             get {
                 return ResourceManager.GetString("TooManyArguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot redefine type to &apos;{0}&apos; because it is already a type.
+        /// </summary>
+        public static string TypeDefinitionError {
+            get {
+                return ResourceManager.GetString("TypeDefinitionError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type name &apos;{0}&apos; is a reserved symbol name.
+        /// </summary>
+        public static string TypeNameReserved {
+            get {
+                return ResourceManager.GetString("TypeNameReserved", resourceCulture);
             }
         }
         

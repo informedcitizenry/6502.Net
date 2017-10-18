@@ -34,7 +34,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Encoding = new AsmEncoding();
 
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
-                Encoding.GetTranslation(chr.Trim('\'').First()).ToString());
+                Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString());
             
             Labels = new Dictionary<string, string>();
 
@@ -110,6 +110,11 @@ namespace NUnit.Tests.TestDotNetAsm
             throw new NotImplementedException();
         }
 
+        public bool IsInstruction(string token)
+        {
+            throw new NotImplementedException();
+        }
+
         public Action<IAssemblyController, BinaryWriter> HeaderOutputAction { get; set; }
 
         public Action<IAssemblyController, BinaryWriter> FooterOutputAction { get; set; }
@@ -127,7 +132,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public NUnitTestPseudoAssembler()
         {
             Controller = new TestController();
-            LineAssembler = new PseudoAssembler(Controller);
+            LineAssembler = new PseudoAssembler(Controller, s => false);
         }
         [Test]
         public void TestMultiByte()
@@ -171,7 +176,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "-123";
             TestForFailure<OverflowException>(line);
 
-            line.Instruction = ".char";
+            line.Instruction = ".sbyte";
             line.Operand = "-128,127";
             TestInstruction(line, 0x0002, 2, new byte[] { 0x80, 0x7f });
 
@@ -336,7 +341,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "\"A\", \"a\"";
             LineAssembler.AssembleLine(line);
 
-            char translated = (char)Controller.Encoding.GetTranslation('A');
+            char translated = (char)Controller.Encoding.GetEncodedValue('A');
             Assert.AreEqual('a', translated);
 
             line.Instruction = ".byte";
@@ -355,7 +360,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "none";
             LineAssembler.AssembleLine(line);
 
-            translated = (char)Controller.Encoding.GetTranslation('A');
+            translated = (char)Controller.Encoding.GetEncodedValue('A');
             Assert.AreEqual('A', translated);
 
             line.Instruction = ".byte";
@@ -387,7 +392,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "$80, $ff, '\0'";
             LineAssembler.AssembleLine(line);
 
-            translated = (char)Controller.Encoding.GetTranslation('\xc1');
+            translated = (char)Controller.Encoding.GetEncodedValue('\xc1');
             Assert.AreEqual('A', translated);
 
             line.Instruction = ".map";
@@ -397,6 +402,22 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Instruction = ".byte";
             line.Operand = "'π'";
             TestInstruction(line, 0x0001, 0x0001, new byte[] { (byte)'^' });
+
+            line.Instruction = ".map";
+            line.Operand = "\"♣\", $d8";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".byte";
+            line.Operand = "'♣'";
+            TestInstruction(line, 0x0001, 0x0001, new byte[] { 0xd8 });
+
+            line.Instruction = ".map";
+            line.Operand = "\"▒\", 255";
+            LineAssembler.AssembleLine(line);
+
+            line.Instruction = ".byte";
+            line.Operand = "'▒'";
+            TestInstruction(line, 0x0001, 0x0001, new byte[] { 0xff });
         }
 
         [Test]
@@ -486,7 +507,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "pow(3,2)";
             TestInstruction(line, 0x0001, 1, new byte[] { 0x09 });
 
-            line.Instruction = ".char";
+            line.Instruction = ".sbyte";
             line.Operand = "%34";
             TestForFailure<ExpressionException>(line);
 
