@@ -1027,26 +1027,26 @@ message     .cstring "HELLO, HIGH CODE!"
             .endrelocate
             ;; outputs the following =>
             .comment
-            >0801 0b 08 0a 00           
-            >0805 9e 32 30 36 31 00         
-            >080b 00 00             
-            >080d a2 00     ;           ldx #0
-            >080f bd 1b 08  ; -         lda highcode,x
-            >0812 9d 00 c0  ;           sta $c000,x
-            >0815 e8        ;           inx
-            >0816 d0 f7     ;           bne -
-            >0818 4c 00 c0  ;           jmp $c000
-            >081b a2 00     ;           ldx #$00        
-            >081d bd 0f c0  ; printloop lda message,x
-            >0820 f0 07     ;           beq done        
-            >0822 20 d2 ff  ;           jsr $ffd2         
-            >0825 e8        ;           inx               
-            >0826 4c 02 c0  ;           jmp printloop             
-            >0829 60        ; done      rts      
+            &gt;0801 0b 08 0a 00           
+            &gt;0805 9e 32 30 36 31 00         
+            &gt;080b 00 00             
+            &gt;080d a2 00     ;           ldx #0
+            &gt;080f bd 1b 08  ; -         lda highcode,x
+            &gt;0812 9d 00 c0  ;           sta $c000,x
+            &gt;0815 e8        ;           inx
+            &gt;0816 d0 f7     ;           bne -
+            &gt;0818 4c 00 c0  ;           jmp $c000
+            &gt;081b a2 00     ;           ldx #$00        
+            &gt;081d bd 0f c0  ; printloop lda message,x
+            &gt;0820 f0 07     ;           beq done        
+            &gt;0822 20 d2 ff  ;           jsr $ffd2         
+            &gt;0825 e8        ;           inx               
+            &gt;0826 4c 02 c0  ;           jmp printloop             
+            &gt;0829 60        ; done      rts      
             ;; message
-            >082a 48 45 4c 4c 4f 2c 20 48       
-            >0832 49 47 48 20 43 4f 44 45     
-            >083a 21 00  
+            &gt;082a 48 45 4c 4c 4f 2c 20 48       
+            &gt;0832 49 47 48 20 43 4f 44 45     
+            &gt;083a 21 00  
             .endcomment
 </pre>
 </td></tr>
