@@ -480,7 +480,7 @@ If required, loops can be broken out of using the `.break` directive
     jsr $ffd2
     .next
 ```
-**Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not make any checks if this variable is modified at runtime.
+**Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable.
 ## Future enhancements under consideration
 * Switch-case conditions
 * 65C02 and 65816/65C816 CPU support
