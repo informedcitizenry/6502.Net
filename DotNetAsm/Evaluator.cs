@@ -228,6 +228,15 @@ namespace DotNetAsm
         }
 
         /// <summary>
+        /// Add a format for converting hexadecimal constants using a regular expression.
+        /// </summary>
+        /// <param name="regex">The regex pattern.</param>
+        public void AddHexFormat(string regex)
+        {
+            _hexRegexes.Add(new Regex(regex, RegexOptions.Compiled));
+        }
+
+        /// <summary>
         /// Determines if the expression string contains user-defined symbols. Assists
         /// the evaluator with caching.
         /// </summary>
@@ -340,7 +349,7 @@ namespace DotNetAsm
                         // While there's an operator on the top of the 
                         // stack with greater precedence, pop operators from the 
                         // stack onto the output queue
-                        if (_operators.IndexOf(operators.Peek()) >
+                        if (_operators.IndexOf(operators.Peek()) >=
                                         _operators.IndexOf(c))
                             outputs.Add(operators.Pop().ToString());
                         else
@@ -583,10 +592,12 @@ namespace DotNetAsm
         /// <exception cref="System.OverflowException">System.OverflowException</exception>
         public long Eval(string expression, long minval, long maxval)
         {
-            long result = Eval(expression);
+            double result = EvalInternal(expression);
+            if (double.IsInfinity(result))
+                throw new DivideByZeroException(expression);
             if (result < minval || result > maxval)
                 throw new OverflowException(expression);
-            return result;
+            return (long)result;
         }
 
         /// <summary>

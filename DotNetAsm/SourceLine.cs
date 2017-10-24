@@ -52,6 +52,17 @@ namespace DotNetAsm
 
         #endregion
 
+        #region Constants
+
+        /// <summary>
+        /// A constant string expression to use for a DotNetAsm.SourceLine SourceString 
+        /// to indicate the line itself is "shadow source," i.e. injected programmatically
+        /// and not present in the original source file.
+        /// </summary>
+        public const string SHADOW_SOURCE = "@@__SHADOW__@@";
+
+        #endregion
+
         #region Members
 
         private bool _doNotAssemble;
@@ -417,7 +428,7 @@ namespace DotNetAsm
         /// <summary>
         /// Gets or sets the Program Counter of the assembly at the SourceLine.
         /// </summary>
-        public int PC { get; set; }
+        public long PC { get; set; }
 
         /// <summary>
         /// Gets or sets the SourceLine's original source filename.

@@ -72,11 +72,6 @@ namespace DotNetAsm
             return Reserved.IsReserved(token);
         }
 
-        protected override bool IsReserved(string token)
-        {
-            return Processes(token);
-        }
-
         public void Process(SourceLine line)
         {
             if (!Processes(line.Instruction))
@@ -160,9 +155,9 @@ namespace DotNetAsm
             if (line.Instruction.EndsWith("if", Controller.Options.StringComparison))
                 _doNotAsm = !Controller.Evaluator.EvalCondition(line.Operand);
             else if (line.Instruction.EndsWith("ifdef", Controller.Options.StringComparison))
-                _doNotAsm = !Controller.Labels.ContainsKey(line.Operand);
+                _doNotAsm = !(Controller.Labels.ContainsKey(line.Operand) || Controller.IsVariable(line.Operand));
             else if (line.Instruction.EndsWith("ifndef", Controller.Options.StringComparison))
-                _doNotAsm = Controller.Labels.ContainsKey(line.Operand);
+                _doNotAsm = Controller.Labels.ContainsKey(line.Operand) || Controller.IsVariable(line.Operand);
         }
 
         public void Reset()

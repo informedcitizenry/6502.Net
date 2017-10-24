@@ -86,7 +86,9 @@ namespace DotNetAsm
                 line.DoNotAssemble)
                 return string.Empty;
                       
-            if (line.Instruction == "=" || line.Instruction.Equals(".equ"))
+            if (line.Instruction == "=" || 
+                line.Instruction.Equals(".equ", Controller.Options.StringComparison) || 
+                line.Instruction.Equals(".var", Controller.Options.StringComparison))
             {
                 Int64 value = 0;
                 if (line.Label == "*" || Controller.Options.NoSource)
@@ -94,6 +96,10 @@ namespace DotNetAsm
                 if (line.Label == "-" || line.Label == "+")
                 {
                     value = line.PC;
+                }
+                else if (line.Instruction.Equals(".var", Controller.Options.StringComparison))
+                {
+                    value = Controller.GetVariable(line.Label);
                 }
                 else
                 {
@@ -127,7 +133,7 @@ namespace DotNetAsm
 
             if (sb.Length > 24)
             {
-                int pc = line.PC;
+                long pc = line.PC;
                 
                 var subdisasms = sb.ToString().SplitByLength(24).ToList();
                 sb.Clear();
@@ -169,6 +175,9 @@ namespace DotNetAsm
             }
             if (!PrintingOn)
                 return;// printing has been suppressed
+
+            if (line.SourceString.Equals(SourceLine.SHADOW_SOURCE))
+                return;
 
             string sourcestr = line.SourceString;
             if (!Controller.Options.VerboseList)
@@ -234,7 +243,7 @@ namespace DotNetAsm
             sb.AppendLine();
         }
 
-        protected override bool IsReserved(string token)
+        public override bool IsReserved(string token)
         {
             return Reserved.IsReserved(token);
         }

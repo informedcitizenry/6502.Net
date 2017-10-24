@@ -189,13 +189,9 @@ namespace DotNetAsm
 
         public bool AssemblesInstruction(string instruction)
         {
-            return IsReserved(instruction);
+            return Reserved.IsReserved(instruction);
         }
 
-        protected override bool IsReserved(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
         #endregion
     }
 }

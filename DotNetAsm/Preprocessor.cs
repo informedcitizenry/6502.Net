@@ -33,6 +33,12 @@ namespace DotNetAsm
     /// </summary>
     public class Preprocessor : AssemblerBase
     {
+        #region Members
+
+        private Func<string, bool> _symbolNameFunc;
+
+        #endregion
+
         #region Constructors
 
         /// <summary>
@@ -47,10 +53,7 @@ namespace DotNetAsm
             : base(controller)
         {
             FileRegistry = new HashSet<string>();
-            SymbolNameFunc = checkSymbol;
-            Macros = new Dictionary<string, Macro>();
-            Scope = new Stack<string>();
-
+            _symbolNameFunc = checkSymbol;
             Reserved.DefineType("Directives", new string[]
                 {
                     ".binclude", ".include",
@@ -61,98 +64,6 @@ namespace DotNetAsm
         #endregion
 
         #region Methods
-
-        /// <summary>
-        /// Process the list of source line blocks whose closures are denoted in the
-        /// openBlock and closeBlock closures.
-        /// </summary>
-        /// <param name="listing">The source listing.</param>
-        /// <param name="lines">The processed lines.</param>
-        /// <param name="openBlock">The open block keyword.</param>
-        /// <param name="closeBlock">The block closure keyword.</param>
-        /// <param name="processor">The method to process the block within the 
-        /// block closures.</param>
-        /// <param name="includeInSource">Include the processed block in the final source.</param>
-        /// <returns>Returns a SourceLine list of processed blocks.</returns>
-        private IEnumerable<SourceLine> ProcessBlocks(IEnumerable<SourceLine> listing,
-            List<SourceLine> lines,
-            string openBlock,
-            string closeBlock,
-            ProcessBlock processor,
-            bool includeInSource)
-        {
-            if (processor == null)
-            {
-                return lines;
-            }
-            var allopens = lines.AllIndexesOf(l => string.IsNullOrEmpty(l.Instruction) == false && openBlock.Equals(l.Instruction, Controller.Options.StringComparison));
-            var allclosed = lines.AllIndexesOf(l => string.IsNullOrEmpty(l.Instruction) == false && closeBlock.Equals(l.Instruction, Controller.Options.StringComparison));
-
-            List<SourceLine> beforeblock = new List<SourceLine>(), afterblock = new List<SourceLine>();
-            if (allclosed.Count != allopens.Count)
-            {
-                if (allclosed.Count < allopens.Count)
-                    Controller.Log.LogEntry(listing.Last(), ErrorStrings.MissingClosure);
-                else
-                    Controller.Log.LogEntry(listing.Last(), ErrorStrings.ClosureDoesNotCloseBlock, closeBlock);
-                return lines;
-            }
-            int block_count = 0;
-            int ix_after_closed;
-            if (allopens.Count == 0)
-                return lines;
-            List<SourceLine> block;
-            if (allopens.First() > 0)
-            {
-                beforeblock.AddRange(lines.GetRange(0, allopens.First()));
-            }
-
-            if (allopens.Count == 1)
-            {
-                // the simplest scenario just one block   
-                block = lines.GetRange(allopens.First(), allclosed.Last() - allopens.First() + 1);
-                block_count = block.Count;
-                processor(block);
-                ix_after_closed = allclosed.Last() + 1;
-            }
-            else
-            {
-                // multiple blocks
-                int x = 1, y = 0;
-                while (x < allopens.Count)
-                {
-                    if (allopens[x] < allclosed[y])
-                    {
-                        // nested block
-                        y++;
-                        x++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                ix_after_closed = allclosed[y] + 1;
-                int count = ix_after_closed - allopens.First();
-
-                // get block
-                block = lines.GetRange(allopens.First(), count);
-                block_count = block.Count;
-                processor(block);
-            }
-            if (ix_after_closed < lines.Count)
-            {
-                afterblock.AddRange(lines.GetRange(ix_after_closed, lines.Count - ix_after_closed));
-            }
-            var processedLines = new List<SourceLine>();
-            processedLines.AddRange(beforeblock);
-            if (includeInSource)
-            {
-                processedLines.AddRange(block);
-            }
-            processedLines.AddRange(afterblock);
-            return ProcessBlocks(listing, processedLines, openBlock, closeBlock, processor, includeInSource);
-        }
 
         /// <summary>
         /// Check if all quotes are properly closed.
@@ -197,8 +108,9 @@ namespace DotNetAsm
         public IEnumerable<SourceLine> Preprocess(IEnumerable<SourceLine> sourcelines)
         {
             // we can't do this check until all commenting has been processed
-            CheckQuotes(ProcessBlocks(sourcelines, sourcelines.ToList(), ".comment", ".endcomment", ProcessCommentBlocks, true));
-            return ProcessIncludes(sourcelines);
+            ProcessCommentBlocks(sourcelines);
+            CheckQuotes(sourcelines);
+            return ProcessIncludes(sourcelines.Where(l => !l.IsComment));
         }
 
         /// <summary>
@@ -208,7 +120,7 @@ namespace DotNetAsm
         /// <returns>Returns the new source with the included sources expanded.</returns>
         private IEnumerable<SourceLine> ProcessIncludes(IEnumerable<SourceLine> listing)
         {
-            var processedLines = new List<SourceLine>();
+            var includedLines = new List<SourceLine>();
             foreach (var line in listing)
             {
                 if (line.Instruction.Equals(".include", Controller.Options.StringComparison))
@@ -219,12 +131,8 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                         continue;
                     }
-                    if (FileRegistry.Add(filename.Trim('"')) == false)
-                    {
-                        throw new Exception(string.Format(ErrorStrings.FilePreviouslyIncluded, line.Operand));
-                    }
                     var inclistings = ConvertToSource(filename.Trim('"'));
-                    processedLines.AddRange(inclistings);
+                    includedLines.AddRange(inclistings);
                 }
                 else if (line.Instruction.Equals(".binclude", Controller.Options.StringComparison))
                 {
@@ -232,10 +140,9 @@ namespace DotNetAsm
                     SourceLine openblock = new SourceLine();
                     if (args.Count > 1)
                     {
-                        string label = line.Label;
-                        if (string.IsNullOrEmpty(line.Label) == false && SymbolNameFunc(line.Label) == false)
+                        if (string.IsNullOrEmpty(line.Label) == false && _symbolNameFunc(line.Label) == false)
                         {
-                            Controller.Log.LogEntry(line, ErrorStrings.LabelNotValid, label);
+                            Controller.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
                             continue;
                         }
                         if (line.Operand.EnclosedInQuotes() == false)
@@ -247,29 +154,27 @@ namespace DotNetAsm
                         {
                             throw new Exception(string.Format(ErrorStrings.FilePreviouslyIncluded, line.Operand));
                         }
-
-                        openblock.Label = label;
+                        openblock.Label = line.Label;
                     }
                     else if (line.Operand.EnclosedInQuotes() == false)
                     {
                         Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                         continue;
                     }
-
                     openblock.Instruction = AssemblyController.OPEN_SCOPE;
-                    processedLines.Add(openblock);
+                    includedLines.Add(openblock);
                     var inclistings = ConvertToSource(line.Operand.Trim('"'));
 
-                    processedLines.AddRange(inclistings);
-                    processedLines.Add(new SourceLine());
-                    processedLines.Last().Instruction = AssemblyController.CLOSE_SCOPE;
+                    includedLines.AddRange(inclistings);
+                    includedLines.Add(new SourceLine());
+                    includedLines.Last().Instruction = AssemblyController.CLOSE_SCOPE;
                 }
                 else
                 {
-                    processedLines.Add(line);
+                    includedLines.Add(line);
                 }
             }
-            return processedLines;
+            return includedLines;
         }
 
         /// <summary>
@@ -278,13 +183,23 @@ namespace DotNetAsm
         /// <param name="source">The source listing.</param>
         private void ProcessCommentBlocks(IEnumerable<SourceLine> source)
         {
-            foreach (var line in source)
+            bool incomments = false;
+            foreach(var line in source)
             {
-
-                line.Label = line.Instruction = string.Empty;
-                line.Operand = string.Empty;
-                line.IsComment = true;
+                if (!incomments)
+                    incomments = line.Instruction.Equals(".comment", Controller.Options.StringComparison);
+                
+                line.IsComment = incomments;
+                if (line.Instruction.Equals(".endcomment", Controller.Options.StringComparison))
+                {
+                    if (incomments)
+                        incomments = false;
+                    else
+                        Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
+                }   
             }
+            if (incomments)
+                throw new Exception(ErrorStrings.MissingClosure);
         }
 
         /// <summary>
@@ -294,6 +209,9 @@ namespace DotNetAsm
         /// <returns>A SourceLine list.</returns>
         public IEnumerable<SourceLine> ConvertToSource(string file)
         {
+            if (FileRegistry.Add(file) == false)
+                throw new Exception(string.Format(ErrorStrings.FilePreviouslyIncluded, file));
+
             if (File.Exists(file))
             {
                 Console.WriteLine("Processing input file " + file + "...");
@@ -311,7 +229,7 @@ namespace DotNetAsm
                                 delegate(string token)
                                 {
                                     return Controller.IsInstruction(token) || Reserved.IsReserved(token) ||
-                                        Regex.IsMatch(token, @"^\.[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9]*$") ||
+                                        (token.StartsWith(".") && Macro.IsValidMacroName(token.Substring(1))) ||
                                         token == "=";
                                 });
                             sourcelines.Add(line);
@@ -332,7 +250,7 @@ namespace DotNetAsm
             }
         }
 
-        protected override bool IsReserved(string token)
+        public override bool IsReserved(string token)
         {
             return Reserved.IsReserved(token);
         }
@@ -342,36 +260,9 @@ namespace DotNetAsm
         #region Properties
 
         /// <summary>
-        /// The delegate function that will process the identified block of source.
-        /// </summary>
-        /// <param name="block">The source block to process.</param>
-        delegate void ProcessBlock(IEnumerable<SourceLine> block);
-
-        /// <summary>
-        /// Gets or sets the defined segments. 
-        /// </summary>
-        private Dictionary<string, List<SourceLine>> Segments { get; set; }
-
-        /// <summary>
-        /// Gets or sets the defined macros.
-        /// </summary>
-        private Dictionary<string, Macro> Macros { get; set; }
-
-        /// <summary>
-        /// Gets or sets the scope stack.
-        /// </summary>
-        private Stack<string> Scope { get; set; }
-
-        /// <summary>
         /// Gets or sets the file registry of input files.
         /// </summary>
         public HashSet<string> FileRegistry { get; set; }
-
-        /// <summary>
-        /// Gets or sets the helper function that will determine if a given token
-        /// being processed is a label/symbol.
-        /// </summary>
-        private Func<string, bool> SymbolNameFunc { get; set; }
 
         #endregion
     }

@@ -44,6 +44,7 @@
     <Compile Include="TestDotNetAsm\NUnitTestCompilation.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestConditionHandler.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestDisassembler.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestForNext.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestMacros.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestMisc.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestOpcode.cs" />

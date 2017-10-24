@@ -20,6 +20,8 @@ namespace NUnit.Tests.TestDotNetAsm
 
         }
 
+        Dictionary<string, long> _variables;
+
         public TestController(string[] args) :
             base()
         {
@@ -36,10 +38,21 @@ namespace NUnit.Tests.TestDotNetAsm
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
                 Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString());
             
+            Evaluator.DefineSymbolLookup(@"(?>[a-zA-Z][a-zA-Z0-9]*)(?!\()", GetSymbol);
+
             Labels = new Dictionary<string, string>();
+
+            _variables = new Dictionary<string, long>();
 
             if (args != null)
                 Options.ProcessArgs(args);
+        }
+
+        private string GetSymbol(string symbol)
+        {
+            if (_variables.ContainsKey(symbol))
+                return GetVariable(symbol).ToString();
+            return Labels[symbol];
         }
 
         public void Assemble()
@@ -58,6 +71,11 @@ namespace NUnit.Tests.TestDotNetAsm
             return string.Empty;
         }
 
+        public long GetVariable(string variable)
+        {
+            return _variables[variable];
+        }
+
         public string GetScopedLabelValue(string label, SourceLine line)
         {
             if (Labels.ContainsKey(label))
@@ -65,6 +83,16 @@ namespace NUnit.Tests.TestDotNetAsm
             return string.Empty;
         }
 
+        public void SetVariable(string variable, long value)
+        {
+            _variables[variable] = value;
+        }
+
+        public bool IsVariable(string variable)
+        {
+            return _variables.ContainsKey(variable);
+        }
+        
         public bool TerminateAssembly(SourceLine line)
         {
             throw new NotImplementedException();

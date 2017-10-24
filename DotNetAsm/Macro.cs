@@ -402,6 +402,20 @@ namespace DotNetAsm
             return macro;
         }
 
+        #region Static Methods
+
+        /// <summary>
+        /// Determines whether the given token is a valid macro name.
+        /// </summary>
+        /// <param name="token">The token to check</param>
+        /// <returns>True, if the token is a valid macro name</returns>
+        public static bool IsValidMacroName(string token)
+        {
+            return Regex.IsMatch(token, "^" + Patterns.SymbolUnicode + "$");
+        }
+
+        #endregion
+
         #endregion
 
         #region Properties

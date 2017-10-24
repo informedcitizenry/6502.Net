@@ -93,6 +93,15 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.IsTrue(string.IsNullOrEmpty(line.Label));
             Assert.AreEqual("and", line.Instruction);
             Assert.AreEqual("a", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = " - ";
+            line.Parse(s => false);
+
+            Assert.IsFalse(string.IsNullOrEmpty(line.Label));
+            Assert.AreEqual("-", line.Label);
+            Assert.IsTrue(string.IsNullOrEmpty(line.Instruction));
+            Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
         }
 
         [Test]

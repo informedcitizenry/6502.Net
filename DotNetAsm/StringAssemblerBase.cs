@@ -254,7 +254,7 @@ namespace DotNetAsm
             return size;
         }
 
-        protected override bool IsReserved(string token)
+        public override bool IsReserved(string token)
         {
             return Reserved.IsOneOf("Directives", token) || 
                    Reserved.IsOneOf("Encoding", token);

@@ -23,9 +23,18 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace DotNetAsm
 {
+    public class ForNextException : Exception
+    {
+        public ForNextException(string message)
+            : base(message)
+        {
+
+        }
+    }
     /// <summary>
     /// Handles repetitions in assembly source.
     /// </summary>
@@ -93,7 +102,7 @@ namespace DotNetAsm
             /// <summary>
             /// The amount of times the block should be repeated in final assembly
             /// </summary>
-            public int RepeatAmounts { get; set; }
+            public long RepeatAmounts { get; set; }
         }
 
         #endregion
@@ -119,6 +128,16 @@ namespace DotNetAsm
         public RepetitionHandler(IAssemblyController controller) :
             base(controller)
         {
+            Reserved.DefineType("Opening", new string[] 
+            { 
+                ".repeat"
+            });
+
+            Reserved.DefineType("Closure", new string[]
+            {
+                ".endrepeat"
+            });
+
             _currBlock =
             _rootBlock = new RepetitionBlock();
             _levels = 0;
@@ -135,7 +154,7 @@ namespace DotNetAsm
         /// <param name="line">The DotNetAsm.SourceLine to process</param>
         public void Process(SourceLine line)
         {
-            if (line.Instruction.Equals(".repeat", Controller.Options.StringComparison))
+            if (Reserved.IsOneOf("Opening", line.Instruction))
             {
                 if (string.IsNullOrEmpty(line.Operand))
                 {
@@ -157,11 +176,10 @@ namespace DotNetAsm
                     _currBlock.Entries.Add(entry);
                     _currBlock = block;
                 }
-                _currBlock.RepeatAmounts = (int)Controller.Evaluator.Eval(line.Operand);
                 _levels++;
-
+                _currBlock.RepeatAmounts = Controller.Evaluator.Eval(line.Operand, int.MinValue, uint.MaxValue);
             }
-            else if (line.Instruction.Equals(".endrepeat", Controller.Options.StringComparison))
+            else if (Reserved.IsOneOf("Closure", line.Instruction))
             {
                 if (_levels == 0)
                 {
@@ -178,13 +196,10 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.None);
                     return;
                 }
-
                 _levels--;
                 _currBlock = _currBlock.BackLink;
                 if (_levels == 0)
-                {
-                    ProcessLines(_rootBlock, _rootBlock.RepeatAmounts);
-                }
+                    ProcessLines(_rootBlock);
             }
             else
             {
@@ -198,21 +213,16 @@ namespace DotNetAsm
         /// Perform final processing on the DotNetAsm.RepetitionHandler.ProcessedLines.
         /// </summary>
         /// <param name="block">The DotNetAsm.RepetitionHandler.RepetitionBlock to process</param>
-        /// <param name="repeat">The number of times the block needs repeating</param>
-        private void ProcessLines(RepetitionBlock block, int repeat)
+        private void ProcessLines(RepetitionBlock block)
         {
-            for (int i = 0; i < repeat; i++)
+            for (int i = 0; i < block.RepeatAmounts; i++)
             {
                 foreach (var entry in block.Entries)
                 {
                     if (entry.LinkedBlock != null)
-                    {
-                        ProcessLines(entry.LinkedBlock, entry.LinkedBlock.RepeatAmounts);
-                    }
+                        ProcessLines(entry.LinkedBlock);
                     else
-                    {
                         _processedLines.Add(entry.Line.Clone() as SourceLine);
-                    }
                 }
             }
         }
@@ -236,18 +246,7 @@ namespace DotNetAsm
         /// <returns>True, if the DotNetAsm.RepetitionHandler processes this token</returns>
         public bool Processes(string token)
         {
-            return IsReserved(token);
-        }
-
-        /// <summary>
-        /// Determines if the token is a reserved word.
-        /// </summary>
-        /// <param name="token">The token to determine</param>
-        /// <returns>True, if the token is reserved for the DotNetAsm.RepetitionHandler</returns>
-        protected override bool IsReserved(string token)
-        {
-            return token.Equals(".repeat", Controller.Options.StringComparison) ||
-                   token.Equals(".endrepeat", Controller.Options.StringComparison);
+            return Reserved.IsReserved(token);
         }
 
         /// <summary>
@@ -260,7 +259,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Gets the read-only processed blocks of repeated lines.
+        /// Gets the processed blocks of repeated lines.
         /// </summary>
         public IEnumerable<SourceLine> GetProcessedLines()
         {

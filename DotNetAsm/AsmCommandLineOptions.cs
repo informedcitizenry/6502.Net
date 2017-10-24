@@ -30,10 +30,21 @@ namespace DotNetAsm
     /// </summary>
     public class AsmCommandLineOptions
     {
+        #region Classes
+
+        private class Option
+        {
+            public string Argument;
+            public string Help;
+        }
+
+        #endregion
+
         #region Members
 
         private IReadOnlyList<string> _source;
         private IReadOnlyList<string> _defines;
+        private Dictionary<string, Option> _userOptions;
         private string _arch;
         private string _listingFile;
         private string _labelFile;
@@ -58,6 +69,7 @@ namespace DotNetAsm
         /// </summary>
         public AsmCommandLineOptions()
         {
+            _userOptions = new Dictionary<string, Option>();
             _source = new List<string>();
             _defines = new List<string>();
             _arch =
@@ -74,6 +86,8 @@ namespace DotNetAsm
             _quiet =
             _printVersion =
             _caseSensitive = false;
+
+            ArgumentCommand<string> comm = new ArgumentCommand<string>("hI", "there");  
         }
 
         #endregion
@@ -96,6 +110,9 @@ namespace DotNetAsm
             args.CopyTo(Arguments, 0);
             var result = ArgumentSyntax.Parse(args, syntax =>
             {
+                foreach(var option in _userOptions)
+                    syntax.DefineOption(option.Key, ref option.Value.Argument, option.Value.Help);
+                
                 syntax.DefineOption("o|output", ref _outputFile, "Output assembly to <arg>");
                 syntax.DefineOption("b|big-endian", ref _bigEndian, "Set byte order of output to big-endian");
                 syntax.DefineOption("arch", ref _arch, "Specify architecture-specific options");
@@ -113,6 +130,30 @@ namespace DotNetAsm
                 syntax.DefineOption("V|version", ref _printVersion, "Print current version");
                 syntax.DefineParameterList("source", ref _source, "The source files to assemble");
             });
+        }
+
+        /// <summary>
+        /// Define a custom option to parse at the command line.
+        /// </summary>
+        /// <param name="name">The option name</param>
+        /// <param name="help">The help associated with the option</param>
+        public void DefineOption(string name, string help)
+        {
+            _userOptions.Add(name, new Option
+                {
+                    Argument = string.Empty,
+                    Help = help
+                });
+        }
+
+        /// <summary>
+        /// Get the custom-defined argument for the option.
+        /// </summary>
+        /// <param name="option">The option name</param>
+        /// <returns>The argument string</returns>
+        public string GetOptionArgument(string option)
+        {
+            return _userOptions[option].Argument;
         }
 
         #endregion

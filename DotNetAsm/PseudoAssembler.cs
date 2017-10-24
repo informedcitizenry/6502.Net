@@ -323,7 +323,7 @@ namespace DotNetAsm
                 case ".align":
                     {
                         Int64 alignval = Controller.Evaluator.Eval(csv.First());
-                        return Compilation.GetAlignmentSize(line.PC, Convert.ToUInt16(alignval));
+                        return Compilation.GetAlignmentSize(Convert.ToUInt16(line.PC), Convert.ToUInt16(alignval));
                     }
                 case ".binary":
                     {

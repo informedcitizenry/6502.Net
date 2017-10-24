@@ -396,11 +396,6 @@ namespace Asm6502.Net
             return Reserved.IsReserved(instruction);
         }
 
-        protected override bool IsReserved(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
-
         #endregion
 
         #endregion

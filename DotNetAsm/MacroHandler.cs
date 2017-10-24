@@ -72,9 +72,7 @@ namespace DotNetAsm
                 {
                     name = line.Label;
                 }
-                if (name.StartsWith("_") ||
-                    !Regex.IsMatch(name, "^" + Patterns.SymbolUnicode + "$") ||
-                   _instructionFcn(name))
+                if (!Macro.IsValidMacroName(name) || _instructionFcn(name))
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
                     return;
@@ -147,11 +145,6 @@ namespace DotNetAsm
         public IEnumerable<SourceLine> GetProcessedLines()
         {
             return _expandedSource;
-        }
-
-        protected override bool IsReserved(string token)
-        {
-            return Processes(token);
         }
     }
 }

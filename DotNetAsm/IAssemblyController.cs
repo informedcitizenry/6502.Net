@@ -85,6 +85,28 @@ namespace DotNetAsm
         bool IsInstruction(string token);
 
         /// <summary>
+        /// Determines if the variable name is defined.
+        /// </summary>
+        /// <param name="variable">The variable to check</param>
+        /// <returns>True, if the variable is defined</returns>
+        bool IsVariable(string variable);
+
+        /// <summary>
+        /// Sets a variable to the given value.
+        /// </summary>
+        /// <param name="variable">The valid variable name</param>
+        /// <param name="value">The value to provide</param>
+        void SetVariable(string variable, long value);
+
+        /// <summary>
+        /// Gets the value of the variable, if it has been defined. To check if a variable
+        /// has been defined before calling this method, first call the IsVariable method.
+        /// </summary>
+        /// <param name="variable">The variable name to get the value for</param>
+        /// <returns>The variable's value</returns>
+        long GetVariable(string variable);
+
+        /// <summary>
         /// Gets or sets the disassembler. 
         /// </summary>
         ILineDisassembler Disassembler { get; set; }

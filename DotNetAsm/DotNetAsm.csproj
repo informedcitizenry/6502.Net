@@ -54,6 +54,7 @@
       <DependentUpon>ErrorStrings.resx</DependentUpon>
     </Compile>
     <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="ForNextHandler.cs" />
     <Compile Include="IAssemblyController.cs" />
     <Compile Include="IBlockHandler.cs" />
     <Compile Include="IEvaluator.cs" />
