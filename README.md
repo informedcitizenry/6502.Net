@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
-### Version 1.4
+### Version 1.5
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 and related CPU architectures. It is written for .Net (Version 4.5.1) and supports all of the published (legal) instructions of 6502-based CPUs. The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
 
@@ -31,7 +31,7 @@ Negative numbers are assembled according to two's complement rules, with the hig
                 .byte %...###..
                 .byte %.#######
 ```                
-### Labels and Symbols
+### Labels, Symbols and Variables
 When writing assembly code, hand-coding branches, addresses and constants can be time-consuming and lead to errors. Labels take care of this work for you! There is no restriction on name size, but all labels must begin with an underscore or letter, and can only contain underscores, letters, and digits, and they cannot be re-assigned:
 ```
             black   =   0
@@ -98,6 +98,14 @@ As you can see anonymous labels, though convenient, would hinder readability if 
 -               .byte $01, $02, $03
                 lda (-),x           ; best to put anonymous label reference inside paranetheses.
 ```            
+Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required, and unlike labels, cannot be used before they are declared. A variable is declared with the `.var` directive, along with an optional initial value.
+```
+myvar		.var	34
+			lda #myvar
+myvar		.var	myvar+1
+			ldx #myvar
+			ldy #undeclared	;; woops! error
+```
 ### Comments
 Adding comments to source promotes readability, particularly in assembly. Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or constant character.
 ```
@@ -411,19 +419,20 @@ variables   .byte ?
             .code
 ```
 Macros and segments must be defined before they can be invoked.
-## Conditional Assembly
-In cases where you want to control the flow of assembly based on certain conditions (environmental or target architecture), 6502.Net provides certain directives to handle this. Conditions can be nested, but expressions will be evaluated on first pass only.
-
+## Flow Control
+In cases where you want to control the flow of assembly, either based on certain conditions (environmental or target architecture) or in certain iterations, 6502.Net provides certain directives to handle this.
+### Conditional Assembly
+Conditional assembly is available using the `.if` and related directive.  Conditions can be nested, but expressions will be evaluated on first pass only.
 ```
     lda #$41
-    .ifdef APPLE2
+    .ifdef APPLE2   ; is the symbol APPLE2 defined?
     jsr $fbfd
     .else
     jsr $ffd2
     .endif
 ```
 **Caution:** Be careful not to use the `.end` directive inside a conditional block, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
-## Repetitions
+### Basic Repetitions
 On occasions where certain instructions will be repeatedly assembled, it is convenient to repeat their output in a loop. For instance, if you want to pad a series of `nop` instructions. The `.repeat` directive does just that.
 
 ```
@@ -453,9 +462,26 @@ These repetitions can also be nested, as shown below.
         .endrepeat
         rts
 ```
+### Loop Assembly
+Repetitions can also be handled in for/next loops, where an interation variable is initialized and incremented until a condition is met. The added advantage is the variable itself can be referenced in the source itself.
+```
+	lda #0
+	.for i = $0400, i < $0800
+	sta i
+	.next
+```
+If required, loops can be broken out of using the `.break` directive
+```
+    .for i = 0, i < 256
+    .if * >= $1000
+        .break          ; make sure assembly does not go past $1000
+    .endif
+    lda #'A'
+    jsr $ffd2
+    .next
+```
+**Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not make any checks if this variable is modified at runtime.
 ## Future enhancements under consideration
-* Variables (redefinable symbols)
-* For-next loops
 * Switch-case conditions
 * 65C02 and 65816/65C816 CPU support
 * Custom functions
@@ -554,7 +580,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0801
-        .dint   18000000      ; >0801 80 a8 12 01
+        .dint   18000000      ; &gt;0801 80 a8 12 01
 </pre>
 </td></tr></table>
 <table>
@@ -565,7 +591,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0801
-        .dword  $deadfeed     ; >0801 ed fe ad de
+        .dword  $deadfeed     ; &gt;0801 ed fe ad de
 </pre>
 </td></tr></table>
 <table>
@@ -781,6 +807,22 @@ done    rts
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.break</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Break out of the current for-next loop.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        .for n = 0, n < 1000
+            .if * > $7fff   ; unless address >= $8000
+                .break     
+            .endif
+            nop             ; do 1000 nops
+        .next
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.comment</code>/<code>.endcomment</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Set a multi-line comment block.</td></tr>
@@ -913,21 +955,33 @@ start       ; same as start .equ *
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0400
-
         cycles = 1
-
         .if cycles == 1
             nop
         .elif cycles == 2
             nop
             nop
         .endif
-
         ;; will result as:
         ;;
         ;; nop
 </pre>
 </td></tr></table>
+<table>
+<tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other label or variable, but it cannot be assigned inside the loop itself.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>initialization, condition[, step]</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+		;; clear seven memory locations on a page boundary between $100 and $700
+		ldx #0
+        .for pages = $100, pages < $800, $100
+		stx pages
+		.next
+</pre>
+</td></tr>
+</table>
 <table>
 <tr><td><b>Name</b></td><td><code>.include</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
@@ -1159,6 +1213,20 @@ glyph             ;12345678
       .byte 'A', 'π'    ;; >> 41 cf 80
       .unmap "09"
       .string "2017"    ;; >> 32 30 31 37
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.var</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Declare or the symbol as a variable, or re-assign the existing variable. Labels cannot be redefined as variables, and vice versa.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+myvar		.var	$ffd2
+			jsr myvar
+myvar		.var	myvar-$1000
+			lda	myvar
 </pre>
 </td></tr>
 </table>
@@ -1548,6 +1616,8 @@ glyph             ;12345678
 
 `Attempted to divide by zero.` - The expression attempted a division by zero.
 
+`Cannot redefine type to <type> because it is already a type` - The type definition is already a type.
+
 `Cannot resolve anonymous label` - The assembler cannot find the reference to the anonymous label.
 
 `Closure does not close a block` - A block closure is present but no block opening.
@@ -1606,9 +1676,15 @@ glyph             ;12345678
 
 `Symbol not found` - The expression referenced a symbol that was not defined.
 
+`The iteration variable is immutable` - An attempt was made to change an iteration variable in a `.for` loop using the `.var` directive.
+
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
 `Too many arguments for directive` - More arguments were provided to the directive than expected.
+
+`Type definition for unknown type` - An attempt was made to define an unknown type.
+
+`Type name is a reserved symbol name` - A type definition failed because the definition is a reserved name.
 
 `Unable to find binary file` - A directive was given to include a binary file, but the binary file was not found, either due to filesystem error or file not found.
 
