@@ -438,7 +438,7 @@ On occasions where certain instructions will be repeatedly assembled, it is conv
 ```
         ;; will assemble $ea ten times
         .repeat 10
-        .nop
+        nop
         .endrepeat
 
 ```
