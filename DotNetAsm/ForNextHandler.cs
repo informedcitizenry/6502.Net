@@ -1,8 +1,29 @@
-﻿using System;
+//-----------------------------------------------------------------------------
+// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to 
+// deal in the Software without restriction, including without limitation the 
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in 
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// IN THE SOFTWARE.
+//-----------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DotNetAsm
 {
@@ -162,6 +183,28 @@ namespace DotNetAsm
                 }
                 _entries.Clear();
                 _currentEntry = null;
+            }
+
+            /// <summary>
+            /// Checks whether the symbol is an iteration variable, either for the current loop block
+            /// or any of its ancestors.
+            /// </summary>
+            /// <param name="variable">The variable name</param>
+            /// <param name="comparison">The System.StringComparison</param>
+            /// <returns>True, if the symbol is an iteration variable for
+            /// the block, parent or ancestor</returns>
+            public bool IsIterationVariable(string variable, StringComparison comparison)
+            {
+                if (Variable.Equals(variable, comparison))
+                    return true;
+                var parent = Parent;
+                while (parent != null)
+                {
+                    if (parent.Variable.Equals(variable, comparison))
+                        return true;
+                    parent = parent.Parent;
+                }
+                return false;
             }
 
             #endregion
@@ -449,6 +492,10 @@ namespace DotNetAsm
             }
             else if (_breakBlock == null)
             {
+                if (line.Instruction.Equals(".var", Controller.Options.StringComparison) &&
+                    _currBlock.IsIterationVariable(line.Label, Controller.Options.StringComparison))
+                    Controller.Log.LogEntry(line, "The iteration variable '" + line.Label + "' is being reassigned inside the loop",
+                        Controller.Options.WarningsAsErrors);
                 _currBlock.AddEntry(line, null);
             }
         }
