@@ -970,7 +970,7 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other label or variable, but it cannot be assigned inside the loop itself.</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other label or variable.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>initialization, condition[, step]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
