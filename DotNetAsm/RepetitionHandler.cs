@@ -146,7 +146,7 @@ namespace DotNetAsm
         /// <param name="line">The DotNetAsm.SourceLine to process</param>
         public void Process(SourceLine line)
         {
-            if (Reserved.IsOneOf("Opening", line.Instruction))
+            if (line.Instruction.Equals(".repeat", Controller.Options.StringComparison))
             {
                 if (string.IsNullOrEmpty(line.Operand))
                 {
@@ -173,7 +173,7 @@ namespace DotNetAsm
                 _levels++;
                 _currBlock.RepeatAmounts = Controller.Evaluator.Eval(line.Operand, int.MinValue, uint.MaxValue);
             }
-            else if (Reserved.IsOneOf("Closure", line.Instruction))
+            else if (line.Instruction.Equals(".endrepeat", Controller.Options.StringComparison))
             {
                 if (_levels == 0)
                 {
