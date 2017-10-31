@@ -109,12 +109,12 @@ namespace DotNetAsm
 
         #region Members
 
-        private RepetitionBlock _rootBlock;
-        private RepetitionBlock _currBlock;
+        RepetitionBlock _rootBlock;
+        RepetitionBlock _currBlock;
 
-        private List<SourceLine> _processedLines;
+        readonly List<SourceLine> _processedLines;
 
-        private int _levels;
+        int _levels;
 
         #endregion
 
@@ -128,15 +128,7 @@ namespace DotNetAsm
         public RepetitionHandler(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.DefineType("Opening", new string[] 
-            { 
-                ".repeat"
-            });
-
-            Reserved.DefineType("Closure", new string[]
-            {
-                ".endrepeat"
-            });
+            Reserved.DefineType("Directives", ".repeat", ".endrepeat");
 
             _currBlock =
             _rootBlock = new RepetitionBlock();
@@ -161,7 +153,7 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Label) == false)
+                if (string.IsNullOrEmpty(line.Label) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.None);
                     return;
@@ -169,8 +161,10 @@ namespace DotNetAsm
 
                 if (_levels > 0)
                 {
-                    RepetitionBlock block = new RepetitionBlock();
-                    block.BackLink = _currBlock;
+                    RepetitionBlock block = new RepetitionBlock
+                    {
+                        BackLink = _currBlock
+                    };
                     RepetitionBlock.RepetitionEntry entry =
                         new RepetitionBlock.RepetitionEntry(null, block);
                     _currBlock.Entries.Add(entry);
@@ -186,12 +180,12 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Operand) == false)
+                if (string.IsNullOrEmpty(line.Operand) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Label) == false)
+                if (string.IsNullOrEmpty(line.Label) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.None);
                     return;
@@ -213,7 +207,7 @@ namespace DotNetAsm
         /// Perform final processing on the DotNetAsm.RepetitionHandler.ProcessedLines.
         /// </summary>
         /// <param name="block">The DotNetAsm.RepetitionHandler.RepetitionBlock to process</param>
-        private void ProcessLines(RepetitionBlock block)
+        void ProcessLines(RepetitionBlock block)
         {
             for (int i = 0; i < block.RepeatAmounts; i++)
             {

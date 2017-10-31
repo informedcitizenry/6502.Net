@@ -125,7 +125,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Disassembly = string.Empty;
             line.PC = 0x080b;
             line.Label = "FLAG";
-            Controller.Labels.Add("FLAG", "52");
+            Controller.Labels.SetSymbol("FLAG", 52, false);
 
             string expected =
 @"=$34                                                 FLAG         =   $34 " + Environment.NewLine;

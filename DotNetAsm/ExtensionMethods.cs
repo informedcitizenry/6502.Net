@@ -179,7 +179,7 @@ namespace DotNetAsm
     public static class Int64_Extension
     {
         /// <summary>
-        /// The minimum size required to store this value.
+        /// The minimum size required in bytes to store this value.
         /// </summary>
         /// <param name="value">The value to store.</param>
         /// <returns>The size in bytes.</returns>

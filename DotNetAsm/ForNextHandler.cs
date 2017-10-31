@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,7 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DotNetAsm
 {
@@ -34,7 +34,7 @@ namespace DotNetAsm
         /// <summary>
         /// A block of for next loops implemented as a linked list.
         /// </summary>
-        private class ForNextBlock
+        class ForNextBlock
         {
             #region Classes
 
@@ -74,8 +74,8 @@ namespace DotNetAsm
 
             #region Members
 
-            private LinkedList<ForNextEntry> _entries;
-            private LinkedListNode<ForNextEntry> _currentEntry;
+            LinkedList<ForNextEntry> _entries;
+            LinkedListNode<ForNextEntry> _currentEntry;
 
             #endregion
 
@@ -88,9 +88,9 @@ namespace DotNetAsm
             {
                 Parent = null;
                 _entries = new LinkedList<ForNextEntry>();
-                Variable =
+                IterExpressions = new List<string>();
+                InitExpression =
                 Condition = string.Empty;
-                Init = Step = 0;
             }
 
             #endregion
@@ -185,28 +185,6 @@ namespace DotNetAsm
                 _currentEntry = null;
             }
 
-            /// <summary>
-            /// Checks whether the symbol is an iteration variable, either for the current loop block
-            /// or any of its ancestors.
-            /// </summary>
-            /// <param name="variable">The variable name</param>
-            /// <param name="comparison">The System.StringComparison</param>
-            /// <returns>True, if the symbol is an iteration variable for
-            /// the block, parent or ancestor</returns>
-            public bool IsIterationVariable(string variable, StringComparison comparison)
-            {
-                if (Variable.Equals(variable, comparison))
-                    return true;
-                var parent = Parent;
-                while (parent != null)
-                {
-                    if (parent.Variable.Equals(variable, comparison))
-                        return true;
-                    parent = parent.Parent;
-                }
-                return false;
-            }
-
             #endregion
 
             #region Properties
@@ -214,40 +192,40 @@ namespace DotNetAsm
             /// <summary>
             /// Gets the parent block to a DotNetAsm.ForNextHandler.ForNextBlock
             /// </summary>
-            public ForNextBlock Parent { get; private set; }
+            public ForNextBlock Parent { get; set; }
 
             /// <summary>
-            /// Gets or sets the iteration variable of the block.
+            /// Gets or sets the initialization expression of the block.
             /// </summary>
-            public string Variable { get; set; }
+            public string InitExpression { get; set; }
 
             /// <summary>
-            /// Gets or sets the initial value of the iteration variable at the start of the loop.
+            /// Gets the list of iteration expressions evaluated upon each for loop.
             /// </summary>
-            public long Init { get; set; }
-
-            /// <summary>
-            /// The step (increment amount) of the iteration variable of the block.
-            /// </summary>
-            public long Step { get; set; }
+            public List<string> IterExpressions { get; set; }
 
             /// <summary>
             /// The condition to meet to stop the block.
             /// </summary>
             public string Condition { get; set; }
 
+            /// <summary>
+            /// Gets or sets the scope of the entries in the block.
+            /// </summary>
+            public string Scope { get; set; }
+
             #endregion
         }
 
         #endregion
 
-        private ForNextBlock _rootBlock;
-        private ForNextBlock _currBlock;
-        private ForNextBlock _breakBlock;
+        ForNextBlock _rootBlock;
+        ForNextBlock _currBlock;
+        ForNextBlock _breakBlock;
 
-        private List<SourceLine> _processedLines;
+        readonly List<SourceLine> _processedLines;
 
-        private int _levels;
+        int _levels;
 
         /// <summary>
         /// Constructs a DotNetAsm.ForNextHandler.
@@ -257,11 +235,10 @@ namespace DotNetAsm
         public ForNextHandler(IAssemblyController controller)
             : base(controller)
         {
-            Reserved.DefineType("Directives", new string[] 
-            { 
+            Reserved.DefineType("Directives", 
                 ".for", ".next", ".break",
                 "@@ for @@", "@@ next @@", "@@ break @@"
-            });
+            );
             _currBlock =
             _rootBlock = new ForNextBlock();
             _breakBlock = null;
@@ -272,7 +249,7 @@ namespace DotNetAsm
         /// <summary>
         /// Perform a full reset on the block.
         /// </summary>
-        private void FullReset()
+        void FullReset()
         {
             _breakBlock = null;
             _processedLines.Clear();
@@ -308,25 +285,20 @@ namespace DotNetAsm
                 }
                 else if (string.IsNullOrEmpty(line.Label) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.None);
-                    return;
+                    // capture the label
+                    _processedLines.Add(new SourceLine()
+                    {
+                        Label = line.Label,
+                        SourceString = line.Label,
+                        LineNumber = line.LineNumber,
+                        Filename = line.Filename
+                    });
                 }      
-                // .for <var> = <init>, <condition>, <step>
+                // .for <init_expression>, <condition>, <iteration_expression>
                 var csvs = line.CommaSeparateOperand();
-                if (csvs.Count > 3)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-                    return;
-                }
-                else if (csvs.Count < 2)
+                if (csvs.Count < 2)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
-                    return;
-                }
-                var init = csvs.First().Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
-                if (init.Length != 2)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.None);
                     return;
                 }
 
@@ -342,32 +314,37 @@ namespace DotNetAsm
 
                 }
                 _levels++;
-
-                _currBlock.Variable = init.First().Trim();
-                _currBlock.Init = Controller.Evaluator.Eval(init.Last(), int.MinValue, uint.MaxValue);
+                _currBlock.Scope = line.Scope;
+                _currBlock.InitExpression = csvs.First();
                 _currBlock.Condition = csvs[1];
-                Controller.SetVariable(_currBlock.Variable, _currBlock.Init);
 
                 if (_currBlock == _rootBlock)
                 {
+                    var iteratorvar = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                    if (string.IsNullOrEmpty(iteratorvar.Key))
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
+                        return;
+                    }
                     _processedLines.Add(new SourceLine()
                     {
-                        SourceString = SourceLine.SHADOW_SOURCE,
-                        Label = _currBlock.Variable,
-                        Instruction = ".var",
-                        Operand = _currBlock.Init.ToString()
+                        SourceString = ConstStrings.SHADOW_SOURCE,
+                        Instruction = ConstStrings.VAR_DIRECTIVE,
+                        Operand = string.Format("{0}={1}", iteratorvar.Key, iteratorvar.Value)
                     });
                 }
                 _currBlock.AddEntry(new SourceLine()
                 {
-                    SourceString = SourceLine.SHADOW_SOURCE,
+                    SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = "@@ for @@"
                 }, null);
 
-                if (csvs.Count == 3)
-                    _currBlock.Step = (int)Controller.Evaluator.Eval(csvs.Last(), int.MinValue, uint.MaxValue);
-                else
-                    _currBlock.Step = 1;
+                if (csvs.Count >= 3)
+                {
+                    _currBlock.IterExpressions.Clear();
+                    _currBlock.IterExpressions.AddRange(csvs.GetRange(2, csvs.Count - 2));
+                }   
+     
             }
             else if (instruction.Equals(".next"))
             {
@@ -388,7 +365,7 @@ namespace DotNetAsm
                 }
                 SourceLine loopLine = new SourceLine()
                 {
-                    SourceString = SourceLine.SHADOW_SOURCE,
+                    SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = "@@ next @@"
                 };
                 _currBlock.AddEntry(loopLine, null);
@@ -412,7 +389,7 @@ namespace DotNetAsm
                 string procinst = "@@ break @@";
                 SourceLine shadow = new SourceLine()
                 {
-                    SourceString = SourceLine.SHADOW_SOURCE,
+                    SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = procinst
                 };
                 _currBlock.AddEntry(shadow, null);
@@ -435,14 +412,12 @@ namespace DotNetAsm
 
                     if (_breakBlock == null)
                     {
-                        Controller.SetVariable(_currBlock.Variable, _currBlock.Init);
-
+                        var initval = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         _processedLines.Add(new SourceLine()
                         {
-                            SourceString = SourceLine.SHADOW_SOURCE,
-                            Label = _currBlock.Variable,
-                            Instruction = ".var",
-                            Operand = _currBlock.Init.ToString()
+                            SourceString = ConstStrings.SHADOW_SOURCE,
+                            Instruction = ConstStrings.VAR_DIRECTIVE,
+                            Operand = string.Format("{0}={1}", initval.Key, initval.Value)
                         });
                     }
                 }
@@ -462,19 +437,23 @@ namespace DotNetAsm
                     return;
                 }
 
-                var iteration_value = Controller.GetVariable(_currBlock.Variable);
-                Controller.SetVariable(_currBlock.Variable, iteration_value + _currBlock.Step);
+                // update each var in the expressions during runtime as well as
+                // in output source (i.e., emit .let n = ... epxressions)
+                foreach(var iterexp in _currBlock.IterExpressions)
+                {
+                    var itervar = Controller.Variables.SetVariable(iterexp, _currBlock.Scope);
+                    _processedLines.Add(new SourceLine()
+                    {
+                        SourceString = ConstStrings.SHADOW_SOURCE,
+                        Instruction = ConstStrings.VAR_DIRECTIVE,
+                        Operand = string.Format("{0}={1}", itervar.Key, itervar.Value)
+                    });
+                }
+
                 _currBlock.Begin();
 
                 if (Controller.Evaluator.EvalCondition(_currBlock.Condition))
                 {
-                    _processedLines.Add(new SourceLine()
-                    {
-                        SourceString = SourceLine.SHADOW_SOURCE,
-                        Label = _currBlock.Variable,
-                        Instruction = ".var",
-                        Operand = (iteration_value + _currBlock.Step).ToString()
-                    });
                     _processedLines.AddRange(_currBlock.GetProcessedLines());
                 }
                 else
@@ -492,10 +471,6 @@ namespace DotNetAsm
             }
             else if (_breakBlock == null)
             {
-                if (line.Instruction.Equals(".var", Controller.Options.StringComparison) &&
-                    _currBlock.IsIterationVariable(line.Label, Controller.Options.StringComparison))
-                    Controller.Log.LogEntry(line, "The iteration variable '" + line.Label + "' is being reassigned inside the loop",
-                        Controller.Options.WarningsAsErrors);
                 _currBlock.AddEntry(line, null);
             }
         }

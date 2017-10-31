@@ -59,7 +59,7 @@ namespace DotNetAsm
         /// <summary>
         /// Evaluates a text string as a conditional (boolean) evaluation.
         /// </summary>
-        /// <param name="condition">The string representation of the conditional expression.</param>
+        /// <param name="expression">The string representation of the conditional expression.</param>
         /// <returns>Returns true, if the expression is true, false otherwise.</returns>
         bool EvalCondition(string expression);
 

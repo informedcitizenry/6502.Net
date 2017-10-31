@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -39,16 +39,11 @@ namespace DotNetAsm
             : base(controller)
         {
             PrintingOn = true;
-            Reserved.DefineType("Blocks", new string[]
-                {
-                    AssemblyController.OPEN_SCOPE,
-                    AssemblyController.CLOSE_SCOPE
-                });
-            Reserved.DefineType("Directives", new string[]
-                {
+            Reserved.DefineType("Blocks", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE );
+            Reserved.DefineType("Directives",
                     ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef", 
                     ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
-                });
+                );
         }
 
         #endregion
@@ -61,7 +56,7 @@ namespace DotNetAsm
         /// <param name="line">The SourceLine.</param>
         /// <returns>A formatted representation of the filename and 
         /// line number of the source.</returns>
-        private string DisassembleFileLine(SourceLine line)
+        string DisassembleFileLine(SourceLine line)
         {
             string lineinfo = line.Filename;
             if (string.IsNullOrEmpty(lineinfo) == false)
@@ -79,7 +74,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The SourceLine.</param>
         /// <returns>Returns a hex representation of the source line address.</returns>
-        private string DisassembleAddress(SourceLine line)
+        string DisassembleAddress(SourceLine line)
         {
             if ((string.IsNullOrEmpty(line.Label) && (string.IsNullOrEmpty(line.Instruction) ||
                 Reserved.IsReserved(line.Instruction))) ||
@@ -87,34 +82,23 @@ namespace DotNetAsm
                 return string.Empty;
                       
             if (line.Instruction == "=" || 
-                line.Instruction.Equals(".equ", Controller.Options.StringComparison) || 
-                line.Instruction.Equals(".var", Controller.Options.StringComparison))
+                line.Instruction.Equals(".equ", Controller.Options.StringComparison))
             {
                 Int64 value = 0;
                 if (line.Label == "*" || Controller.Options.NoSource)
                     return string.Empty;
                 if (line.Label == "-" || line.Label == "+")
-                {
                     value = line.PC;
-                }
-                else if (line.Instruction.Equals(".var", Controller.Options.StringComparison))
-                {
-                    value = Controller.GetVariable(line.Label);
-                }
                 else
-                {
-                    var labelval = Controller.GetScopedLabelValue(line.Label, line);
-                    value = long.Parse(labelval);
-                }
+                    value = Controller.Labels.GetSymbolValue(line.Scope + line.Label);
+
                 return string.Format("=${0:x" + value.Size() * 2 + "}", value);
             }
+            if (line.Instruction.StartsWith(".", Controller.Options.StringComparison) &&
+                    !Reserved.IsReserved(line.Instruction))
+                return string.Format(">{0:x4}", line.PC);
             else
-            {
-                if (line.Instruction.StartsWith(".") && !Reserved.IsReserved(line.Instruction))
-                    return string.Format(">{0:x4}", line.PC);
-                else
-                    return string.Format(".{0:x4}", line.PC);
-            }
+                return string.Format(".{0:x4}", line.PC);
         }
 
         /// <summary>
@@ -123,7 +107,7 @@ namespace DotNetAsm
         /// <param name="line">The SourceLine</param>
         /// <returns>A string representation of the hex bytes of
         /// the source assembly.</returns>
-        private string DisassembleAsm(SourceLine line, string source)
+        string DisassembleAsm(SourceLine line, string source)
         {
             if (line.Assembly.Count == 0 || Controller.Options.NoAssembly)
                 return string.Empty;
@@ -170,13 +154,12 @@ namespace DotNetAsm
             {
                 if (line.Instruction.Equals(".pron"))
                     PrintingOn = true;
-                else if (line.Instruction.Equals(".proff"))
-                    PrintingOn = false;
+                else PrintingOn &= !line.Instruction.Equals(".proff");
             }
             if (!PrintingOn)
                 return;// printing has been suppressed
 
-            if (line.SourceString.Equals(SourceLine.SHADOW_SOURCE))
+            if (line.SourceString.Equals(ConstStrings.SHADOW_SOURCE))
                 return;
 
             string sourcestr = line.SourceString;
@@ -203,7 +186,7 @@ namespace DotNetAsm
             {
                 if (string.IsNullOrEmpty(sourcestr))
                     return;
-                else if (Controller.Options.NoSource)
+                if (Controller.Options.NoSource)
                     sourcestr = string.Empty;
                 sb.Append(DisassembleFileLine(line));
             }
@@ -217,14 +200,11 @@ namespace DotNetAsm
                     sb.Append(asm);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Disassembly) && Controller.Options.NoDissasembly == false)
-                {
+
+                if (string.IsNullOrEmpty(line.Disassembly) && Controller.Options.NoDissasembly == false)
                     sb.AppendFormat("{0,-29}", asm);
-                }
                 else
-                {
                     sb.AppendFormat("{0,-13}", asm);
-                }
             }
             
             if (Controller.Options.NoDissasembly == false)

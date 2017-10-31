@@ -32,9 +32,9 @@ namespace Asm6502.Net
     {
         #region Members
 
-        private FormatBuilder[] _builders;
+        FormatBuilder[] _builders;
 
-        private string[] _opcodeFormats = 
+        string[] _opcodeFormats = 
             {
                 "brk",              // 00
                 "ora (${0:x2},x)",  // 01
@@ -294,8 +294,8 @@ namespace Asm6502.Net
                 null                // ff
             };
 
-        private Regex _regInd;
-        private Regex _regXY;
+        Regex _regInd;
+        Regex _regXY;
 
         #endregion
     }

@@ -38,17 +38,17 @@ namespace DotNetAsm
 
         public class InvalidPCAssignmentException : Exception
         {
-            private int pc_;
+            readonly int _pc;
 
             public InvalidPCAssignmentException(int value)
             {
-                pc_ = value;
+                _pc = value;
             }
             public override string Message
             {
                 get
                 {
-                    return pc_.ToString();
+                    return _pc.ToString();
                 }
             }
         }
@@ -145,7 +145,7 @@ namespace DotNetAsm
         /// Sets both the logical and real Program Counters.
         /// </summary>
         /// <param name="value">The program counter value</param>
-        /// <exception cref="InvallidPCAssignmentException"></exception>
+        /// <exception cref="T:InvallidPCAssignmentException"></exception>
         public void SetPC(int value)
         {
             LogicalPC = value;
@@ -419,8 +419,8 @@ namespace DotNetAsm
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
-        /// <param name="Bytes">The collection of bytes to add</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <param name="bytes">The collection of bytes to add</param>
+        /// <returns>A <see cref="T:System.Collections.Generic&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes)
         {
             return AddBytes(bytes, true);
@@ -504,7 +504,7 @@ namespace DotNetAsm
         public int ProgramCounter
         {
             get { return _pc; }
-            private set
+            set
             {
                 if (value < 0 || value < _pc)
                     throw new InvalidPCAssignmentException(value);
@@ -529,7 +529,7 @@ namespace DotNetAsm
         public int LogicalPC
         {
             get { return _logicalPc; }
-            private set
+            set
             {
                 if (value < 0 || value < _logicalPc)
                     throw new InvalidPCAssignmentException(value);

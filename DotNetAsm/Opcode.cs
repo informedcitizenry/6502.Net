@@ -220,14 +220,14 @@ namespace DotNetAsm
     {
         #region Members
 
-        private Regex _regex;
-        private string _format;
-        private string _exp1Format;
-        private string _exp2Format;
-        private int _reg1Group, _exp1Group;
-        private int _reg2Group, _exp2Group;
-        private bool _treatParenEnclosureAsExpr;
-        private IEvaluator _evaluator;
+        readonly Regex _regex;
+        string _format;
+        string _exp1Format;
+        string _exp2Format;
+        int _reg1Group, _exp1Group;
+        int _reg2Group, _exp2Group;
+        bool _treatParenEnclosureAsExpr;
+        IEvaluator _evaluator;
 
         #endregion
 
@@ -315,7 +315,7 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="regOptions">Any System.Text.RegularExpressions.RegexOptions</param>
+        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
         /// <param name="evaluator">If not null, a DotNetAsm.IEvaluator to evaluate the second 
         /// subexpression as part of the final format</param>
         public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions, IEvaluator evaluator)
@@ -389,9 +389,11 @@ namespace DotNetAsm
             if (_regex.IsMatch(expression))
             {
                 var m = _regex.Match(expression);
-                fmt = new OperandFormat();
-                fmt.Expression1 = m.Groups[_exp1Group].Value;
-                fmt.Expression2 = m.Groups[_exp2Group].Value;
+                fmt = new OperandFormat
+                {
+                    Expression1 = m.Groups[_exp1Group].Value,
+                    Expression2 = m.Groups[_exp2Group].Value
+                };
                 string exp1Format = _exp1Format;
                 string exp2Format = _exp2Format;
                 if (_evaluator != null)

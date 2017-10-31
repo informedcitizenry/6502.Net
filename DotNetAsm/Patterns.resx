@@ -139,9 +139,9 @@
     <value>[\p{Ll}\p{Lu}\p{Lt}0-9_.]</value>
   </data>
   <data name="SymbolUnicodeDot" xml:space="preserve">
-    <value>_?[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9_.]*</value>
+    <value>_*[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9_.]*(?&lt;!\.)</value>
   </data>
   <data name="SymbolUnicodeFull" xml:space="preserve">
-    <value>^_?[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9_.]*$</value>
+    <value>^_*[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9_.]*(?&lt;!\.)$</value>
   </data>
 </root>

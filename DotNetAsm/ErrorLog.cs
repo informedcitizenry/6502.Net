@@ -33,9 +33,10 @@ namespace DotNetAsm
     /// </summary>
     public class ErrorLog
     {
+        readonly
         #region Members
 
-        List<Tuple<string, bool>> errors_;
+        List<Tuple<string, bool>> _errors;
 
         #endregion
 
@@ -45,7 +46,7 @@ namespace DotNetAsm
         /// </summary>
         public ErrorLog()
         {
-            errors_ = new List<Tuple<string, bool>>();
+            _errors = new List<Tuple<string, bool>>();
         }
         #endregion
 
@@ -56,7 +57,7 @@ namespace DotNetAsm
         /// </summary>
         public void ClearAll()
         {
-            errors_.Clear();
+            _errors.Clear();
         }
 
         /// <summary>
@@ -64,7 +65,7 @@ namespace DotNetAsm
         /// </summary>
         public void ClearErrors()
         {
-            errors_.RemoveAll(e => e.Item2);
+            _errors.RemoveAll(e => e.Item2);
         }
 
         /// <summary>
@@ -72,7 +73,7 @@ namespace DotNetAsm
         /// </summary>
         public void ClearWarnings()
         {
-            errors_.RemoveAll(e => e.Item2 == false);
+            _errors.RemoveAll(e => e.Item2 == false);
         }
 
         /// <summary>
@@ -80,7 +81,7 @@ namespace DotNetAsm
         /// </summary>
         public void DumpAll()
         {
-            errors_.ForEach(e => Console.WriteLine(e.Item1));
+            _errors.ForEach(e => Console.WriteLine(e.Item1));
         }
 
         /// <summary>
@@ -88,7 +89,7 @@ namespace DotNetAsm
         /// </summary>
         public void DumpErrors()
         {
-            errors_.Where(e => e.Item2).ToList()
+            _errors.Where(e => e.Item2).ToList()
                    .ForEach(error => Console.WriteLine(error.Item1));
         }
 
@@ -97,7 +98,7 @@ namespace DotNetAsm
         /// </summary>
         public void DumpWarnings()
         {
-            errors_.Where(e => e.Item2 == false).ToList()
+            _errors.Where(e => e.Item2 == false).ToList()
                    .ForEach(warning => Console.WriteLine(warning.Item1));
         }
 
@@ -132,7 +133,7 @@ namespace DotNetAsm
             else if (message.Contains("'{0}'"))
                 sb.AppendFormat(message, source);
 
-            errors_.Add(new Tuple<string, bool>(sb.ToString(), isError));
+            _errors.Add(new Tuple<string, bool>(sb.ToString(), isError));
         }
 
         /// <summary>
@@ -198,27 +199,27 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the log entries
         /// </summary>
-        public ReadOnlyCollection<string> Entries { get { return errors_.Select(e => e.Item1).ToList().AsReadOnly(); } }
+        public ReadOnlyCollection<string> Entries { get { return _errors.Select(e => e.Item1).ToList().AsReadOnly(); } }
 
         /// <summary>
         /// Gets if the log has errors.
         /// </summary>
-        public bool HasErrors { get { return errors_.Any(e => e.Item2); } }
+        public bool HasErrors { get { return _errors.Any(e => e.Item2); } }
 
         /// <summary>
         /// Gets if the log has warnings.
         /// </summary>
-        public bool HasWarnings { get { return errors_.Any(e => e.Item2 == false); } }
+        public bool HasWarnings { get { return _errors.Any(e => e.Item2 == false); } }
 
         /// <summary>
         /// Gets the error count in the log.
         /// </summary>
-        public int ErrorCount { get { return errors_.Where(e => e.Item2).Count(); } }
+        public int ErrorCount { get { return _errors.Count(e => e.Item2 == true); } }
 
         /// <summary>
         /// Gets the warning count in the log.
         /// </summary>
-        public int WarningCount { get { return errors_.Where(w => w.Item2 == false).Count(); } }
+        public int WarningCount { get { return _errors.Count(w => w.Item2 == false); } }
 
         #endregion
     }

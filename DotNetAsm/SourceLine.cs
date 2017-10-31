@@ -52,30 +52,19 @@ namespace DotNetAsm
 
         #endregion
 
-        #region Constants
-
-        /// <summary>
-        /// A constant string expression to use for a DotNetAsm.SourceLine SourceString 
-        /// to indicate the line itself is "shadow source," i.e. injected programmatically
-        /// and not present in the original source file.
-        /// </summary>
-        public const string SHADOW_SOURCE = "@@__SHADOW__@@";
-
-        #endregion
-
         #region Members
 
-        private bool _doNotAssemble;
+        bool _doNotAssemble;
 
-        private bool _comment;
+        bool _comment;
 
         #region Static Members
 
-        private static Regex _regThree;
-        private static Regex _regThreeAlt;
-        private static Regex _regTwo;
-        private static Regex _regOne;
-        private static Regex _regUnicode;
+        static Regex _regThree;
+        static Regex _regThreeAlt;
+        static Regex _regTwo;
+        static Regex _regOne;
+        static Regex _regUnicode;
 
         #endregion
 
@@ -137,7 +126,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="labelOperand">The label or operand string to convert</param>
         /// <returns>A string with unicode characters converted from code points</returns>
-        private string ConvertEscapedUnicode(string labelOperand)
+        string ConvertEscapedUnicode(string labelOperand)
         {
             return _regUnicode.Replace(labelOperand, match =>
             {
@@ -283,13 +272,9 @@ namespace DotNetAsm
                 else if (paren_enclosed)
                 {
                     if (c == '"' && !single_enclosed)
-                    {
                         double_enclosed = true;
-                    }
-                    else if (c == '\'' && !double_enclosed)
-                    {
-                        single_enclosed = true;
-                    }
+                    else 
+                        single_enclosed |= (c == '\'' && !double_enclosed);
 
                     sb.Append(c);
                     if (c == ')' && !double_enclosed && !single_enclosed)
@@ -301,24 +286,25 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    if (c == '"')
+                    switch (c)
                     {
-                        double_enclosed = true;
+                        case '"':
+                            double_enclosed = true;
+                            break;
+                        case '\'':
+                            single_enclosed = true;
+                            break;
+                        case '(':
+                            paren_enclosed = true;
+                            break;
+                        case ',':
+                            csv.Add(sb.ToString().Trim());
+                            sb.Clear();
+                            continue;
+                        default:
+                            break;
                     }
-                    else if (c == '\'')
-                    {
-                        single_enclosed = true;
-                    }
-                    else if (c == '(')
-                    {
-                        paren_enclosed = true;
-                    }
-                    else if (c == ',')
-                    {
-                        csv.Add(sb.ToString().Trim());
-                        sb.Clear();
-                        continue;
-                    }
+
                     sb.Append(c);
                     if (i == Operand.Length - 1)
                         csv.Add(sb.ToString().Trim());
@@ -351,20 +337,6 @@ namespace DotNetAsm
 
         public override string ToString()
         {
-            /*
-            string source = string.Empty;
-            if (string.IsNullOrEmpty(SourceString) == false)
-                source = SourceString.Trim();
-            if (source.Length > 10)
-                source = source.Substring(0, 10);
-            return string.Format("Assemble? {0}: ${1:X}:{2} {3} {4} {5} ({6})",
-                                                      (!DoNotAssemble).ToString(),
-                                                      PC,
-                                                      Label,
-                                                      Instruction,
-                                                      Operand,
-                                                      Disassembly,
-                                                      source);*/
             if (DoNotAssemble)
                 return string.Format("Do Not Assemble {0}", SourceString);
             return string.Format("Line {0} ${1:X4} L:{2} I:{3} O:{4}",

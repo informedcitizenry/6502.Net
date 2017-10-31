@@ -27,10 +27,7 @@ namespace DotNetAsm
         public MacroHandler(IAssemblyController controller, Func<string, bool> instructionFcn)
             : base(controller)
         {
-            Reserved.DefineType("Directives", new string[]
-            {
-                ".macro", ".endmacro", ".segment", ".endsegment"
-            });
+            Reserved.DefineType("Directives", ".macro", ".endmacro", ".segment", ".endsegment");
             _macros = new Dictionary<string, Macro>(controller.Options.StringComparar);
             _expandedSource = new List<SourceLine>();
             _macroDefinitions = new Stack<List<SourceLine>>();
@@ -93,7 +90,7 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseMacro, line.Instruction);
                     return;
                 }
-                else if (def.Equals(".segment"))
+                if (def.Equals(".segment"))
                 {
                     name = _definitions.Peek().Operand;
                     if (!name.Equals(line.Operand, Controller.Options.StringComparison))
@@ -107,8 +104,8 @@ namespace DotNetAsm
                                              line,
                                              _macroDefinitions.Pop(),
                                              Controller.Options.StringComparison,
-                                             AssemblyController.OPEN_SCOPE,
-                                             AssemblyController.CLOSE_SCOPE);
+                                             ConstStrings.OPEN_SCOPE,
+                                             ConstStrings.CLOSE_SCOPE);
             }
             else
             {

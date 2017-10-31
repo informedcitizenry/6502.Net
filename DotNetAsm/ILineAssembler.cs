@@ -33,7 +33,7 @@ namespace DotNetAsm
         /// Assemble the line of source into output bytes of the
         /// target architecture.
         /// </summary>
-        /// <param name="evaluator">An expression evaluator.</param>
+        /// <param name="line">The source line to assemble.</param>
         void AssembleLine(SourceLine line);
 
         /// <summary>

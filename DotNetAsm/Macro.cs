@@ -42,7 +42,7 @@ namespace DotNetAsm
         {
             #region Exception.Members
 
-            private string _macroExceptMsg;
+            string _macroExceptMsg;
 
             #endregion
 
@@ -183,7 +183,7 @@ namespace DotNetAsm
                 //  if passed exceeds defined parameters raise an error
                 if (passed.Count > parms.Count)
                     throw new MacroException(macrocall, "Too many arguments");
-                else if (passed.Count < parms.Count) // else pad passed to match defined
+                if (passed.Count < parms.Count) // else pad passed to match defined
                     passed.AddRange(Enumerable.Repeat(string.Empty, parms.Count - passed.Count));
 
                 for (int i = 0; i < passed.Count; i++)
@@ -205,15 +205,16 @@ namespace DotNetAsm
                 }
             }
             if (!string.IsNullOrEmpty(macrocall.Label))
-                yield return new SourceLine 
-                { 
-                    Label = macrocall.Label, 
-                    Scope = macrocall.Scope 
+                yield return new SourceLine
+                {
+                    Label = macrocall.Label,
+                    Scope = macrocall.Scope
                 };
 
             foreach (var src in Source)
             {
                 SourceLine repl = src.Clone() as SourceLine;
+                repl.Scope = macrocall.Scope + repl.Scope;
 
                 if (IsSegment == false)
                 {
@@ -226,7 +227,7 @@ namespace DotNetAsm
                         repl.Operand = Regex.Replace(src.Operand, passed_pattern,
                             m => insertedparm.Passed, RegexOptions.IgnoreCase);
                         repl.SourceString = Regex.Replace(repl.SourceString, passed_pattern,
-                            insertedparm.Passed, RegexOptions.IgnoreCase); ;
+                            insertedparm.Passed, RegexOptions.IgnoreCase);
                     }
                 }
                 yield return repl;
@@ -275,8 +276,10 @@ namespace DotNetAsm
                         for (int i = 0; i < parms.Count; i++)
                         {
                             var p = parms[i];
-                            Macro.Param parm = new Macro.Param();
-                            parm.Number = i + 1;
+                            Macro.Param parm = new Macro.Param
+                            {
+                                Number = i + 1
+                            };
                             if (p.Contains("="))
                             {
                                 string[] ps = p.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
@@ -326,57 +329,52 @@ namespace DotNetAsm
                 if (param_ix >= 0 && isSegment == false)
                 {
                     if (line.Operand.EndsWith("\\"))
+                        throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
+
+                    string param = String.Empty;
+                    if (char.IsLetterOrDigit(line.Operand.ElementAt(param_ix + 1)) == false)
+                    {
+                        throw new MacroException(line, ErrorStrings.MacroParamIncorrect);
+                    }
+                    foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
+                    {
+                        if (Regex.IsMatch(c.ToString(), Patterns.SymbolUnicodeChar))
+                            param += c;
+                        else
+                            break;
+                    }
+                    if (string.IsNullOrEmpty(param))
                     {
                         throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
                     }
+
+
+                    // is the parameter in the operand a number or named
+                    if (int.TryParse(param, out int paramref))
+                    {
+                        // if it is a number and higher than the number of explicitly
+                        // defined params, just add it as a param
+                        int paramcount = macro.Params.Count;
+                        if (paramref > paramcount)
+                        {
+                            while (paramref > paramcount)
+                                macro.Params.Add(new Macro.Param { Number = ++paramcount });
+                        }
+                        else if (paramref < 1)
+                        {
+                            throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
+                        }
+                        paramref--;
+                        macro.Params[paramref].SourceLines.Add(line.SourceInfo());
+                    }
                     else
                     {
-                        string param = String.Empty;
-                        if (char.IsLetterOrDigit(line.Operand.ElementAt(param_ix + 1)) == false)
+                        if (macro.Params.Any(p => p.Name == param) == false)
                         {
-                            throw new MacroException(line, ErrorStrings.MacroParamIncorrect);
+                            throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
                         }
-                        foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
-                        {
-                            if (Regex.IsMatch(c.ToString(), Patterns.SymbolUnicodeChar))
-                                param += c;
-                            else
-                                break;
-                        }
-                        if (string.IsNullOrEmpty(param))
-                        {
-                            throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
-                        }
-
-                        int paramref;
-
-                        // is the parameter in the operand a number or named
-                        if (int.TryParse(param, out paramref))
-                        {
-                            // if it is a number and higher than the number of explicitly
-                            // defined params, just add it as a param
-                            int paramcount = macro.Params.Count;
-                            if (paramref > paramcount)
-                            {
-                                while (paramref > paramcount)
-                                    macro.Params.Add(new Macro.Param { Number = ++paramcount });
-                            }
-                            else if (paramref < 1)
-                            {
-                                throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
-                            }
-                            paramref--;
-                            macro.Params[paramref].SourceLines.Add(line.SourceInfo());
-                        }
-                        else
-                        {
-                            if (macro.Params.Any(p => p.Name == param) == false)
-                            {
-                                throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
-                            }
-                            var macparm = macro.Params.First(p => p.Name == param);
-                            macparm.SourceLines.Add(line.SourceInfo());
-                        }
+                        var macparm = macro.Params.First(p => p.Name == param);
+                        macparm.SourceLines.Add(line.SourceInfo());
                     }
                 }
                 macro.Source.Add(line);
@@ -388,16 +386,18 @@ namespace DotNetAsm
             {
                 if (isSegment && !name.Equals(closure.Operand, comparer))
                     throw new MacroException(closure, string.Format(ErrorStrings.ClosureDoesNotCloseMacro, definition.Instruction, "segment"));
-                else if (!isSegment)
+                if (!isSegment)
                     throw new MacroException(closure, string.Format(ErrorStrings.DirectiveTakesNoArguments, definition.Instruction));
             }
             if (macro.IsSegment == false)
             {
-                macro.Source.Add(new SourceLine());
-                macro.Source.Last().Filename = closure.Filename;
-                macro.Source.Last().LineNumber = closure.LineNumber;
-                macro.Source.Last().Label = closure.Label;
-                macro.Source.Last().Instruction = closeBlock;
+                macro.Source.Add(new SourceLine
+                {
+                    Filename = closure.Filename,
+                    LineNumber = closure.LineNumber,
+                    Label = closure.Label,
+                    Instruction = closeBlock
+                });
             }
             return macro;
         }

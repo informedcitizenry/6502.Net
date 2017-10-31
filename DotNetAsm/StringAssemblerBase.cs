@@ -34,7 +34,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        private Regex _regStrFunc, _regEncName;
+        Regex _regStrFunc, _regEncName;
 
         #endregion
 
@@ -47,17 +47,13 @@ namespace DotNetAsm
         public StringAssemblerBase(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.DefineType("Functions", new string[] { "str" });
+            Reserved.DefineType("Functions", "str");
 
-            Reserved.DefineType("Directives", new string[]
-                {
+            Reserved.DefineType("Directives", 
                     ".cstring", ".lsstring", ".nstring", ".pstring", ".string"
-                });
+                );
 
-            Reserved.DefineType("Encoding", new string[]
-                {
-                    ".encoding", ".map", ".unmap"
-                });
+            Reserved.DefineType("Encoding", ".encoding", ".map", ".unmap");
 
             _regStrFunc = new Regex(@"str(\(.+\))",
                 Controller.Options.RegexOption | RegexOptions.Compiled);
@@ -75,7 +71,7 @@ namespace DotNetAsm
         /// Update the controller's encoding
         /// </summary>
         /// <param name="line">The SourceLine containing the encoding update</param>
-        private void UpdateEncoding(SourceLine line)
+        void UpdateEncoding(SourceLine line)
         {
             line.DoNotAssemble = true;
             string instruction = line.Instruction.ToLower();
@@ -166,7 +162,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="p">The string parameter</param>
         /// <returns>A char representation of the parameter</returns>
-        private char EvalEncodingParam(string p)
+        char EvalEncodingParam(string p)
         {
             // if char literal return the char itself
             if (p.EnclosedInQuotes())
@@ -186,7 +182,7 @@ namespace DotNetAsm
         /// <param name="line">The DotNetAsm.SourceLine associated to the expression</param>
         /// <param name="arg">The string expression to convert</param>
         /// <returns></returns>
-        private string ExpressionToString(SourceLine line, string arg)
+        string ExpressionToString(SourceLine line, string arg)
         {
             if (_regStrFunc.IsMatch(arg))
             {
@@ -199,11 +195,8 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.None);
                     return string.Empty;
                 }
-                else
-                {
-                    var val = Controller.Evaluator.Eval(param, int.MinValue, uint.MaxValue);
-                    return val.ToString();
-                }
+                var val = Controller.Evaluator.Eval(param, int.MinValue, uint.MaxValue);
+                return val.ToString();
             }
             return string.Empty;
         }

@@ -33,9 +33,9 @@ namespace DotNetAsm
     {
         #region Members
 
-        private HashSet<string> _values;
+        HashSet<string> _values;
 
-        private Dictionary<string, HashSet<string>> types_;
+        Dictionary<string, HashSet<string>> types_;
 
         #endregion
 
@@ -95,9 +95,9 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="type">The type name.</param>
         /// <param name="values">The collection of values that comprise the type. </param>
-        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        public void DefineType(string type, IEnumerable<string> values)
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        public void DefineType(string type, params string[] values)
         {
             types_.Add(type, new HashSet<string>(values));
             foreach (var v in values)
@@ -110,8 +110,8 @@ namespace DotNetAsm
         /// <param name="type">The type (dictionary key).</param>
         /// <param name="token">The token or keyword.</param>
         /// <returns>Returns true if the specified token is one of the specified type.</returns>
-        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public bool IsOneOf(string type, string token)
         {
             return types_[type].Any(d => d.Equals(token, Comparer));

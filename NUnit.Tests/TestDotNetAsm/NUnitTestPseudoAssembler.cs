@@ -20,8 +20,6 @@ namespace NUnit.Tests.TestDotNetAsm
 
         }
 
-        Dictionary<string, long> _variables;
-
         public TestController(string[] args) :
             base()
         {
@@ -40,19 +38,21 @@ namespace NUnit.Tests.TestDotNetAsm
             
             Evaluator.DefineSymbolLookup(@"(?>[a-zA-Z][a-zA-Z0-9]*)(?!\()", GetSymbol);
 
-            Labels = new Dictionary<string, string>();
-
-            _variables = new Dictionary<string, long>();
 
             if (args != null)
                 Options.ProcessArgs(args);
+
+            Labels = new LabelCollection(Options.StringComparar);
+            Variables = new VariableCollection(Options.StringComparar, Evaluator);
         }
 
-        private string GetSymbol(string symbol)
+        private string GetSymbol(string arg)
         {
-            if (_variables.ContainsKey(symbol))
-                return GetVariable(symbol).ToString();
-            return Labels[symbol];
+            if (Labels.IsSymbol(arg))
+                return Labels.GetSymbolValue(arg).ToString();
+            else if (Variables.IsSymbol(arg))
+                return Variables.GetSymbolValue(arg).ToString();
+            return string.Empty;
         }
 
         public void Assemble()
@@ -66,36 +66,11 @@ namespace NUnit.Tests.TestDotNetAsm
             private set;
         }
 
-        public string GetNearestScope(string token, string scope)
-        {
-            return string.Empty;
-        }
-
-        public long GetVariable(string variable)
-        {
-            return _variables[variable];
-        }
-
         public string GetScopedLabelValue(string label, SourceLine line)
         {
-            if (Labels.ContainsKey(label))
-                return Labels[label];
+            if (Labels.IsSymbol(label))
+                return Labels.GetScopedSymbolValue(label, line.Scope).ToString();
             return string.Empty;
-        }
-
-        public void SetVariable(string variable, long value)
-        {
-            _variables[variable] = value;
-        }
-
-        public bool IsVariable(string variable)
-        {
-            return _variables.ContainsKey(variable);
-        }
-        
-        public bool TerminateAssembly(SourceLine line)
-        {
-            throw new NotImplementedException();
         }
 
         public Compilation Output
@@ -110,7 +85,13 @@ namespace NUnit.Tests.TestDotNetAsm
             private set;
         }
 
-        public IDictionary<string, string> Labels
+        public SymbolCollectionBase Labels
+        {
+            get;
+            private set;
+        }
+
+        public VariableCollection Variables
         {
             get;
             private set;

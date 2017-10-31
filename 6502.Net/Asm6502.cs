@@ -44,41 +44,35 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.DefineType("Accumulator", new string[]
-                {
+            Reserved.DefineType("Accumulator", 
                     "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
-                });
+                );
 
-            Reserved.DefineType("Branches", new string[]
-                {
+            Reserved.DefineType("Branches", 
                     "bcc","bcs","beq","bmi","bne","bpl","bvc","bvs"
-                });
+                );
 
-            Reserved.DefineType("Implied", new string[]
-                {
+            Reserved.DefineType("Implied", 
                     "brk","clc","cld","cli","clv","dex","dey","inx","iny","nop","pha","php","pla",
                     "plp","rti","rts","sec","sed","sei","tax","tay","tsx","txa","txs","tya"
-                });
+                );
 
-            Reserved.DefineType("ImpliedAccumulator", new string[]
-                {
+            Reserved.DefineType("ImpliedAccumulator", 
                     "asl", "lsr", "rol", "ror"
-                });
+                );
 
-            Reserved.DefineType("Jumps", new string[]
-                {
+            Reserved.DefineType("Jumps", 
                     "jmp", "jsr"
-                });
-            Reserved.DefineType("Mnemonics", new string[]
-                {
+                );
+            
+            Reserved.DefineType("Mnemonics",
                     "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
                     "ldy", "lsr", "rol", "ror", "stx", "sty"
-                });
+                );
 
-            Reserved.DefineType("ReturnAddress", new string[]
-                {
+            Reserved.DefineType("ReturnAddress", 
                     ".rta"
-                });
+                );
 
             RegexOptions ignore = Controller.Options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
 
@@ -199,11 +193,12 @@ namespace Asm6502.Net
 
         // it is an allowed convention to include "a" as an operand in 
         // implied instructions on the accumulator, e.g. lsr a
-        private bool IsImpliedAccumulator(SourceLine line)
+        bool IsImpliedAccumulator(SourceLine line)
         {
             if (Reserved.IsOneOf("ImpliedAccumulator", line.Instruction) &&
                 line.Operand.Equals("a", Controller.Options.StringComparison))
-                return string.IsNullOrEmpty(Controller.GetScopedLabelValue("a", line));
+                return Controller.Variables.IsScopedSymbol("a", line.Scope) == false &&
+                       Controller.Labels.IsScopedSymbol("a", line.Scope) == false;
             return string.IsNullOrEmpty(line.Operand);
         }
 
@@ -235,8 +230,10 @@ namespace Asm6502.Net
             long eval = long.MinValue, evalAbs = 0;
             if (string.IsNullOrEmpty(operand))
             {
-                fmt = new OperandFormat();
-                fmt.FormatString = instruction;
+                fmt = new OperandFormat
+                {
+                    FormatString = instruction
+                };
                 opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats, Controller.Options.StringComparison);
             }
             else
@@ -325,7 +322,7 @@ namespace Asm6502.Net
             line.Assembly = Controller.Output.Add(opc | (int)eval << 8, size);
         }
 
-        private void AssembleRta(SourceLine line)
+        void AssembleRta(SourceLine line)
         {
             var csv = line.CommaSeparateOperand();
 
@@ -348,7 +345,7 @@ namespace Asm6502.Net
         /// </summary>
         /// <param name="line">The DotNetAsm.SourceLine of the instruction</param>
         /// <returns>True, if the instruction is y-indexed for the accumulator</returns>
-        private bool AccumY(SourceLine line)
+        bool AccumY(SourceLine line)
         {
             return _regXY.IsMatch(line.Operand) &&
                    !_regInd.IsMatch(line.Operand) &&
@@ -368,7 +365,7 @@ namespace Asm6502.Net
                 return 2;
             if (Reserved.IsOneOf("Jumps", instruction))
                 return 3;
-            if (operand.EndsWith(",x)") || operand.EndsWith(",X)"))
+            if (operand.EndsWith(",x)", Controller.Options.StringComparison))
                 return 2;
 
             var parts = line.CommaSeparateOperand();

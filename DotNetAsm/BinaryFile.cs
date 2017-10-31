@@ -95,7 +95,7 @@ namespace DotNetAsm
         /// Determines whether this binary file is equal to the other,
         /// based on filename only.
         /// </summary>
-        /// <param name="other">The other file.</param>
+        /// <param name="obj">The other file.</param>
         /// <returns>True, if the files (filenames) are equal, otherwise false.</returns>
         public override bool Equals(object obj)
         {

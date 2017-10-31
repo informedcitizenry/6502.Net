@@ -36,9 +36,9 @@ namespace DotNetAsm
     {
         #region Members
         
-        private Dictionary<string, Dictionary<char, int>> _maps;
+        Dictionary<string, Dictionary<char, int>> _maps;
 
-        private Dictionary<char, int> _currentMap;
+        Dictionary<char, int> _currentMap;
 
         #endregion
 
@@ -77,7 +77,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="chr">The character to encode.</param>
         /// <returns>An array of encoded bytes for the character.</returns>
-        private byte[] GetCharBytes(char chr)
+        byte[] GetCharBytes(char chr)
         {
             if (_currentMap.ContainsKey(chr))
             {
@@ -121,7 +121,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="range">The range of characters to map</param>
         /// <param name="firstcode">The first char code</param>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public void Map(string range, int firstcode)
         {
             var rangeChars = range.ToCharArray();
@@ -139,7 +139,7 @@ namespace DotNetAsm
         /// <param name="firstRange">The first character in the mapping range</param>
         /// <param name="lastRange">The last character in the mapping range</param>
         /// <param name="firstcode">The first char code</param>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public void Map(int firstRange, int lastRange, int firstcode)
         {
             if (firstRange > lastRange)
@@ -186,7 +186,7 @@ namespace DotNetAsm
         /// Remove a mapping for the current encoding.
         /// </summary>
         /// <param name="range">The range of of chars as a string to unmap</param>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public void Unmap(string range)
         {
             if (range.Length != 2)
@@ -200,7 +200,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="firstRange">The first char in the range to unamp</param>
         /// <param name="lastRange">The last char in the range to unmap</param>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public void Unmap(char firstRange, char lastRange)
         {
             if (firstRange >= lastRange)
@@ -239,7 +239,7 @@ namespace DotNetAsm
         /// <param name="index">The index of the first character to encode</param>
         /// <param name="count">The number of characters to encode</param>
         /// <returns>The number of bytes produced by encoding the specified characters.</returns>
-        /// <exception cref="System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
+        /// <exception cref="T:System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetByteCount(char[] chars, int index, int count)
         {
             int numbytes = 0;
@@ -262,10 +262,10 @@ namespace DotNetAsm
         /// <param name="byteIndex">The index at which to start writing the resulting 
         /// sequence of bytes</param>
         /// <returns>The actual number of bytes written into bytes.</returns>
-        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        /// <exception cref="System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             int j = byteIndex;
@@ -288,9 +288,9 @@ namespace DotNetAsm
         /// <param name="index">The index of the first byte to decode</param>
         /// <param name="count">The number of bytes to decode</param>
         /// <returns>The number of characters produced by decoding the specified sequence of bytes.</returns>
-        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
-        /// <exception cref="System.Text.TextDecoderFallbackException"></exception>
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
+        /// <exception cref="T:System.Text.TextDecoderFallbackException"></exception>
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
             char[] chars = new char[GetMaxCharCount(count)];
@@ -307,10 +307,10 @@ namespace DotNetAsm
         /// <param name="chars">The character array to contain the resulting set of characters</param>
         /// <param name="charIndex">The index at which to start writing the resulting set of characters</param>
         /// <returns>The actual number of characters written into chars.</returns>
-        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        /// <exception cref="System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             int j = charIndex;
@@ -359,13 +359,12 @@ namespace DotNetAsm
                     displ = 1;
                     goto SetChar;
                 }
-                else
-                {
-                    var utfChar = UTF8.GetChars(bytes.Skip(i).ToArray(), 0, byteCount - i).First();
-                    chars[j++] = utfChar;
-                    i += UTF8.GetByteCount(new char[] { utfChar }, 0, 1);
-                }
+
+                var utfChar = UTF8.GetChars(bytes.Skip(i).ToArray(), 0, byteCount - i).First();
+                chars[j++] = utfChar;
+                i += UTF8.GetByteCount(new char[] { utfChar }, 0, 1);
                 continue;
+
             SetChar:
                 chars[j++] = _currentMap.First(e => e.Value.Equals(encoding)).Key;
                 i += displ;

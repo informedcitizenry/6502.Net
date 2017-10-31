@@ -32,11 +32,11 @@ namespace DotNetAsm
     {
         #region Members
 
-        private int _condLevel;
-        private Stack<string> _condStack;
-        private Stack<bool> _resultStack;
-        private List<SourceLine> _processedLines;
-        private bool _doNotAsm;
+        int _condLevel;
+        Stack<string> _condStack;
+        Stack<bool> _resultStack;
+        readonly List<SourceLine> _processedLines;
+        bool _doNotAsm;
 
         #endregion
 
@@ -50,12 +50,11 @@ namespace DotNetAsm
         public ConditionHandler(IAssemblyController controller)
             : base(controller)
         {
-            Reserved.DefineType("Conditions", new string[]
-            {
+            Reserved.DefineType("Conditions", 
                 ".if", ".ifdef", ".ifndef", 
                 ".elif", ".elifdef", ".elifndef",
                 ".else", ".endif"
-            });
+            );
             _condLevel = 0;
             _condStack = new Stack<string>();
             _resultStack = new Stack<bool>();
@@ -150,14 +149,14 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The DotNetAsm.SourceLine containing the conditional
         /// directive</param>
-        private void UpdateDoNotAsm(SourceLine line)
+        void UpdateDoNotAsm(SourceLine line)
         {
             if (line.Instruction.EndsWith("if", Controller.Options.StringComparison))
                 _doNotAsm = !Controller.Evaluator.EvalCondition(line.Operand);
             else if (line.Instruction.EndsWith("ifdef", Controller.Options.StringComparison))
-                _doNotAsm = !(Controller.Labels.ContainsKey(line.Operand) || Controller.IsVariable(line.Operand));
+                _doNotAsm = !(Controller.Labels.IsSymbol(line.Operand) || Controller.Variables.IsSymbol(line.Operand));
             else if (line.Instruction.EndsWith("ifndef", Controller.Options.StringComparison))
-                _doNotAsm = Controller.Labels.ContainsKey(line.Operand) || Controller.IsVariable(line.Operand);
+                _doNotAsm = Controller.Labels.IsSymbol(line.Operand) || Controller.Variables.IsSymbol(line.Operand);
         }
 
         public void Reset()

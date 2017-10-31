@@ -40,12 +40,11 @@ namespace DotNetAsm
         public MiscAssembler(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.DefineType("Directives", new string[]
-                {
+            Reserved.DefineType("Directives", 
                     "assert", ".eor", ".echo", ".target",
                     ".error", ".errorif", 
                     ".warnif", ".warn"
-                });
+                );
         }
 
         #endregion
@@ -56,7 +55,7 @@ namespace DotNetAsm
         /// Throw a conditional error or warning.
         /// </summary>
         /// <param name="line">The SourceLine with the operand condition.</param>
-        private void ThrowConditional(SourceLine line)
+        void ThrowConditional(SourceLine line)
         {
             var csv = line.CommaSeparateOperand();
             if (csv.Count < 2)
@@ -74,7 +73,7 @@ namespace DotNetAsm
             else if (Controller.Evaluator.EvalCondition(csv.First()))
             {
                 string message = csv.Last().Trim('"');
-                
+
                 if (line.Instruction.Equals(".errorif", Controller.Options.StringComparison))
                     Controller.Log.LogEntry(line, message);
                 else
@@ -82,11 +81,12 @@ namespace DotNetAsm
             }
         }
 
+        /// <summary>
         /// Sets the byte value to XOR all values when outputted to assembly.
         /// Used by the .eor directive.
         /// </summary>
         /// <param name="line">The SourceLine.</param>
-        private void SetEor(SourceLine line)
+        void SetEor(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Operand))
             {
@@ -150,11 +150,12 @@ namespace DotNetAsm
                         Controller.Options.Architecture = line.Operand.Trim('"');
                     break;
                 default:
+                    Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
                     break;
             }
         }
 
-        private void DoAssert(SourceLine line)
+        void DoAssert(SourceLine line)
         {
             var parms = line.CommaSeparateOperand();
             if (parms.Count == 0)

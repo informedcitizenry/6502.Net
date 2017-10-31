@@ -35,9 +35,9 @@ namespace DotNetAsm
     {
         #region Members
 
-        private HashSet<BinaryFile> _includedBinaries;
-        private Dictionary<string, string> _typeDefs;
-        private Func<string, bool> _reservedSymbol;
+        HashSet<BinaryFile> _includedBinaries;
+        readonly Dictionary<string, string> _typeDefs;
+        Func<string, bool> _reservedSymbol;
 
         #endregion
 
@@ -54,12 +54,11 @@ namespace DotNetAsm
         {
             _includedBinaries = new HashSet<BinaryFile>();
 
-            Reserved.DefineType("PseudoOps", new string[]
-                {
+            Reserved.DefineType("PseudoOps", 
                     ".addr", ".align", ".binary", ".byte", ".sbyte",   
                     ".dint", ".dword", ".fill", ".lint", ".long", 
                     ".sint", ".typedef", ".word"
-                });
+                );
             _typeDefs = new Dictionary<string, string>();
             _reservedSymbol = reservedSymbolFunc;
         }
@@ -72,7 +71,7 @@ namespace DotNetAsm
         /// Assemble multiple values to the output.
         /// </summary>
         /// <param name="line">The SourceLine to assemble.</param>
-        private void AssembleFills(SourceLine line)
+        void AssembleFills(SourceLine line)
         {
             var csv = line.CommaSeparateOperand();
 
@@ -132,7 +131,7 @@ namespace DotNetAsm
         /// <param name="binarysize">The size of the binary file</param>
         /// <param name="offs">The offset</param>
         /// <param name="size">The size</param>
-        private void GetBinaryOffsetSize(List<string> args, int binarysize, ref int offs, ref int size)
+        void GetBinaryOffsetSize(List<string> args, int binarysize, ref int offs, ref int size)
         {
             if (args.Count >= 2)
             {
@@ -150,7 +149,7 @@ namespace DotNetAsm
         /// Assemble an included binary file's bytes.
         /// </summary>
         /// <param name="line">The SourceLine to assemble.</param>
-        private void AssembleBinaryBytes(SourceLine line)
+        void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.CommaSeparateOperand();
             var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].Trim('"')));
@@ -172,7 +171,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The SourceLine to assemble.</param>
         /// <returns>Returns a binary file.</returns>
-        private BinaryFile IncludeBinary(SourceLine line, List<string> args)
+        BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
             if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
             {
@@ -182,9 +181,10 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                 return new BinaryFile(string.Empty);
             }
-            else if (args.Count > 3)
+            if (args.Count > 3)
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                return null;
             }
             string filename = args.First().Trim('"');
             BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
@@ -264,7 +264,7 @@ namespace DotNetAsm
         /// Define an existing type to a user-defined type.
         /// </summary>
         /// <param name="line">The line to assemble.</param>
-        private void DefineType(SourceLine line)
+        void DefineType(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Label) == false)
             {
@@ -290,12 +290,12 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
-            else if (Controller.IsInstruction(newtype))
+            if (Controller.IsInstruction(newtype))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TypeDefinitionError, newtype);
                 return;
             }
-            else if (_reservedSymbol(newtype))
+            if (_reservedSymbol(newtype))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TypeNameReserved, newtype);
                 return;

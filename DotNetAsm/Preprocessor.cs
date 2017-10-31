@@ -35,7 +35,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        private Func<string, bool> _symbolNameFunc;
+        Func<string, bool> _symbolNameFunc;
 
         #endregion
 
@@ -45,8 +45,6 @@ namespace DotNetAsm
         /// Constructs a Preprocessor object.
         /// </summary>
         /// <param name="controller">The assembly controller.</param>
-        /// <param name="checkReserved">A function to check for reserved keywords such as 
-        /// mnemonics or pseudo-ops.</param>
         /// <param name="checkSymbol">A function to check for symbols such as labels.</param>
         public Preprocessor(IAssemblyController controller,
                             Func<string, bool> checkSymbol)
@@ -54,11 +52,7 @@ namespace DotNetAsm
         {
             FileRegistry = new HashSet<string>();
             _symbolNameFunc = checkSymbol;
-            Reserved.DefineType("Directives", new string[]
-                {
-                    ".binclude", ".include",
-                    ".comment",  ".endcomment",
-                });
+            Reserved.DefineType("Directives", ".binclude", ".include", ".comment",  ".endcomment");
         }
 
         #endregion
@@ -69,7 +63,7 @@ namespace DotNetAsm
         /// Check if all quotes are properly closed.
         /// </summary>
         /// <param name="sourcelines">The list of sourceLines.</param>
-        private void CheckQuotes(IEnumerable<SourceLine> sourcelines)
+        void CheckQuotes(IEnumerable<SourceLine> sourcelines)
         {
             var nocomments = sourcelines.Where(l => !l.IsComment);
             foreach (var line in nocomments)
@@ -118,7 +112,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="listing">The source listing containing potential ".include" directives.</param>
         /// <returns>Returns the new source with the included sources expanded.</returns>
-        private IEnumerable<SourceLine> ProcessIncludes(IEnumerable<SourceLine> listing)
+        IEnumerable<SourceLine> ProcessIncludes(IEnumerable<SourceLine> listing)
         {
             var includedLines = new List<SourceLine>();
             foreach (var line in listing)
@@ -161,13 +155,13 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                         continue;
                     }
-                    openblock.Instruction = AssemblyController.OPEN_SCOPE;
+                    openblock.Instruction = ConstStrings.OPEN_SCOPE;
                     includedLines.Add(openblock);
                     var inclistings = ConvertToSource(line.Operand.Trim('"'));
 
                     includedLines.AddRange(inclistings);
                     includedLines.Add(new SourceLine());
-                    includedLines.Last().Instruction = AssemblyController.CLOSE_SCOPE;
+                    includedLines.Last().Instruction = ConstStrings.CLOSE_SCOPE;
                 }
                 else
                 {
@@ -181,7 +175,7 @@ namespace DotNetAsm
         /// Marks all SourceLines within comment blocks as comments.
         /// </summary>
         /// <param name="source">The source listing.</param>
-        private void ProcessCommentBlocks(IEnumerable<SourceLine> source)
+        void ProcessCommentBlocks(IEnumerable<SourceLine> source)
         {
             bool incomments = false;
             foreach(var line in source)
@@ -244,10 +238,7 @@ namespace DotNetAsm
                 }
                 return sourcelines;
             }
-            else
-            {
-                throw new FileNotFoundException(string.Format("Unable to open source file \"{0}\"", file));
-            }
+            throw new FileNotFoundException(string.Format("Unable to open source file \"{0}\"", file));
         }
 
         public override bool IsReserved(string token)

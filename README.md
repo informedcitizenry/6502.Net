@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
-### Version 1.5
+### Version 1.6
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 and related CPU architectures. It is written for .Net (Version 4.5.1) and supports all of the published (legal) instructions of 6502-based CPUs. The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
 
@@ -98,13 +98,12 @@ As you can see anonymous labels, though convenient, would hinder readability if 
 -               .byte $01, $02, $03
                 lda (-),x           ; best to put anonymous label reference inside paranetheses.
 ```            
-Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required, and unlike labels, cannot be used before they are declared. A variable is declared with the `.var` directive, along with an optional initial value.
+Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
 ```
-myvar		.var	34
+            .let myvar = 34
 			lda #myvar
-myvar		.var	myvar+1
+            .let myvar = myvar + 1
 			ldx #myvar
-			ldy #undeclared	;; woops! error
 ```
 ### Comments
 Adding comments to source promotes readability, particularly in assembly. Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or constant character.
@@ -426,9 +425,9 @@ Conditional assembly is available using the `.if` and related directive.  Condit
 ```
     lda #$41
     .ifdef APPLE2   ; is the symbol APPLE2 defined?
-    jsr $fbfd
+        jsr $fbfd
     .else
-    jsr $ffd2
+        jsr $ffd2
     .endif
 ```
 **Caution:** Be careful not to use the `.end` directive inside a conditional block, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
@@ -443,7 +442,6 @@ On occasions where certain instructions will be repeatedly assembled, it is conv
 
 ```
 These repetitions can also be nested, as shown below.
-
 ```
         ;; print each letter of the alphabet 3 times
         * = $c000
@@ -463,16 +461,16 @@ These repetitions can also be nested, as shown below.
         rts
 ```
 ### Loop Assembly
-Repetitions can also be handled in for/next loops, where an interation variable is initialized and incremented until a condition is met. The added advantage is the variable itself can be referenced in the source itself.
+Repetitions can also be handled in for/next loops, where source can be emitted repeatedly until a condition is met. The added advantage is the variable itself can be referenced inside the loop.
 ```
 	lda #0
-	.for i = $0400, i < $0800
+	.for i = $0400, i < $0800, i = i + 1
 	sta i
 	.next
 ```
 If required, loops can be broken out of using the `.break` directive
 ```
-    .for i = 0, i < 256
+    .for i = 0, i < 256, i = i + 1
     .if * >= $1000
         .break          ; make sure assembly does not go past $1000
     .endif
@@ -480,7 +478,7 @@ If required, loops can be broken out of using the `.break` directive
     jsr $ffd2
     .next
 ```
-**Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable.
+**Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable inside its own or nested loops.
 ## Future enhancements under consideration
 * Switch-case conditions
 * 65C02 and 65816/65C816 CPU support
@@ -813,7 +811,7 @@ done    rts
 <tr><td><b>Arguments</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-        .for n = 0, n < 1000
+        .for n = 0, n < 1000, n = n + 1
             .if * > $7fff   ; unless address >= $8000
                 .break     
             .endif
@@ -970,14 +968,14 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other label or variable.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>initialization, condition[, step]</code></td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. Multiple iteration expressions can be specified.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>init_expression, condition[, iteration_expression[, ...]]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-		;; clear seven memory locations on a page boundary between $100 and $700
-		ldx #0
-        .for pages = $100, pages < $800, $100
-		stx pages
+		.let x = 0
+        .for pages = $100, pages < $800, pages = pages + $100, x = x + 1
+            ldx #x
+            stx pages
 		.next
 </pre>
 </td></tr>
@@ -991,6 +989,20 @@ start       ; same as start .equ *
 <pre>
       .include "mylib.s"
       ;; mylib is now part of source
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.let</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Declares and assigns or re-assigns a variable to the given expression. Labels cannot be redefined as variables, and vice versa.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>expression</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+            .let myvar =    $ffd2
+            jsr myvar
+            .let myvar =    myvar-$1000
+            lda myvar
 </pre>
 </td></tr>
 </table>
@@ -1213,20 +1225,6 @@ glyph             ;12345678
       .byte 'A', 'π'    ;; >> 41 cf 80
       .unmap "09"
       .string "2017"    ;; >> 32 30 31 37
-</pre>
-</td></tr>
-</table>
-<table>
-<tr><td><b>Name</b></td><td><code>.var</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Declare or the symbol as a variable, or re-assign the existing variable. Labels cannot be redefined as variables, and vice versa.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-myvar		.var	$ffd2
-			jsr myvar
-myvar		.var	myvar-$1000
-			lda	myvar
 </pre>
 </td></tr>
 </table>

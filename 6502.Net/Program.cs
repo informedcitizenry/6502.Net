@@ -30,7 +30,7 @@ namespace Asm6502.Net
             controller.VerboseBannerText = vsb.ToString();
         }
 
-        private static void targetHeader(IAssemblyController controller, BinaryWriter writer)
+        static void targetHeader(IAssemblyController controller, BinaryWriter writer)
         {
             string arch = controller.Options.Architecture.ToLower();
             ushort progstart = Convert.ToUInt16(controller.Output.ProgramStart);

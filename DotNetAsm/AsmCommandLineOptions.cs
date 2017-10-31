@@ -32,7 +32,7 @@ namespace DotNetAsm
     {
         #region Classes
 
-        private class Option
+        class Option
         {
             public string Argument;
             public string Help;
@@ -42,23 +42,23 @@ namespace DotNetAsm
 
         #region Members
 
-        private IReadOnlyList<string> _source;
-        private IReadOnlyList<string> _defines;
-        private Dictionary<string, Option> _userOptions;
-        private string _arch;
-        private string _listingFile;
-        private string _labelFile;
-        private string _outputFile;
-        private bool _bigEndian;
-        private bool _quiet;
-        private bool _verboseDasm;
-        private bool _werror;
-        private bool _noWarn;
-        private bool _caseSensitive;
-        private bool _noAssembly;
-        private bool _noSource;
-        private bool _printVersion;
-        private bool _noDisassembly;
+        IReadOnlyList<string> _source;
+        IReadOnlyList<string> _defines;
+        Dictionary<string, Option> _userOptions;
+        string _arch;
+        string _listingFile;
+        string _labelFile;
+        string _outputFile;
+        bool _bigEndian;
+        bool _quiet;
+        bool _verboseDasm;
+        bool _werror;
+        bool _noWarn;
+        bool _caseSensitive;
+        bool _noAssembly;
+        bool _noSource;
+        bool _printVersion;
+        bool _noDisassembly;
 
         #endregion
 
@@ -163,7 +163,7 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the argument string array passed.
         /// </summary>
-        public string[] Arguments { get; private set; }
+        public string[] Arguments { get; set; }
 
         /// <summary>
         /// Gets the target architecture information.
