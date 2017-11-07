@@ -45,6 +45,7 @@ namespace NUnit.Tests.Test6502.Net
 
             SetCpu("GenuineIntel");
             Assert.IsTrue(Controller.Log.HasErrors);
+            Controller.Log.ClearAll();
         }
 
         [Test]
