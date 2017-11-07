@@ -21,10 +21,7 @@
 //-----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace DotNetAsm
 {
@@ -44,7 +41,6 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="symbol"></param>
         void AddSymbol(string symbol);
-
 
         /// <summary>
         /// Performs assembly operations based on the command line arguments passed,
@@ -121,5 +117,7 @@ namespace DotNetAsm
         /// Gets or sets the verbose banner text at start of compilation
         /// </summary>
         string VerboseBannerText { get; set; }
+
+        event CpuChangeEventHandler CpuChanged;
     }
 }

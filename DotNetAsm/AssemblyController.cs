@@ -63,7 +63,7 @@ namespace DotNetAsm
         public AssemblyController(string[] args)
         {
             Reserved.DefineType("Directives",
-                    ".endrelocate", ".equ", ".pseudopc", ".realpc", ".relocate", ".end",
+                    ".cpu", ".endrelocate", ".equ", ".pseudopc", ".realpc", ".relocate", ".end",
                     ".proff", ".pron", ".repeat", ".endrepeat", ConstStrings.VAR_DIRECTIVE
                 );
 
@@ -152,7 +152,7 @@ namespace DotNetAsm
         {
             string trimmed = symbol.Trim(new char[] { '(', ')' });
             long addr = GetAnonymousAddress(_currentLine, trimmed);
-            if (addr < 0)
+            if (addr < 0 && _passes > 0)
             {
                 Log.LogEntry(_currentLine, ErrorStrings.CannotResolveAnonymousLabel);
                 return "0";
@@ -242,6 +242,9 @@ namespace DotNetAsm
 
                 return source;
             }
+            if (!string.IsNullOrEmpty(Options.CPU))
+                OnCpuChanged(new SourceLine{ SourceString = ConstStrings.COMMANDLINE_ARG, Operand = Options.CPU });
+            
             return null;
         }
 
@@ -284,6 +287,11 @@ namespace DotNetAsm
             return labels;
         }
 
+        void OnCpuChanged(SourceLine line)
+        {
+            CpuChanged?.Invoke(new CpuChangedEventArgs { Line = line });
+        }
+
         /// <summary>
         /// Performs a first (or more) pass of preprocessed source to resolve all 
         /// actual symbol values, process conditions and repetitions, and add to 
@@ -301,32 +309,31 @@ namespace DotNetAsm
             List<SourceLine> sourceList = source.ToList();
             for (int i = 0; i < sourceList.Count; i++)
             {
-                SourceLine line = sourceList[i];
+                _currentLine = sourceList[i];
                 try
                 {
-                    if (line.DoNotAssemble)
+                    if (_currentLine.DoNotAssemble)
                     {
-                        if (line.IsComment)
-                            _processedLines.Add(line);
+                        if (_currentLine.IsComment)
+                            _processedLines.Add(_currentLine);
                         continue;
                     }
-                    _currentLine = line;
-                    if (line.Instruction.Equals(".end", Options.StringComparison))
+                    if (_currentLine.Instruction.Equals(".end", Options.StringComparison))
                         break;
 
                     var currentHandler = _blockHandlers.FirstOrDefault(h => h.IsProcessing());
                     if (currentHandler == null)
-                        currentHandler = _blockHandlers.FirstOrDefault(h => h.Processes(line.Instruction));
+                        currentHandler = _blockHandlers.FirstOrDefault(h => h.Processes(_currentLine.Instruction));
                     if (currentHandler != null)
                     {
                         sourceList.RemoveAt(i--);
                         try
                         {
-                            currentHandler.Process(line);
+                            currentHandler.Process(_currentLine);
                         }
                         catch (ForNextException forNextExc)
                         {
-                            Log.LogEntry(line, forNextExc.Message);
+                            Log.LogEntry(_currentLine, forNextExc.Message);
                         }
                         if (currentHandler.IsProcessing() == false)
                         {
@@ -336,7 +343,7 @@ namespace DotNetAsm
                     }
                     else
                     {
-                        line.Id = id++;
+                        _currentLine.Id = id++;
                         FirstPassLine();
                     }
                 }
@@ -349,11 +356,11 @@ namespace DotNetAsm
                 }
                 catch (ExpressionException exprEx)
                 {
-                    Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
+                    Log.LogEntry(_currentLine, ErrorStrings.BadExpression, exprEx.Message);
                 }
                 catch (Exception)
                 {
-                    Log.LogEntry(line, ErrorStrings.None);
+                    Log.LogEntry(_currentLine, ErrorStrings.None);
                 }
             }
 
@@ -371,6 +378,14 @@ namespace DotNetAsm
         {
             try
             {
+                if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
+                {
+                    if (!_currentLine.Operand.EnclosedInQuotes())
+                        Controller.Log.LogEntry(_currentLine, ErrorStrings.QuoteStringNotEnclosed);
+                    else
+                        OnCpuChanged(_currentLine);
+                    return;
+                }
                 UpdatePC();
 
                 _currentLine.PC = Output.LogicalPC;
@@ -441,6 +456,10 @@ namespace DotNetAsm
 
                 }
                 _currentLine.PC = val;
+            }
+            else if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
+            {
+                OnCpuChanged(_currentLine);
             }
             else
             {
@@ -618,7 +637,6 @@ namespace DotNetAsm
                         val = Evaluator.Eval(_currentLine.Operand, int.MinValue, uint.MaxValue);
                     else
                         val = _currentLine.PC;
-
                     _labelCollection.SetLabel(scopedLabel, val, false, true);
 
                 }
@@ -976,6 +994,12 @@ namespace DotNetAsm
         public string BannerText { get; set; }
 
         public string VerboseBannerText { get; set; }
+
+        #endregion
+
+        #region Events
+
+        public event CpuChangeEventHandler CpuChanged;
 
         #endregion
     }

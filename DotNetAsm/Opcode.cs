@@ -40,38 +40,61 @@ namespace DotNetAsm
         /// by its disassembly format.
         /// </summary>
         /// <param name="format">The disassembly format to use to lookup the opcode</param>
-        /// <param name="opcodes">The System.Collections.Generic.IEnumerable&lt;Opcode&gt; to look in</param>
-        /// <param name="comparison">A System.StringComparison enumeration value of how 
+        /// <param name="opcodes">The <see cref="T:System.Collections.Generic.IEnumerable&lt;Opcode&gt;"/> to look in</param>
+        /// <param name="comparison">A <see cref="T:System.StringComparison"/> enumeration value of how 
         /// the strings will be compared</param>
-        /// <returns>The DotNetAsm.Opcode matching the format</returns>
+        /// <returns>The <see cref="T:DotNetAsm.Opcode"/> matching the format</returns>
         public static Opcode LookupOpcode(string format, IEnumerable<Opcode> opcodes, StringComparison comparison)
         {
+            return LookupOpcode(format, opcodes.ToList(), comparison, true, 0x100);
+        }
+
+        /// <summary>
+        /// Lookup an opcode from a supplied System.Collections.Generic.IEnumerable&lt;Opcode&gt;
+        /// by its disassembly format.
+        /// </summary>
+        /// <param name="format">The disassembly format to use to lookup the opcode</param>
+        /// <param name="opcodes">The <see cref="T:System.Collections.Generic.IEnumerable&lt;Opcode&gt;"/> to look in</param>
+        /// <param name="comparison">A <see cref="T:System.StringComparison"/> enumeration value of how 
+        /// the strings will be compared</param>
+        /// <param name="assignIndex">In addition to returning the opcode object, assign its index based on its position
+        /// in the sequence</param>
+        /// <param name="count">The count of opcodes to lookup</param>
+        /// <returns>The <see cref="T:DotNetAsm.Opcode"/> matching the format</returns>
+        public static Opcode LookupOpcode(string format, List<Opcode> opcodes, StringComparison comparison, bool assignIndex, int count)
+        {
             Opcode opc = null;
-
-            Opcode[] opcList = opcodes.ToArray();
-
-            for (int i = 0; i < 0x100; i++)
+            if (assignIndex)
             {
-                if (opcList[i] == null)
-                    continue;
-                if (opcList[i].Extension != null)
+                for (int i = 0; i < count; i++)
                 {
-                    Opcode result = LookupOpcode(format, opcList[i].Extension.ToArray(), comparison);
-                    if (result != null)
+                    if (opcodes[i] == null)
+                        continue;
+                    if (opcodes[i].Extension != null)
                     {
-                        opc = result;
-                        opc.Index = i | (result.Index << 8);
+                        Opcode result = LookupOpcode(format, opcodes[i].Extension, comparison);
+                        if (result != null)
+                        {
+                            opc = result;
+                            opc.Index = i | (result.Index << 8);
+                            break;
+                        }
+                    }
+                    else if (format.Equals(opcodes[i].DisasmFormat, comparison))//(opcList[i].DisasmFormat.Equals(format, comparison))
+                    {
+                        opc = opcodes[i];
+                        opc.Index = i;
                         break;
                     }
                 }
-                else if (opcList[i].DisasmFormat.Equals(format, comparison))
-                {
-                    opc = opcList[i];
-                    opc.Index = i;
-                    break;
-                }
             }
+            else
+            {
+                opc = opcodes.Find(o => format.Equals(o.DisasmFormat, comparison));
+            }
+
             return opc;
+
         }
 
         /// <summary>
@@ -191,6 +214,11 @@ namespace DotNetAsm
         /// </summary>
         public int Index { get; set; }
 
+        /// <summary>
+        /// Gets or sets the CPU of this opcode.
+        /// </summary>
+        /// <value>The cpu.</value>
+        public string CPU { get; set; }
 
         #endregion
     }

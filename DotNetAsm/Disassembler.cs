@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -41,8 +40,9 @@ namespace DotNetAsm
             PrintingOn = true;
             Reserved.DefineType("Blocks", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE );
             Reserved.DefineType("Directives",
-                    ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef", 
-                    ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
+                    ".cpu", ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef", 
+                    ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn",
+                    ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
                 );
         }
 

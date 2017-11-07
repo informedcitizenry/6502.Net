@@ -20,8 +20,6 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-using System;
-
 namespace DotNetAsm
 {
     /// <summary>

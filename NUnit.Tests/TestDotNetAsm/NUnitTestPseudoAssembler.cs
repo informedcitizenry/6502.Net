@@ -66,13 +66,6 @@ namespace NUnit.Tests.TestDotNetAsm
             private set;
         }
 
-        public string GetScopedLabelValue(string label, SourceLine line)
-        {
-            if (Labels.IsSymbol(label))
-                return Labels.GetScopedSymbolValue(label, line.Scope).ToString();
-            return string.Empty;
-        }
-
         public Compilation Output
         {
             get;
@@ -116,12 +109,18 @@ namespace NUnit.Tests.TestDotNetAsm
 
         public void AddSymbol(string symbol)
         {
-            throw new NotImplementedException();
+            // don't do anything with this
         }
 
         public bool IsInstruction(string token)
         {
             throw new NotImplementedException();
+        }
+
+        public void AssembleLine(SourceLine line)
+        {
+            if (line.Instruction.Equals(".cpu", StringComparison.InvariantCulture))
+                CpuChanged?.Invoke(new CpuChangedEventArgs{ Line = new SourceLine{ Operand = line.Operand.Trim('"')}});
         }
 
         public Action<IAssemblyController, BinaryWriter> HeaderOutputAction { get; set; }
@@ -133,6 +132,8 @@ namespace NUnit.Tests.TestDotNetAsm
         public string VerboseBannerText { get; set; }
 
         public ILineDisassembler Disassembler { get; set; }
+
+        public event CpuChangeEventHandler CpuChanged;
     }
 
     [TestFixture]

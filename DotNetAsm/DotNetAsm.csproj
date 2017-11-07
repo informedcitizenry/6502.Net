@@ -97,6 +97,7 @@
     <Compile Include="SymbolCollectionBase.cs" />
     <Compile Include="LabelCollection.cs" />
     <Compile Include="VariableCollection.cs" />
+    <Compile Include="CpuChangedEvent.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ErrorStrings.resx">

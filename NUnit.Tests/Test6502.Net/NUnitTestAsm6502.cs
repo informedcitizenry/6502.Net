@@ -1,11 +1,8 @@
 ﻿using DotNetAsm;
-using Asm6502.Net;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NUnit.Tests.Test6502.Net
 {
@@ -18,7 +15,19 @@ namespace NUnit.Tests.Test6502.Net
             LineAssembler = new Asm6502.Net.Asm6502(Controller);
         }
 
-        private void TestRelativeBranch(string mnemonic, byte opcode)
+        [Test]
+        public void TestGetInstructionSize()
+        {
+            SourceLine line = new SourceLine
+            {
+                Instruction = "jsr",
+                Operand = "$ffd2"
+            };
+
+            TestInstruction(line, 0x0003, new byte[] { 0x20, 0xd2, 0xff }, "jsr $ffd2");
+        }
+
+        void TestRelativeBranch(string mnemonic, byte opcode)
         {
             SourceLine line = new SourceLine();
 
@@ -53,12 +62,13 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure<OverflowException>(line);
         }
 
-        private void TestImplied(string mnemonic, byte opcode)
+        protected void TestImplied(string mnemonic, byte opcode)
         {
-            SourceLine line = new SourceLine();
-
-            line.Instruction = mnemonic;
-            line.Operand = string.Empty;
+            SourceLine line = new SourceLine
+            {
+                Instruction = mnemonic,
+                Operand = string.Empty
+            };
             TestInstruction(line, 0x0001, new byte[] { opcode }, mnemonic);
 
             line.Operand = "$34";
@@ -96,9 +106,11 @@ namespace NUnit.Tests.Test6502.Net
             "adc ${0:x4},y",    // 79
             "adc ${0:x4},x",    // 7d
             */
-            SourceLine line = new SourceLine();
-            line.Instruction = "adc";
-            line.Operand = "#$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "adc",
+                Operand = "#$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x69, 0x34 }, "adc #$34");
 
             line.Operand = "$34";
@@ -135,9 +147,11 @@ namespace NUnit.Tests.Test6502.Net
             "and ${0:x2},x",    // 35
             "and ${0:x4},y",    // 39
             "and ${0:x4},x",    // 3d*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "and";
-            line.Operand = "($34,x)";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "and",
+                Operand = "($34,x)"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x21, 0x34 }, "and ($34,x)");
 
             line.Operand = "$34";
@@ -171,9 +185,11 @@ namespace NUnit.Tests.Test6502.Net
             "asl ${0:x4}",      // 0e
             "asl ${0:x2},x",    // 16
             "asl ${0:x4},x",    // 1e*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "asl";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "asl",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x06, 0x34 }, "asl $34");
 
             line.Operand = string.Empty;
@@ -230,9 +246,11 @@ namespace NUnit.Tests.Test6502.Net
             "bit ${0:x2}",      // 24
             "bit ${0:x4}",      // 2c*/
 
-            SourceLine line = new SourceLine();
-            line.Instruction = "bit";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "bit",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x24, 0x34 }, "bit $34");
 
             line.Operand = "$1234";
@@ -327,9 +345,11 @@ namespace NUnit.Tests.Test6502.Net
             "cmp ${0:x4},y",    // d9
             "cmp ${0:x4},x",    // dd*/
 
-            SourceLine line = new SourceLine();
-            line.Instruction = "cmp";
-            line.Operand = "($34,x)";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "cmp",
+                Operand = "($34,x)"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xc1, 0x34 }, "cmp ($34,x)");
 
             line.Operand = "$34";
@@ -362,10 +382,11 @@ namespace NUnit.Tests.Test6502.Net
             "cpx ${0:x2}",      // e4
             "cpx ${0:x4}",      // ec
              */
-            SourceLine line = new SourceLine();
-
-            line.Instruction = "cpx";
-            line.Operand = "#$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "cpx",
+                Operand = "#$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xe0, 0x34 }, "cpx #$34");
 
             line.Operand = "$34";
@@ -397,10 +418,11 @@ namespace NUnit.Tests.Test6502.Net
             "cpy #${0:x2}",     // c0
             "cpy ${0:x2}",      // c4
             "cpy ${0:x4}",      // cc*/
-            SourceLine line = new SourceLine();
-
-            line.Instruction = "cpy";
-            line.Operand = "#$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "cpy",
+                Operand = "#$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xc0, 0x34 }, "cpy #$34");
 
             line.Operand = "$34";
@@ -434,9 +456,11 @@ namespace NUnit.Tests.Test6502.Net
             "dec ${0:x2},x",    // d6
             "dec ${0:x4},x",    // de*/
 
-            SourceLine line = new SourceLine();
-            line.Instruction = "dec";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "dec",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xc6, 0x34 }, "dec $34");
 
             line.Operand = "$1234";
@@ -482,10 +506,11 @@ namespace NUnit.Tests.Test6502.Net
             "eor ${0:x2},x",    // 55
             "eor ${0:x4},y",    // 59
             "eor ${0:x4},x",    // 5d*/
-            SourceLine line = new SourceLine();
-
-            line.Instruction = "eor";
-            line.Operand = "($34,x)";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "eor",
+                Operand = "($34,x)"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x41, 0x34 }, "eor ($34,x)");
 
             line.Operand = "$34";
@@ -518,9 +543,11 @@ namespace NUnit.Tests.Test6502.Net
             "inc ${0:x4}",      // ee
             "inc ${0:x2},x",    // f6
             "inc ${0:x4},x",    // fe*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "inc";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "inc",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xe6, 0x34 }, "inc $34");
 
             line.Operand = "$1234";
@@ -560,9 +587,11 @@ namespace NUnit.Tests.Test6502.Net
             /*
             "jmp ${0:x4}",      // 4c
             "jmp (${0:x4})",    // 6c*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "jmp";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "jmp",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x34, 0x00 }, "jmp $0034");
 
             line.Operand = "($34)";
@@ -590,9 +619,11 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestJsr()
         {
-            SourceLine line = new SourceLine();
-            line.Instruction = "jsr";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "jsr",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0003, new byte[] { 0x20, 0x34, 0x00 }, "jsr $0034");
 
             line.Operand = "$34,x";
@@ -626,9 +657,11 @@ namespace NUnit.Tests.Test6502.Net
             "lda ${0:x2},x",    // b5
             "lda ${0:x4},y",    // b9
             "lda ${0:x4},x",    // bd*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "lda";
-            line.Operand = "($34,x)";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "lda",
+                Operand = "($34,x)"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xa1, 0x34 }, "lda ($34,x)");
 
             line.Operand = "$34";
@@ -662,9 +695,11 @@ namespace NUnit.Tests.Test6502.Net
             "ldx ${0:x4}",      // ae
             "ldx ${0:x2},y",    // b6
             "ldx ${0:x4},y",    // be*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "ldx";
-            line.Operand = "#$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "ldx",
+                Operand = "#$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xa2, 0x34 }, "ldx #$34");
 
             line.Operand = "$34";
@@ -698,9 +733,11 @@ namespace NUnit.Tests.Test6502.Net
             "ldy ${0:x4}",      // ac
             "ldy ${0:x2},x",    // b4
             "ldy ${0:x4},x",    // bc*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "ldy";
-            line.Operand = "#$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "ldy",
+                Operand = "#$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0xa0, 0x34 }, "ldy #$34");
 
             line.Operand = "$34";
@@ -735,9 +772,11 @@ namespace NUnit.Tests.Test6502.Net
             "lsr ${0:x2},x",    // 56
             "lsr ${0:x4},x",    // 5e*/
 
-            SourceLine line = new SourceLine();
-            line.Instruction = "lsr";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "lsr",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x46, 0x34 }, "lsr $34");
 
             line.Operand = string.Empty;
@@ -780,9 +819,11 @@ namespace NUnit.Tests.Test6502.Net
             "ora ${0:x2},x",    // 15
             "ora ${0:x4},y",    // 19
             "ora ${0:x4},x",    // 1d*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "ora";
-            line.Operand = "($34,x)";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "ora",
+                Operand = "($34,x)"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x01, 0x34 }, "ora ($34,x)");
 
             line.Operand = "$34";
@@ -841,9 +882,11 @@ namespace NUnit.Tests.Test6502.Net
             "rol ${0:x2},x",    // 36
             "rol ${0:x4},x",    // 3e
              */
-            SourceLine line = new SourceLine();
-            line.Instruction = "rol";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "rol",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x26, 0x34 }, "rol $34");
 
             line.Operand = string.Empty;
@@ -883,9 +926,11 @@ namespace NUnit.Tests.Test6502.Net
             "ror ${0:x4}",      // 6e
             "ror ${0:x2},x",    // 76
             "ror ${0:x4},x",    // 7e*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "ror";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "ror",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x66, 0x34 }, "ror $34");
 
             line.Operand = string.Empty;
@@ -919,9 +964,11 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestRta()
         {
-            SourceLine line = new SourceLine();
-            line.Instruction = ".rta";
-            line.Operand = "$0000";
+            SourceLine line = new SourceLine
+            {
+                Instruction = ".rta",
+                Operand = "$0000"
+            };
             TestInstruction(line, 0x0002, 2, new byte[] { 0xff, 0xff });
 
             line.Operand = "$ffff";
@@ -972,9 +1019,11 @@ namespace NUnit.Tests.Test6502.Net
             "sta ${0:x2},x",    // 95
             "sta ${0:x4},y",    // 99
             "sta ${0:x4},x",    // 9d*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "sta";
-            line.Operand = "($34,x)";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "sta",
+                Operand = "($34,x)"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x81, 0x34 }, "sta ($34,x)");
 
             line.Operand = "$34";
@@ -1006,10 +1055,12 @@ namespace NUnit.Tests.Test6502.Net
             "stx ${0:x2}",      // 86
             "stx ${0:x4}",      // 8e
             "stx ${0:x2},y",    // 96*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "stx";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "stx",
 
-            line.Operand = "$34";
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x86, 0x34 }, "stx $34");
 
             line.Operand = "$1234";
@@ -1041,9 +1092,11 @@ namespace NUnit.Tests.Test6502.Net
             "sty ${0:x2}",      // 84
             "sty ${0:x4}",      // 8c
             "sty ${0:x2},x",    // 94*/
-            SourceLine line = new SourceLine();
-            line.Instruction = "sty";
-            line.Operand = "$34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "sty",
+                Operand = "$34"
+            };
             TestInstruction(line, 0x0002, new byte[] { 0x84, 0x34 }, "sty $34");
 
             line.Operand = "$1234";
@@ -1107,9 +1160,11 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestSyntaxErrors()
         {
-            SourceLine line = new SourceLine();
-            line.Instruction = "lda";
-            line.Operand = "# 34";
+            SourceLine line = new SourceLine
+            {
+                Instruction = "lda",
+                Operand = "# 34"
+            };
             TestForFailure<ExpressionException>(line);
 
             line.Operand = "($34),y";
@@ -1143,10 +1198,10 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0xa5, 0x01 }, "lda $01");
 
             line.Operand = "#256";
-            TestForFailure(line);
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "($1234),y";
-            TestForFailure(line);
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "($12,x)";
             TestInstruction(line, 0x0002, new byte[] { 0xa1, 0x12 }, "lda ($12,x)");
@@ -1169,8 +1224,8 @@ namespace NUnit.Tests.Test6502.Net
             line.Operand = "0xffd2"; // oops wrong architecture!
             TestForFailure<ExpressionException>(line);
 
-            line.Operand = "pow(2,4)";
-            TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x10, 0x00 }, "jmp $0010");
+            line.Operand = "pow(2,4)+pow(5,3)";
+            TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x8d, 0x00 }, "jmp $008d");
 
             line.Operand = "2**4";
             TestInstruction(line, 0x0003, new byte[] { 0x4c, 0x10, 0x00 }, "jmp $0010");

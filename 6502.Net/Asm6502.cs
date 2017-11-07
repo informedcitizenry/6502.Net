@@ -22,9 +22,7 @@
 
 using DotNetAsm;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Asm6502.Net
@@ -49,44 +47,70 @@ namespace Asm6502.Net
                 );
 
             Reserved.DefineType("Branches", 
-                    "bcc","bcs","beq","bmi","bne","bpl","bvc","bvs"
+                    "bcc","bcs","beq","bmi","bne","bpl","bra","bvc","bvs",
+                    "bra"
+                );
+
+            Reserved.DefineType("Branches16",
+                    "brl", "per"
                 );
 
             Reserved.DefineType("Implied", 
                     "brk","clc","cld","cli","clv","dex","dey","inx","iny","nop","pha","php","pla",
-                    "plp","rti","rts","sec","sed","sei","tax","tay","tsx","txa","txs","tya"
+                    "plp","rti","rts","sec","sed","sei","tax","tay","tsx","txa","txs","tya",
+                    "tcs", "tsc", "tcd", "tdc", "txy", "tyx", "wai", "stp", "xba", "xce",
+                    "phd", "pld", "phk", "phy", "rtl", "ply", "phb", "plb", "phx", "plx"
                 );
 
             Reserved.DefineType("ImpliedAccumulator", 
-                    "asl", "lsr", "rol", "ror"
+                    "asl", "lsr", "rol", "ror",
+                    "inc", "dec"
+                );
+
+            Reserved.DefineType("ImpliedAC02",
+                    "inc", "dec"
                 );
 
             Reserved.DefineType("Jumps", 
-                    "jmp", "jsr"
+                    "jmp", "jsr",
+                    "jml", "jsl"
                 );
             
             Reserved.DefineType("Mnemonics",
                     "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
-                    "ldy", "lsr", "rol", "ror", "stx", "sty"
+                    "ldy", "lsr", "rol", "ror", "stx", "sty", "cop", 
+                    "tsb", "trb", "mvn", "mvp", "stz", "pea", "pei", 
+                    "rep", "sep", "anc", "ane", "arr", "asr", "sha",
+                    "dcp", "dop", "isb", "jam", "las", "lax", "rla", 
+                    "rra", "sax", "shy", "slo", "sre", "tas", "top", 
+                    "shx"
                 );
 
             Reserved.DefineType("ReturnAddress", 
                     ".rta"
                 );
 
-            RegexOptions ignore = Controller.Options.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+            Reserved.DefineType("LongShort",
+                    ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
+                );
 
-            _regInd = new Regex(@"^(\(.*\))$", RegexOptions.Compiled | ignore);
-            _regXY = new Regex(@"(.+)(,[xy])$", RegexOptions.Compiled | ignore);
+            _regWidth = new Regex(@"^\[\s*(16|24)\s*\]\s*", RegexOptions.Compiled);
 
             _builders = new FormatBuilder[]
             {
+                new FormatBuilder(@"^\[\s*([^\]\s]+)\s*\]\s*,\s*y$()", "[{2}],y", "${0:x2}", string.Empty, 2, 2, 1, 2, controller.Options.RegexOption),
+                new FormatBuilder(@"^\[\s*([^\]\s]+)\s*\]$()", "[{2}]", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
                 new FormatBuilder(@"^#([^\s].*)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
-                new FormatBuilder(@"^\(\s*([^\s]+)\s*,\s*x\s*\)$()", "({2},x)", "${0:x2}", string.Empty, 2,2,1,2, Controller.Options.RegexOption ),
+                new FormatBuilder(@"^\(\s*([^\s]+)\s*,\s*s\s*\)\s*,\s*y$()", "({2},s),y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
+                new FormatBuilder(@"^\(\s*([^\s]+)\s*,\s*(s|x)\s*\)$()", "({2},{0})", "${0:x2}", string.Empty, 2, 3, 1, 3, Controller.Options.RegexOption ),
+                new FormatBuilder(@"^([^\s]+)\s*,\s*(s|x)$()", "{2},{0}", "${0:x2}", string.Empty, 2, 3, 1, 3, Controller.Options.RegexOption),
                 new FormatBuilder(@"^([^\s]+)\s*,\s*y$()", "{2},y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption, true ),
-                new FormatBuilder(@"^([^\s]+)\s*,\s*x$()", "{2},x", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
+                new FormatBuilder(@"^([^\s]+)\s*,\s*(?!(x|y)$)([^\s]+)$()", "{2},{3}", "${0:x2}", "${1:x2}", 4, 4, 1, 3, Controller.Options.RegexOption),
                 new FormatBuilder(@"^(.+)$()", "{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption, true )
             };
+
+            Controller.AddSymbol("a");
+            Controller.CpuChanged += SetCpu;
 
             // set architecture specific encodings
             Controller.Encoding.SelectEncoding("petscii");
@@ -185,141 +209,206 @@ namespace Asm6502.Net
             Controller.Encoding.Map(" _", '\0');
 
             Controller.Encoding.SelectDefaultEncoding();
+
+            _filteredOpcodes = _opcodes.Where(o => o.CPU.Equals("6502")).ToList();
         }
 
         #endregion
 
         #region Methods
 
-        // it is an allowed convention to include "a" as an operand in 
-        // implied instructions on the accumulator, e.g. lsr a
-        bool IsImpliedAccumulator(SourceLine line)
+        Tuple<OperandFormat, Opcode> GetFormatAndOpcode(SourceLine line)
         {
-            if (Reserved.IsOneOf("ImpliedAccumulator", line.Instruction) &&
-                line.Operand.Equals("a", Controller.Options.StringComparison))
-                return Controller.Variables.IsScopedSymbol("a", line.Scope) == false &&
-                       Controller.Labels.IsScopedSymbol("a", line.Scope) == false;
-            return string.IsNullOrEmpty(line.Operand);
-        }
-
-        #region ILineAssembler.Methods
-
-
-        public void AssembleLine(SourceLine line)
-        {
-            if (Controller.Output.PCOverflow)
-            {
-                Controller.Log.LogEntry(line,
-                                        ErrorStrings.PCOverflow,
-                                        Controller.Output.LogicalPC);
-                return;
-            }
-            if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
-            {
-                AssembleRta(line);
-                return;
-            }
-            string instruction = line.Instruction.ToLower();
-            string operand = line.Operand;
-            if (Reserved.IsOneOf("ImpliedAccumulator", line.Instruction))
-                operand = Regex.Replace(operand, @"^a$", string.Empty);
-
+            bool force16 = false, force24 = false;
             OperandFormat fmt = null;
-            int opc = -1;
-            int size = 1;
-            long eval = long.MinValue, evalAbs = 0;
+            Opcode opc = null;
+
+            string instruction = line.Instruction.ToLower();
+
+            string operand = line.Operand;
+            if (Reserved.IsOneOf("ImpliedAccumulator", instruction) || 
+                (Reserved.IsOneOf("ImpliedAC02", instruction) && !_cpu.Equals("6502"))
+                && (!Controller.Variables.IsSymbol("a") && !Controller.Labels.IsSymbol("a")))
+                    operand = Regex.Replace(operand, @"^a$", string.Empty, Controller.Options.RegexOption);
+
+            operand = ConvertFuncs(operand);
+
             if (string.IsNullOrEmpty(operand))
             {
                 fmt = new OperandFormat
                 {
                     FormatString = instruction
                 };
-                opc = Opcode.LookupOpcodeIndex(instruction, _opcodeFormats, Controller.Options.StringComparison);
+                opc = _filteredOpcodes.Find(o => instruction.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instruction, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
             }
             else
             {
+                if (_regWidth.IsMatch(operand))
+                {
+                    if (operand.Contains("16"))
+                        force16 = true;
+                    else
+                        force24 = true;
+                    operand = _regWidth.Replace(operand, string.Empty);
+                }
                 foreach (FormatBuilder builder in _builders)
                 {
                     fmt = builder.GetFormat(operand);
                     if (fmt == null)
                         continue;
+
                     string instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
-                    opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats, Controller.Options.StringComparison);
-                    if (opc != -1 && fmt.FormatString.Contains("${0:x2}"))
+
+                    if (force16 || force24)
                     {
-                        eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
-                        if (eval.Size() == 2)
+                        if (force16)
                         {
                             instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                            opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats, Controller.Options.StringComparison);
-                        }
-                    }
-                    if (opc == -1)
-                    {
-                        if (!instruction.Equals("jmp") &&
-                            fmt.FormatString.StartsWith("(") &&
-                            fmt.FormatString.EndsWith(")") &&
-                            !fmt.FormatString.EndsWith(",x)"))
-                        {
-                            fmt.FormatString = fmt.FormatString.Replace("(", string.Empty).Replace(")", string.Empty);
-                            instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
+                            instrFmt = instrFmt.Replace("${0:x6}", "${0:x4}");
                         }
                         else
                         {
-                            instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                        }
-
-                        opc = Opcode.LookupOpcodeIndex(instrFmt, _opcodeFormats, Controller.Options.StringComparison);
-                    }
-                    fmt.FormatString = instrFmt;
-                    break;
-                }
-            }
-
-            if (fmt == null)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
-                return;
-            }
-            if (opc == -1)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(fmt.Expression1) == false)
-            {
-                size++;
-                if (fmt.FormatString.Contains("${0:x4}"))
-                {
-                    if (eval == long.MinValue)
-                        eval = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, ushort.MaxValue);
-                    evalAbs = eval & 0xFFFF;
-                    if (Reserved.IsOneOf("Branches", line.Instruction))
-                    {
-                        try
-                        {
-                            eval = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)evalAbs, Controller.Output.LogicalPC + 2));
-                        }
-                        catch
-                        {
-                            throw new OverflowException(eval.ToString());
+                            instrFmt = instrFmt.Replace("${0:x2}", "${0:x6}");
+                            instrFmt = instrFmt.Replace("${0:x4}", "${0:x6}");
                         }
                     }
                     else
                     {
-                        size++;
+                        // adjust the size of the format string to match the size of the operand expression
+                        var expVal = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, UInt24.MaxValue);
+                        var size = (expVal.Size() * 2).ToString();
+                        if (!instrFmt.Contains(size))
+                            instrFmt = Regex.Replace(instrFmt, @"2|4", size);
+                    }
+
+                    opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instrFmt, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
+                    if (opc == null)
+                    {
+                        instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
+                        opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instrFmt, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
+
+                        if (opc == null)
+                        {
+                            instrFmt = instrFmt.Replace("${0:x4}", "${0:x6}");
+                            opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instrFmt, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
+                        }
+                    }
+                    break;
+                }
+            }
+            return new Tuple<OperandFormat, Opcode>(fmt, opc);
+        }
+
+        void SetCpu(CpuChangedEventArgs args)
+        {
+            if (args.Line.Operand.EnclosedInQuotes() == false &&
+               !string.IsNullOrEmpty(args.Line.Filename))
+            {
+                Controller.Log.LogEntry(args.Line, ErrorStrings.QuoteStringNotEnclosed);
+                return;
+            }
+            var cpu = args.Line.Operand.Trim('"');
+            if (!cpu.Equals("6502") && !cpu.Equals("65C02") && !cpu.Equals("65816") && !cpu.Equals("6502i"))
+            {
+                string error = string.Format("Invalid CPU '{0}' specified", cpu);
+                if (args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
+                    throw new Exception(string.Format(error));
+                else
+                    Controller.Log.LogEntry(args.Line, error);
+                return;
+            }
+            else
+            {
+                _cpu = cpu;
+            }
+
+            var cpuOpcodes = _opcodes.Where(o => o.CPU.Equals(_cpu));
+
+            if (_cpu.Equals("65C02") || _cpu.Equals("65816") || _cpu.Equals("6502i"))
+            {
+                cpuOpcodes = cpuOpcodes.Concat(_opcodes.Where(o => o.CPU.Equals("6502")));
+
+                if (_cpu.Equals("65816"))
+                    cpuOpcodes = cpuOpcodes.Concat(_opcodes.Where(o => o.CPU.Equals("65C02")));
+            }
+
+            _filteredOpcodes = cpuOpcodes.ToList();
+
+            if (_m16)
+                SetImmediateA(3);
+            if (_x16)
+                SetImmediateXY(3);
+
+        }
+
+        void SetImmediateA(int size)
+        {
+            string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
+
+            _filteredOpcodes.RemoveAll(o => o.Index.Equals(0x09) ||
+                                            o.Index.Equals(0x29) ||
+                                            o.Index.Equals(0x49) ||
+                                            o.Index.Equals(0x69) ||
+                                            o.Index.Equals(0x89) ||
+                                            o.Index.Equals(0xa9) ||
+                                            o.Index.Equals(0xc9) ||
+                                            o.Index.Equals(0xe9));
+
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "ora" + fmt, Size = size, Index = 0x09 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "and" + fmt, Size = size, Index = 0x29 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "eor" + fmt, Size = size, Index = 0x49 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "adc" + fmt, Size = size, Index = 0x69 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "65C02", DisasmFormat = "bit" + fmt, Size = size, Index = 0x89 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "lda" + fmt, Size = size, Index = 0xa9 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "cmp" + fmt, Size = size, Index = 0xc9 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "sbc" + fmt, Size = size, Index = 0xe9 });
+        }
+
+        void SetImmediateXY(int size)
+        {
+            string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
+
+            _filteredOpcodes.RemoveAll(o => o.Index.Equals(0xa0) ||
+                                            o.Index.Equals(0xa2) || 
+                                            o.Index.Equals(0xc0) || 
+                                            o.Index.Equals(0xe0));
+
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "ldy" + fmt, Size = size, Index = 0xa0 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "ldx" + fmt, Size = size, Index = 0xa2 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "cpy" + fmt, Size = size, Index = 0xc0 });
+            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "cpx" + fmt, Size = size, Index = 0xe0 });
+        }
+
+        void SetRegLongShort(string instruction)
+        {
+            if (instruction.StartsWith(".x", Controller.Options.StringComparison))
+            {
+                bool x16 = instruction.Equals(".x16", Controller.Options.StringComparison);
+                if (x16 != _x16)
+                {
+                    _x16 = x16;
+                    SetImmediateXY(_x16 ? 3 : 2);
+                }
+            }
+            else
+            {
+                
+                bool m16 = instruction.EndsWith("16", Controller.Options.StringComparison);
+                if (m16 != _m16)
+                {
+                    _m16 = m16;
+                    SetImmediateA(_m16 ? 3 : 2);
+                }
+                if (instruction.StartsWith(".mx", Controller.Options.StringComparison))
+                {
+                    bool x16 = instruction.EndsWith("16", Controller.Options.StringComparison);
+                    if (x16 != _x16)
+                    {
+                        _x16 = x16;
+                        SetImmediateXY(_x16 ? 3 : 2);
                     }
                 }
-                else
-                {
-                    eval = Controller.Evaluator.Eval(fmt.Expression1, sbyte.MinValue, byte.MaxValue);
-                    evalAbs = eval & 0xFF;
-                }
-
             }
-            line.Disassembly = string.Format(_opcodeFormats[opc], evalAbs);
-            line.Assembly = Controller.Output.Add(opc | (int)eval << 8, size);
         }
 
         void AssembleRta(SourceLine line)
@@ -340,52 +429,145 @@ namespace Asm6502.Net
             }
         }
 
-        /// <summary>
-        /// Determines if the instruction is y-indexed instruction on the accumulator.
-        /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine of the instruction</param>
-        /// <returns>True, if the instruction is y-indexed for the accumulator</returns>
-        bool AccumY(SourceLine line)
+
+        #region ILineAssembler.Methods
+
+        public void AssembleLine(SourceLine line)
         {
-            return _regXY.IsMatch(line.Operand) &&
-                   !_regInd.IsMatch(line.Operand) &&
-                   line.Operand.EndsWith(",y", Controller.Options.StringComparison) &&
-                   Reserved.IsOneOf("Accumulator", line.Instruction);
+            if (Controller.Output.PCOverflow)
+            {
+                Controller.Log.LogEntry(line,
+                                        ErrorStrings.PCOverflow,
+                                        Controller.Output.LogicalPC);
+                return;
+            }
+            if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
+            {
+                AssembleRta(line);
+                return;
+            }
+            else if (Reserved.IsOneOf("LongShort", line.Instruction))
+            {
+                if (!string.IsNullOrEmpty(line.Operand))
+                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                else
+                    SetRegLongShort(line.Instruction);
+                return;
+            }
+
+            var formatOpcode = GetFormatAndOpcode(line);
+            if (formatOpcode.Item1 == null)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
+                return;
+            }
+            if (formatOpcode.Item2 == null)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+                return;
+            }
+            long eval1 = long.MinValue, eval2 = long.MinValue;
+            long eval1Abs = 0;
+
+            if (Reserved.IsOneOf("Branches", line.Instruction) || Reserved.IsOneOf("Branches16", line.Instruction))
+            {
+                eval1 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression1, short.MinValue, ushort.MaxValue);
+                eval1Abs = eval1 & 0xFFFF;
+                try
+                {
+                    if (Reserved.IsOneOf("Branches", line.Instruction))
+                        eval1 = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)eval1Abs, Controller.Output.LogicalPC + 2));
+                    else
+                        eval1 = Convert.ToInt16(Controller.Output.GetRelativeOffset((ushort)eval1Abs, Controller.Output.LogicalPC + 3));
+                }
+                catch
+                {
+                    throw new OverflowException(eval1.ToString());
+                }
+
+            }
+            else
+            {
+                var operandsize = 0;
+
+                long minval = sbyte.MinValue, maxval = byte.MaxValue;
+
+                if (string.IsNullOrEmpty(formatOpcode.Item1.Expression2))
+                {
+                    if (formatOpcode.Item2.Size == 4)
+                    {
+                        minval = Int24.MinValue;
+                        maxval = UInt24.MaxValue;
+                    }
+                    else if (formatOpcode.Item2.Size == 3)
+                    {
+                        minval = short.MinValue;
+                        maxval = ushort.MaxValue;
+                    }
+                }
+                else
+                {
+                    eval2 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression2, minval, maxval);
+                }
+                if (!string.IsNullOrEmpty(formatOpcode.Item1.Expression1))
+                    eval1 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression1, minval, maxval);
+                
+
+                if (!eval1.Equals(long.MinValue))
+                {
+                    if (formatOpcode.Item2.Size == 4)
+                    {
+                        eval1 &= 0xFFFFFF;
+                    }
+                    else if (formatOpcode.Item2.Size == 3 && eval2.Equals(long.MinValue))
+                    {
+                        eval1 &= 0xFFFF;
+                    }
+                    else
+                    {
+                        eval1 &= 0xFF;
+                        if (!eval2.Equals(long.MinValue))
+                            eval2 &= 0xFF;
+                    }
+                    eval1Abs = eval1;
+                    operandsize = eval1.Size();
+                }
+                if (!eval2.Equals(long.MinValue))
+                    operandsize += eval2.Size();
+                
+                if (operandsize >= formatOpcode.Item2.Size)
+                    throw new OverflowException(line.Operand);
+            }
+            long operbytes = 0;
+            if (!eval1.Equals(long.MinValue))
+                operbytes = eval2.Equals(long.MinValue) ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
+
+            line.Disassembly = string.Format(formatOpcode.Item2.DisasmFormat, eval1Abs, eval2);
+            line.Assembly = Controller.Output.Add(operbytes | (long)formatOpcode.Item2.Index, formatOpcode.Item2.Size);
+        }
+
+        string ConvertFuncs(string operand)
+        {
+            return Regex.Replace(operand, @"([a-zA-Z][a-zA-Z0-9]*)(\(.+\,.+\))", (match) =>
+            {
+                var fcncall = match.Groups[2].Value.FirstParenEnclosure();
+                var post = string.Empty;
+                if (!fcncall.Equals(match.Groups[2].Value))
+                    post = match.Groups[2].Value.Substring(fcncall.Length);
+                var evalfcn = Controller.Evaluator.Eval(match.Groups[1].Value + fcncall);
+                return evalfcn.ToString() + ConvertFuncs(post);
+            });
         }
 
         public int GetInstructionSize(SourceLine line)
         {
-            string instruction = line.Instruction;
-            string operand = line.Operand;
-            if (Reserved.IsOneOf("ReturnAddress", instruction))
-                return line.CommaSeparateOperand().Count * 2;
-            if (Reserved.IsOneOf("Implied", instruction) || IsImpliedAccumulator(line))
-                return 1;
-            if (Reserved.IsOneOf("Branches", instruction) || line.Operand.StartsWith("#"))
-                return 2;
-            if (Reserved.IsOneOf("Jumps", instruction))
-                return 3;
-            if (operand.EndsWith(",x)", Controller.Options.StringComparison))
-                return 2;
-
-            var parts = line.CommaSeparateOperand();
-            operand = parts.First();
-            if (parts.Count > 1)
-            {
-                if (parts.Last().Equals("y", Controller.Options.StringComparison))
-                {
-                    if (_regInd.IsMatch(operand))
-                    {
-                        operand = _regInd.Match(operand).Groups[1].Value;
-
-                        if (operand.Equals(operand.FirstParenEnclosure()))
-                            return 2;
-                    }
-                    if (AccumY(line))
-                        return 3;
-                }
-            }
-            return Controller.Evaluator.Eval(operand).Size() + 1;
+            if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
+                return 2 * line.CommaSeparateOperand().Count;
+            
+            var formatOpcode = GetFormatAndOpcode(line);
+            if (formatOpcode.Item2 != null)
+                return formatOpcode.Item2.Size;
+            return 0;
         }
 
         public bool AssemblesInstruction(string instruction)

@@ -1,8 +1,9 @@
-# 6502.Net, A Simple .Net-Based 6502 Cross-Assembler
-### Version 1.6
+# 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
+### Version 1.7
 ## Introduction
-The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502 and related CPU architectures. It is written for .Net (Version 4.5.1) and supports all of the published (legal) instructions of 6502-based CPUs. The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
+The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
+The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor. The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the CPU for the Apple IIc and IIe home computers, as well as the NEC TurboGrafx-16 game system. The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Legal
 * 6502.Net (c) 2017 informedcitizenry
 * System.CommandLine, a [command-line argument parser](https://github.com/dotnet/corefxlab/tree/master/src/System.CommandLine) (c) Microsoft Corporation
@@ -101,10 +102,16 @@ As you can see anonymous labels, though convenient, would hinder readability if 
 Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
 ```
             .let myvar = 34
-			lda #myvar
+            lda #myvar
             .let myvar = myvar + 1
-			ldx #myvar
+            ldx #myvar
 ```
+Unlike labels, variables cannot be referenced in other expressions before they are declared, since variables are not preserved between passes.
+```
+            .let y = x  
+            .let x = 3
+```
+In the above example, the assembler would error assuming `x` has never been declared before.
 ### Comments
 Adding comments to source promotes readability, particularly in assembly. Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or constant character.
 ```
@@ -266,14 +273,6 @@ All non-string operands are treated as math or conditional expressions. Compound
 | >             | Greater than                   |
 | &&            | Logical AND                    |
 | &#124;&#124;  | Logical OR                     |
-#### Unary Operations
-| Operator      | Meaning                        |
-| :-----------: | ------------------------------ |
-| ~             | Bitwise complementary          |
-| <             | Least significant byte         |
-| >             | Most significant (second) byte |
-| ^             | Bank (third) byte              |
-| !             | Logical NOT                    |
 ```
     .addr   HIGHSCORE + 3 * 2 ; the third address from HIGHSCORE
     .byte   * > $f000         ; if program counter > $f000, assemble as 1
@@ -282,6 +281,27 @@ All non-string operands are treated as math or conditional expressions. Compound
     ;; bounds check START_ADDR                          
     .assert START_ADDR >= MIN && START_ADDR <= MAX
 ```
+#### Unary Operations
+| Operator      | Meaning                        |
+| :-----------: | ------------------------------ |
+| ~             | Bitwise complementary          |
+| <             | Least significant byte         |
+| >             | Most significant (second) byte |
+| &             | Word (first two bytes) value   |
+| ^             | Bank (third) byte              |
+| !             | Logical NOT                    |
+```
+
+            lda #>routine-1     ; routine MSB
+            pha
+            lda #<routine-1     ; routine LSB
+            pha                 
+            rts                 ; RTS jump to "routine"
+
+routine     lda &long_address   ; load the absolute value of long_address 
+                                ; (truncate bank byte) into accummulator
+```
+
 Several built-in math functions that can also be called as part of the expressions.
 ```
     lda #sqrt(25)
@@ -463,35 +483,148 @@ These repetitions can also be nested, as shown below.
 ### Loop Assembly
 Repetitions can also be handled in for/next loops, where source can be emitted repeatedly until a condition is met. The added advantage is the variable itself can be referenced inside the loop.
 ```
-	lda #0
-	.for i = $0400, i < $0800, i = i + 1
-	sta i
-	.next
+    lda #0
+    .for i = $0400, i < $0800, i = i + 1
+        sta i
+    .next
 ```
 If required, loops can be broken out of using the `.break` directive
 ```
     .for i = 0, i < 256, i = i + 1
-    .if * >= $1000
-        .break          ; make sure assembly does not go past $1000
-    .endif
-    lda #'A'
-    jsr $ffd2
+        .if * >= $1000
+            .break          ; make sure assembly does not go past $1000
+        .endif
+        lda #'A'
+        jsr $ffd2
     .next
 ```
+All expressions, including the condition, are only evaluated on the first pass.
 **Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable inside its own or nested loops.
+## 65C02 and W65C816S support
+By default, 6502.Net "thinks" like a 6502 assembler, compiling only the published 56 mnemonics and 151 instructions of that microprocessor. As of Version 1.7, 6502.Net can also compile illegal instructions as well as those of the successor WDC 65C02 and W65C816S processors. The `.cpu` directive tells the assembler the type of source and instruction set it is to assemble.
+```
+        .cpu "6502i"    ; enable illegal instructions
+
+        ldx #0
+        slo (zpvar,x)
+```
+There are four options for the `.cpu` directive: `6502`, `6502i`, `65C02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though in the case of the `65816` selection this also includes 65C02 and 6502 (legal) instructions, since it is a superset of both.
+
+Immediate mode on the 65816 differs based on register size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers. 
+```
+        rep #%00110000
+
+        .m16
+        lda #$c000      
+        ldx #$03
+
+        .x16
+        ldy #$1000
+        jml $1012000
+```
+By default `.m8` and `.x8` modes are selected. You can also set all registers to the same size with `.mx8` and `.mx16` respectively.
+```
+        sep #%00110000
+
+        .mx8
+
+        lda #$00
+        ldx #$01
+        ldy #$02
+```
 ## Future enhancements under consideration
 * Switch-case conditions
-* 65C02 and 65816/65C816 CPU support
 * Custom functions
+
 ## Reference
 ### Instruction set
-At this time, 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. Illegal opcodes must be invoked using the pseudo-ops .byte, .word, etc. The following mnemonics are recognized:
+By default, the 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. The following mnemonics are recognized:
 ```
 adc,and,asl,bcc,bcs,beq,bit,bmi,bne,bpl,brk,bvc,bvs,clc,
 cld,cli,clv,cmp,cpx,cpy,dec,dex,dey,eor,inc,inx,iny,jmp,
 jsr,lda,ldx,ldy,lsr,nop,ora,pha,php,pla,plp,rol,ror,rti,
 rts,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
 ```
+65C02 support adds the following additional mnemonics:
+```
+bra,phx,phy,plx,ply,trb,tsb
+```
+For 65816 compatibility the following mnemonics are recognized:
+```
+brl,cop,jml,jsl,mvn,mvp,pea,pei,per,phb,phd,phk,plb,pld,
+rep,rtl,sep,stp,tcd,tcs,tdc,tsc,txy,tyx,wai,wdm,xba,xce
+```
+Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by the [VICE Emulator](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
+
+| Mnemonic  | Addressing Mode       | Opcode |    
+| --------- | --------------------- | ------ |
+| ANC       | Immediate             | 2B     |
+| ANE       | Immediate             | 8B     |
+| ARR       | Immediate             | 6B     |
+| ASR       | Immediate             | 4B     |
+| DCP       | Indexed Indirect      | C3     |
+| DCP       | Zero-Page             | C7     |
+| DCP       | Absolute              | CF     |
+| DCP       | Indirect Indexed      | D3     |
+| DCP       | Zero-Page Indexed X   | D7     |
+| DCP       | Absolute Indexed Y    | DB     |
+| DCP       | Absolute Indexed X    | DF     |    
+| DOP       | Implied/Immediate     | 80     |
+| ISB       | Indexed Indirect      | E3     |
+| ISB       | Zero-Page             | E7     |
+| ISB       | Absolute              | EF     |
+| ISB       | Indirect Indexed      | F3     |
+| ISB       | Zero-Page Indexed X   | F7     |
+| ISB       | Absolute Indexed Y    | FB     |
+| ISB       | Absolute Indexed X    | FF     |    
+| JAM       | Implied               | 02     |
+| LAS       | Absolute Indexed Y    | BB     |
+| LAX       | Indexed Indirect      | A3     |
+| LAX       | Zero-Page             | A7     |
+| LAX       | Absolute              | AF     |
+| LAX       | Indirect Indexed      | B3     |
+| LAX       | Zero-Page Indexed X   | B7     |
+| LAX       | Absolute Indexed Y    | BF     |  
+| RLA       | Indexed Indirect      | 23     |
+| RLA       | Zero-Page             | 27     |
+| RLA       | Absolute              | 2F     |
+| RLA       | Indirect Indexed      | 33     |
+| RLA       | Zero-Page Indexed X   | 37     |
+| RLA       | Absolute Indexed Y    | 3B     |
+| RLA       | Absolute Indexed X    | 3F     |    
+| RRA       | Indexed Indirect      | 63     |
+| RRA       | Zero-Page             | 67     |
+| RRA       | Absolute              | 6F     |
+| RRA       | Indirect Indexed      | 73     |
+| RRA       | Zero-Page Indexed X   | 77     |
+| RRA       | Absolute Indexed Y    | 7B     |
+| RRA       | Absolute Indexed X    | 7F     |    
+| SAX       | Indexed Indirect      | 83     |
+| SAX       | Zero-Page             | 87     |
+| SAX       | Absolute              | 8F     |
+| SAX       | Zero-Page Indexed X   | 97     |
+| SAX       | Absolute Indexed Y    | 9B     |
+| SHX       | Absolute Indexed Y    | 9E     |
+| SHY       | Absolute Indexed X    | 9C     |
+| SLO       | Indexed Indirect      | 03     |
+| SLO       | Zero-Page             | 07     |
+| SLO       | Absolute              | 0F     |
+| SLO       | Indirect Indexed      | 13     |
+| SLO       | Zero-Page Indexed X   | 17     |
+| SLO       | Absolute Indexed Y    | 1B     |
+| SLO       | Absolute Indexed X    | 1F     |    
+| SRE       | Indexed Indirect      | 43     |
+| SRE       | Zero-Page             | 47     |
+| SRE       | Absolute              | 4F     |
+| SRE       | Indirect Indexed      | 53     |
+| SRE       | Zero-Page Indexed X   | 57     |
+| SRE       | Absolute Indexed Y    | 5B     |
+| SRE       | Absolute Indexed X    | 5F     |    
+| TAS       | Absolute Indexed Y    | 9B     |
+| TOP       | Immediate/Absolute    | 0C     |
+| TOP       | Absolute Indexed X    | 1C     |
+
+** Note: ** Illegal mnemonics are only available if the `6502i` cpu is selected.
 ### Pseudo-Ops
 Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops. A pseudo-op is similar to a mnemonic in that it tells the assembler to output some number of bytes, but different in that it is not part of the CPU's instruction set. For each pseudo-op description is its name, any aliases, a definition, arguments, and examples of usage. Optional arguments are in square brackets (`[` and `]`).
 
@@ -749,7 +882,7 @@ mysub   lda #13             ; output newline
 <table>
 <tr><td><b>Name</b></td><td><code>.assert</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Asserts the truth of a given expression. If the assertion fails, an error is logged. A custom error can be optionally be specified.</td></tr>
+<tr><td><b>Definition</b></td><td>Asserts the truth of a given expression. If the assertion fails, an error is logged. A custom error can optionally be specified.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>condition[, error]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -821,6 +954,20 @@ done    rts
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.cpu</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Set the assembler to target the supported CPU. See the <code>--cpu</code> option in the command-line notes below for the available options.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>cpu</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      .cpu "65816"
+      clc
+      xce
+      rep #%00110000
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.comment</code>/<code>.endcomment</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Set a multi-line comment block.</td></tr>
@@ -849,7 +996,7 @@ is in quiet mode, no output will be given.</td></tr>
 <table>
 <tr><td><b>Name</b></td><td><code>.encoding</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Select the text encoding for assembly output. The default is <code>none</code>, which is not affected by <code>.map</code> and <code>.unmap</code> directives. Four encodings are pre-defined:
+<tr><td><b>Definition</b></td><td>Select the text encoding for assembly output. Four encodings are pre-defined:
 <ul>
         <li><code>none</code>       - UTF-8 (default)</li>
         <li><code>atascreen</code>       - Atari screen codes</li>
@@ -972,11 +1119,11 @@ start       ; same as start .equ *
 <tr><td><b>Arguments</b></td><td><code>init_expression, condition[, iteration_expression[, ...]]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-		.let x = 0
+        .let x = 0
         .for pages = $100, pages < $800, pages = pages + $100, x = x + 1
             ldx #x
             stx pages
-		.next
+        .next
 </pre>
 </td></tr>
 </table>
@@ -1003,6 +1150,62 @@ start       ; same as start .equ *
             jsr myvar
             .let myvar =    myvar-$1000
             lda myvar
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.m8</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat immediate mode operations on the accumulator as 8-bit (one byte). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      sep #$20
+      .m8
+      lda #$13
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.m16</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat immediate mode operations on the accumulator as 16-bit (two bytes). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      rep #$20
+      .m16
+      lda #$1234
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.mx8</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat all immediate mode operations as 8-bit (one byte). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      sep #$30
+      .mx8
+      lda #$13
+      ldx #$14
+      ldy #$15
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.mx16</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat all immediate mode operations as 16-bit (two bytes). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      rep #$30
+      .mx16
+      lda #$1234
+      ldx #$5678
+      ldy #$9abc
 </pre>
 </td></tr>
 </table>
@@ -1073,7 +1276,7 @@ print       .macro  value = 13, printsub = $ffd2
 SYS         = $9e
             .word eob, 10
             .cstring SYS, str(start)
-eob	        .word 0
+eob         .word 0
 start       ldx #0
 -           lda highcode,x
             sta $c000,x
@@ -1250,6 +1453,34 @@ glyph             ;12345678
     ;; if program counter
     ;; is greater than 2049,
     ;; raise a custom warning
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.x8</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat immediate mode operations on the index registers as 8-bit (one byte). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      sep #$10
+      .x8
+      ldx #$14
+      ldy #$15
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.x16</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat immediate mode operations on the index registers as 8-bit (one byte). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      rep #$10
+      .x16
+      ldx #$5678
+      ldy #$9abc
 </pre>
 </td></tr>
 </table>
@@ -1471,6 +1702,24 @@ glyph             ;12345678
 </td></tr>
 </table>
 <table>
+<tr><td><b>Option</b></td><td><code>--cpu</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Direct the assembler to the given cpu target By default, 6502.Net targets only legal 6502 instructions. The following options are available:
+<ul>
+        <li><code>6502</code>        - Legal 6502 instructions only (default)</li>
+        <li><code>6502i</code>       - Legal and illegal 6502 instructions</li>
+        <li><code>65C02</code>       - Legal 6502 and 65C02 instructions</li>
+        <li><code>65816</code>       - Legal 6502, 65C02 and W65C816 instructions</li>
+</ul>
+</td></tr>
+<tr><td><b>Parameter</b></td><td><code>cpu</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+/6502.Net myillegalasm.asm --cpu=6502i
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Option</b></td><td><code>-D</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--define</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at assembly time. If no value is given the default value is 1.</td></tr>
@@ -1643,6 +1892,8 @@ glyph             ;12345678
 `Illegal quantity` - The expression value is larger than the allowable size.
 
 `Invalid constant assignment` - The constant could not be assigned to the expression.
+
+`Invalid CPU specified` - An invalid CPU option was given at the command line or in the directive
 
 `Invalid parameter reference` - The macro reference does not reference a defined parameter.
 

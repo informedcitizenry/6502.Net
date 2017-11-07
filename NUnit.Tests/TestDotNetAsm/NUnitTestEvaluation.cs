@@ -183,6 +183,7 @@ namespace NUnit.Tests.TestDotNetAsm
             long notmyvar = eval.Eval("~(myvar*2)%256");
             long lsb = eval.Eval("<$8040ffd2");
             long msb = eval.Eval(">$8040ffd2");
+            long word = eval.Eval("&$8040ffd2");
             long bb = eval.Eval("^$8040ffd2");
             long mixed = eval.Eval("25*<myvar+>$2456*2");
             long notandnot = eval.Eval("~(35*2) + ~(22*6) + (12*2)");
@@ -192,6 +193,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(~255, not255);
             Assert.AreEqual(0xd2, lsb);
             Assert.AreEqual(0xff, msb);
+            Assert.AreEqual(0xffd2, word);
             Assert.AreEqual(0x40, bb);
             Assert.AreEqual(25 * (myvar % 256) + 0x24 * 2, mixed);
             Assert.AreEqual(~(35 * 2) + ~(22 * 6) + (12 * 2), notandnot);

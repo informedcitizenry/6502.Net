@@ -20,35 +20,20 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+using System;
+
 namespace DotNetAsm
 {
-    public static class ConstStrings
+    /// <summary>
+    /// Cpu changed event arguments.
+    /// </summary>
+    public class CpuChangedEventArgs : EventArgs
     {
-        /// <summary>
-        /// The default token indicating a scope block opening. This field is constant.
-        /// </summary>
-        public const string OPEN_SCOPE = ".block";
-
-        /// <summary>
-        /// The default token indicating a scope block closure. This field is constant.
-        /// </summary>
-        public const string CLOSE_SCOPE = ".endblock";
-
-        /// <summary>
-        /// A constant string expression to use for a DotNetAsm.SourceLine SourceString 
-        /// to indicate the line itself is "shadow source," i.e. injected programmatically
-        /// and not present in the original source file.
-        /// </summary>
-        public const string SHADOW_SOURCE = "@@__SHADOW__@@";
-
-        /// <summary>
-        /// The directive used to declare and assign variables.
-        /// </summary>
-        public const string VAR_DIRECTIVE = ".let";
-
-        /// <summary>
-        /// Indicates the source is a command-line argument.
-        /// </summary>
-        public const string COMMANDLINE_ARG = "@@__CMDARG__@@";
+        public SourceLine Line { get; set; }
     }
+
+    /// <summary>
+    /// CPU change event handler delegate
+    /// </summary>
+    public delegate void CpuChangeEventHandler(CpuChangedEventArgs args);
 }

@@ -197,7 +197,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Ises the symbol.
+        /// Checks if the collection contains the symbol.
         /// </summary>
         /// <returns><c>true</c>, if the symbol exists in the collection, 
         /// <c>false</c> otherwise.</returns>

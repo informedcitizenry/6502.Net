@@ -99,6 +99,7 @@ namespace DotNetAsm
         /// <see cref="T:System.Collections.Generic.KeyValuePair&lt;string, long&gt;"/>.</returns>
         /// <param name="expression">The assignment expression.</param>
         /// <param name="inScope">The current scope the expression is in.</param>
+        /// <exception cref="T:DotNetAsm.ExpressionException">
         public KeyValuePair<string, long> SetVariable(string expression, string inScope)
         {
             KeyValuePair<string, long> result = ParseExpression(expression, inScope);

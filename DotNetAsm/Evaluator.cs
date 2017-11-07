@@ -1,6 +1,27 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to 
+// deal in the Software without restriction, including without limitation the 
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in 
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+// IN THE SOFTWARE.
+//-----------------------------------------------------------------------------
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -85,7 +106,7 @@ namespace DotNetAsm
         {
             _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
             _regFcn = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))", RegexOptions.Compiled);
-            _regUnary = new Regex(@"(?<![0-9.)<>])([!\-~^<>])(\(.+\)|[0-9.]+)", RegexOptions.Compiled);
+            _regUnary = new Regex(@"(?<![0-9.)<>])([!\-~^&<>])(\(.+\)|[0-9.]+)", RegexOptions.Compiled);
             _regBinary = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))", RegexOptions.Compiled);
 
             _cache = new Dictionary<string, double>();
@@ -100,29 +121,29 @@ namespace DotNetAsm
             };
             _functions = new Dictionary<string, Tuple<Func<double[], double>, int>>
             {
-                { "abs", new Tuple<Func<double[], double>, int>(parms => Math.Abs(parms[0]), 1) },
-                { "acos", new Tuple<Func<double[], double>, int>(parms => Math.Acos(parms[0]), 1) },
-                { "atan", new Tuple<Func<double[], double>, int>(parms => Math.Atan(parms[0]), 1) },
-                { "cbrt", new Tuple<Func<double[], double>, int>(parms => Math.Pow(parms[0], 1.0 / 3.0), 1) },
-                { "ceil", new Tuple<Func<double[], double>, int>(parms => Math.Ceiling(parms[0]), 1) },
-                { "cos", new Tuple<Func<double[], double>, int>(parms => Math.Cos(parms[0]), 1) },
-                { "cosh", new Tuple<Func<double[], double>, int>(parms => Math.Cosh(parms[0]), 1) },
-                { "deg", new Tuple<Func<double[], double>, int>(parms => (parms[0] * 180 / Math.PI), 1) },
-                { "exp", new Tuple<Func<double[], double>, int>(parms => Math.Exp(parms[0]), 1) },
-                { "floor", new Tuple<Func<double[], double>, int>(parms => Math.Floor(parms[0]), 1) },
-                { "frac", new Tuple<Func<double[], double>, int>(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
-                { "hypot", new Tuple<Func<double[], double>, int>(parms => Math.Sqrt(Math.Pow(parms[0], 2) + Math.Pow(parms[1], 2)), 2) },
-                { "ln", new Tuple<Func<double[], double>, int>(parms => Math.Log(parms[0]), 1) },
-                { "log10", new Tuple<Func<double[], double>, int>(parms => Math.Log10(parms[0]), 1) },
-                { "pow", new Tuple<Func<double[], double>, int>(parms => Math.Pow(parms[0], parms[1]), 2) },
-                { "rad", new Tuple<Func<double[], double>, int>(parms => (parms[0] * Math.PI / 180), 1) },
+                { "abs",    new Tuple<Func<double[], double>, int>(parms => Math.Abs(parms[0]),             1) },
+                { "acos",   new Tuple<Func<double[], double>, int>(parms => Math.Acos(parms[0]),            1) },
+                { "atan",   new Tuple<Func<double[], double>, int>(parms => Math.Atan(parms[0]),            1) },
+                { "cbrt",   new Tuple<Func<double[], double>, int>(parms => Math.Pow(parms[0], 1.0 / 3.0),  1) },
+                { "ceil",   new Tuple<Func<double[], double>, int>(parms => Math.Ceiling(parms[0]),         1) },
+                { "cos",    new Tuple<Func<double[], double>, int>(parms => Math.Cos(parms[0]),             1) },
+                { "cosh",   new Tuple<Func<double[], double>, int>(parms => Math.Cosh(parms[0]),            1) },
+                { "deg",    new Tuple<Func<double[], double>, int>(parms => (parms[0] * 180 / Math.PI),     1) },
+                { "exp",    new Tuple<Func<double[], double>, int>(parms => Math.Exp(parms[0]),             1) },
+                { "floor",  new Tuple<Func<double[], double>, int>(parms => Math.Floor(parms[0]),           1) },
+                { "frac",   new Tuple<Func<double[], double>, int>(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
+                { "hypot",  new Tuple<Func<double[], double>, int>(parms => Math.Sqrt(Math.Pow(parms[0], 2) + Math.Pow(parms[1], 2)), 2) },
+                { "ln",     new Tuple<Func<double[], double>, int>(parms => Math.Log(parms[0]),             1) },
+                { "log10",  new Tuple<Func<double[], double>, int>(parms => Math.Log10(parms[0]),           1) },
+                { "pow",    new Tuple<Func<double[], double>, int>(parms => Math.Pow(parms[0], parms[1]),   2) },
+                { "rad",    new Tuple<Func<double[], double>, int>(parms => (parms[0] * Math.PI / 180),     1) },
                 { "random", new Tuple<Func<double[], double>, int>(parms => _rng.Next((int)parms[0], (int)parms[1]), 2) },
-                { "sgn", new Tuple<Func<double[], double>, int>(parms => Math.Sign(parms[0]), 1) },
-                { "sin", new Tuple<Func<double[], double>, int>(parms => Math.Sin(parms[0]), 1) },
-                { "sinh", new Tuple<Func<double[], double>, int>(parms => Math.Sinh(parms[0]), 1) },
-                { "sqrt", new Tuple<Func<double[], double>, int>(parms => Math.Sqrt(parms[0]), 1) },
-                { "tan", new Tuple<Func<double[], double>, int>(parms => Math.Tan(parms[0]), 1) },
-                { "tanh", new Tuple<Func<double[], double>, int>(parms => Math.Tanh(parms[0]), 1) },
+                { "sgn",    new Tuple<Func<double[], double>, int>(parms => Math.Sign(parms[0]),            1) },
+                { "sin",    new Tuple<Func<double[], double>, int>(parms => Math.Sin(parms[0]),             1) },
+                { "sinh",   new Tuple<Func<double[], double>, int>(parms => Math.Sinh(parms[0]),            1) },
+                { "sqrt",   new Tuple<Func<double[], double>, int>(parms => Math.Sqrt(parms[0]),            1) },
+                { "tan",    new Tuple<Func<double[], double>, int>(parms => Math.Tan(parms[0]),             1) },
+                { "tanh",   new Tuple<Func<double[], double>, int>(parms => Math.Tanh(parms[0]),            1) },
                 { "round",
                     new Tuple<Func<double[], double>, int>(delegate (double[] parms)
                      {
@@ -215,6 +236,8 @@ namespace DotNetAsm
                         return string.Format("((({0})/65536)%256){1}", value, post);
                     case ">":
                         return string.Format("((({0})/256)%256){1}", value, post);
+                    case "&":
+                        return string.Format("(({0})%65536){1}", value, post);
                     case "<":
                         return string.Format("(({0})%256){1}", value, post);
                     case "-":
@@ -232,10 +255,6 @@ namespace DotNetAsm
             return expression;
         }
 
-        /// <summary>
-        /// Add a format for converting hexadecimal constants using a regular expression.
-        /// </summary>
-        /// <param name="regex">The regex pattern.</param>
         public void AddHexFormat(string regex)
         {
             _hexRegexes.Add(new Regex(regex, RegexOptions.Compiled));
@@ -591,9 +610,9 @@ namespace DotNetAsm
         /// <param name="maxval">The maximum value of the expression. If the evaluated value 
         /// is higher, a System.OverflowException will occur.</param>
         /// <returns>The result of the expression evaluation as a System.Int64 value</returns>
-        /// <exception cref="DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
-        /// <exception cref="System.DivideByZeroException">System.DivideByZeroException</exception>
-        /// <exception cref="System.OverflowException">System.OverflowException</exception>
+        /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
+        /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>
+        /// <exception cref="T:System.OverflowException">System.OverflowException</exception>
         public long Eval(string expression, long minval, long maxval)
         {
             double result = EvalInternal(expression);
@@ -609,7 +628,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="condition">The string representation of the conditional expression.</param>
         /// <returns>Returns true, if the expression is true, false otherwise.</returns>
-        /// <exception cref="DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
+        /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         public bool EvalCondition(string condition)
         {
             return Eval(condition) == 1;
@@ -621,7 +640,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="pattern">A regex pattern for the symbol</param>
         /// <param name="lookupfunc">The lookup function to define the symbol</param>
-        /// <exception cref="System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
         public void DefineSymbolLookup(string pattern, Func<string, string> lookupfunc)
         {
             var value = new Tuple<Regex, Func<string, string>>(new Regex(pattern, RegexOptions.Compiled), lookupfunc);

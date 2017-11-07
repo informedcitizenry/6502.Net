@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+
 namespace DotNetAsm
 {
     /// <summary>
@@ -30,22 +31,12 @@ namespace DotNetAsm
     /// </summary>
     public class AsmCommandLineOptions
     {
-        #region Classes
-
-        class Option
-        {
-            public string Argument;
-            public string Help;
-        }
-
-        #endregion
-
         #region Members
 
         IReadOnlyList<string> _source;
         IReadOnlyList<string> _defines;
-        Dictionary<string, Option> _userOptions;
         string _arch;
+        string _cpu;
         string _listingFile;
         string _labelFile;
         string _outputFile;
@@ -69,10 +60,10 @@ namespace DotNetAsm
         /// </summary>
         public AsmCommandLineOptions()
         {
-            _userOptions = new Dictionary<string, Option>();
             _source = new List<string>();
             _defines = new List<string>();
             _arch =
+            _cpu =
             _listingFile =
             _labelFile =
             _outputFile = string.Empty;
@@ -86,8 +77,6 @@ namespace DotNetAsm
             _quiet =
             _printVersion =
             _caseSensitive = false;
-
-            ArgumentCommand<string> comm = new ArgumentCommand<string>("hI", "there");  
         }
 
         #endregion
@@ -110,12 +99,10 @@ namespace DotNetAsm
             args.CopyTo(Arguments, 0);
             var result = ArgumentSyntax.Parse(args, syntax =>
             {
-                foreach(var option in _userOptions)
-                    syntax.DefineOption(option.Key, ref option.Value.Argument, option.Value.Help);
-                
                 syntax.DefineOption("o|output", ref _outputFile, "Output assembly to <arg>");
                 syntax.DefineOption("b|big-endian", ref _bigEndian, "Set byte order of output to big-endian");
                 syntax.DefineOption("arch", ref _arch, "Specify architecture-specific options");
+                syntax.DefineOption("cpu", ref _cpu, "Specify the target CPU and instruction set");
                 syntax.DefineOptionList("D|define", ref _defines, "Assign value to a global symbol/label in <arg>");
                 syntax.DefineOption("q|quiet", ref _quiet, "Assemble in quiet mode (no console messages)");
                 syntax.DefineOption("w|no-warn", ref _noWarn, "Suppress all warnings");
@@ -132,30 +119,6 @@ namespace DotNetAsm
             });
         }
 
-        /// <summary>
-        /// Define a custom option to parse at the command line.
-        /// </summary>
-        /// <param name="name">The option name</param>
-        /// <param name="help">The help associated with the option</param>
-        public void DefineOption(string name, string help)
-        {
-            _userOptions.Add(name, new Option
-                {
-                    Argument = string.Empty,
-                    Help = help
-                });
-        }
-
-        /// <summary>
-        /// Get the custom-defined argument for the option.
-        /// </summary>
-        /// <param name="option">The option name</param>
-        /// <returns>The argument string</returns>
-        public string GetOptionArgument(string option)
-        {
-            return _userOptions[option].Argument;
-        }
-
         #endregion
 
         #region Properties
@@ -166,9 +129,15 @@ namespace DotNetAsm
         public string[] Arguments { get; set; }
 
         /// <summary>
-        /// Gets the target architecture information.
+        /// Gets or sets the target architecture information.
         /// </summary>
         public string Architecture { get { return _arch; } set { _arch = value; } }
+
+        /// <summary>
+        /// Gets the selected CPU.
+        /// </summary>
+        /// <value>The cpu.</value>
+        public string CPU { get { return _cpu; } }
 
         /// <summary>
         /// Gets the value determining whether output file should be generated, 

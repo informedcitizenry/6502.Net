@@ -109,7 +109,8 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str))
                 return false;
             bool enclosed = false;
-            if (str.StartsWith("\"") && str.EndsWith("\""))
+            if (str.StartsWith("\"", StringComparison.InvariantCulture) && 
+                str.EndsWith("\"", StringComparison.InvariantCulture))
             {
                 bool escaped = false;
                 string substr = str.Substring(1);
@@ -134,7 +135,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="str">The string to evaluate</param>
         /// <returns>Returns the first instance of a parenthetical group</returns>
-        /// <exception cref="System.FormatException">System.FormatException</exception>
+        /// <exception cref="T:System.FormatException">System.FormatException</exception>
         public static string FirstParenEnclosure(this string str)
         {
             int parens = 0;
@@ -249,7 +250,7 @@ namespace DotNetAsm
         /// <typeparam name="T">The type of the object.</typeparam>
         /// <param name="list">The list in which to search the item.</param>
         /// <param name="expression">Filters the list of values based on a predicate.</param>
-        /// <returns>A List&lt;int&gt; of all indexes the value is found in the list.</returns>
+        /// <returns>A <see cref="T:System.List&lt;int&gt;"/> of all indexes the value is found in the list.</returns>
         public static List<int> AllIndexesOf<T>(this List<T> list, System.Func<T, bool> expression)
         {
             var any = list.Where(expression);
