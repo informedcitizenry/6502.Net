@@ -556,73 +556,86 @@ rep,rtl,sep,stp,tcd,tcs,tdc,tsc,txy,tyx,wai,wdm,xba,xce
 ```
 Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by the [VICE Emulator](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
 
-| Mnemonic  | Addressing Mode       | Opcode |    
-| --------- | --------------------- | ------ |
-| ANC       | Immediate             | 2B     |
-| ANE       | Immediate             | 8B     |
-| ARR       | Immediate             | 6B     |
-| ASR       | Immediate             | 4B     |
-| DCP       | Indexed Indirect      | C3     |
-| DCP       | Zero-Page             | C7     |
-| DCP       | Absolute              | CF     |
-| DCP       | Indirect Indexed      | D3     |
-| DCP       | Zero-Page Indexed X   | D7     |
-| DCP       | Absolute Indexed Y    | DB     |
-| DCP       | Absolute Indexed X    | DF     |    
-| DOP       | Implied/Immediate     | 80     |
-| ISB       | Indexed Indirect      | E3     |
-| ISB       | Zero-Page             | E7     |
-| ISB       | Absolute              | EF     |
-| ISB       | Indirect Indexed      | F3     |
-| ISB       | Zero-Page Indexed X   | F7     |
-| ISB       | Absolute Indexed Y    | FB     |
-| ISB       | Absolute Indexed X    | FF     |    
-| JAM       | Implied               | 02     |
-| LAS       | Absolute Indexed Y    | BB     |
-| LAX       | Indexed Indirect      | A3     |
-| LAX       | Zero-Page             | A7     |
-| LAX       | Absolute              | AF     |
-| LAX       | Indirect Indexed      | B3     |
-| LAX       | Zero-Page Indexed X   | B7     |
-| LAX       | Absolute Indexed Y    | BF     |  
-| RLA       | Indexed Indirect      | 23     |
-| RLA       | Zero-Page             | 27     |
-| RLA       | Absolute              | 2F     |
-| RLA       | Indirect Indexed      | 33     |
-| RLA       | Zero-Page Indexed X   | 37     |
-| RLA       | Absolute Indexed Y    | 3B     |
-| RLA       | Absolute Indexed X    | 3F     |    
-| RRA       | Indexed Indirect      | 63     |
-| RRA       | Zero-Page             | 67     |
-| RRA       | Absolute              | 6F     |
-| RRA       | Indirect Indexed      | 73     |
-| RRA       | Zero-Page Indexed X   | 77     |
-| RRA       | Absolute Indexed Y    | 7B     |
-| RRA       | Absolute Indexed X    | 7F     |    
-| SAX       | Indexed Indirect      | 83     |
-| SAX       | Zero-Page             | 87     |
-| SAX       | Absolute              | 8F     |
-| SAX       | Zero-Page Indexed X   | 97     |
-| SAX       | Absolute Indexed Y    | 9B     |
-| SHX       | Absolute Indexed Y    | 9E     |
-| SHY       | Absolute Indexed X    | 9C     |
-| SLO       | Indexed Indirect      | 03     |
-| SLO       | Zero-Page             | 07     |
-| SLO       | Absolute              | 0F     |
-| SLO       | Indirect Indexed      | 13     |
-| SLO       | Zero-Page Indexed X   | 17     |
-| SLO       | Absolute Indexed Y    | 1B     |
-| SLO       | Absolute Indexed X    | 1F     |    
-| SRE       | Indexed Indirect      | 43     |
-| SRE       | Zero-Page             | 47     |
-| SRE       | Absolute              | 4F     |
-| SRE       | Indirect Indexed      | 53     |
-| SRE       | Zero-Page Indexed X   | 57     |
-| SRE       | Absolute Indexed Y    | 5B     |
-| SRE       | Absolute Indexed X    | 5F     |    
-| TAS       | Absolute Indexed Y    | 9B     |
-| TOP       | Immediate/Absolute    | 0C     |
-| TOP       | Absolute Indexed X    | 1C     |
+<table>
+<tr>
+<td>
+<table>
+<tr><th>Mnemonic</th><th>Addressing Mode</th><th>Opcode</th></tr>
+<tr><td>ANC</td><td>Immediate             </td><td>2B</td></tr>
+<tr><td>ANE</td><td>Immediate             </td><td>8B</td></tr>
+<tr><td>ARR</td><td>Immediate             </td><td>6B</td></tr>
+<tr><td>ASR</td><td>Immediate             </td><td>4B</td></tr>
+<tr><td>DCP</td><td>Indexed Indirect      </td><td>C3</td></tr>
+<tr><td>DCP</td><td>Zero-Page             </td><td>C7</td></tr>
+<tr><td>DCP</td><td>Absolute              </td><td>CF</td></tr>
+<tr><td>DCP</td><td>Indirect Indexed      </td><td>D3</td></tr>
+<tr><td>DCP</td><td>Zero-Page Indexed X   </td><td>D7</td></tr>
+<tr><td>DCP</td><td>Absolute Indexed Y    </td><td>DB</td></tr>
+<tr><td>DCP</td><td>Absolute Indexed X    </td><td>DF</td></tr>    
+<tr><td>DOP</td><td>Implied/Immediate     </td><td>80</td></tr>
+<tr><td>ISB</td><td>Indexed Indirect      </td><td>E3</td></tr>
+<tr><td>ISB</td><td>Zero-Page             </td><td>E7</td></tr>
+<tr><td>ISB</td><td>Absolute              </td><td>EF</td></tr>
+<tr><td>ISB</td><td>Indirect Indexed      </td><td>F3</td></tr>
+<tr><td>ISB</td><td>Zero-Page Indexed X   </td><td>F7</td></tr>
+<tr><td>ISB</td><td>Absolute Indexed Y    </td><td>FB</td></tr>
+<tr><td>ISB</td><td>Absolute Indexed X    </td><td>FF</td></tr>    
+<tr><td>JAM</td><td>Implied               </td><td>02</td></tr>
+<tr><td>LAS</td><td>Absolute Indexed Y    </td><td>BB</td></tr>
+<tr><td>LAX</td><td>Indexed Indirect      </td><td>A3</td></tr>
+<tr><td>LAX</td><td>Zero-Page             </td><td>A7</td></tr>
+<tr><td>LAX</td><td>Absolute              </td><td>AF</td></tr>
+<tr><td>LAX</td><td>Indirect Indexed      </td><td>B3</td></tr>
+<tr><td>LAX</td><td>Zero-Page Indexed X   </td><td>B7</td></tr>
+<tr><td>LAX</td><td>Absolute Indexed Y    </td><td>BF</td></tr>  
+<tr><td>RLA</td><td>Indexed Indirect      </td><td>23</td></tr>
+<tr><td>RLA</td><td>Zero-Page             </td><td>27</td></tr>
+<tr><td>RLA</td><td>Absolute              </td><td>2F</td></tr>
+<tr><td>RLA</td><td>Indirect Indexed      </td><td>33</td></tr>
+<tr><td>RLA</td><td>Zero-Page Indexed X   </td><td>37</td></tr>
+<tr><td>RLA</td><td>Absolute Indexed Y    </td><td>3B</td></tr>   
+</table>
+</td>
+<td>
+<table>
+<tr><th>Mnemonic</th><th>Addressing Mode</th><th>Opcode</th></tr>
+<tr><td>RLA</td><td>Absolute Indexed X    </td><td>3F</td></tr>
+<tr><td>RRA</td><td>Indexed Indirect      </td><td>63</td></tr>
+<tr><td>RRA</td><td>Zero-Page             </td><td>67</td></tr>
+<tr><td>RRA</td><td>Absolute              </td><td>6F</td></tr>
+<tr><td>RRA</td><td>Indirect Indexed      </td><td>73</td></tr>
+<tr><td>RRA</td><td>Zero-Page Indexed X   </td><td>77</td></tr>
+<tr><td>RRA</td><td>Absolute Indexed Y    </td><td>7B</td></tr>
+<tr><td>RRA</td><td>Absolute Indexed X    </td><td>7F</td></tr>    
+<tr><td>SAX</td><td>Indexed Indirect      </td><td>83</td></tr>
+<tr><td>SAX</td><td>Zero-Page             </td><td>87</td></tr>
+<tr><td>SAX</td><td>Absolute              </td><td>8F</td></tr>
+<tr><td>SAX</td><td>Zero-Page Indexed X   </td><td>97</td></tr>
+<tr><td>SAX</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
+<tr><td>SHX</td><td>Absolute Indexed Y    </td><td>9E</td></tr>
+<tr><td>SHY</td><td>Absolute Indexed X    </td><td>9C</td></tr>
+<tr><td>SLO</td><td>Indexed Indirect      </td><td>03</td></tr>
+<tr><td>SLO</td><td>Zero-Page             </td><td>07</td></tr>
+<tr><td>SLO</td><td>Absolute              </td><td>0F</td></tr>
+<tr><td>SLO</td><td>Indirect Indexed      </td><td>13</td></tr>
+<tr><td>SLO</td><td>Zero-Page Indexed X   </td><td>17</td></tr>
+<tr><td>SLO</td><td>Absolute Indexed Y    </td><td>1B</td></tr>
+<tr><td>SLO</td><td>Absolute Indexed X    </td><td>1F</td></tr>    
+<tr><td>SRE</td><td>Indexed Indirect      </td><td>43</td></tr>
+<tr><td>SRE</td><td>Zero-Page             </td><td>47</td></tr>
+<tr><td>SRE</td><td>Absolute              </td><td>4F</td></tr>
+<tr><td>SRE</td><td>Indirect Indexed      </td><td>53</td></tr>
+<tr><td>SRE</td><td>Zero-Page Indexed X   </td><td>57</td></tr>
+<tr><td>SRE</td><td>Absolute Indexed Y    </td><td>5B</td></tr>
+<tr><td>SRE</td><td>Absolute Indexed X    </td><td>5F</td></tr>
+<tr><td>STP</td><td>Implied</td><td>12</td></tr>
+<tr><td>TAS</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
+<tr><td>TOP</td><td>Immediate/Absolute    </td><td>0C</td></tr>
+<tr><td>TOP</td><td>Absolute Indexed X    </td><td>1C</td></tr>
+</table>
+</td>
+</tr>
+</table>
 
 ** Note: ** Illegal mnemonics are only available if the `6502i` cpu is selected.
 ### Pseudo-Ops

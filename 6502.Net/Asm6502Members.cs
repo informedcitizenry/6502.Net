@@ -71,6 +71,7 @@ namespace Asm6502.Net
             new Opcode(){ CPU = "65816", DisasmFormat = "ora ${0:x6}",      Size = 4, Index = 0x0f },
             new Opcode(){ CPU = "6502",  DisasmFormat = "bpl ${0:x4}",      Size = 2, Index = 0x10 },
             new Opcode(){ CPU = "6502",  DisasmFormat = "ora (${0:x2}),y",  Size = 2, Index = 0x11 },
+            new Opcode(){ CPU = "6502i", DisasmFormat = "stp",              Size = 1, Index = 0x12 },
             new Opcode(){ CPU = "65C02", DisasmFormat = "ora (${0:x2})",    Size = 2, Index = 0x12 },
             new Opcode(){ CPU = "6502i", DisasmFormat = "slo (${0:x2}),y",  Size = 2, Index = 0x13 },
             new Opcode(){ CPU = "65816", DisasmFormat = "ora (${0:x2},s),y",Size = 2, Index = 0x13 },
