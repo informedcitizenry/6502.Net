@@ -281,16 +281,16 @@ namespace Asm6502.Net
                             instrFmt = Regex.Replace(instrFmt, @"2|4", size);
                     }
 
-                    opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instrFmt, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
+                    opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));
                     if (opc == null)
                     {
                         instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                        opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instrFmt, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
+                        opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));
 
                         if (opc == null)
                         {
                             instrFmt = instrFmt.Replace("${0:x4}", "${0:x6}");
-                            opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instrFmt, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
+                            opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));
                         }
                     }
                     break;
@@ -302,7 +302,7 @@ namespace Asm6502.Net
         void SetCpu(CpuChangedEventArgs args)
         {
             if (args.Line.Operand.EnclosedInQuotes() == false &&
-               !string.IsNullOrEmpty(args.Line.Filename))
+                !args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
             {
                 Controller.Log.LogEntry(args.Line, ErrorStrings.QuoteStringNotEnclosed);
                 return;
