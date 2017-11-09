@@ -44,10 +44,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of the ErrorLog class.
         /// </summary>
-        public ErrorLog()
-        {
-            _errors = new List<Tuple<string, bool>>();
-        }
+        public ErrorLog() => _errors = new List<Tuple<string, bool>>();
         #endregion
 
         #region Methods
@@ -55,34 +52,22 @@ namespace DotNetAsm
         /// <summary>
         /// Clear all logged messages.
         /// </summary>
-        public void ClearAll()
-        {
-            _errors.Clear();
-        }
+        public void ClearAll() => _errors.Clear();
 
         /// <summary>
         /// Clear all logged errors.
         /// </summary>
-        public void ClearErrors()
-        {
-            _errors.RemoveAll(e => e.Item2);
-        }
+        public void ClearErrors() => _errors.RemoveAll(e => e.Item2);
 
         /// <summary>
         /// Clears all logged warnings.
         /// </summary>
-        public void ClearWarnings()
-        {
-            _errors.RemoveAll(e => e.Item2 == false);
-        }
+        public void ClearWarnings() => _errors.RemoveAll(e => e.Item2 == false);
 
         /// <summary>
         /// Dumps all logged messages to console output.
         /// </summary>
-        public void DumpAll()
-        {
-            _errors.ForEach(e => Console.WriteLine(e.Item1));
-        }
+        public void DumpAll() => _errors.ForEach(e => Console.WriteLine(e.Item1));
 
         /// <summary>
         /// Dumps all logged errors to console output.
@@ -187,10 +172,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The SourceLine.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(SourceLine line, bool isError = true)
-        {
-            LogEntry(line.Filename, line.LineNumber, isError);
-        }
+        public void LogEntry(SourceLine line, bool isError = true) => LogEntry(line.Filename, line.LineNumber, isError);
 
         #endregion
 
@@ -199,27 +181,27 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the log entries
         /// </summary>
-        public ReadOnlyCollection<string> Entries { get { return _errors.Select(e => e.Item1).ToList().AsReadOnly(); } }
+        public ReadOnlyCollection<string> Entries => _errors.Select(e => e.Item1).ToList().AsReadOnly();
 
         /// <summary>
         /// Gets if the log has errors.
         /// </summary>
-        public bool HasErrors { get { return _errors.Any(e => e.Item2); } }
+        public bool HasErrors => _errors.Any(e => e.Item2);
 
         /// <summary>
         /// Gets if the log has warnings.
         /// </summary>
-        public bool HasWarnings { get { return _errors.Any(e => e.Item2 == false); } }
+        public bool HasWarnings => _errors.Any(e => e.Item2 == false);
 
         /// <summary>
         /// Gets the error count in the log.
         /// </summary>
-        public int ErrorCount { get { return _errors.Count(e => e.Item2 == true); } }
+        public int ErrorCount => _errors.Count(e => e.Item2 == true);
 
         /// <summary>
         /// Gets the warning count in the log.
         /// </summary>
-        public int WarningCount { get { return _errors.Count(w => w.Item2 == false); } }
+        public int WarningCount => _errors.Count(w => w.Item2 == false);
 
         #endregion
     }

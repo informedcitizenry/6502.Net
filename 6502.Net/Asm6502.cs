@@ -42,12 +42,12 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.DefineType("Accumulator", 
+            Reserved.DefineType("Accumulator",
                     "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
                 );
 
-            Reserved.DefineType("Branches", 
-                    "bcc","bcs","beq","bmi","bne","bpl","bra","bvc","bvs",
+            Reserved.DefineType("Branches",
+                    "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc", "bvs",
                     "bra"
                 );
 
@@ -55,14 +55,14 @@ namespace Asm6502.Net
                     "brl", "per"
                 );
 
-            Reserved.DefineType("Implied", 
-                    "brk","clc","cld","cli","clv","dex","dey","inx","iny","nop","pha","php","pla",
-                    "plp","rti","rts","sec","sed","sei","tax","tay","tsx","txa","txs","tya",
+            Reserved.DefineType("Implied",
+                    "brk", "clc", "cld", "cli", "clv", "dex", "dey", "inx", "iny", "nop", "pha", "php", "pla",
+                    "plp", "rti", "rts", "sec", "sed", "sei", "tax", "tay", "tsx", "txa", "txs", "tya",
                     "tcs", "tsc", "tcd", "tdc", "txy", "tyx", "wai", "stp", "xba", "xce",
                     "phd", "pld", "phk", "phy", "rtl", "ply", "phb", "plb", "phx", "plx"
                 );
 
-            Reserved.DefineType("ImpliedAccumulator", 
+            Reserved.DefineType("ImpliedAccumulator",
                     "asl", "lsr", "rol", "ror",
                     "inc", "dec"
                 );
@@ -71,22 +71,22 @@ namespace Asm6502.Net
                     "inc", "dec"
                 );
 
-            Reserved.DefineType("Jumps", 
+            Reserved.DefineType("Jumps",
                     "jmp", "jsr",
                     "jml", "jsl"
                 );
-            
+
             Reserved.DefineType("Mnemonics",
                     "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
-                    "ldy", "lsr", "rol", "ror", "stx", "sty", "cop", 
-                    "tsb", "trb", "mvn", "mvp", "stz", "pea", "pei", 
+                    "ldy", "lsr", "rol", "ror", "stx", "sty", "cop",
+                    "tsb", "trb", "mvn", "mvp", "stz", "pea", "pei",
                     "rep", "sep", "anc", "ane", "arr", "asr", "sha",
-                    "dcp", "dop", "isb", "jam", "las", "lax", "rla", 
-                    "rra", "sax", "shy", "slo", "sre", "tas", "top", 
+                    "dcp", "dop", "isb", "jam", "las", "lax", "rla",
+                    "rra", "sax", "shy", "slo", "sre", "tas", "top",
                     "shx"
                 );
 
-            Reserved.DefineType("ReturnAddress", 
+            Reserved.DefineType("ReturnAddress",
                     ".rta"
                 );
 
@@ -94,7 +94,7 @@ namespace Asm6502.Net
                     ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
                 );
 
-            _regWidth = new Regex(@"^\[\s*(16|24)\s*\]\s*", RegexOptions.Compiled);
+            _regWidth = new Regex(@"^(?>\[\s*(16|24)\s*\]\s*)(?!,|$)", RegexOptions.Compiled);
 
             _builders = new FormatBuilder[]
             {
@@ -204,7 +204,7 @@ namespace Asm6502.Net
             Controller.Encoding.Map('♦', 'Z');
             Controller.Encoding.Map('┼', '[');
             Controller.Encoding.Map('◥', '_');
-            
+
             Controller.Encoding.SelectEncoding("atascreen");
             Controller.Encoding.Map(" _", '\0');
 
@@ -226,10 +226,10 @@ namespace Asm6502.Net
             string instruction = line.Instruction.ToLower();
 
             string operand = line.Operand;
-            if (Reserved.IsOneOf("ImpliedAccumulator", instruction) || 
+            if (Reserved.IsOneOf("ImpliedAccumulator", instruction) ||
                 (Reserved.IsOneOf("ImpliedAC02", instruction) && !_cpu.Equals("6502"))
                 && (!Controller.Variables.IsSymbol("a") && !Controller.Labels.IsSymbol("a")))
-                    operand = Regex.Replace(operand, @"^a$", string.Empty, Controller.Options.RegexOption);
+                operand = Regex.Replace(operand, @"^a$", string.Empty, Controller.Options.RegexOption);
 
             operand = ConvertFuncs(operand);
 
@@ -354,14 +354,14 @@ namespace Asm6502.Net
                                             o.Index.Equals(0xc9) ||
                                             o.Index.Equals(0xe9));
 
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "ora" + fmt, Size = size, Index = 0x09 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "and" + fmt, Size = size, Index = 0x29 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "eor" + fmt, Size = size, Index = 0x49 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "adc" + fmt, Size = size, Index = 0x69 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "65C02", DisasmFormat = "bit" + fmt, Size = size, Index = 0x89 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "lda" + fmt, Size = size, Index = 0xa9 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "cmp" + fmt, Size = size, Index = 0xc9 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502",  DisasmFormat = "sbc" + fmt, Size = size, Index = 0xe9 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "ora" + fmt, Size = size, Index = 0x09 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "and" + fmt, Size = size, Index = 0x29 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "eor" + fmt, Size = size, Index = 0x49 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "adc" + fmt, Size = size, Index = 0x69 });
+            _filteredOpcodes.Add(new Opcode { CPU = "65C02", DisasmFormat = "bit" + fmt, Size = size, Index = 0x89 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "lda" + fmt, Size = size, Index = 0xa9 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "cmp" + fmt, Size = size, Index = 0xc9 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "sbc" + fmt, Size = size, Index = 0xe9 });
         }
 
         void SetImmediateXY(int size)
@@ -369,14 +369,14 @@ namespace Asm6502.Net
             string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
 
             _filteredOpcodes.RemoveAll(o => o.Index.Equals(0xa0) ||
-                                            o.Index.Equals(0xa2) || 
-                                            o.Index.Equals(0xc0) || 
+                                            o.Index.Equals(0xa2) ||
+                                            o.Index.Equals(0xc0) ||
                                             o.Index.Equals(0xe0));
 
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "ldy" + fmt, Size = size, Index = 0xa0 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "ldx" + fmt, Size = size, Index = 0xa2 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "cpy" + fmt, Size = size, Index = 0xc0 });
-            _filteredOpcodes.Add(new Opcode() { CPU = "6502", DisasmFormat = "cpx" + fmt, Size = size, Index = 0xe0 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "ldy" + fmt, Size = size, Index = 0xa0 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "ldx" + fmt, Size = size, Index = 0xa2 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "cpy" + fmt, Size = size, Index = 0xc0 });
+            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "cpx" + fmt, Size = size, Index = 0xe0 });
         }
 
         void SetRegLongShort(string instruction)
@@ -392,7 +392,7 @@ namespace Asm6502.Net
             }
             else
             {
-                
+
                 bool m16 = instruction.EndsWith("16", Controller.Options.StringComparison);
                 if (m16 != _m16)
                 {
@@ -511,7 +511,7 @@ namespace Asm6502.Net
                 }
                 if (!string.IsNullOrEmpty(formatOpcode.Item1.Expression1))
                     eval1 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression1, minval, maxval);
-                
+
 
                 if (!eval1.Equals(long.MinValue))
                 {
@@ -534,7 +534,7 @@ namespace Asm6502.Net
                 }
                 if (!eval2.Equals(long.MinValue))
                     operandsize += eval2.Size();
-                
+
                 if (operandsize >= formatOpcode.Item2.Size)
                     throw new OverflowException(line.Operand);
             }
@@ -563,7 +563,7 @@ namespace Asm6502.Net
         {
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
                 return 2 * line.CommaSeparateOperand().Count;
-            
+
             var formatOpcode = GetFormatAndOpcode(line);
             if (formatOpcode.Item2 != null)
                 return formatOpcode.Item2.Size;

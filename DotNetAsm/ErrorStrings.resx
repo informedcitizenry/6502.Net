@@ -136,7 +136,7 @@
     <value>Could not process binary file '{0}'</value>
   </data>
   <data name="DefininingUnknownType" xml:space="preserve">
-    <value>Type definition for unknown type '{0}'</value>
+    <value>Type '{0}' is unknown or not redefinable</value>
   </data>
   <data name="DirectiveTakesNoArguments" xml:space="preserve">
     <value>Directive '{0}' takes no arguments</value>

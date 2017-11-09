@@ -123,17 +123,15 @@ namespace NUnit.Tests.TestDotNetAsm
                 CpuChanged?.Invoke(new CpuChangedEventArgs{ Line = new SourceLine{ Operand = line.Operand.Trim('"')}});
         }
 
-        public Action<IAssemblyController, BinaryWriter> HeaderOutputAction { get; set; }
-
-        public Action<IAssemblyController, BinaryWriter> FooterOutputAction { get; set; }
-
-        public string BannerText { get; set; }
-
-        public string VerboseBannerText { get; set; }
-
         public ILineDisassembler Disassembler { get; set; }
 
         public event CpuChangeEventHandler CpuChanged;
+
+        public event DisplayBannerEventHandler DisplayingBanner;
+
+        public event WriteBytesEventHandler WritingHeader;
+
+        public event WriteBytesEventHandler WritingFooter;
     }
 
     [TestFixture]

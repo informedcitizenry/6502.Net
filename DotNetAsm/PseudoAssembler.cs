@@ -156,13 +156,13 @@ namespace DotNetAsm
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
             int offs = 0, size = binary.Data.Count;
+
             GetBinaryOffsetSize(args, size, ref offs, ref size);
+
             if (size > ushort.MaxValue)
-            {
                 Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size);
-                return;
-            }
-            line.Assembly = Controller.Output.AddBytes(binary.Data.Skip(offs), size);
+            else
+                line.Assembly = Controller.Output.AddBytes(binary.Data.Skip(offs), size);
         }
 
         /// <summary>
@@ -184,7 +184,12 @@ namespace DotNetAsm
             if (args.Count > 3)
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-                return null;
+                return new BinaryFile(string.Empty);
+            }
+            else if (!args.First().EnclosedInQuotes())
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                return new BinaryFile(string.Empty);
             }
             string filename = args.First().Trim('"');
             BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
@@ -201,6 +206,14 @@ namespace DotNetAsm
             return binary;
         }
 
+        string GetInstruction(SourceLine line)
+        {
+            if (_typeDefs.ContainsKey(line.Instruction))
+                return _typeDefs[line.Instruction].ToLower();
+            else
+                return line.Instruction.ToLower();
+        }
+
         public void AssembleLine(SourceLine line)
         {
             if (Controller.Output.PCOverflow)
@@ -210,12 +223,7 @@ namespace DotNetAsm
                                         Controller.Output.LogicalPC);
                 return;
             }
-            string instruction;
-
-            if (_typeDefs.ContainsKey(line.Instruction))
-                instruction = _typeDefs[line.Instruction].ToLower();
-            else
-                instruction = line.Instruction.ToLower();
+            string instruction = GetInstruction(line);
 
             switch (instruction)
             {
@@ -278,7 +286,8 @@ namespace DotNetAsm
                 return;
             }
             string currtype = csvs.First();
-            if (!Controller.IsInstruction(currtype))
+            if (!Reserved.IsOneOf("PseudoOps", currtype) ||
+                !base.IsReserved(currtype))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.DefininingUnknownType, currtype);
                 return;
@@ -288,20 +297,20 @@ namespace DotNetAsm
             if (!Regex.IsMatch(newtype, @"^\.?" + Patterns.SymbolUnicode + "$"))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.None);
-                return;
             }
-            if (Controller.IsInstruction(newtype))
+            else if (Controller.IsInstruction(newtype))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TypeDefinitionError, newtype);
-                return;
             }
-            if (_reservedSymbol(newtype))
+            else if (_reservedSymbol(newtype))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TypeNameReserved, newtype);
-                return;
             }
-            _typeDefs.Add(newtype, currtype);
-            line.DoNotAssemble = true;
+            else
+            {
+                _typeDefs.Add(newtype, currtype);
+                line.DoNotAssemble = true;
+            }
         }
 
         public virtual int GetInstructionSize(SourceLine line)
@@ -318,7 +327,9 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return 0;
             }
-            switch (line.Instruction.ToLower())
+            string instruction = GetInstruction(line);
+
+            switch (instruction)
             {
                 case ".align":
                     {

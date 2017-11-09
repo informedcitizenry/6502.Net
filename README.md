@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.7
+### Version 1.7.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -179,6 +179,13 @@ Note that if uninitialized data is defined, but thereafter initialized data is d
 highscore   .dword ?    ; uninitialized highscore variables
             lda #0      ; The output is now 6 bytes in size
 ```
+Use the `.typedef` directive to redefine a type name. This is useful for cross- and backward-compatibility with other assemblers. Each type can have more than one definition.
+```
+            .typedef    .byte   db
+            .typedef    .byte   defb    ; multiple okay
+            .typedef    .string asc
+```
+Only pseudo operations can have their types redefined. For mnemonics or other assembler directives consider using macros instead.
 ### Text processing and encoding
 In addition to integral values, 6502.Net can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes. Escaped double quotes are not recognized, so embedded quotation marks must be "broken out" as separate operands:
 ```
@@ -248,10 +255,42 @@ The output can be one to four bytes. Entire character sets can also be mapped, w
 
         .map 'a', 'A' ;; this is now the same as .map 'a', 'a'
 ```
-Instead express character literals as one-character strings in double-quotes, which will evaluate to UTF-8.
+Instead express character literals as one-character strings in double-quotes, which will resolve to UTF-8 values.
+
+### File inclusions
+
+Other files can be included in final assembly, either as 6502.Net-compatible source or as raw binary. Source files are included using the `.include` and `.binclude` directives. This is useful for libraries or other organized source you would not want to include in your main source file. The operand is the file name (and path) enclosed in quotes. `.include` simply inserts the source at the directive.
+```
+    ;; inside "./lib/library.s"
+
+    .macro  inc16 mem
+    inc \mem
+    bne +
+    inc \mem+1
++   .endmacro
+    ...
+```
+This file called `"libary.s"` inside the path `./lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
+```
+        .include "library.s"
+
+        .inc16 $033c    ; 16-bit increment value at $033c and $033d
+``` 
+If the included library file also contained its own symbols, caution would be required to ensure no symbol clashes. An alternative to `.include` is `.binclude`, which resolves this problem by enclosing the included source in its own scoped block.
+```
+lib     .binclude "library.s"   ; all symbols in "library.s" 
+                                ; are in the "lib" scope
+
+        jsr lib.memcopy
+```
+If no label is prefixed to the `.binclude` directive then the block is anonymous and labels are not visible to your code.
+
 ### Mathematical and Conditional Expressions
+
 All non-string operands are treated as math or conditional expressions. Compound expressions are nested in paranetheses. There are several available operators for both binary and unary expressions.
+
 #### Binary Operations
+
 | Operator      | Meaning                        |
 | :-----------: | ------------------------------ |
 | +             | Add                            |
@@ -307,7 +346,9 @@ Several built-in math functions that can also be called as part of the expressio
     lda #sqrt(25)
 ```
 See the section below on functions for a full list of available functions.
+
 ## Addressing model
+
 By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter. The assignment can be either a constant or expression:
 ```
                 * = ZP + 1000       ; program counter now 1000 bytes offset from the value of the constant ZP
@@ -361,6 +402,19 @@ torelocate:
                 .endrelocate
                 ;; done with movable code, do final cleanup
 finish          rts
+```
+Because the 65xx architecture uses differing addressing modes for the same mnemonics, by default 6502.Net selects the appropriate instruction based on the minimum required size to express the operand. For instance `lda 42` can either be interpreted to be zero-page or absolute addressing, but 6502.Net will choose zero-page. Similarly, for the 65C816 `lda $c000` could either be an absolute or long address, but 6502.Net will again choose the shorter (and faster!) instruction to assemble. You can, however, force the assembler to choose the larger mode explicitly by pre-fixing the operand with the bit-size enclosed in square brackets.
+```
+                $c000
+
+                ;; zero-page loadA
+                lda 42          ; > .c000 a5 2a
+
+                ;; absolute loadA
+                lda [16] 42     ; > .c002 ad 2a 00
+
+                ;; long jsr to bank 0 $ffd2
+                jsr [24] $ffd2  ; > .c005 22 d2 ff 00
 ```
 ## Macros and segments
 One of the more powerful features of the 6502.Net cross assembler is the ability to re-use code segments in multiple places in your source. You define a macro or segment once, and then can invoke it multiple times later in your source; the assembler simply expands the definition where it is invoked as if it is part of the source. Macros have the additional benefit of allowing you to pass parameters, so that the final outputted code can be easily modified for different contexts, behaving much like a function call in a high level language. For instance, one of the more common operations in 6502 assembly is to do a 16-bit increment. You could use a macro for this purpose like this:
@@ -450,7 +504,7 @@ Conditional assembly is available using the `.if` and related directive.  Condit
         jsr $ffd2
     .endif
 ```
-**Caution:** Be careful not to use the `.end` directive inside a conditional block, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
+**Caution:** Be careful not to use the `.end` directive inside a conditional block, which terminates assembly, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
 ### Basic Repetitions
 On occasions where certain instructions will be repeatedly assembled, it is convenient to repeat their output in a loop. For instance, if you want to pad a series of `nop` instructions. The `.repeat` directive does just that.
 
@@ -499,8 +553,11 @@ If required, loops can be broken out of using the `.break` directive
     .next
 ```
 All expressions, including the condition, are only evaluated on the first pass.
+
 **Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable inside its own or nested loops.
+
 ## 65C02 and W65C816S support
+
 By default, 6502.Net "thinks" like a 6502 assembler, compiling only the published 56 mnemonics and 151 instructions of that microprocessor. As of Version 1.7, 6502.Net can also compile illegal instructions as well as those of the successor WDC 65C02 and W65C816S processors. The `.cpu` directive tells the assembler the type of source and instruction set it is to assemble.
 ```
         .cpu "6502i"    ; enable illegal instructions
@@ -522,7 +579,9 @@ Immediate mode on the 65816 differs based on register size. 6502.Net must be tol
         ldy #$1000
         jml $1012000
 ```
-By default `.m8` and `.x8` modes are selected. You can also set all registers to the same size with `.mx8` and `.mx16` respectively.
+Eight-bit modes for registers are default. 
+
+You can also set all registers to the same size with `.mx8` and `.mx16` respectively.
 ```
         sep #%00110000
 
@@ -554,7 +613,7 @@ For 65816 compatibility the following mnemonics are recognized:
 brl,cop,jml,jsl,mvn,mvp,pea,pei,per,phb,phd,phk,plb,pld,
 rep,rtl,sep,stp,tcd,tcs,tdc,tsc,txy,tyx,wai,wdm,xba,xce
 ```
-Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by the [VICE Emulator](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
+Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by [VICE](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
 
 <table>
 <tr>
@@ -628,7 +687,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>SRE</td><td>Zero-Page Indexed X   </td><td>57</td></tr>
 <tr><td>SRE</td><td>Absolute Indexed Y    </td><td>5B</td></tr>
 <tr><td>SRE</td><td>Absolute Indexed X    </td><td>5F</td></tr>
-<tr><td>STP</td><td>Implied</td><td>12</td></tr>
+<tr><td>STP*</td><td>Implied</td><td>12</td></tr>
 <tr><td>TAS</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
 <tr><td>TOP</td><td>Immediate/Absolute    </td><td>0C</td></tr>
 <tr><td>TOP</td><td>Absolute Indexed X    </td><td>1C</td></tr>
@@ -637,7 +696,10 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 </tr>
 </table>
 
-** Note: ** Illegal mnemonics are only available if the `6502i` cpu is selected.
+*-`JAM` and `STP` are essentially the same command; they both halt the 6502-based CPU.
+
+**Note:** Illegal mnemonics are only available if the `6502i` option is specified in the `--cpu` commandline or `.cpu` directive.
+
 ### Pseudo-Ops
 Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops. A pseudo-op is similar to a mnemonic in that it tells the assembler to output some number of bytes, but different in that it is not part of the CPU's instruction set. For each pseudo-op description is its name, any aliases, a definition, arguments, and examples of usage. Optional arguments are in square brackets (`[` and `]`).
 
@@ -1155,7 +1217,7 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.let</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Declares and assigns or re-assigns a variable to the given expression. Labels cannot be redefined as variables, and vice versa.</td></tr>
+<tr><td><b>Definition</b></td><td>Declares and assigns or re-assigns a variable to the given expression. Labels cannot be redefined as variables, and vice versa. In addition, variables cannot be forward-referenced, as they are reset each pass.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>expression</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1415,7 +1477,7 @@ glyph             ;12345678
 <table>
 <tr><td><b>Name</b></td><td><code>.typedef</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Define an existing Pseudo-Op to a user-defined type. The type name adheres to the same rules as labels and cannot be an existing symbol or instruction.</td></tr>
+<tr><td><b>Definition</b></td><td>Define an existing Pseudo-Op to a user-defined type. The type name adheres to the same rules as labels and variables and cannot be an existing symbol or instruction.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>type, typename</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>

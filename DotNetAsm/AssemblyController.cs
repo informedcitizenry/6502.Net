@@ -29,6 +29,10 @@ using System.Text.RegularExpressions;
 
 namespace DotNetAsm
 {
+    public delegate string DisplayBannerEventHandler(object sender, bool isVerbose);
+
+    public delegate byte[] WriteBytesEventHandler(object sender);
+
     /// <summary>
     /// Implements an assembly controller to process source input and convert 
     /// to assembled output.
@@ -137,10 +141,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="chr">The character to encode.</param>
         /// <returns>The encoded value as a string.</returns>
-        string GetCharValue(string chr)
-        {
-            return Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString();
-        }
+        string GetCharValue(string chr) => Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString();
 
         /// <summary>
         /// Used by the expression evaluator to convert an anonymous symbol
@@ -166,14 +167,10 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="token">The token to check</param>
         /// <returns>True, if the token is an instruction or directive</returns>
-        public bool IsInstruction(string token)
-        {
-            bool reserved = Reserved.IsOneOf("Directives", token) ||
-                            _preprocessor.IsReserved(token) ||
-                            _blockHandlers.Any(handler => handler.Processes(token)) ||
-                            _assemblers.Any(assembler => assembler.AssemblesInstruction(token));
-            return reserved;
-        }
+        public bool IsInstruction(string token) => Reserved.IsOneOf("Directives", token) ||
+                                                    _preprocessor.IsReserved(token) ||
+                                                    _blockHandlers.Any(handler => handler.Processes(token)) ||
+                                                    _assemblers.Any(assembler => assembler.AssemblesInstruction(token));
 
         /// <summary>
         /// Determines whether the token is a reserved keyword, such as an instruction
@@ -181,10 +178,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="token">The token to test.</param>
         /// <returns>True, if the token is a reserved word, otherwise false.</returns>
-        public override bool IsReserved(string token)
-        {
-            return IsInstruction(token) || Reserved.IsReserved(token);
-        }
+        public override bool IsReserved(string token) => IsInstruction(token) || Reserved.IsReserved(token);
 
         /// <summary>
         /// Checks whether the token is a valid symbol/label name.
@@ -287,10 +281,7 @@ namespace DotNetAsm
             return labels;
         }
 
-        void OnCpuChanged(SourceLine line)
-        {
-            CpuChanged?.Invoke(new CpuChangedEventArgs { Line = line });
-        }
+        void OnCpuChanged(SourceLine line) => CpuChanged?.Invoke(new CpuChangedEventArgs { Line = line });
 
         /// <summary>
         /// Performs a first (or more) pass of preprocessed source to resolve all 
@@ -742,8 +733,8 @@ namespace DotNetAsm
                 TimeSpan ts = DateTime.Now.Subtract(asmTime);
 
                 Console.WriteLine("{0} bytes, {1} sec.",
-                    Output.GetCompilation().Count,
-                    ts.TotalSeconds);
+                                    Output.GetCompilation().Count,
+                                    ts.TotalSeconds);
                 Console.WriteLine("*********************************");
                 Console.WriteLine("Assembly completed successfully.");
             }
@@ -767,8 +758,9 @@ namespace DotNetAsm
                 {
                     string exec = Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location);
                     string argstring = string.Join(" ", Options.Arguments);
-                    string bannerstring = BannerText.Split(new char[] { '\n', '\r' }).First();
-                    writer.WriteLine(";; {0}", bannerstring);
+                    string bannerstring = DisplayingBanner != null ? DisplayingBanner.Invoke(this, false) : string.Empty;
+
+                    writer.WriteLine(";; {0}", bannerstring.Split(new char[] { '\n', '\r' }).First());
                     writer.WriteLine(";; {0} {1}", exec, argstring);
                     writer.WriteLine(";; {0:f}\n", DateTime.Now);
                     writer.WriteLine(";; Input files:\n");
@@ -785,7 +777,6 @@ namespace DotNetAsm
                 using (StreamWriter writer = new StreamWriter(Options.LabelFile, false))
                 {
                     writer.WriteLine(";; Input files:\n");
-
                     _preprocessor.FileRegistry.ToList().ForEach(f => writer.WriteLine(";; {0}", f));
                     writer.WriteLine();
                     writer.WriteLine(listing);
@@ -852,11 +843,13 @@ namespace DotNetAsm
 
             using (BinaryWriter writer = new BinaryWriter(new FileStream(outputfile, FileMode.Create, FileAccess.Write)))
             {
-                HeaderOutputAction?.Invoke(this, writer);
+                if (WritingHeader != null)
+                    writer.Write(WritingHeader.Invoke(this));
 
                 writer.Write(Output.GetCompilation().ToArray());
 
-                FooterOutputAction?.Invoke(this, writer);
+                if (WritingFooter != null)
+                    writer.Write(WritingFooter.Invoke(this));
             }
         }
 
@@ -865,15 +858,15 @@ namespace DotNetAsm
             if (Options.InputFiles.Count == 0)
                 return;
 
-            if (Options.PrintVersion)
-                Console.WriteLine(VerboseBannerText);
+            if (Options.PrintVersion && DisplayingBanner != null)
+                Console.WriteLine(DisplayingBanner.Invoke(this, true));
 
             if (Options.Quiet)
                 Console.SetOut(TextWriter.Null);
 
-            if (Options.PrintVersion == false)
-                Console.WriteLine(BannerText);
-
+            if (!Options.PrintVersion && DisplayingBanner != null)
+                Console.WriteLine(DisplayingBanner.Invoke(this, false));
+            
             DateTime asmTime = DateTime.Now;
 
             var source = Preprocess();
@@ -987,19 +980,17 @@ namespace DotNetAsm
 
         public ILineDisassembler Disassembler { get; set; }
 
-        public Action<IAssemblyController, BinaryWriter> HeaderOutputAction { get; set; }
-
-        public Action<IAssemblyController, BinaryWriter> FooterOutputAction { get; set; }
-
-        public string BannerText { get; set; }
-
-        public string VerboseBannerText { get; set; }
-
         #endregion
 
         #region Events
 
         public event CpuChangeEventHandler CpuChanged;
+
+        public event DisplayBannerEventHandler DisplayingBanner;
+
+        public event WriteBytesEventHandler WritingHeader;
+
+        public event WriteBytesEventHandler WritingFooter;
 
         #endregion
     }

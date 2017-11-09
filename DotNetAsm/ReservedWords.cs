@@ -85,10 +85,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="type">The type name.</param>
         /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        public void DefineType(string type)
-        {
-            types_.Add(type, new HashSet<string>());
-        }
+        public void DefineType(string type) => types_.Add(type, new HashSet<string>());
 
         /// <summary>
         /// Define a type of reserved words.
@@ -112,10 +109,7 @@ namespace DotNetAsm
         /// <returns>Returns true if the specified token is one of the specified type.</returns>
         /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
-        public bool IsOneOf(string type, string token)
-        {
-            return types_[type].Any(d => d.Equals(token, Comparer));
-        }
+        public bool IsOneOf(string type, string token) => types_[type].Any(d => d.Equals(token, Comparer));
 
         /// <summary>
         /// Determines if the token is in the list of reserved words for all types.
@@ -123,10 +117,7 @@ namespace DotNetAsm
         /// <param name="token">The token or keyword.</param>
         /// <returns>Returns true if the specified token is in the collection of reserved words,
         /// regardless of type.</returns>
-        public bool IsReserved(string token)
-        {
-            return _values.Any(s => s.Equals(token, Comparer));
-        }
+        public bool IsReserved(string token) => _values.Any(s => s.Equals(token, Comparer));
 
         /// <summary>
         /// Gets the type of the token, if any.
@@ -150,10 +141,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="type">The type to check.</param>
         /// <returns>True, if the DotNetAsm.ReservedWord object has the type</returns>
-        public bool HasType(string type)
-        {
-            return types_.ContainsKey(type);
-        }
+        public bool HasType(string type) => types_.ContainsKey(type);
 
         #endregion
 

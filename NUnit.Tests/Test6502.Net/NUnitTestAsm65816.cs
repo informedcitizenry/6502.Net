@@ -791,6 +791,12 @@ namespace NUnit.Tests.Test6502.Net
 
             line.Operand = "[24] $12";
             TestInstruction(line, 0x0004, new byte[] { 0xaf, 0x12, 0x00, 0x00 }, "lda $000012");
+
+            line.Operand = "[16] ,y";
+            TestInstruction(line, 0x0002, new byte[] { 0xb7, 0x10 }, "lda [$10],y");
+
+            line.Operand = "[24]";
+            TestInstruction(line, 0x0002, new byte[] { 0xa7, 0x18 }, "lda [$18]");
         }
     }
 }

@@ -19,7 +19,7 @@ namespace NUnit.Tests.TestDotNetAsm
             translator.Map("az", 'A');
             translator.Map("AZ", 'a');
 
-            var expected = ASCIIEncoding.ASCII.GetBytes("hELLO, World");
+            var expected = Encoding.ASCII.GetBytes("hELLO, World");
             var transbytes = translator.GetBytes("Hello, wORLD");
 
             Assert.AreEqual(expected, transbytes);
@@ -28,7 +28,7 @@ namespace NUnit.Tests.TestDotNetAsm
             translator.Map('@', '\0');
             translator.Map("az", Convert.ToChar(1));
 
-            expected = expected.Select(delegate(byte b)
+            expected = expected.Select(delegate (byte b)
             {
                 if (b == '@' || (b >= 'a' && b <= 'z'))
                     b -= 0x60;
@@ -39,7 +39,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Assert.AreEqual(expected, transbytes);
 
-            expected = ASCIIEncoding.ASCII.GetBytes("Hello, World!");
+            expected = Encoding.ASCII.GetBytes("Hello, World!");
 
             translator.SelectEncoding("none");
             transbytes = translator.GetBytes("Hello, World!");
@@ -52,57 +52,39 @@ namespace NUnit.Tests.TestDotNetAsm
             AsmEncoding encoding = new AsmEncoding();
 
             encoding.SelectEncoding("test");
-
             string teststring = "τϵστ";
-
             var testbytes = encoding.GetBytes(teststring);
-
             var expectedbytes = Encoding.UTF8.GetBytes(teststring);
-
             Assert.AreEqual(expectedbytes, testbytes);
 
             var testchars = encoding.GetChars(testbytes);
-
             var expectedchars = Encoding.UTF8.GetChars(expectedbytes);
-
             Assert.AreEqual(expectedchars, testchars);
 
             int testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
-
             int expectedcharcount = Encoding.UTF8.GetChars(expectedbytes, 0, expectedbytes.Length, expectedchars, 0);
-
             Assert.AreEqual(expectedcharcount, testcharcount);
 
             encoding.Map('τ', 0xff);
-
             expectedbytes = new byte[] { 0xff, 207, 181, 207, 131, 0xff };
-
             testbytes = encoding.GetBytes(teststring);
 
             Assert.AreEqual(expectedbytes, testbytes);
-
             testchars = encoding.GetChars(testbytes);
-
             Assert.AreEqual(expectedchars, testchars);
 
             testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
-
             Assert.AreEqual(expectedcharcount, testcharcount);
 
             encoding.Unmap('τ');
-
             expectedbytes = Encoding.UTF8.GetBytes(teststring);
-
             testbytes = encoding.GetBytes(teststring);
-
             Assert.AreEqual(expectedbytes, testbytes);
 
             testchars = encoding.GetChars(testbytes);
-
             Assert.AreEqual(expectedchars, testchars);
 
             testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
-
             Assert.AreEqual(expectedcharcount, testcharcount);
         }
     }
