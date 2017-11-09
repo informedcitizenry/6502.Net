@@ -281,7 +281,13 @@ namespace DotNetAsm
             return labels;
         }
 
-        void OnCpuChanged(SourceLine line) => CpuChanged?.Invoke(new CpuChangedEventArgs { Line = line });
+        void OnCpuChanged(SourceLine line)
+        {
+            if (CpuChanged != null)
+                CpuChanged.Invoke(new CpuChangedEventArgs { Line = line });
+            else
+                Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+        }
 
         /// <summary>
         /// Performs a first (or more) pass of preprocessed source to resolve all 
