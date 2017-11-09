@@ -261,7 +261,7 @@ Instead express character literals as one-character strings in double-quotes, wh
 
 Other files can be included in final assembly, either as 6502.Net-compatible source or as raw binary. Source files are included using the `.include` and `.binclude` directives. This is useful for libraries or other organized source you would not want to include in your main source file. The operand is the file name (and path) enclosed in quotes. `.include` simply inserts the source at the directive.
 ```
-    ;; inside "./lib/library.s"
+    ;; inside "../lib/library.s"
 
     .macro  inc16 mem
     inc \mem
@@ -270,20 +270,42 @@ Other files can be included in final assembly, either as 6502.Net-compatible sou
 +   .endmacro
     ...
 ```
-This file called `"libary.s"` inside the path `./lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
+This file called `"libary.s"` inside the path `../lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
 ```
-        .include "./lib/library.s"
+        .include "../lib/library.s"
 
         .inc16 $033c    ; 16-bit increment value at $033c and $033d
 ``` 
 If the included library file also contained its own symbols, caution would be required to ensure no symbol clashes. An alternative to `.include` is `.binclude`, which resolves this problem by enclosing the included source in its own scoped block.
 ```
-lib     .binclude "./lib/library.s"     ; all symbols in "library.s" 
+lib     .binclude "../lib/library.s"    ; all symbols in "library.s" 
                                         ; are in the "lib" scope
 
         jsr lib.memcopy
 ```
 If no label is prefixed to the `.binclude` directive then the block is anonymous and labels are not visible to your code.
+
+External files containing raw binary that will be needed to be included in your final output, such as `.sid` files or sprite data, can be assembled using the `.binary` directive.
+```
+        * = $1000
+
+        .binary "../rsrc/sprites.raw"
+
+        ...
+
+        lda #64     ; pointer to first sprite in "./rsrc/sprites.raw"
+        sta 2040    ; set first sprite to that sprite shape
+```
+You can also control how the binary will be included by specifying the offset (number of bytes from the start) and size to include.
+```
+        * = $1000
+
+        .binary "../rsrc/music.sid", $7e    ; skip first 126 bytes
+                                            ; (SID header
+
+        .binary "../lib/compiledlib.bin", 2, 256    ; skip load header
+                                                    ; and take 256 bytes
+```
 
 ### Mathematical and Conditional Expressions
 
