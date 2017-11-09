@@ -301,7 +301,7 @@ You can also control how the binary will be included by specifying the offset (n
         * = $1000
 
         .binary "../rsrc/music.sid", $7e    ; skip first 126 bytes
-                                            ; (SID header
+                                            ; (SID header)
 
         .binary "../lib/compiledlib.bin", 2, 256    ; skip load header
                                                     ; and take 256 bytes
@@ -1213,7 +1213,7 @@ start       ; same as start .equ *
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. Multiple iteration expressions can be specified.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>init_expression, condition[, iteration_expression[, ...]]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>init_expression, condition[, iteration_expression[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         .let x = 0
@@ -1430,7 +1430,6 @@ message     .cstring "HELLO, HIGH CODE!"
         inx
         .endrepeat
         rts
-
         ;; will assemble as:
         ;;
         ;; ldx #$00
@@ -1504,7 +1503,6 @@ glyph             ;12345678
 <tr><td><b>Example</b></td><td>
 <pre>
             .typedef   .byte, defb
-
             * = $c000
             defb 0,1,2,3 ; >c000 00 01 02 03
 </pre>
@@ -2028,7 +2026,7 @@ glyph             ;12345678
 
 `Too many arguments for directive` - More arguments were provided to the directive than expected.
 
-`Type definition for unknown type` - An attempt was made to define an unknown type.
+`Type is unknown or not redefinable` - An attempt was made to define an unknown or non-definable type.
 
 `Type name is a reserved symbol name` - A type definition failed because the definition is a reserved name.
 
