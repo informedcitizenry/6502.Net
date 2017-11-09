@@ -272,14 +272,14 @@ Other files can be included in final assembly, either as 6502.Net-compatible sou
 ```
 This file called `"libary.s"` inside the path `./lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
 ```
-        .include "library.s"
+        .include "./lib/library.s"
 
         .inc16 $033c    ; 16-bit increment value at $033c and $033d
 ``` 
 If the included library file also contained its own symbols, caution would be required to ensure no symbol clashes. An alternative to `.include` is `.binclude`, which resolves this problem by enclosing the included source in its own scoped block.
 ```
-lib     .binclude "library.s"   ; all symbols in "library.s" 
-                                ; are in the "lib" scope
+lib     .binclude "./lib/library.s"     ; all symbols in "library.s" 
+                                        ; are in the "lib" scope
 
         jsr lib.memcopy
 ```
