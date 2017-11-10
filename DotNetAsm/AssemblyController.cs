@@ -779,7 +779,7 @@ namespace DotNetAsm
             }
             if (!string.IsNullOrEmpty(Options.LabelFile))
             {
-                listing = GetLabels();
+                listing = GetLabelsAndVariables();
                 using (StreamWriter writer = new StreamWriter(Options.LabelFile, false))
                 {
                     writer.WriteLine(";; Input files:\n");
@@ -790,27 +790,39 @@ namespace DotNetAsm
             }
         }
 
+        string GetSymbolListing(string symbol, long value, bool isVar)
+        {
+            var symbolname = Regex.Replace(symbol, @"(?<=^|\.)[0-9]+(?=\.|$)", "::");
+            var maxlen = symbolname.Length > 30 ? 30 : symbolname.Length;
+            if (maxlen < 0) maxlen++;
+            symbolname = symbolname.Substring(symbolname.Length - maxlen, maxlen);
+            var size = value.Size() * 2;
+            var assignsym = isVar ? ":=" : " =";
+
+            return string.Format("{0,-30} {1} ${2,-4:x" + size.ToString() + "} : ({2}){3}",
+                                symbolname,
+                                assignsym,
+                                value,
+                                Environment.NewLine);
+        }
+
         /// <summary>
         /// Used by the ToListing method to get a listing of all defined labels.
         /// </summary>
         /// <returns>A string containing all label definitions.</returns>
-        string GetLabels()
+        string GetLabelsAndVariables()
         {
             StringBuilder listing = new StringBuilder();
 
             foreach (var label in _labelCollection)
             {
                 var dict = (KeyValuePair<string, long>)label;
-                var labelname = Regex.Replace(dict.Key, @"(?<=^|\.)[0-9]+(?=\.|$)", "{anonymous}");
-                var maxlen = labelname.Length > 30 ? 30 : labelname.Length;
-                if (maxlen < 0) maxlen++;
-                labelname = labelname.Substring(labelname.Length - maxlen, maxlen);
-                var size = dict.Value.Size() * 2;
-                listing.AppendFormat("{0,-30} = ${1,-4:x" + size.ToString() + "} ; ({2})",
-                    labelname,
-                    dict.Value,
-                    dict.Value)
-                    .AppendLine();
+                listing.Append(GetSymbolListing(dict.Key, dict.Value, false));
+            }
+            foreach (var variable in Variables)
+            {
+                var dict = (KeyValuePair<string, long>)variable;
+                listing.Append(GetSymbolListing(dict.Key, dict.Value, true));
             }
             return listing.ToString();
         }
