@@ -822,13 +822,8 @@ namespace DotNetAsm
         {
             StringBuilder listing = new StringBuilder();
 
-            foreach (SourceLine line in _processedLines)
-            {
-                if (line.Instruction.Equals(".end", Options.StringComparison))
-                    break;
+            _processedLines.ForEach(l => Disassembler.DisassembleLine(l, listing));
 
-                Disassembler.DisassembleLine(line, listing);
-            }
             if (listing.ToString().EndsWith(Environment.NewLine, Options.StringComparison))
                 return listing.ToString().Substring(0, listing.Length - Environment.NewLine.Length);
 
