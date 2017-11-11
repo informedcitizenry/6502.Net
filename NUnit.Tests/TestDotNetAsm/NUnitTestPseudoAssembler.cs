@@ -120,7 +120,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void AssembleLine(SourceLine line)
         {
             if (line.Instruction.Equals(".cpu", StringComparison.InvariantCulture))
-                CpuChanged?.Invoke(new CpuChangedEventArgs{ Line = new SourceLine{ Operand = line.Operand.Trim('"')}});
+                CpuChanged?.Invoke(new CpuChangedEventArgs{ Line = new SourceLine{ Operand = line.Operand}});
         }
 
         public ILineDisassembler Disassembler { get; set; }

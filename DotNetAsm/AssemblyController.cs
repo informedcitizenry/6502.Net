@@ -275,7 +275,7 @@ namespace DotNetAsm
                     Label = name,
                     Instruction = "=",
                     Operand = definition,
-                    SourceString = string.Format("{0}={1} ;-D {2}", name, definition, label)
+                    SourceString = string.Format($"{name}={definition} ;-D {label}", name, definition, label)
                 });
             }
             return labels;
@@ -298,12 +298,10 @@ namespace DotNetAsm
         void FirstPass(IEnumerable<SourceLine> source)
         {
             _passes = 0;
-
-            Stack<string> scope = new Stack<string>();
-
             int id = 0;
 
             List<SourceLine> sourceList = source.ToList();
+
             for (int i = 0; i < sourceList.Count; i++)
             {
                 _currentLine = sourceList[i];
@@ -361,10 +359,8 @@ namespace DotNetAsm
                 }
             }
 
-            if (scope.Count > 0 || _blockHandlers.Any(h => h.IsProcessing()))
-            {
+            if (_blockHandlers.Any(h => h.IsProcessing()))
                 Log.LogEntry(_processedLines.Last(), ErrorStrings.MissingClosure);
-            }
         }
 
         /// <summary>
@@ -383,6 +379,11 @@ namespace DotNetAsm
                         OnCpuChanged(_currentLine);
                     return;
                 }
+                else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
+                {
+                    _currentLine.PC = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
+                }
+            
                 UpdatePC();
 
                 _currentLine.PC = Output.LogicalPC;
@@ -529,9 +530,7 @@ namespace DotNetAsm
                 finalPass = !passNeeded;
             }
             if (_passes > MAX_PASSES)
-            {
                 throw new Exception("Too many passes attempted.");
-            }
         }
 
         public void AddAssembler(ILineAssembler lineAssembler)
@@ -558,15 +557,8 @@ namespace DotNetAsm
                 Log.LogEntry(_currentLine, ErrorStrings.UnknownInstruction, _currentLine.Instruction);
                 return;
             }
-
-            foreach (var asm in _assemblers)
-            {
-                if (asm.AssemblesInstruction(_currentLine.Instruction))
-                {
-                    asm.AssembleLine(_currentLine);
-                    return;
-                }
-            }
+            var asm = _assemblers.FirstOrDefault(a => a.AssemblesInstruction(_currentLine.Instruction));
+            asm?.AssembleLine(_currentLine);
         }
 
         /// <summary>
@@ -577,12 +569,9 @@ namespace DotNetAsm
         /// <returns>The size in bytes of the instruction, including opcode and operand</returns>
         int GetInstructionSize()
         {
-            foreach (var asm in _assemblers)
-            {
-                if (asm.AssemblesInstruction(_currentLine.Instruction))
-                    return asm.GetInstructionSize(_currentLine);
-            }
-            return 0;
+            var asm = _assemblers.FirstOrDefault(a => a.AssemblesInstruction(_currentLine.Instruction));
+            var size = (asm != null) ? asm.GetInstructionSize(_currentLine) : 0;
+            return size;
         }
 
         /// <summary>
@@ -590,9 +579,6 @@ namespace DotNetAsm
         /// </summary>
         void DefineLabel()
         {
-            if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
-                _currentLine.PC = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
-
             if (string.IsNullOrEmpty(_currentLine.Label) == false)
             {
                 if (_currentLine.Label.Equals("*"))
@@ -897,10 +883,11 @@ namespace DotNetAsm
                         SaveOutput();
 
                         ToListing();
+
+                        PrintStatus(asmTime);
                     }
                 }
             }
-            PrintStatus(asmTime);
         }
 
         /// <summary>

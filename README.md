@@ -557,11 +557,22 @@ These repetitions can also be nested, as shown below.
         rts
 ```
 ### Loop Assembly
-Repetitions can also be handled in for/next loops, where source can be emitted repeatedly until a condition is met. The added advantage is the variable itself can be referenced inside the loop.
+Repetitions can also be handled in for/next loops, where source can be emitted repeatedly until a condition is met. An iteration variable can optionally be initialized, with the advantage is the variable itself can be referenced inside the loop.
 ```
     lda #0
     .for i = $0400, i < $0800, i = i + 1
         sta i
+    .next
+```
+A minimum two operands are required: The initial expression and the condition expression. A third iteration expression is option. The iteration expression can be blank, however.
+```
+    .let n = 1;
+    .for , n < 10
+        .if a == 3
+            .let n = n + 1;
+        .else
+            .let n = n + 5;
+        .endif
     .next
 ```
 If required, loops can be broken out of using the `.break` directive
@@ -1212,7 +1223,7 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. Multiple iteration expressions can be specified.</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. The initialization expression can be blank. Multiple iteration expressions can be specified.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>init_expression, condition[, iteration_expression[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>

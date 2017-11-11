@@ -318,18 +318,21 @@ namespace DotNetAsm
 
                 if (_currBlock == _rootBlock)
                 {
-                    var iteratorvar = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
-                    if (string.IsNullOrEmpty(iteratorvar.Key))
+                    if (!string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
-                        return;
+                        var iteratorvar = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        if (string.IsNullOrEmpty(iteratorvar.Key))
+                        {
+                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
+                            return;
+                        }
+                        _processedLines.Add(new SourceLine()
+                        {
+                            SourceString = ConstStrings.SHADOW_SOURCE,
+                            Instruction = ConstStrings.VAR_DIRECTIVE,
+                            Operand = string.Format("{0}={1}", iteratorvar.Key, iteratorvar.Value)
+                        });
                     }
-                    _processedLines.Add(new SourceLine()
-                    {
-                        SourceString = ConstStrings.SHADOW_SOURCE,
-                        Instruction = ConstStrings.VAR_DIRECTIVE,
-                        Operand = string.Format("{0}={1}", iteratorvar.Key, iteratorvar.Value)
-                    });
                 }
                 _currBlock.AddEntry(new SourceLine()
                 {
@@ -408,7 +411,7 @@ namespace DotNetAsm
                     _currBlock.Begin();
                     _currBlock.Advance();
 
-                    if (_breakBlock == null)
+                    if (_breakBlock == null && !string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
                         var initval = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         _processedLines.Add(new SourceLine()
