@@ -454,6 +454,13 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x000a, 10, new byte[] { 0xea, 0xea, 0xea, 0xea, 0xea,
                                                            0xea, 0xea, 0xea, 0xea, 0xea});
 
+            // test larger size
+            line.Operand = "10, $ffd2";
+            TestInstruction(line, 0x000a, 10, new byte[] { 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff});
+
+            line.Operand = "10, $112233";
+            TestInstruction(line, 0x000a, 10, new byte[] { 0x33, 0x22, 0x11, 0x33, 0x22, 0x11, 0x33, 0x22, 0x11, 0x33});
+
             line.Operand = string.Empty;
             TestForFailure<InvalidOperationException>(line);
             

@@ -216,8 +216,7 @@ namespace DotNetAsm
             {
                 if (s.EnclosedInQuotes())
                 {
-                    //var encodedString = Encoder.TranslateString(CurrentEncoding, s.Trim('"'));
-                    size += Controller.Encoding.GetByteCount(s.Trim('"'));//encodedString.Count();
+                    size += Controller.Encoding.GetByteCount(s.Trim('"'));
                 }
                 else
                 {

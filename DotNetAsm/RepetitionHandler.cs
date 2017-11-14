@@ -236,27 +236,18 @@ namespace DotNetAsm
         /// <param name="token">The token to determine if is an instruction that
         /// the handler processes.</param>
         /// <returns>True, if the DotNetAsm.RepetitionHandler processes this token</returns>
-        public bool Processes(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
+        public bool Processes(string token) => Reserved.IsReserved(token);
 
         /// <summary>
         /// Gets the flag that determines if the DotNetAsm.RepetitionHandler is currently in
         /// processing mode.
         /// </summary>
-        public bool IsProcessing()
-        {
-            return _levels > 0;  
-        }
+        public bool IsProcessing() => _levels > 0;
 
         /// <summary>
         /// Gets the processed blocks of repeated lines.
         /// </summary>
-        public IEnumerable<SourceLine> GetProcessedLines()
-        {
-            return _processedLines;
-        }
+        public IEnumerable<SourceLine> GetProcessedLines() => _processedLines;
 
         #endregion
     }

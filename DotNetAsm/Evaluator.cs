@@ -105,9 +105,10 @@ namespace DotNetAsm
         public Evaluator(string hexPattern)
         {
             _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
-            _regFcn = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))", RegexOptions.Compiled);
-            _regUnary = new Regex(@"(?<![0-9.)<>])([!\-~^&<>])(\(.+\)|[0-9.]+)", RegexOptions.Compiled);
-            _regBinary = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))", RegexOptions.Compiled);
+
+            _regFcn     = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))",     RegexOptions.Compiled);
+            _regUnary   = new Regex(@"(?<![0-9.)<>])([!\-~^&<>])(\(.+\)|[0-9.]+)",  RegexOptions.Compiled);
+            _regBinary  = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))",            RegexOptions.Compiled);
 
             _cache = new Dictionary<string, double>();
             _hexRegexes = new List<Regex> { new Regex(hexPattern, RegexOptions.Compiled) };
@@ -505,10 +506,7 @@ namespace DotNetAsm
         /// <returns>The result of the expression evaluation as a System.Int64 value</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>
-        public long Eval(string expression)
-        {
-            return (long)EvalInternal(expression);
-        }
+        public long Eval(string expression) => (long)EvalInternal(expression);
 
 
         /// <summary>
@@ -629,10 +627,7 @@ namespace DotNetAsm
         /// <param name="condition">The string representation of the conditional expression.</param>
         /// <returns>Returns true, if the expression is true, false otherwise.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
-        public bool EvalCondition(string condition)
-        {
-            return Eval(condition) == 1;
-        }
+        public bool EvalCondition(string condition) => Eval(condition) == 1;
 
         /// <summary>
         /// Defines a symbol lookup for the evaluator to translate symbols (such as 

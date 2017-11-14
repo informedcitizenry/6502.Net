@@ -270,27 +270,15 @@ namespace DotNetAsm
             int size = value.Size();
             byte[] fillbytes;
 
-            if (BitConverter.IsLittleEndian)
-            {
-                // d2 ff 00 00 
-                fillbytes = BitConverter.GetBytes(value).Take(size).ToArray(); // d2 ff
-                if (!IsLittleEndian)
-                    fillbytes = fillbytes.Reverse().ToArray(); // ff d2
-            }
+            if (BitConverter.IsLittleEndian != IsLittleEndian)
+                fillbytes = BitConverter.GetBytes(value).Reverse().Take(size).ToArray();
             else
-            {
-                // 00 00 ff d2
-                fillbytes = BitConverter.GetBytes(value).Reverse().Take(size).ToArray(); // d2 ff
-                if (!IsLittleEndian)
-                    fillbytes = fillbytes.Reverse().ToArray(); // ff d2
-            }
+                fillbytes = BitConverter.GetBytes(value).Take(size).ToArray();
+
             List<byte> repeated = new List<byte>();
             for (int i = 0; i < amount; i++)
-            {
-                for (int j = 0; j < size; j++)
-                    repeated.Add(fillbytes[j]);
+                repeated.AddRange(fillbytes);
 
-            }
             return AddBytes(repeated.GetRange(0, amount), true);
         }
 

@@ -96,7 +96,7 @@ namespace DotNetAsm
         /// <summary>
         /// Preprocess all comment blocks, macro and segment definitions.
         /// </summary>
-        /// <param name="sourcelines">The SourceLine list</param>
+        /// <param name="sourcelines">The <see cref="T:System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>collection</param>
         /// <returns></returns>
         public IEnumerable<SourceLine> Preprocess(IEnumerable<SourceLine> sourcelines)
         {
@@ -199,7 +199,7 @@ namespace DotNetAsm
         /// Converts a file to a SourceLine list.
         /// </summary>
         /// <param name="file">The filename.</param>
-        /// <returns>A SourceLine list.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/> d.</returns>
         public IEnumerable<SourceLine> ConvertToSource(string file)
         {
             if (FileRegistry.Add(file) == false)

@@ -48,15 +48,9 @@ namespace DotNetAsm
             _anon = 0;
         }
 
-        public IEnumerable<SourceLine> GetProcessedLines()
-        {
-            return _processedLines;
-        }
+        public IEnumerable<SourceLine> GetProcessedLines() => _processedLines;
 
-        public bool IsProcessing()
-        {
-            return _scope.Count > 0;
-        }
+        public bool IsProcessing() => _scope.Count > 0;
 
         public void Process(SourceLine line)
         {
@@ -93,10 +87,7 @@ namespace DotNetAsm
             _processedLines.Add(clone);
         }
 
-        public bool Processes(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
+        public bool Processes(string token) => Reserved.IsReserved(token);
 
         public void Reset()
         {

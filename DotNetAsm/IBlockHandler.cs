@@ -58,7 +58,7 @@ namespace DotNetAsm
         /// Get the processed lines. This is typically called after the IsProcessing()
         /// method changes from true to false.
         /// </summary>
-        /// <returns>A System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt; 
+        /// <returns>A <see cref="T:System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/> 
         /// of the processed block</returns>
         IEnumerable<SourceLine> GetProcessedLines();
     }

@@ -68,7 +68,7 @@ namespace DotNetAsm
         {
             Reserved.DefineType("Directives",
                     ".cpu", ".endrelocate", ".equ", ".pseudopc", ".realpc", ".relocate", ".end",
-                    ".proff", ".pron", ".repeat", ".endrepeat", ConstStrings.VAR_DIRECTIVE
+                    ".endrepeat", ".proff", ".pron", ".repeat", ConstStrings.VAR_DIRECTIVE
                 );
 
             Reserved.DefineType("Functions",
@@ -424,13 +424,6 @@ namespace DotNetAsm
             bool passNeeded = false;
             if (IsAssignmentDirective())
             {
-                if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
-                {
-                    var varparts = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope);
-                    //var variable = SetVariable(_currentLine.Operand, true);
-                    _currentLine.PC = varparts.Value;//variable.Value;
-                    return false;
-                }
                 if (_currentLine.Label.Equals("*")) return false;
                 long val = long.MinValue;
 
@@ -454,6 +447,12 @@ namespace DotNetAsm
 
                 }
                 _currentLine.PC = val;
+            }
+            else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
+            {
+                var varparts = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope);
+                passNeeded = _currentLine.PC != varparts.Value;
+                _currentLine.PC = varparts.Value;
             }
             else if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
             {
@@ -533,15 +532,9 @@ namespace DotNetAsm
                 throw new Exception("Too many passes attempted.");
         }
 
-        public void AddAssembler(ILineAssembler lineAssembler)
-        {
-            _assemblers.Push(lineAssembler);
-        }
+        public void AddAssembler(ILineAssembler lineAssembler) => _assemblers.Push(lineAssembler);
 
-        public void AddSymbol(string symbol)
-        {
-            Reserved.AddWord("UserDefined", symbol);
-        }
+        public void AddSymbol(string symbol) => Reserved.AddWord("UserDefined", symbol);
 
         public void AssembleLine()
         {
@@ -555,10 +548,12 @@ namespace DotNetAsm
             if (IsInstruction(_currentLine.Instruction) == false)
             {
                 Log.LogEntry(_currentLine, ErrorStrings.UnknownInstruction, _currentLine.Instruction);
-                return;
             }
-            var asm = _assemblers.FirstOrDefault(a => a.AssemblesInstruction(_currentLine.Instruction));
-            asm?.AssembleLine(_currentLine);
+            else
+            {
+                var asm = _assemblers.FirstOrDefault(a => a.AssemblesInstruction(_currentLine.Instruction));
+                asm?.AssembleLine(_currentLine);
+            }
         }
 
         /// <summary>
@@ -688,8 +683,7 @@ namespace DotNetAsm
                 return false; // define a constant string??
 
             if (_currentLine.Instruction.Equals("=") ||
-                _currentLine.Instruction.Equals(".equ", Options.StringComparison) ||
-                _currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
+                _currentLine.Instruction.Equals(".equ", Options.StringComparison))
                 return true;
 
             return false;
@@ -801,15 +795,11 @@ namespace DotNetAsm
             StringBuilder listing = new StringBuilder();
 
             foreach (var label in _labelCollection)
-            {
-                var dict = (KeyValuePair<string, long>)label;
-                listing.Append(GetSymbolListing(dict.Key, dict.Value, false));
-            }
+                listing.Append(GetSymbolListing(label.Key, label.Value, false));
+          
             foreach (var variable in Variables)
-            {
-                var dict = (KeyValuePair<string, long>)variable;
-                listing.Append(GetSymbolListing(dict.Key, dict.Value, true));
-            }
+                listing.Append(GetSymbolListing(variable.Key, variable.Value, true));
+            
             return listing.ToString();
         }
 

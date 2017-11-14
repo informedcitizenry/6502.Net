@@ -270,7 +270,7 @@ Other files can be included in final assembly, either as 6502.Net-compatible sou
 +   .endmacro
     ...
 ```
-This file called `"libary.s"` inside the path `../lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
+This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
 ```
         .include "../lib/library.s"
 

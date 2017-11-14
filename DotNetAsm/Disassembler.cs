@@ -156,10 +156,7 @@ namespace DotNetAsm
                     PrintingOn = true;
                 else PrintingOn &= !line.Instruction.Equals(".proff");
             }
-            if (!PrintingOn)
-                return;// printing has been suppressed
-
-            if (line.SourceString.Equals(ConstStrings.SHADOW_SOURCE))
+            if (!PrintingOn || line.SourceString.Equals(ConstStrings.SHADOW_SOURCE))
                 return;
 
             string sourcestr = line.SourceString;

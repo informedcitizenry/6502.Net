@@ -72,7 +72,7 @@ namespace DotNetAsm
     /// <summary>
     /// Represents a symbol collection. This class must be inherited.
     /// </summary>
-    public abstract class SymbolCollectionBase : IEnumerable
+    public abstract class SymbolCollectionBase : IEnumerable<KeyValuePair<string, long>>
     {
         #region Members
 
@@ -113,8 +113,10 @@ namespace DotNetAsm
             {
                 return new List<string>();
             }
-            var result = new List<string>();
-            result.Add(parent);
+            var result = new List<string>
+            {
+                parent
+            };
             var split = parent.Split('.').ToList();
             split.RemoveAt(split.Count - 1);
             string combined = string.Join(".", split);
@@ -249,7 +251,12 @@ namespace DotNetAsm
         /// Gets the enumerator.
         /// </summary>
         /// <returns>The enumerator.</returns>
-        public IEnumerator GetEnumerator()
+        public IEnumerator<KeyValuePair<string, long>> GetEnumerator()
+        {
+            return _symbols.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _symbols.GetEnumerator();
         }
