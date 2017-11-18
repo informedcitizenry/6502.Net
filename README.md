@@ -3,7 +3,11 @@
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
-The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor. The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the CPU for the Apple IIc and IIe home computers, as well as the NEC TurboGrafx-16 game system. The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
+The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor. 
+
+The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the CPU for the Apple IIc and IIe home computers, as well as the NEC TurboGrafx-16 game system. 
+
+The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Legal
 * 6502.Net (c) 2017 informedcitizenry
 * System.CommandLine, a [command-line argument parser](https://github.com/dotnet/corefxlab/tree/master/src/System.CommandLine) (c) Microsoft Corporation
@@ -1756,7 +1760,7 @@ glyph             ;12345678
 
 ### Command-line options
 
-6502.Net accepts several arguments, requiring at least one. If no option flag precedes the argument, it is considered an input file. Multiple input files can be assembled. If no output file is specified, source is assembled to `a.out` within the current working directory. Below are the available option flags and their parameters.
+6502.Net accepts several arguments, requiring at least one. If no option flag precedes the argument, it is considered an input file. Multiple input files can be assembled. If no output file is specified, source is assembled to `a.out` within the current working directory. Below are the available option flags and their parameters. Mono users note for the examples you must put `mono` in front of the executable.
 
 <table>
 <tr><td><b>Option</b></td><td><code>-o</code></td></tr>
@@ -1765,8 +1769,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myasm.asm -o myoutput
-/6502.Net myasm.asm -output=myoutput
+6502.Net.exe myasm.asm -o myoutput
+6502.Net.exe myasm.asm -output=myoutput
 </pre>
 </td></tr>
 </table>
@@ -1783,7 +1787,7 @@ glyph             ;12345678
 </td></tr>
 <tr><td><b>Parameter</b></td><td><code>architecture</code></td></tr>
 <tr><td><b>Example</b></td><td>
-<pre>/6502.Net myasm.asm -b --arch=flat flat.bin</pre>
+<pre>6502.Net.exe myasm.asm -b --arch=flat flat.bin</pre>
 </td></tr>
 </table>
 <table>
@@ -1792,7 +1796,7 @@ glyph             ;12345678
 <tr><td><b>Definition</b></td><td>Assemble multi-byte values in big-endian order (highest order magnitude first).</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
-<pre>/6502.Net myasm.asm -b -o bigend.bin</pre>
+<pre>6502.Net.exe myasm.asm -b -o bigend.bin</pre>
 </td></tr>
 </table>
 <table>
@@ -1802,8 +1806,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net mycsasm.asm -C
-/6502.Net mycsasm.asm --case-sensitive
+6502.Net.exe mycsasm.asm -C
+6502.Net.exe mycsasm.asm --case-sensitive
 </pre>
 </td></tr>
 </table>
@@ -1821,7 +1825,7 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td><code>cpu</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myillegalasm.asm --cpu=6502i
+6502.Net.exe myillegalasm.asm --cpu=6502i
 </pre>
 </td></tr>
 </table>
@@ -1831,7 +1835,7 @@ glyph             ;12345678
 <tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at assembly time. If no value is given the default value is 1.</td></tr>
 <tr><td><b>Parameter</b></td><td><code>&lt;label&gt;=&lt;value&gt;</code></td></tr>
 <tr><td><b>Example</b></td><td>
-<pre>/6502.Net -D chrout=$ffd2 myasm.asm -o myoutput</pre>
+<pre>6502.Net.exe -D chrout=$ffd2 myasm.asm -o myoutput</pre>
 </td></tr>
 </table>
 <table>
@@ -1841,8 +1845,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net -h
-/6502.Net --help
+6502.Net.exe -h
+6502.Net.exe --help
 </pre>
 </td></tr>
 </table>
@@ -1853,8 +1857,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net -q myasm.asm
-/6502.Net --quiet myasm.asm
+6502.Net.exe -q myasm.asm
+6502.Net.exe --quiet myasm.asm
 </pre>
 </td></tr>
 </table>
@@ -1865,8 +1869,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net -w myasm.asm
-/6502.Net --no-warn myasm.asm
+6502.Net.exe -w myasm.asm
+6502.Net.exe --no-warn myasm.asm
 </pre>
 </td></tr>
 </table>
@@ -1877,7 +1881,7 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net --werror myasm.asm
+6502.Net.exe --werror myasm.asm
 </pre>
 </td></tr>
 </table>
@@ -1888,8 +1892,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myasm.asm -l labels.asm
-/6502.Net myasm.asm --labels=labels.asm
+6502.Net.exe myasm.asm -l labels.asm
+6502.Net.exe myasm.asm --labels=labels.asm
 </pre>
 </td></tr>
 </table>
@@ -1900,8 +1904,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td><code>filename</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myasm.asm -L listing.asm
-/6502.Net myasm.asm --list=listing.asm
+6502.Net.exe myasm.asm -L listing.asm
+6502.Net.exe myasm.asm --list=listing.asm
 </pre>
 </td></tr>
 </table>
@@ -1912,8 +1916,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myasm.asm -a -L mylist.asm
-/6502.Net myasm.asm --no-assembly --list=mylist.asm
+6502.Net.exe myasm.asm -a -L mylist.asm
+6502.Net.exe myasm.asm --no-assembly --list=mylist.asm
 </pre>
 </td></tr>
 </table>
@@ -1924,8 +1928,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myasm.asm -d -L mylist.asm
-/6502.Net myasm.asm --no-disassembly --list=mylist.asm
+6502.Net.exe myasm.asm -d -L mylist.asm
+6502.Net.exe myasm.asm --no-disassembly --list=mylist.asm
 </pre>
 </td></tr>
 </table>
@@ -1936,8 +1940,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net myasm.asm -s -L mylist.asm
-/6502.Net myasm.asm --no-source --list=mylist.asm
+6502.Net.exe myasm.asm -s -L mylist.asm
+6502.Net.exe myasm.asm --no-source --list=mylist.asm
 </pre>
 </td></tr>
 </table>
@@ -1947,7 +1951,7 @@ glyph             ;12345678
 <tr><td><b>Definition</b></td><td>Make the assembly listing verbose. If the verbose option is set then all non-assembled lines are included, such as blocks and comment blocks.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
-<pre>/6502.Net myasm.asm --verbose-asm -L myverboselist.asm</pre>
+<pre>6502.Net.exe myasm.asm --verbose-asm -L myverboselist.asm</pre>
 </td></tr>
 </table>
 <table>
@@ -1957,8 +1961,8 @@ glyph             ;12345678
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-/6502.Net -V
-/6502.Net --version
+6502.Net.exe -V
+6502.Net.exe --version
 </pre>
 </td></tr>
 </table>
