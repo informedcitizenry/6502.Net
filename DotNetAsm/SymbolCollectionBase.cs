@@ -147,10 +147,7 @@ namespace DotNetAsm
         /// <summary>
         /// Clear the collection.
         /// </summary>
-        public void Clear()
-        {
-            _symbols.Clear();
-        }
+        public void Clear() => _symbols.Clear();
 
         /// <summary>
         /// Add a <see cref="T:DotNetAsm.SystemCollectionBase"/> as a cross-check.
@@ -204,10 +201,7 @@ namespace DotNetAsm
         /// <returns><c>true</c>, if the symbol exists in the collection, 
         /// <c>false</c> otherwise.</returns>
         /// <param name="symbolName">Symbol name.</param>
-        public bool IsSymbol(string symbolName)
-        {
-            return _symbols.ContainsKey(symbolName);
-        }
+        public bool IsSymbol(string symbolName) => _symbols.ContainsKey(symbolName);
 
         /// <summary>
         /// Determines if the symbol is valid.
@@ -236,9 +230,8 @@ namespace DotNetAsm
             var reg = isStrict ? _regVarStrict : _regVar;
             if (reg.IsMatch(symbolName))
             {
-                foreach (var crosscheck in _crossChecks)
-                    if (crosscheck.IsSymbol(symbolName))
-                        throw new SymbolCollectionException(symbolName, SymbolCollectionException.ExceptionReason.SymbolExists);
+                if (_crossChecks.Any(c => c.IsSymbol(symbolName)))
+                    throw new SymbolCollectionException(symbolName, SymbolCollectionException.ExceptionReason.SymbolExists);
                 _symbols[symbolName] = value;
             }
             else
@@ -256,10 +249,7 @@ namespace DotNetAsm
             return _symbols.GetEnumerator();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _symbols.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => _symbols.GetEnumerator();
 
         #endregion
     }

@@ -873,11 +873,10 @@ namespace DotNetAsm
                         SaveOutput();
 
                         ToListing();
-
-                        PrintStatus(asmTime);
                     }
                 }
             }
+            PrintStatus(asmTime);
         }
 
         /// <summary>

@@ -324,6 +324,7 @@ namespace DotNetAsm
             {
                 line.Assembly[line.Assembly.Count - 1] = (byte)(lastbyte | 1);
                 Controller.Output.ChangeLast(lastbyte | 1, 1);
+                Controller.Output.Transforms.Pop();
             }
             else if (format.Equals(".nstring"))
             {
@@ -335,10 +336,6 @@ namespace DotNetAsm
             {
                 line.Assembly.Add(0);
                 Controller.Output.Add(0, 1);
-            }
-            else if (format.Equals(".lsstring"))
-            {
-                Controller.Output.Transforms.Pop(); // clean up again :)
             }
         }
         #endregion
