@@ -215,7 +215,7 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         string EvalUnaries(string expression)
         {
-            expression = expression.Replace(" ", string.Empty);
+            expression = Regex.Replace(expression, @"\s+(?=[!\-~^&<>])", string.Empty);
             expression = _regUnary.Replace(expression, delegate (Match m)
             {
                 // <value =  value        % 256
