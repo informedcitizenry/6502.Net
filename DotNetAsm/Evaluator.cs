@@ -257,10 +257,7 @@ namespace DotNetAsm
             return expression;
         }
 
-        public void AddHexFormat(string regex)
-        {
-            _hexRegexes.Add(new Regex(regex, RegexOptions.Compiled));
-        }
+        public void AddHexFormat(string regex) => _hexRegexes.Add(new Regex(regex, RegexOptions.Compiled));
 
         /// <summary>
         /// Determines if the expression string contains user-defined symbols. Assists
