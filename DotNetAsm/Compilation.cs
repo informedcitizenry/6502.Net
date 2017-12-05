@@ -464,7 +464,9 @@ namespace DotNetAsm
         {
             get
             {
-                return ProgramStart + (_bytes.Count - 1);
+                if (ProgramStart > 0)
+                    return ProgramStart + (_bytes.Count - 1);
+                return 0;
             }
         }
 

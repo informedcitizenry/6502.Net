@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.9
+### Version 1.9.0.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -580,6 +580,7 @@ Repetitions can also be handled in for/next loops, where source can be emitted r
 ```
 A minimum two operands are required: The initial expression and the condition expression. A third iteration expression is option. The iteration expression can be blank, however.
 ```
+    .let a = 0;
     .let n = 1;
     .for , n < 10
         .if a == 3
@@ -589,6 +590,15 @@ A minimum two operands are required: The initial expression and the condition ex
         .endif
         .echo format("{0}",n);
     .next
+
+    .comment
+
+    outputs:
+
+    6
+    11
+
+    .endcomment
 ```
 If required, loops can be broken out of using the `.break` directive
 ```
