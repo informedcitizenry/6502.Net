@@ -587,6 +587,7 @@ A minimum two operands are required: The initial expression and the condition ex
         .else
             .let n = n + 5;
         .endif
+        .echo format("{0}",n);
     .next
 ```
 If required, loops can be broken out of using the `.break` directive
