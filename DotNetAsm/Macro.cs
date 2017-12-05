@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -173,7 +173,7 @@ namespace DotNetAsm
             {
                 // any parameters passed?
                 // get passed parameters
-                var passed = macrocall.CommaSeparateOperand();
+                var passed = macrocall.Operand.CommaSeparate();
 
 
                 // no passed parameters is ok
@@ -268,7 +268,7 @@ namespace DotNetAsm
 
                     if (string.IsNullOrEmpty(definition.Operand) == false)
                     {
-                        var parms = definition.CommaSeparateOperand();
+                        var parms = definition.Operand.CommaSeparate();
                         if (parms == null)
                         {
                             throw new MacroException(definition, "Invalid parameter(s) (" + definition.Operand + ")");

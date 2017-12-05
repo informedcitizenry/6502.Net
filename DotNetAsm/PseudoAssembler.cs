@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -73,7 +73,7 @@ namespace DotNetAsm
         /// <param name="line">The SourceLine to assemble.</param>
         void AssembleFills(SourceLine line)
         {
-            var csv = line.CommaSeparateOperand();
+            var csv = line.Operand.CommaSeparate();
 
             int alignval = (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
 
@@ -109,7 +109,7 @@ namespace DotNetAsm
         /// <param name="size">The precise size in bytes of the assembled value.</param>
         protected void AssembleValues(SourceLine line, long minval, long maxval, int size)
         {
-            var tokens = line.CommaSeparateOperand();
+            var tokens = line.Operand.CommaSeparate();
             foreach (var t in tokens)
             {
                 if (t == "?")
@@ -151,7 +151,7 @@ namespace DotNetAsm
         /// <param name="line">The SourceLine to assemble.</param>
         void AssembleBinaryBytes(SourceLine line)
         {
-            var args = line.CommaSeparateOperand();
+            var args = line.Operand.CommaSeparate();
             var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].Trim('"')));
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
@@ -279,7 +279,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
-            var csvs = line.CommaSeparateOperand();
+            var csvs = line.Operand.CommaSeparate();
             if (csvs.Count != 2)
             {
                 Controller.Log.LogEntry(line, ErrorStrings.None);
@@ -321,7 +321,7 @@ namespace DotNetAsm
                 return 0;
             }
 
-            var csv = line.CommaSeparateOperand();
+            var csv = line.Operand.CommaSeparate();
             if (csv.Count == 0)
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);

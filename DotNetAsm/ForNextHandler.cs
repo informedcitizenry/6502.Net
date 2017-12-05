@@ -293,7 +293,7 @@ namespace DotNetAsm
                     });
                 }      
                 // .for <init_expression>, <condition>, <iteration_expression>
-                var csvs = line.CommaSeparateOperand();
+                var csvs = line.Operand.CommaSeparate();
                 if (csvs.Count < 2)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);

@@ -2,10 +2,8 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
@@ -334,6 +332,14 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Operand += ",$80";
             TestForFailure<OverflowException>(line);
+        }
+
+        [Test]
+        public void TestFormatFunction()
+        {
+            string testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", Controller.Evaluator);
+            Assert.AreEqual("TEST=02", testformat);
+
         }
 
         [Test]

@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -413,7 +413,7 @@ namespace Asm6502.Net
 
         void AssembleRta(SourceLine line)
         {
-            var csv = line.CommaSeparateOperand();
+            var csv = line.Operand.CommaSeparate();
 
             foreach (string rta in csv)
             {
@@ -562,7 +562,7 @@ namespace Asm6502.Net
         public int GetInstructionSize(SourceLine line)
         {
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
-                return 2 * line.CommaSeparateOperand().Count;
+                return 2 * line.Operand.CommaSeparate().Count;
 
             var formatOpcode = GetFormatAndOpcode(line);
             if (formatOpcode.Item2 != null)

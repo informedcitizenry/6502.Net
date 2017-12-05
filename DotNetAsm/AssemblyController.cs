@@ -74,7 +74,8 @@ namespace DotNetAsm
             Reserved.DefineType("Functions",
                      "abs", "acos", "asin", "atan", "cbrt", "ceil", "cos", "cosh", "count", "deg",
                      "exp", "floor", "frac", "hypot", "ln", "log10", "pow", "rad", "random",
-                     "round", "sgn", "sin", "sinh", "sizeof", "sqrt", "tan", "tanh", "trunc"
+                     "round", "sgn", "sin", "sinh", "sizeof", "sqrt", "tan", "tanh", "trunc",
+                     "str", "format"
                 );
 
             Reserved.DefineType("UserDefined");

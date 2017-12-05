@@ -109,7 +109,7 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str))
                 return false;
             bool enclosed = false;
-            if (str.StartsWith("\"", StringComparison.InvariantCulture) && 
+            if (str.StartsWith("\"", StringComparison.InvariantCulture) &&
                 str.EndsWith("\"", StringComparison.InvariantCulture))
             {
                 bool escaped = false;
@@ -174,6 +174,106 @@ namespace DotNetAsm
             if (parens > 0)
                 throw new FormatException();
             return str;
+        }
+
+        /// <summary>
+        /// Does a comma-separated-value analysis on the SourceLine's operand
+        /// and returns the individual value as a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/>
+        /// </summary>
+        /// <returns>Returns a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
+        /// <param name="str">The string to evaluate</param>
+        public static List<string> CommaSeparate(this string str)
+        {
+            List<string> csv = new List<string>();
+
+            if (string.IsNullOrEmpty(str))
+                return csv;
+
+            bool double_enclosed = false;
+            bool single_enclosed = false;
+            bool paren_enclosed = false;
+
+            StringBuilder sb = new StringBuilder();
+
+            int charExpCount = 0;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                if (double_enclosed)
+                {
+                    sb.Append(c);
+                    if (c == '"')
+                    {
+                        double_enclosed = false;
+                        if (i == str.Length - 1)
+                            csv.Add(sb.ToString().Trim());
+                    }
+                }
+                else if (single_enclosed)
+                {
+                    charExpCount++;
+                    sb.Append(c);
+                    if (c == '\'')
+                    {
+                        if (charExpCount == 2)
+                        {
+                            // don't set single quote closed unless we 
+                            // have consumed the char in single quote.
+                            charExpCount = 0;
+                            single_enclosed = false;
+                            if (i == str.Length - 1)
+                                csv.Add(sb.ToString().Trim());
+                        }
+                    }
+                }
+                else if (paren_enclosed)
+                {
+                    if (c == '"' && !single_enclosed)
+                        double_enclosed = true;
+                    else
+                        single_enclosed |= (c == '\'' && !double_enclosed);
+
+                    sb.Append(c);
+                    if (c == ')' && !double_enclosed && !single_enclosed)
+                    {
+                        paren_enclosed = false;
+                        if (i == str.Length - 1)
+                            csv.Add(sb.ToString().Trim());
+                    }
+                }
+                else
+                {
+                    switch (c)
+                    {
+                        case '"':
+                            double_enclosed = true;
+                            break;
+                        case '\'':
+                            single_enclosed = true;
+                            break;
+                        case '(':
+                            paren_enclosed = true;
+                            break;
+                        case ',':
+                            csv.Add(sb.ToString().Trim());
+                            sb.Clear();
+                            continue;
+                        default:
+                            break;
+                    }
+
+                    sb.Append(c);
+                    if (i == str.Length - 1)
+                        csv.Add(sb.ToString().Trim());
+                }
+            }
+            if (double_enclosed || single_enclosed)
+                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+
+            if (str.Last().Equals(','))
+                csv.Add(string.Empty);
+            return csv;
         }
     }
 

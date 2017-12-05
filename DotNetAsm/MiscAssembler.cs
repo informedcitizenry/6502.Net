@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -56,28 +56,13 @@ namespace DotNetAsm
         /// <param name="line">The SourceLine with the operand condition.</param>
         void ThrowConditional(SourceLine line)
         {
-            var csv = line.CommaSeparateOperand();
+            var csv = line.Operand.CommaSeparate();
             if (csv.Count < 2)
-            {
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
-            }
             else if (csv.Count > 2)
-            {
                 Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-            }
-            else if (csv.Last().EnclosedInQuotes() == false)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-            }
             else if (Controller.Evaluator.EvalCondition(csv.First()))
-            {
-                string message = csv.Last().Trim('"');
-
-                if (line.Instruction.Equals(".errorif", Controller.Options.StringComparison))
-                    Controller.Log.LogEntry(line, message);
-                else
-                    Controller.Log.LogEntry(line.Filename, line.LineNumber, message, Controller.Options.WarningsAsErrors);
-            }
+                Output(line, csv.Last());
         }
 
         /// <summary>
@@ -122,25 +107,12 @@ namespace DotNetAsm
                     ThrowConditional(line);
                     break;
                 case ".echo":
-                    if (!line.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                    else
-                        Console.WriteLine(line.Operand.Trim('"'));
+                case ".error":
+                case ".warn":
+                    Output(line, line.Operand);
                     break;
                 case ".eor":
                     SetEor(line);
-                    break;
-                case ".error":
-                    if (!line.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                    else
-                        Controller.Log.LogEntry(line, line.Operand.Trim('"'));
-                    break;
-                case ".warn":
-                    if (!line.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                    else
-                        Controller.Log.LogEntry(line.Filename, line.LineNumber, line.Operand.Trim('"'), Controller.Options.WarningsAsErrors);
                     break;
                 case ".target":
                     if (!line.Operand.EnclosedInQuotes())
@@ -154,9 +126,37 @@ namespace DotNetAsm
             }
         }
 
+        void Output(SourceLine line, string operand)
+        {
+            if (!operand.EnclosedInQuotes())
+            {
+                operand = StringAssemblerBase.GetFormattedString(line.Operand, Controller.Evaluator);
+                if (string.IsNullOrEmpty(operand))
+                    Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+            }
+            else
+            {
+                operand = operand.Trim('"');
+            }
+            string type = line.Instruction.Substring(0, 5).ToLower();
+            switch (type)
+            {
+                case ".echo":
+                    Console.WriteLine(operand);
+                    break;
+                case ".asse":
+                case ".erro":
+                    Controller.Log.LogEntry(line, operand);
+                    break;
+                case ".warn":
+                    Controller.Log.LogEntry(line, operand, Controller.Options.WarningsAsErrors);
+                    break;
+            }
+        }
+
         void DoAssert(SourceLine line)
         {
-            var parms = line.CommaSeparateOperand();
+            var parms = line.Operand.CommaSeparate();
             if (parms.Count == 0)
             {
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -168,17 +168,9 @@ namespace DotNetAsm
             else if (!Controller.Evaluator.EvalCondition(parms.First()))
             {
                 if (parms.Count > 1)
-                {
-                    string message = parms.Last();
-                    if (message.EnclosedInQuotes() == false)
-                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                    else
-                        Controller.Log.LogEntry(line, message.Trim('"'));
-                }
+                    Output(line, parms.Last());
                 else
-                {
                     Controller.Log.LogEntry(line, ErrorStrings.AssertionFailure, line.Operand);
-                }
             }
         }
 

@@ -126,7 +126,7 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             SourceLine line = new SourceLine();
             line.Operand = "147, \"He said, \",'\"',\"Hello, World!\",'\"', $0d, ','";
-            var csv = line.CommaSeparateOperand();
+            var csv = line.Operand.CommaSeparate();
 
             Assert.IsTrue(csv.Count == 7);
             Assert.AreEqual(csv[0], "147");

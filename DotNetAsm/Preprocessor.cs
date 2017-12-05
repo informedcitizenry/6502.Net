@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -129,7 +129,7 @@ namespace DotNetAsm
                 }
                 else if (line.Instruction.Equals(".binclude", Controller.Options.StringComparison))
                 {
-                    var args = line.CommaSeparateOperand();
+                    var args = line.Operand.CommaSeparate();
                     SourceLine openblock = new SourceLine();
                     if (args.Count > 1)
                     {
