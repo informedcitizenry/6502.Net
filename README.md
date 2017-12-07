@@ -2062,8 +2062,6 @@ glyph             ;12345678
 
 `Symbol not found` - The expression referenced a symbol that was not defined.
 
-`The iteration variable is immutable` - An attempt was made to change an iteration variable in a `.for` loop using the `.var` directive.
-
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
 `Too many arguments for directive` - More arguments were provided to the directive than expected.
