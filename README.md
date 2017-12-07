@@ -697,7 +697,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>ISB</td><td>Zero-Page Indexed X   </td><td>F7</td></tr>
 <tr><td>ISB</td><td>Absolute Indexed Y    </td><td>FB</td></tr>
 <tr><td>ISB</td><td>Absolute Indexed X    </td><td>FF</td></tr>    
-<tr><td>JAM</td><td>Implied               </td><td>02</td></tr>
+<tr><td>JAM*</td><td>Implied               </td><td>02</td></tr>
 <tr><td>LAS</td><td>Absolute Indexed Y    </td><td>BB</td></tr>
 <tr><td>LAX</td><td>Indexed Indirect      </td><td>A3</td></tr>
 <tr><td>LAX</td><td>Zero-Page             </td><td>A7</td></tr>
