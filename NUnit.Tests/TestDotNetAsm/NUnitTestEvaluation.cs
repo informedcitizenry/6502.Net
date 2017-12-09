@@ -93,6 +93,18 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
+        public void TestExpressionErrors()
+        {
+            Evaluator eval = new Evaluator();
+
+            Assert.Throws<ExpressionException>(() => eval.Eval("56(34)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("*56"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("56 (24)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("56+"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("56*(24+)"));
+        }
+
+        [Test]
         public void TestAllFunctions()
         {
             IEvaluator evaluator = new Evaluator();

@@ -107,7 +107,7 @@ namespace DotNetAsm
             _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
 
             _regFcn     = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))",     RegexOptions.Compiled);
-            _regUnary   = new Regex(@"(?<![0-9.)<>])([!\-~^&<>])(\(.+\)|[0-9.]+)",  RegexOptions.Compiled);
+            _regUnary   = new Regex(@"(?<![0-9.)<>])([!+\-~^&<>])(\(.+\)|[0-9.]+)",  RegexOptions.Compiled);
             _regBinary  = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))",            RegexOptions.Compiled);
 
             _cache = new Dictionary<string, double>();
@@ -117,7 +117,6 @@ namespace DotNetAsm
 
             _replacements = new List<Tuple<Regex, string>>
             {
-                new Tuple<Regex, string>(new Regex(@"(?<=^|[^\s0-9.)])\+", RegexOptions.Compiled), string.Empty),
                 new Tuple<Regex, string>(new Regex(@"\*\*", RegexOptions.Compiled), "↑")
             };
             _functions = new Dictionary<string, Tuple<Func<double[], double>, int>>
@@ -215,7 +214,7 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         string EvalUnaries(string expression)
         {
-            expression = Regex.Replace(expression, @"\s+(?=[!\-~^&<>])", string.Empty);
+            expression = Regex.Replace(expression, @"\s+(?=[!+\-~^&<>])", string.Empty);
             expression = _regUnary.Replace(expression, delegate (Match m)
             {
                 // <value =  value        % 256
@@ -246,6 +245,8 @@ namespace DotNetAsm
                         return string.Format("(0-{0}){1}", value, post);
                     case "!":
                         return string.Format("{0}{1}", Eval(value) == 0 ? "1" : "0", post);
+                    case "+":
+                        return value;
                     default:
                         break;
                 }
@@ -519,14 +520,18 @@ namespace DotNetAsm
         {
             Stack<double> result = new Stack<double>();
 
+            bool needOperator = false;
+
             foreach (string s in outputs)
             {
                 if (double.TryParse(s, out double num))
                 {
+                    needOperator = result.Count > 0;
                     result.Push(num);
                 }
                 else
                 {
+                    needOperator = false;
                     double right = result.Pop();
                     double left = result.Pop();
 
@@ -590,10 +595,11 @@ namespace DotNetAsm
                             result.Push((int)left | (int)right);
                             break;
                         default:
-                            throw new ExpressionException(s);
+                            throw new Exception();
                     }
                 }
             }
+            if (needOperator) throw new Exception();
             return result.Pop();
         }
 

@@ -49,8 +49,8 @@ namespace DotNetAsm
         public ConditionHandler(IAssemblyController controller)
             : base(controller)
         {
-            Reserved.DefineType("Conditions", 
-                ".if", ".ifdef", ".ifndef", 
+            Reserved.DefineType("Conditions",
+                ".if", ".ifdef", ".ifndef",
                 ".elif", ".elifdef", ".elifndef",
                 ".else", ".endif"
             );
@@ -65,10 +65,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        public bool Processes(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
+        public bool Processes(string token) => Reserved.IsReserved(token);
 
         public void Process(SourceLine line)
         {
@@ -167,15 +164,10 @@ namespace DotNetAsm
             _processedLines.Clear();
         }
 
-        public bool IsProcessing()
-        {
-            return _condLevel > 0;
-        }
+        public bool IsProcessing() => _condLevel > 0;
 
-        public IEnumerable<SourceLine> GetProcessedLines()
-        {
-            return _processedLines;
-        }
+        public IEnumerable<SourceLine> GetProcessedLines() => _processedLines;
+
         #endregion
     }
 }
