@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,7 +35,7 @@ namespace DotNetAsm
 
         HashSet<string> _values;
 
-        Dictionary<string, HashSet<string>> types_;
+        Dictionary<string, HashSet<string>> _types;
 
         #endregion
 
@@ -48,7 +48,7 @@ namespace DotNetAsm
         /// to enforce case-sensitivity.</param>
         public ReservedWords(StringComparison comparer)
         {
-            types_ = new Dictionary<string, HashSet<string>>();
+            _types = new Dictionary<string, HashSet<string>>();
             Comparer = comparer;
             _values = new HashSet<string>();
         }
@@ -57,7 +57,7 @@ namespace DotNetAsm
         /// Instantiates a new ReservedWords class object.
         /// </summary>
         public ReservedWords() :
-            this(StringComparison.InvariantCulture)
+            this(StringComparison.CurrentCulture)
         {
 
         }
@@ -71,11 +71,11 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="type">The defined type</param>
         /// <param name="word">The reserved word to include</param>
-        /// <exception cref="System.Collections.Generic.KeyNotFoundException">System.Collections.Generic.KeyNotFoundException
+        /// <exception cref="T:System.Collections.Generic.KeyNotFoundException">System.Collections.Generic.KeyNotFoundException
         /// </exception>
         public void AddWord(string type, string word)
         {
-            var t = types_[type];
+            var t = _types[type];
             t.Add(word);
             _values.Add(word);
         }
@@ -84,8 +84,8 @@ namespace DotNetAsm
         /// Defie a type of reserved words.
         /// </summary>
         /// <param name="type">The type name.</param>
-        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
-        public void DefineType(string type) => types_.Add(type, new HashSet<string>());
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        public void DefineType(string type) => _types.Add(type, new HashSet<string>());
 
         /// <summary>
         /// Define a type of reserved words.
@@ -96,7 +96,7 @@ namespace DotNetAsm
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public void DefineType(string type, params string[] values)
         {
-            types_.Add(type, new HashSet<string>(values));
+            _types.Add(type, new HashSet<string>(values));
             foreach (var v in values)
                 _values.Add(v); // grr!!!
         }
@@ -109,7 +109,7 @@ namespace DotNetAsm
         /// <returns>Returns true if the specified token is one of the specified type.</returns>
         /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
-        public bool IsOneOf(string type, string token) => types_[type].Any(d => d.Equals(token, Comparer));
+        public bool IsOneOf(string type, string token) => _types[type].Any(d => d.Equals(token, Comparer));
 
         /// <summary>
         /// Determines if the token is in the list of reserved words for all types.
@@ -126,22 +126,15 @@ namespace DotNetAsm
         /// <returns>The type of the token.</returns>
         public string GetType(string token)
         {
-            foreach (var type in types_)
-            {
-                if (type.Value.Contains(token))
-                {
-                    return type.Key;
-                }
-            }
-            return string.Empty;
+            return _types.FirstOrDefault(kv => kv.Value.Equals(token)).Key;
         }
 
         /// <summary>
         /// Determines if the ReservedWord object contains a type (key) of reserved words.
         /// </summary>
         /// <param name="type">The type to check.</param>
-        /// <returns>True, if the DotNetAsm.ReservedWord object has the type</returns>
-        public bool HasType(string type) => types_.ContainsKey(type);
+        /// <returns>True, if the <see cref="T:DotNetAsm.ReservedWord"/> object has the type</returns>
+        public bool HasType(string type) => _types.ContainsKey(type);
 
         #endregion
 

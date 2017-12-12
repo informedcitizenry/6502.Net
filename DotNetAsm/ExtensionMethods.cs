@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -109,8 +109,8 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str))
                 return false;
             bool enclosed = false;
-            if (str.StartsWith("\"", StringComparison.InvariantCulture) &&
-                str.EndsWith("\"", StringComparison.InvariantCulture))
+            if (str.StartsWith("\"", StringComparison.CurrentCulture) &&
+                str.EndsWith("\"", StringComparison.CurrentCulture))
             {
                 bool escaped = false;
                 string substr = str.Substring(1);

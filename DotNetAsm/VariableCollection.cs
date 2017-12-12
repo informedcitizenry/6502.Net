@@ -44,7 +44,7 @@ namespace DotNetAsm
             : base(comparer)
         {
             RegexOptions option = RegexOptions.Compiled;
-            option |= comparer == StringComparer.InvariantCultureIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            option |= comparer == StringComparer.CurrentCultureIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             _evaluator = evaluator;
             _regExpression = new Regex("^(_*" + Patterns.SymbolUnicode + @")\s*=\s*(.+)$", option);
         }

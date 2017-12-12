@@ -91,7 +91,7 @@ namespace DotNetAsm
         protected SymbolCollectionBase(StringComparer comparer)
         {
             RegexOptions option = RegexOptions.Compiled;
-            option |= comparer == StringComparer.InvariantCultureIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            option |= comparer == StringComparer.CurrentCultureIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             _symbols = new Dictionary<string, long>(comparer);
             _regVar = new Regex(@"^(\d+\.)?" + Patterns.SymbolUnicodeDot + "$", option);
             _regVarStrict = new Regex(Patterns.SymbolUnicodeFull, option);

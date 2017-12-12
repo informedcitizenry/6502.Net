@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.9.1.0
+### Version 1.9.2.0
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -101,7 +101,7 @@ printmessage    ldx #0
 As you can see anonymous labels, though convenient, would hinder readability if used too liberally. They are best for small branch jumps, though can be used in expressions:
 ```
 -               .byte $01, $02, $03
-                lda (-),x           ; best to put anonymous label reference inside paranetheses.
+                lda (-),x           ; put anonymous label reference inside paranetheses.
 ```            
 Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
 ```
@@ -215,7 +215,7 @@ start       = $c000
 startstr    .string str(start) ; assembles as $34,$39,$31,$35,$32
                                ; literally the digits "4","9","1","5","2"
 ```      
-The `format()` function allows you to output string data using a .Net format string:
+The `format()` function allows you to output non-string data using a .Net format string:
 ```
 stdout      = $ffd2
 stdstring   .string format("The stdout routine is at ${0:X4}", stdout)
@@ -387,7 +387,8 @@ See the section below on functions for a full list of available functions.
 
 By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter. The assignment can be either a constant or expression:
 ```
-                * = ZP + 1000       ; program counter now 1000 bytes offset from the value of the constant ZP
+                * = ZP + 1000       ; program counter now 1000 bytes offset from
+                                    ; the value of the constant ZP
 ```                
 (Be aware of the pesky trap of trying to square the program counter using the `**` operator, i.e. `***`. This produces unexpected results. Instead consider the `pow()` function as described in the section on math functions below.)
 
@@ -1249,7 +1250,7 @@ start       ; same as start .equ *
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. The initialization expression can be blank. Multiple iteration expressions can be specified.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>init_expression, condition[, iteration_expression[, ...]</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>[init_expression], condition[, iteration_expression[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         .let x = 0

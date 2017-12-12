@@ -117,7 +117,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
         public void AssembleLine(SourceLine line)
         {
-            if (line.Instruction.Equals(".cpu", StringComparison.InvariantCulture))
+            if (line.Instruction.Equals(".cpu", StringComparison.CurrentCulture))
                 CpuChanged?.Invoke(new CpuChangedEventArgs{ Line = new SourceLine{ Operand = line.Operand}});
         }
 

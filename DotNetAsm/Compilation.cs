@@ -203,10 +203,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="s">The string to add</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
-        public List<byte> Add(string s)
-        {
-            return Add(s, Encoding.UTF8);
-        }
+        public List<byte> Add(string s) => Add(s, Encoding.UTF8);
 
         /// <summary>
         /// Add the bytes for a UTF-8 encoded string to the compilation
@@ -214,40 +211,28 @@ namespace DotNetAsm
         /// <param name="s">The string to add</param>
         /// <param name="encoding">The System.Text.Encoding class to encode the output</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
-        public List<byte> Add(string s, Encoding encoding)
-        {
-            return AddBytes(encoding.GetBytes(s));
-        }
+        public List<byte> Add(string s, Encoding encoding) => AddBytes(encoding.GetBytes(s));
 
         /// <summary>
         /// Add a 32-bit integral value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
-        public List<byte> Add(int value)
-        {
-            return Add(value, 4);
-        }
+        public List<byte> Add(int value) => Add(value, 4);
 
         /// <summary>
         /// Add a byte value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
-        public List<byte> Add(byte value)
-        {
-            return Add(Convert.ToInt32(value), 1);
-        }
+        public List<byte> Add(byte value) => Add(Convert.ToInt32(value), 1);
 
         /// <summary>
         /// Add a 16-bit integral value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
-        public List<byte> Add(ushort value)
-        {
-            return Add(Convert.ToInt32(value), 2);
-        }
+        public List<byte> Add(ushort value) => Add(Convert.ToInt32(value), 2);
 
         /// <summary>
         /// Reserve uninitialized memory in the compilation by an unspecified amount
@@ -264,7 +249,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The amount to fill</param>
         /// <param name="value">The fill value</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Fill(int amount, Int64 value)
         {
             int size = value.Size();
@@ -288,10 +273,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The offset amount</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
-        public List<byte> Offset(int amount)
-        {
-            return AddBytes(new List<byte>(amount), amount, true, false);
-        }
+        public List<byte> Offset(int amount) => AddBytes(new List<byte>(amount), amount, true, false);
 
         /// <summary>
         /// Align the compilation to the specified boundary and fill with the specified values.
@@ -300,7 +282,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="amount">The amount to align the compilation</param>
         /// <param name="value">The value to fill before the alignment</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Align(int amount, long value)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
@@ -328,7 +310,7 @@ namespace DotNetAsm
         /// <param name="size">The number of bytes in the collection to add</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
         /// <param name="updateProgramCounter">Update the Program Counter automatically</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian, bool updateProgramCounter)
         {
             if (CompilingHasStarted == false)
@@ -376,7 +358,7 @@ namespace DotNetAsm
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="size">The number of bytes in the collection to add</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
         {
             return AddBytes(bytes, size, ignoreEndian, true);
@@ -387,7 +369,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, bool ignoreEndian)
         {
             return AddBytes(bytes, bytes.Count(), ignoreEndian);
@@ -398,7 +380,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="size">The number of bytes in the collection to add</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, int size)
         {
             return AddBytes(bytes, size, true);
@@ -408,20 +390,14 @@ namespace DotNetAsm
         /// Add a range of bytes to the compilation.
         /// </summary>
         /// <param name="bytes">The collection of bytes to add</param>
-        /// <returns>A <see cref="T:System.Collections.Generic&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
-        public List<byte> AddBytes(IEnumerable<byte> bytes)
-        {
-            return AddBytes(bytes, true);
-        }
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        public List<byte> AddBytes(IEnumerable<byte> bytes) => AddBytes(bytes, true);
 
         /// <summary>
         /// Get the compilation bytes
         /// </summary>
         /// <returns>The bytes of the compilation.</returns>
-        public ReadOnlyCollection<byte> GetCompilation()
-        {
-            return _bytes.AsReadOnly();
-        }
+        public ReadOnlyCollection<byte> GetCompilation() => _bytes.AsReadOnly();
 
         /// <summary>
         /// Get the relative offset between two addresses. Useful for calculating short jumps.
