@@ -276,10 +276,8 @@ namespace DotNetAsm
             return fmt;
         }
 
-        public override string ToString()
-        {
-            return _regex.ToString();
-        }
+        public override string ToString() => _regex.ToString();
+
         #endregion
     }
 }

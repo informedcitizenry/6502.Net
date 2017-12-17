@@ -33,6 +33,16 @@ namespace DotNetAsm
 
     public delegate byte[] WriteBytesEventHandler(object sender);
 
+    public class SymbolNotDefinedException : Exception
+    {
+        public SymbolNotDefinedException(string symbol)
+        {
+            Symbol = symbol;
+        }
+
+        public string Symbol { get; private set; }
+    }
+
     /// <summary>
     /// Implements an assembly controller to process source input and convert 
     /// to assembled output.
@@ -350,6 +360,10 @@ namespace DotNetAsm
                     else
                         Log.LogEntry(_currentLine, ErrorStrings.LabelNotValid, _currentLine.Label);
                 }
+                catch (SymbolNotDefinedException symNotFound)
+                {
+                    Log.LogEntry(_currentLine, ErrorStrings.LabelNotDefined, symNotFound.Symbol);
+                }
                 catch (ExpressionException exprEx)
                 {
                     Log.LogEntry(_currentLine, ErrorStrings.BadExpression, exprEx.Message);
@@ -382,7 +396,16 @@ namespace DotNetAsm
                 }
                 else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
                 {
-                    _currentLine.PC = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
+                    var varname = Variables.GetVariableFromExpression(_currentLine.Operand, _currentLine.Scope);
+                    try
+                    {
+                        _currentLine.PC = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
+                    }
+                    catch (SymbolNotDefinedException)
+                    {
+                        Variables.SetSymbol(varname, 0, false);
+                        _currentLine.PC = 0;
+                    }
                 }
             
                 UpdatePC();
@@ -505,6 +528,10 @@ namespace DotNetAsm
                         if (!passNeeded)
                             passNeeded = needpass;
                     }
+                    catch (SymbolNotDefinedException symEx)
+                    {
+                        Log.LogEntry(line, ErrorStrings.LabelNotDefined, symEx.Symbol);
+                    }
                     catch (ExpressionException exprEx)
                     {
                         Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
@@ -565,9 +592,16 @@ namespace DotNetAsm
         /// <returns>The size in bytes of the instruction, including opcode and operand</returns>
         int GetInstructionSize()
         {
-            var asm = _assemblers.FirstOrDefault(a => a.AssemblesInstruction(_currentLine.Instruction));
-            var size = (asm != null) ? asm.GetInstructionSize(_currentLine) : 0;
-            return size;
+            try
+            {
+                var asm = _assemblers.FirstOrDefault(a => a.AssemblesInstruction(_currentLine.Instruction));
+                var size = (asm != null) ? asm.GetInstructionSize(_currentLine) : 0;
+                return size;
+            }
+            catch (SymbolNotDefinedException)
+            {
+                return 0;
+            }
         }
 
         /// <summary>
@@ -583,9 +617,20 @@ namespace DotNetAsm
                 if (_specialLabels.IsMatch(_currentLine.Label))
                 {
                     if (IsAssignmentDirective())
-                        _currentLine.PC = Convert.ToInt32(Evaluator.Eval(_currentLine.Operand));
+                    {
+                        try
+                        {
+                            _currentLine.PC = Convert.ToInt32(Evaluator.Eval(_currentLine.Operand));
+                        }
+                        catch (SymbolNotDefinedException)
+                        {
+                            _currentLine.PC = 0;
+                        }
+                    }
                     else
+                    {
                         _currentLine.PC = Output.LogicalPC;
+                    }
 
                     if (_currentLine.Label.Equals("+") || _currentLine.Label.Equals("-"))
                     {
@@ -611,11 +656,18 @@ namespace DotNetAsm
 
                     scopedLabel = _currentLine.Scope + _currentLine.Label;
 
-                    long val;
+                    long val = _currentLine.PC;
                     if (IsAssignmentDirective())
-                        val = Evaluator.Eval(_currentLine.Operand, int.MinValue, uint.MaxValue);
-                    else
-                        val = _currentLine.PC;
+                    {
+                        try
+                        {
+                            val = Evaluator.Eval(_currentLine.Operand, int.MinValue, uint.MaxValue);
+                        }
+                        catch (SymbolNotDefinedException)
+                        {
+                            val = 0;
+                        }
+                    }    
                     _labelCollection.SetLabel(scopedLabel, val, false, true);
 
                 }
@@ -632,7 +684,14 @@ namespace DotNetAsm
             {
                 if (IsAssignmentDirective())
                 {
-                    val = Evaluator.Eval(_currentLine.Operand, UInt16.MinValue, UInt16.MaxValue);
+                    try
+                    {
+                        val = Evaluator.Eval(_currentLine.Operand, UInt16.MinValue, UInt16.MaxValue);
+                    }
+                    catch (SymbolNotDefinedException)
+                    {
+                        
+                    }
                     Output.SetPC(Convert.ToUInt16(val));
                 }
                 else
@@ -654,7 +713,14 @@ namespace DotNetAsm
                             Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
                             return;
                         }
-                        val = Evaluator.Eval(_currentLine.Operand, uint.MinValue, uint.MaxValue);
+                        try
+                        {
+                            val = Evaluator.Eval(_currentLine.Operand, uint.MinValue, uint.MaxValue);  
+                        }
+                        catch (SymbolNotDefinedException)
+                        {
+                            
+                        }
                         Output.SetLogicalPC(Convert.ToUInt16(val));
                     }
                     break;
@@ -892,11 +958,7 @@ namespace DotNetAsm
 
             long value = _labelCollection.GetScopedSymbolValue(symbol, _currentLine.Scope);
             if (value.Equals(long.MinValue))
-            {
-                if (_passes > 0)
-                    Log.LogEntry(_currentLine, ErrorStrings.LabelNotDefined, symbol);
-                return "0";
-            }
+                throw new SymbolNotDefinedException(symbol);
             return value.ToString();
 
         }

@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -266,16 +267,8 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="expression">The expression string to evaluate</param>
         /// <returns>True, if the expression contains user-defined symbols, otherwise false</returns>
-        bool ContainsSymbols(string expression)
-        {
-            foreach (var lookup in _symbolLookups)
-            {
-                Regex r = lookup.Value.Item1;
-                if (r.IsMatch(expression))
-                    return true;
-            }
-            return false;
-        }
+        bool ContainsSymbols(string expression) => 
+                _symbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
 
         /// <summary>
         /// Evaluate the expression strings for user-defined symbols, then do a callback
@@ -284,7 +277,7 @@ namespace DotNetAsm
         /// <param name="expression">The expression to evaluate</param>
         /// <returns>The modified expression string with user-defined symbols replaced
         /// with real values</returns>
-        string EvalSymbols(string expression)
+        string EvalDefinedSymbols(string expression)
         {
             // convert client-defined symbols into values
             foreach (var lookup in _symbolLookups)
@@ -490,7 +483,7 @@ namespace DotNetAsm
             if (!ContainsSymbols(expression))
                 _cache.Add(unevaluated, Double.NaN);
 
-            expression = EvalUnaries(EvalFunctions(EvalSymbols(expression)));
+            expression = EvalUnaries(EvalFunctions(EvalDefinedSymbols(expression)));
 
             foreach (var replacement in _replacements)
                 expression = replacement.Item1.Replace(expression, replacement.Item2);

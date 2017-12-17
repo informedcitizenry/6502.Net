@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.9.2.0
+### Version 1.10
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -215,7 +215,7 @@ start       = $c000
 startstr    .string str(start) ; assembles as $34,$39,$31,$35,$32
                                ; literally the digits "4","9","1","5","2"
 ```      
-The `format()` function allows you to output non-string data using a .Net format string:
+The `format()` function allows you to convert non-string data to string data using a .Net format string:
 ```
 stdout      = $ffd2
 stdstring   .string format("The stdout routine is at ${0:X4}", stdout)
