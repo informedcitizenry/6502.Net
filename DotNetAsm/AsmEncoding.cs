@@ -269,8 +269,6 @@ namespace DotNetAsm
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             int j = byteIndex;
-            int bytecount = GetMaxByteCount(charCount);
-            
             for (int i = 0; i < charCount; i++)
             {
                 byte[] transBytes = GetCharBytes(chars[i + charIndex]);

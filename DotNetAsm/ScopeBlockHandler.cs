@@ -39,6 +39,10 @@ namespace DotNetAsm
 
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:DotNetAsm.ScopeBlockHandler"/> class.
+        /// </summary>
+        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> of the handler.</param>
         public ScopeBlockHandler(IAssemblyController controller)
             : base(controller)
         {

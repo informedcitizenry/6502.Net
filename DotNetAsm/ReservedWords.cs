@@ -42,9 +42,9 @@ namespace DotNetAsm
         #region Constructor
 
         /// <summary>
-        /// Instantiates a new ReservedWords class object.
+        /// Instantiates a new <see cref="T:DotNetAsm.ReservedWords"/> class object.
         /// </summary>
-        /// <param name="comparer">A StringComparison object to indicate whether
+        /// <param name="comparer">A <see cref="T:System.StringComparison"/> object to indicate whether
         /// to enforce case-sensitivity.</param>
         public ReservedWords(StringComparison comparer)
         {
@@ -54,7 +54,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Instantiates a new ReservedWords class object.
+        /// Instantiates a new <see cref="T:DotNetAsm.ReservedWords"/> class object.
         /// </summary>
         public ReservedWords() :
             this(StringComparison.CurrentCulture)
@@ -106,7 +106,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="type">The type (dictionary key).</param>
         /// <param name="token">The token or keyword.</param>
-        /// <returns>Returns true if the specified token is one of the specified type.</returns>
+        /// <returns><c>True</c> if the specified token is one of the specified type, otherwise <c>false</c>.</returns>
         /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         public bool IsOneOf(string type, string token) => _types[type].Any(d => d.Equals(token, Comparer));
@@ -115,8 +115,8 @@ namespace DotNetAsm
         /// Determines if the token is in the list of reserved words for all types.
         /// </summary>
         /// <param name="token">The token or keyword.</param>
-        /// <returns>Returns true if the specified token is in the collection of reserved words,
-        /// regardless of type.</returns>
+        /// <returns><c>True</c> if the specified token is in the collection of reserved words,
+        /// regardless of type, otherwise <c>false</c>.</returns>
         public bool IsReserved(string token) => _values.Any(s => s.Equals(token, Comparer));
 
         /// <summary>

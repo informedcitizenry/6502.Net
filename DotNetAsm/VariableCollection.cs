@@ -40,6 +40,11 @@ namespace DotNetAsm
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:DotNetAsm.VariableCollection"/> class.
+        /// </summary>
+        /// <param name="comparer">A <see cref="T:System.StringComparper"/>.</param>
+        /// <param name="evaluator">A <see cref="T:DotNetAsm.IEvaluator"/> to evaluate RValue.</param>
         public VariableCollection(StringComparer comparer, IEvaluator evaluator)
             : base(comparer)
         {

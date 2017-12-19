@@ -44,7 +44,7 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of a 6502.Net Pseudo-operation line assembler.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.PseudoAssembler"/> line assembler.
         /// </summary>
         /// <param name="controller">The assembly controller</param>
         /// <param name="reservedSymbolFunc">A function callback to determine if the given token 
@@ -70,7 +70,7 @@ namespace DotNetAsm
         /// <summary>
         /// Assemble multiple values to the output.
         /// </summary>
-        /// <param name="line">The SourceLine to assemble.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         void AssembleFills(SourceLine line)
         {
             var csv = line.Operand.CommaSeparate();
@@ -148,7 +148,7 @@ namespace DotNetAsm
         /// <summary>
         /// Assemble an included binary file's bytes.
         /// </summary>
-        /// <param name="line">The SourceLine to assemble.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.Operand.CommaSeparate();
@@ -169,7 +169,7 @@ namespace DotNetAsm
         /// Process the .binary directive and cache the binary file's contents
         /// for later use.
         /// </summary>
-        /// <param name="line">The SourceLine to assemble.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         /// <returns>Returns a binary file.</returns>
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
@@ -271,7 +271,7 @@ namespace DotNetAsm
         /// <summary>
         /// Define an existing type to a user-defined type.
         /// </summary>
-        /// <param name="line">The line to assemble.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         void DefineType(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Label) == false)

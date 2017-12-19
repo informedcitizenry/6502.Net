@@ -42,21 +42,21 @@ namespace DotNetAsm
             public class ForNextEntry
             {
                 /// <summary>
-                /// The DotNetAsm.SourceLine in the block.
+                /// The <see cref="T:DotNetAsm.SourceLine"/> in the block.
                 /// </summary>
                 public SourceLine Line { get; set; }
 
                 /// <summary>
-                /// The DotNetAsm.RepetitionHandler.RepetitionBlock to link to.
+                /// The <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/> to link to.
                 /// </summary>
                 public ForNextBlock LinkedBlock { get; set; }
 
                 /// <summary>
-                /// Constructs a DotNetAsm.RepetitionHandler.RepetitionBlock.RepetitionEntry.
+                /// Constructs a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock.RepetitionEntry"/>.
                 /// </summary>
-                /// <param name="line">The DotNetAsm.SourceLine to add. This value can 
+                /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to add. This value can 
                 /// be null.</param>
-                /// <param name="block">The DotNetAsm.RepetitionHandler.RepetitionBlock
+                /// <param name="block">The <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>
                 /// to link to. This value can be null.</param>
                 public ForNextEntry(SourceLine line, ForNextBlock block)
                 {
@@ -80,7 +80,7 @@ namespace DotNetAsm
             #region Constructors
 
             /// <summary>
-            /// Constructs a new instance of a ForNextBlock
+            /// Constructs a new instance of a <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>.
             /// </summary>
             public ForNextBlock()
             {
@@ -98,8 +98,8 @@ namespace DotNetAsm
             /// <summary>
             /// Add an entry to the block.
             /// </summary>
-            /// <param name="line">The DotNetAsm.SourceLine of the entry</param>
-            /// <param name="block">The DotNetAsm.ForNextHandler.ForNextBlock of the entry</param>
+            /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> of the entry</param>
+            /// <param name="block">The <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/> of the entry</param>
             public void AddEntry(SourceLine line, ForNextBlock block)
             {
                 if (block != null)
@@ -110,7 +110,7 @@ namespace DotNetAsm
             /// <summary>
             /// Advance the block one entry
             /// </summary>
-            /// <returns>Returns the current DotNetAsm.ForNextHandler.ForNextBlock.ForNextEntry</returns>
+            /// <returns>The current <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock.ForNextEntry"/>.</returns>
             public ForNextEntry Advance()
             {
                 if (_currentEntry == null)
@@ -123,7 +123,7 @@ namespace DotNetAsm
             /// <summary>
             /// Restarts the block to the first entry.
             /// </summary>
-            /// <returns>Returns the current DotNetAsm.ForNextHandler.ForNextBlock.ForNextEntry</returns>
+            /// <returns>The current <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock.ForNextEntry"/>.</returns>
             public ForNextEntry Begin()
             {
                 _currentEntry = _entries.First;
@@ -133,16 +133,13 @@ namespace DotNetAsm
             /// <summary>
             /// Determines if the block is at the beginning (first entry).
             /// </summary>
-            /// <returns>True, if the block is at the beginning</returns>
-            public bool IsBeginning()
-            {
-                return _currentEntry == null || _currentEntry == _entries.First;
-            }
+            /// <returns><c>True</c> if the block is at the beginning, otherwise <c>false</c>.</returns>
+            public bool IsBeginning() => _currentEntry == null || _currentEntry == _entries.First;
 
             /// <summary>
-            /// Get the next child DotNetAsm.ForNextHandler.ForNextBlock from the current entry.
+            /// Get the next child <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/> from the current entry.
             /// </summary>
-            /// <returns>The next child DotNetAsm.ForNextHandler.ForNextBlock</returns>
+            /// <returns>The next child <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>.</returns>
             public ForNextBlock NextChild()
             {
                 if (_currentEntry == null)
@@ -153,9 +150,9 @@ namespace DotNetAsm
             }
 
             /// <summary>
-            /// Get a collection of all the DotNetAsm.SourceLines in the block's entries.
+            /// Get a collection of all the <see cref="T:DotNetAsm.SourceLine"/>s in the block's entries.
             /// </summary>
-            /// <returns>A System.Collections.Generic.IEnumerable&lt;SourceLine&gt;</returns>
+            /// <returns>A <see cref="T:System.Collections.Generic.IEnumerable&lt;SourceLine&gt;"/>.</returns>
             public IEnumerable<SourceLine> GetProcessedLines()
             {
                 List<SourceLine> processed = new List<SourceLine>();
@@ -188,7 +185,7 @@ namespace DotNetAsm
             #region Properties
 
             /// <summary>
-            /// Gets the parent block to a DotNetAsm.ForNextHandler.ForNextBlock
+            /// Gets the parent block to a <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>
             /// </summary>
             public ForNextBlock Parent { get; set; }
 
@@ -203,7 +200,7 @@ namespace DotNetAsm
             public List<string> IterExpressions { get; set; }
 
             /// <summary>
-            /// The condition to meet to stop the block.
+            /// Gets the block's loop condition.
             /// </summary>
             public string Condition { get; set; }
 
@@ -226,9 +223,9 @@ namespace DotNetAsm
         int _levels;
 
         /// <summary>
-        /// Constructs a DotNetAsm.ForNextHandler.
+        /// Constructs an instance of the <see cref="T:DotNetAsm.ForNextHandler"/>.
         /// </summary>
-        /// <param name="controller">The DotNetAsm.IAssemblyController for this
+        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> for this
         /// handler.</param>
         public ForNextHandler(IAssemblyController controller)
             : base(controller)
@@ -256,20 +253,21 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Determines whether the DotNetAsm.RepetitionHandler processes the given token.
+        /// Determines whether the <see cref="T:DotNetAsm.ForNextHandler"/> processes the given token.
         /// </summary>
         /// <param name="token">The token to determine if is an instruction that
         /// the handler processes.</param>
-        /// <returns>True, if the DotNetAsm.ForNextHandler processes this token</returns>
+        /// <returns><c>True</c> if the <see cref="T:DotNetAsm.ForNextHandler"/> processes this token,
+        /// otherwise <c>false</c>.</returns>
         public bool Processes(string token)
         {
             return Reserved.IsOneOf("Directives", token);
         }
 
         /// <summary>
-        /// Processes the DotNetAsm.SourceLine for repetitions, or within a ForNextBlock.
+        /// Processes the <see cref="T:DotNetAsm.SourceLine"/> within a <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>.
         /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine to process</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to process</param>
         public void Process(SourceLine line)
         {
             string instruction = line.Instruction.ToLower();
@@ -477,29 +475,20 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Performs a reset operation on the ForNextBlock.
+        /// Performs a reset operation on the <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>.
         /// </summary>
-        public void Reset()
-        {
-            _processedLines.Clear(); 
-        }
+        public void Reset() => _processedLines.Clear();
 
         /// <summary>
-        /// Gets the flag that determines if the DotNetAsm.ForNextHandler is currently in
+        /// Gets the flag that determines if the <see cref="T:DotNetAsm.ForNextHandler"/> is currently in
         /// processing mode.
         /// </summary>
         /// <returns>True, if the block handler is still processing input lines</returns>
-        public bool IsProcessing()
-        {
-            return _levels > 0 || _breakBlock != null;
-        }
+        public bool IsProcessing() => _levels > 0 || _breakBlock != null;
 
         /// <summary>
         /// Gets the read-only processed blocks of repeated lines.
         /// </summary>
-        public IEnumerable<SourceLine> GetProcessedLines()
-        {
-            return _processedLines;
-        }
+        public IEnumerable<SourceLine> GetProcessedLines() => _processedLines;
     }
 }

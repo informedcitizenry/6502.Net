@@ -51,7 +51,7 @@ namespace DotNetAsm
             /// <summary>
             /// Constructs a new macro exception.
             /// </summary>
-            /// <param name="line">The SourceLine where the exception occurred.</param>
+            /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> where the exception occurred.</param>
             /// <param name="message">The error message.</param>
             public MacroException(SourceLine line, string message)
             {

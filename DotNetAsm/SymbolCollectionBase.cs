@@ -39,8 +39,7 @@ namespace DotNetAsm
         public enum ExceptionReason
         {
             SymbolNotValid,
-            SymbolExists,
-            SymbolDoesNotExist
+            SymbolExists
         }
 
         #region Constructors

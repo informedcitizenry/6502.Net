@@ -25,14 +25,6 @@ using System.Collections.Generic;
 
 namespace DotNetAsm
 {
-    public class ForNextException : Exception
-    {
-        public ForNextException(string message)
-            : base(message)
-        {
-
-        }
-    }
     /// <summary>
     /// Handles repetitions in assembly source.
     /// </summary>
@@ -46,26 +38,26 @@ namespace DotNetAsm
         private class RepetitionBlock
         {
             /// <summary>
-            /// An entry in a DotNetAsm.RepetitionBlock.
+            /// An entry in a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>.
             /// </summary>
             public class RepetitionEntry
             {
                 /// <summary>
-                /// The DotNetAsm.SourceLine in the block.
+                /// The <see cref="T:DotNetAsm.SourceLine "/> in the block.
                 /// </summary>
                 public SourceLine Line { get; set; }
 
                 /// <summary>
-                /// The DotNetAsm.RepetitionHandler.RepetitionBlock to link to.
+                /// The <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/> to link to.
                 /// </summary>
                 public RepetitionBlock LinkedBlock { get; set; }
 
                 /// <summary>
-                /// Constructs a DotNetAsm.RepetitionHandler.RepetitionBlock.RepetitionEntry.
+                /// Constructs a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock.RepetitionEntry"/>.
                 /// </summary>
-                /// <param name="line">The DotNetAsm.SourceLine to add. This value can 
+                /// <param name="line">The <see cref="T:DotNetAsm.SourceLine "/> to add. This value can 
                 /// be null.</param>
-                /// <param name="block">The DotNetAsm.RepetitionHandler.RepetitionBlock
+                /// <param name="block">The <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>
                 /// to link to. This value can be null.</param>
                 public RepetitionEntry(SourceLine line, RepetitionBlock block)
                 {
@@ -78,7 +70,7 @@ namespace DotNetAsm
             }
 
             /// <summary>
-            /// Constructs a DotNetAsm.RepetitionHandler.RepetitionBlock.
+            /// Constructs a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>.
             /// </summary>
             public RepetitionBlock()
             {
@@ -88,12 +80,12 @@ namespace DotNetAsm
             }
 
             /// <summary>
-            /// The System.List&lt;DotNetAsm.RepetitionHandler.RepetitionBlock.RepetitionEntry&lt;
+            /// The <see cref="T:System.Collections.Generic.List&lt;DotNetAsm.RepetitionHandler.RepetitionBlock.RepetitionEntry&lt;"/> 
             /// </summary>
             public List<RepetitionEntry> Entries { get; set; }
 
             /// <summary>
-            /// A back link to a DotNetAsm.RepetitioBHandler.RepetitionBlock
+            /// A back link to a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>.
             /// </summary>
             public RepetitionBlock BackLink { get; set; }
 
@@ -119,9 +111,9 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs a DotNetAsm.RepetitionHandler.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.RepetitionHandler"/> object.
         /// </summary>
-        /// <param name="controller">The DotNetAsm.IAssemblyController for this
+        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> for this
         /// handler.</param>
         public RepetitionHandler(IAssemblyController controller) :
             base(controller)
@@ -139,9 +131,9 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Processes the DotNetAsm.SourceLine for repetitions, or within a repetition block.
+        /// Processes the <see cref="T:DotNetAsm.SourceLine"/> for repetitions, or within a repetition block.
         /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine to process</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to process</param>
         public void Process(SourceLine line)
         {
             if (line.Instruction.Equals(".repeat", Controller.Options.StringComparison))
@@ -202,9 +194,9 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Perform final processing on the DotNetAsm.RepetitionHandler.ProcessedLines.
+        /// Perform final processing on the processed lines of the <see cref="T:DotNetAsm.RepetitionHandler"/>.
         /// </summary>
-        /// <param name="block">The DotNetAsm.RepetitionHandler.RepetitionBlock to process</param>
+        /// <param name="block">The <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/> to process</param>
         void ProcessLines(RepetitionBlock block)
         {
             for (int i = 0; i < block.RepeatAmounts; i++)
@@ -220,7 +212,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Reset the DotNetAsm.RepetitionHandler. All processed lines will be cleared.
+        /// Reset the <see cref="T:DotNetAsm.RepetitionHandler"/>. All processed lines will be cleared.
         /// </summary>
         public void Reset()
         {
@@ -235,7 +227,8 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="token">The token to determine if is an instruction that
         /// the handler processes.</param>
-        /// <returns>True, if the DotNetAsm.RepetitionHandler processes this token</returns>
+        /// <returns><c>True</c> if the <see cref="T:DotNetAsm.RepetitionHandler"/> processes this token, 
+        /// otherwise <c>false</c>.</returns>
         public bool Processes(string token) => Reserved.IsReserved(token);
 
         /// <summary>

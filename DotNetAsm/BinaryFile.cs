@@ -49,7 +49,7 @@ namespace DotNetAsm
         /// <summary>
         /// Opens the underlying file specified in the binary file's filenae.
         /// </summary>
-        /// <returns>True, if the file was opened successfully, otherwise false.</returns>
+        /// <returns><c>True</c> if the file was opened successfully, otherwise <c>false</c>.</returns>
         public bool Open()
         {
             try
@@ -81,11 +81,8 @@ namespace DotNetAsm
         /// based on filename only.
         /// </summary>
         /// <param name="other">The other file.</param>
-        /// <returns>True, if the files (filenames) are equal, otherwise false.</returns>
-        public bool Equals(BinaryFile other)
-        {
-            return this.Filename == other.Filename;
-        }
+        /// <returns><c>True</c> if the files (filenames) are equal, otherwise <c>false</c>.</returns>
+        public bool Equals(BinaryFile other) => this.Filename == other.Filename;
 
         #endregion
 
@@ -96,7 +93,7 @@ namespace DotNetAsm
         /// based on filename only.
         /// </summary>
         /// <param name="obj">The other file.</param>
-        /// <returns>True, if the files (filenames) are equal, otherwise false.</returns>
+        /// <returns><c>True</c> if the files (filenames) are equal, otherwise <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
             BinaryFile other = obj as BinaryFile;
@@ -107,17 +104,23 @@ namespace DotNetAsm
         /// Gets the binary file's unique hash.
         /// </summary>
         /// <returns></returns>
-        public override int GetHashCode()
-        {
-            return Filename.GetHashCode();
-        }
+        public override int GetHashCode() => Filename.GetHashCode();
 
         #endregion
 
         #region Properties
 
+        /// <summary>
+        /// Gets the filename of the binary file.
+        /// </summary>
+        /// <value>The filename.</value>
         public string Filename { get; private set; }
-        public List<byte> Data { get; set; }
+
+        /// <summary>
+        /// Gets the binary file data.
+        /// </summary>
+        /// <value>The data.</value>
+        public List<byte> Data { get; private set; }
 
         #endregion
 

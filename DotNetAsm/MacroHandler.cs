@@ -42,6 +42,11 @@ namespace DotNetAsm
 
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:DotNetAsm.MacroHandler"/> class.
+        /// </summary>
+        /// <param name="controller">A <see cref="T:DotNetAsm.IAssemblyController"/>.</param>
+        /// <param name="instructionFcn">The lookup function to validate whether the name is an instruction or directive.</param>
         public MacroHandler(IAssemblyController controller, Func<string, bool> instructionFcn)
             : base(controller)
         {
@@ -152,14 +157,8 @@ namespace DotNetAsm
             _definitions.Clear();
         }
 
-        public bool IsProcessing()
-        {
-            return _definitions.Count > 0 || _macroDefinitions.Count > 0;
-        }
+        public bool IsProcessing() => _definitions.Count > 0 || _macroDefinitions.Count > 0;
 
-        public IEnumerable<SourceLine> GetProcessedLines()
-        {
-            return _expandedSource;
-        }
+        public IEnumerable<SourceLine> GetProcessedLines() => _expandedSource;
     }
 }

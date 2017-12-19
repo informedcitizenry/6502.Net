@@ -44,7 +44,7 @@ namespace DotNetAsm
         /// Constructs a Preprocessor object.
         /// </summary>
         /// <param name="controller">The assembly controller.</param>
-        /// <param name="checkSymbol">A function to check for symbols such as labels.</param>
+        /// <param name="checkSymbol">A function to check for symbols such as labels or variables.</param>
         public Preprocessor(IAssemblyController controller,
                             Func<string, bool> checkSymbol)
             : base(controller)
@@ -61,7 +61,7 @@ namespace DotNetAsm
         /// <summary>
         /// Check if all quotes are properly closed.
         /// </summary>
-        /// <param name="sourcelines">The list of sourceLines.</param>
+        /// <param name="sourcelines">The list of <see cref="T:DotNetAsm.SourceLine"/>s.</param>
         void CheckQuotes(IEnumerable<SourceLine> sourcelines)
         {
             var nocomments = sourcelines.Where(l => !l.IsComment);
@@ -240,10 +240,7 @@ namespace DotNetAsm
             throw new FileNotFoundException(string.Format("Unable to open source file \"{0}\"", file));
         }
 
-        public override bool IsReserved(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
+        public override bool IsReserved(string token) => Reserved.IsReserved(token);
 
         #endregion
 

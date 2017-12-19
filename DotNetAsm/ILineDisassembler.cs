@@ -30,18 +30,18 @@ namespace DotNetAsm
     public interface ILineDisassembler
     {
         /// <summary>
-        /// Disassemble a line of 6502 source.
+        /// Disassemble a line of assembly source.
         /// </summary>
         /// <param name="line">The SourceLine.</param>
         /// <returns>A string representation of the source.</returns>
         string DisassembleLine(SourceLine line);
 
         /// <summary>
-        /// Disassemble a line of 6502 source to a supplied 
-        /// System.Text.StringBuilder.
+        /// Disassemble a line of assembly source to a supplied 
+        /// <see cref="T:System.Text.StringBuilder"/>. 
         /// </summary>
         /// <param name="line">The SourceLine to disassemble.</param>
-        /// <param name="sb">A System.Text.StringBuilder to output disassembly.</param>
+        /// <param name="sb">A <see cref="T:System.Text.StringBuilder"/> to output disassembly.</param>
         void DisassembleLine(SourceLine line, StringBuilder sb);
 
         /// <summary>

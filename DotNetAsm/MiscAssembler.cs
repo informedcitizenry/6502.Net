@@ -53,7 +53,7 @@ namespace DotNetAsm
         /// <summary>
         /// Throw a conditional error or warning.
         /// </summary>
-        /// <param name="line">The SourceLine with the operand condition.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> with the operand condition.</param>
         void ThrowConditional(SourceLine line)
         {
             var csv = line.Operand.CommaSeparate();
@@ -69,7 +69,7 @@ namespace DotNetAsm
         /// Sets the byte value to XOR all values when outputted to assembly.
         /// Used by the .eor directive.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         void SetEor(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Operand))
@@ -126,6 +126,11 @@ namespace DotNetAsm
             }
         }
 
+        /// <summary>
+        /// Output the specified line and operand either to console output or to the error log.
+        /// </summary>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
+        /// <param name="operand">The operand to output..</param>
         void Output(SourceLine line, string operand)
         {
             if (!operand.EnclosedInQuotes())
@@ -154,6 +159,10 @@ namespace DotNetAsm
             }
         }
 
+        /// <summary>
+        /// Dos the assert.
+        /// </summary>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         void DoAssert(SourceLine line)
         {
             var parms = line.Operand.CommaSeparate();
@@ -174,15 +183,9 @@ namespace DotNetAsm
             }
         }
 
-        public int GetInstructionSize(SourceLine line)
-        {
-            return 0;
-        }
+        public int GetInstructionSize(SourceLine line) => 0;
 
-        public bool AssemblesInstruction(string instruction)
-        {
-            return Reserved.IsReserved(instruction);
-        }
+        public bool AssemblesInstruction(string instruction) => Reserved.IsReserved(instruction);
 
         #endregion
     }

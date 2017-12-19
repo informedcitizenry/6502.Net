@@ -42,9 +42,9 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Initialize a new instance of a DotNetAsm.ConditionHandler class.
+        /// Initialize a new instance of a <see cref="T:DotNetAsm.ConditionHandler"/> class.
         /// </summary>
-        /// <param name="controller">The DotNetAsm.IAssemblyController associated to this
+        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> associated to this
         /// class.</param>
         public ConditionHandler(IAssemblyController controller)
             : base(controller)
@@ -143,8 +143,8 @@ namespace DotNetAsm
         /// Update the flag to determine if the current block should not assemble
         /// lines within it based on the condition.
         /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine containing the conditional
-        /// directive</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> containing the conditional
+        /// directive.</param>
         void UpdateDoNotAsm(SourceLine line)
         {
             if (line.Instruction.EndsWith("if", Controller.Options.StringComparison))

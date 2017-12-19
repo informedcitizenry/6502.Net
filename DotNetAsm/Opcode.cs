@@ -94,9 +94,9 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.FormatBuilder"/> class.
         /// </summary>
-        /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
+        /// <param name="regex">A valid regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
         /// System.String format</param>
         /// <param name="exp1format">The format of the first subexpression as a valid .Net
@@ -111,11 +111,11 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
+        /// <param name="regexOptions">Any <see cref="T:System.Text.RegularExpressions.RegexOptions"/></param>
         /// <param name="treatParenAsExpr">If the first subexpression is enclosed in 
         /// paranetheses, enclose the subexpression's position in the final format
         /// inside paranetheses as well</param>
-        /// <param name="evaluator">If not null, a DotNetAsm.IEvaluator to evaluate the second 
+        /// <param name="evaluator">If not null, a <see cref="T:DotNetAsm.IEvaluator"/> to evaluate the second 
         /// subexpression as part of the final format</param>
         public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions, bool treatParenAsExpr, IEvaluator evaluator)
         {
@@ -130,9 +130,9 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.FormatBuilder"/> class.
         /// </summary>
-        /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
+        /// <param name="regex">A valid regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
         /// System.String format</param>
         /// <param name="exp1format">The format of the first subexpression as a valid .Net
@@ -147,7 +147,7 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
+        /// <param name="regexOptions">Any <see cref="T:System.Text.RegularExpressions.RegexOptions"/></param>
         /// <param name="treatParenAsExpr">If the first subexpression is enclosed in 
         /// paranetheses, enclose the subexpression's position in the final format
         /// inside paranetheses as well</param>
@@ -158,9 +158,9 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.FormatBuilder"/> class.
         /// </summary>
-        /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
+        /// <param name="regex">A valid regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
         /// System.String format</param>
         /// <param name="exp1format">The format of the first subexpression as a valid .Net
@@ -175,7 +175,7 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
+        /// <param name="regexOptions">Any <see cref="T:System.Text.RegularExpressions.RegexOptions"/></param>
         /// <param name="evaluator">If not null, a DotNetAsm.IEvaluator to evaluate the second 
         /// subexpression as part of the final format</param>
         public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions, IEvaluator evaluator)
@@ -185,9 +185,9 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.FormatBuilder"/> class.
         /// </summary>
-        /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
+        /// <param name="regex">A valid regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
         /// System.String format</param>
         /// <param name="exp1format">The format of the first subexpression as a valid .Net
@@ -202,7 +202,7 @@ namespace DotNetAsm
         /// the regex pattern</param>
         /// <param name="exp2">The index of the second subexpression's matching group in
         /// the regex pattern</param>
-        /// <param name="regexOptions">Any System.Text.RegularExpressions.RegexOptions</param>
+        /// <param name="regexOptions">Any <see cref="T:System.Text.RegularExpressions.RegexOptions"/></param>
         public FormatBuilder(string regex, string format, string exp1format, string exp2format, int reg1, int reg2, int exp1, int exp2, RegexOptions regexOptions)
             : this(regex, format, exp1format, exp2format, reg1, reg2, exp1, exp2, regexOptions, false, null)
         {
@@ -210,9 +210,9 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of a DotNetAsm.FormatBuilder class.
+        /// Constructs an instance of a <see cref="T:DotNetAsm.FormatBuilder"/> class.
         /// </summary>
-        /// <param name="regex">A valid System.Text.RegularExpressions.Regex pattern</param>
+        /// <param name="regex">A valid regex pattern</param>
         /// <param name="format">The final format of the operand as a valid .Net 
         /// System.String format</param>
         /// <param name="exp1format">The format of the first subexpression as a valid .Net
@@ -238,11 +238,11 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Evaluates an operand expression and returns a DotNetAsm.OperandFormat
+        /// Resolves an operand expression to a <see cref="T:DotNetAsm.OperandFormat"/>.
         /// with captured subexpressions.
         /// </summary>
         /// <param name="expression">The operand expression to evaluate</param>
-        /// <returns>A DotNetAsm.OperandFormat object</returns>
+        /// <returns><see cref="T:DotNetAsm.OperandFormat"/> object.</returns>
         public OperandFormat GetFormat(string expression)
         {
             OperandFormat fmt = null;

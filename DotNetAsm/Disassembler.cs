@@ -31,7 +31,7 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of the Disasm6502 class.
+        /// Constructs an instance of the <see cref="T:DotNetAsm.Disasm6502"/> class.
         /// </summary>
         /// <param name="controller">The assembly controller.</param>
         public Disassembler(IAssemblyController controller)
@@ -102,9 +102,9 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Add the assembled bytes in the SourceLine to the disassembly.
+        /// Add the assembled bytes in the <see cref="T:DotNetAsm.SourceLine"/> to the disassembly.
         /// </summary>
-        /// <param name="line">The SourceLine</param>
+        /// <param name="line">The source line</param>
         /// <returns>A string representation of the hex bytes of
         /// the source assembly.</returns>
         string DisassembleAsm(SourceLine line, string source)
@@ -144,10 +144,10 @@ namespace DotNetAsm
 
         /// <summary>
         /// Disassemble a line of 6502 source into a supplied 
-        /// System.Text.StringBuilder object.
+        /// <see cref="T:System.Text.StringBuilder"/> object.
         /// </summary>
-        /// <param name="line">The SourceLine to disassemble.</param>
-        /// <param name="sb">The System.Text.StringBuilder to output disassembly.</param>
+        /// <param name="line">The source line to disassemble.</param>
+        /// <param name="sb">The <see cref="T:System.Text.StringBuilder"/> to output disassembly.</param>
         public void DisassembleLine(SourceLine line, StringBuilder sb)
         {
             if (!line.DoNotAssemble)
@@ -220,15 +220,12 @@ namespace DotNetAsm
             sb.AppendLine();
         }
 
-        public override bool IsReserved(string token)
-        {
-            return Reserved.IsReserved(token);
-        }
+        public override bool IsReserved(string token) => Reserved.IsReserved(token);
 
         /// <summary>
-        /// Disassemble a line of 6502-source.
+        /// Disassemble a line of assembly source.
         /// </summary>
-        /// <param name="line">The SourceLine</param>
+        /// <param name="line">The source line</param>
         /// <returns>A string representation of the source.</returns>
         public string DisassembleLine(SourceLine line)
         {

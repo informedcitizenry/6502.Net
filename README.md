@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.10
+### Version 1.10.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -2025,6 +2025,8 @@ glyph             ;12345678
 
 `Filename not specified` - A directive expected a filename that was not provided.
 
+`Format is invalid.` - The format string passed to `format()` is not valid
+
 `General syntax error` - A general syntax error.
 
 `Illegal quantity` - The expression value is larger than the allowable size.
@@ -2062,6 +2064,8 @@ glyph             ;12345678
 `Symbol is not a valid label name` - The label name had one or more invalid characters.
 
 `Symbol not found` - The expression referenced a symbol that was not defined.
+
+`Index (zero based) must be greater than or equal to zero and less than the size of the argument list.` - A format item in the format string passed to `format()` does not match the parameter.
 
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 

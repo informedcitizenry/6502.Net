@@ -31,15 +31,16 @@ namespace DotNetAsm
     public interface IAssemblyController
     {
         /// <summary>
-        /// Add a line assembler to the DotNetAsm.IAssemblyController's list of assemblers.
+        /// Add a line assembler to the <see cref="T:DotNetAsm.IAssemblyController"/>'s list of assemblers.
         /// </summary>
         /// <param name="lineAssembler">The DotNetAsm.ILineAssembler</param>
         void AddAssembler(ILineAssembler lineAssembler);
 
         /// <summary>
-        /// Add a user-defined symbol to the DotNetAsm.IAssemblyController's reserved words.
+        /// Add a user-defined symbol to the <see cref="T:DotNetAsm.IAssemblyController"/>'s reserved words.
         /// </summary>
-        /// <param name="symbol"></param>
+        /// <param name="symbol">The special symbol to add to the <see cref="T:DotNetAsm.IAssemblyController"/>'s
+        /// reserved words.</param>
         void AddSymbol(string symbol);
 
         /// <summary>
@@ -56,7 +57,7 @@ namespace DotNetAsm
 
         /// <summary>
         /// Checks if a given token is actually an instruction or directive, either
-        /// for the DotNetAsm.AssemblyController or any line assemblers.
+        /// for the <see cref="T:DotNetAsm.IAssemblyController"/> or any line assemblers.
         /// </summary>
         /// <param name="token">The token to check</param>
         /// <returns>True, if the token is an instruction or directive</returns>
@@ -94,7 +95,7 @@ namespace DotNetAsm
         IEvaluator Evaluator { get; }
 
         /// <summary>
-        /// Gets the custom DotNetAsm.AsmEncoding for encoding text strings
+        /// Gets the custom DotNetAsm.AsmEncoding for encoding text strings.
         /// </summary>
         AsmEncoding Encoding { get; }
 

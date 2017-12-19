@@ -31,10 +31,10 @@ namespace DotNetAsm
     {
         /// <summary>
         /// Removes all trailing occurrences of white spaces from the
-        /// current System.Text.StringBuilder object.
+        /// current <see cref="T:System.Text.StringBuilder"/> object.
         /// </summary>
         /// <param name="sb">This StringBuilder.</param>
-        /// <returns>The trimmed System.Text.StringBuilder.</returns>
+        /// <returns>The trimmed <see cref="T:System.Text.StringBuilder"/>.</returns>
         public static StringBuilder TrimEnd(this StringBuilder sb)
         {
             if (sb == null || sb.Length == 0) return sb;
@@ -52,10 +52,10 @@ namespace DotNetAsm
 
         /// <summary>
         /// Removes all leading occurrences of white spaces from the
-        /// current System.Text.StringBuilder object.
+        /// current <see cref="T:System.Text.StringBuilder"/> object.
         /// </summary>
-        /// <param name="sb">This StringBuilder.</param>
-        /// <returns>The trimmed System.Text.StringBuilder.</returns>
+        /// <param name="sb">This <see cref="T:System.Text.StringBuilder"/>.</param>
+        /// <returns>The trimmed <see cref="T:System.Text.StringBuilder"/>.</returns>
         public static StringBuilder TrimStart(this StringBuilder sb)
         {
             if (sb == null || sb.Length == 0) return sb;
@@ -68,14 +68,11 @@ namespace DotNetAsm
 
         /// <summary>
         /// Removes all leading and trailing occurrences of white spaces from the
-        /// current System.Text.StringBuilder object.
+        /// current <see cref="T:System.Text.StringBuilder"/> object.
         /// </summary>
-        /// <param name="sb">This StringBuilder.</param>
-        /// <returns>The trimmed System.Text.StringBuilder.</returns>
-        public static StringBuilder Trim(this StringBuilder sb)
-        {
-            return sb.TrimStart().TrimEnd();
-        }
+        /// <param name="sb">This <see cref="T:System.Text.StringBuilder"/>.</param>
+        /// <returns>The trimmed <see cref="T:System.Text.StringBuilder"/>.</returns>
+        public static StringBuilder Trim(this StringBuilder sb) => sb.TrimStart().TrimEnd();
     }
 
     public static class StringExtensions
@@ -86,7 +83,7 @@ namespace DotNetAsm
         /// <param name="str">The string to split.</param>
         /// <param name="maxLength">The maximum length per sub-string. "Carry-over" 
         /// substrings after split will be their own string.</param>
-        /// <returns>An IEnumerable&lt;string&gt; class.</returns>
+        /// <returns>An <see cref="T:System.Collections.Generic.IEnumerable&lt;string&gt;"/> class.</returns>
         public static IEnumerable<string> SplitByLength(this string str, int maxLength)
         {
             int index = 0;
@@ -103,7 +100,7 @@ namespace DotNetAsm
         /// Tests whether the string is enclosed in double quotes.
         /// </summary>
         /// <param name="str">The string to evaluate.</param>
-        /// <returns>True if string is fully enclosed in quotes, false otherwise.</returns>
+        /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInQuotes(this string str)
         {
             if (string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str))
@@ -329,7 +326,7 @@ namespace DotNetAsm
         /// <typeparam name="T">The type of the object.</typeparam>
         /// <param name="list">The list in which to search the item.</param>
         /// <param name="item">The item to find.</param>
-        /// <returns>A List&lt;int&gt; of all indexes the value is found in the list.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;int&gt;"/> of all indexes the value is found in the list.</returns>
         public static List<int> AllIndexesOf<T>(this List<T> list, T item)
         {
             if (list == null || list.Count == 0)
@@ -350,7 +347,7 @@ namespace DotNetAsm
         /// <typeparam name="T">The type of the object.</typeparam>
         /// <param name="list">The list in which to search the item.</param>
         /// <param name="expression">Filters the list of values based on a predicate.</param>
-        /// <returns>A <see cref="T:System.List&lt;int&gt;"/> of all indexes the value is found in the list.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;int&gt;"/> of all indexes the value is found in the list.</returns>
         public static List<int> AllIndexesOf<T>(this List<T> list, System.Func<T, bool> expression)
         {
             var any = list.Where(expression);

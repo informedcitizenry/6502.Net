@@ -210,7 +210,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="s">The string to add</param>
         /// <param name="encoding">The System.Text.Encoding class to encode the output</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Add(string s, Encoding encoding) => AddBytes(encoding.GetBytes(s));
 
         /// <summary>
@@ -224,14 +224,14 @@ namespace DotNetAsm
         /// Add a byte value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Add(byte value) => Add(Convert.ToInt32(value), 1);
 
         /// <summary>
         /// Add a 16-bit integral value to the compilation
         /// </summary>
         /// <param name="value">The value to add</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Add(ushort value) => Add(Convert.ToInt32(value), 2);
 
         /// <summary>
@@ -381,10 +381,7 @@ namespace DotNetAsm
         /// <param name="bytes">The collection of bytes to add</param>
         /// <param name="size">The number of bytes in the collection to add</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
-        public List<byte> AddBytes(IEnumerable<byte> bytes, int size)
-        {
-            return AddBytes(bytes, size, true);
-        }
+        public List<byte> AddBytes(IEnumerable<byte> bytes, int size) => AddBytes(bytes, size, true);
 
         /// <summary>
         /// Add a range of bytes to the compilation.

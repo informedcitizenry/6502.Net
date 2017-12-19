@@ -43,9 +43,9 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs a DotNetAsm.StringAssemblerBase class.
+        /// Constructs a <see cref="T:DotNetAsm.StringAssemblerBase"/> class.
         /// </summary>
-        /// <param name="controller">The DotNetAsm.IAssemblyController to associate</param>
+        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> to associate</param>
         public StringAssemblerBase(IAssemblyController controller) :
             base(controller)
         {
@@ -73,7 +73,7 @@ namespace DotNetAsm
         /// <summary>
         /// Update the controller's encoding
         /// </summary>
-        /// <param name="line">The SourceLine containing the encoding update</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> containing the encoding update</param>
         void UpdateEncoding(SourceLine line)
         {
             line.DoNotAssemble = true;
@@ -182,7 +182,7 @@ namespace DotNetAsm
         /// <summary>
         /// Converts the numerical constant of a mathematical expression or to a string.
         /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine associated to the expression</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> associated to the expression</param>
         /// <param name="arg">The string expression to convert</param>
         /// <returns></returns>
         string ExpressionToString(SourceLine line, string arg)
@@ -207,7 +207,7 @@ namespace DotNetAsm
         /// <summary>
         /// Get the size of a string expression.
         /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine associated to the expression</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> associated to the expression</param>
         /// <returns>The size in bytes of the string expression</returns>
         protected int GetExpressionSize(SourceLine line)
         {
@@ -258,7 +258,7 @@ namespace DotNetAsm
         /// <summary>
         /// Assemble strings to the output.
         /// </summary>
-        /// <param name="line">The SourceLine to assemble.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         protected void AssembleStrings(SourceLine line)
         {
             if (Reserved.IsOneOf("Encoding", line.Instruction))
@@ -344,6 +344,12 @@ namespace DotNetAsm
         }
         #region Static Methods
 
+        /// <summary>
+        /// Gets the formatted string.
+        /// </summary>
+        /// <returns>The formatted string.</returns>
+        /// <param name="operand">The line's operand.</param>
+        /// <param name="evaluator">The <see cref="T:DotNetAsm.IEvaluator"/> to evaluate non-string objects.</param>
         public static string GetFormattedString(string operand, IEvaluator evaluator)
         {
             var m = _regFmtFunc.Match(operand);

@@ -29,17 +29,34 @@ using System.Text.RegularExpressions;
 
 namespace DotNetAsm
 {
+    /// <summary>
+    /// Handler for the DisplayBanner event.
+    /// </summary>
     public delegate string DisplayBannerEventHandler(object sender, bool isVerbose);
 
+    /// <summary>
+    /// Handler for the WriteBytes event.
+    /// </summary>
     public delegate byte[] WriteBytesEventHandler(object sender);
 
+    /// <summary>
+    /// Represents an error that occurs when an undefined symbol is referenced.
+    /// </summary>
     public class SymbolNotDefinedException : Exception
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:DotNetAsm.SymbolNotDefinedException"/> class.
+        /// </summary>
+        /// <param name="symbol">Symbol.</param>
         public SymbolNotDefinedException(string symbol)
         {
             Symbol = symbol;
         }
 
+        /// <summary>
+        /// Gets the undefined symbol.
+        /// </summary>
+        /// <value>The symbol name.</value>
         public string Symbol { get; private set; }
     }
 
@@ -333,14 +350,8 @@ namespace DotNetAsm
                     if (currentHandler != null)
                     {
                         sourceList.RemoveAt(i--);
-                        try
-                        {
-                            currentHandler.Process(_currentLine);
-                        }
-                        catch (ForNextException forNextExc)
-                        {
-                            Log.LogEntry(_currentLine, forNextExc.Message);
-                        }
+
+                        currentHandler.Process(_currentLine);
                         if (currentHandler.IsProcessing() == false)
                         {
                             sourceList.InsertRange(i + 1, currentHandler.GetProcessedLines());

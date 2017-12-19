@@ -98,7 +98,7 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of the DotNetAsm.Evaluator class, used to evaluate 
+        /// Constructs an instance of the <see cref="T:DotNetAsm.Evaluator"/> class, used to evaluate 
         /// strings as mathematical expressions.
         /// </summary>
         /// <param name="hexPattern">The default hexadecimal pattern used to identify hexadecimal
@@ -157,7 +157,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of the DotNetAsm.Evaluator class, used to evaluate 
+        /// Constructs an instance of the <see cref="T:DotNetAsm.Evaluator"/> class, used to evaluate 
         /// strings as mathematical expressions.
         /// </summary>
         public Evaluator()
@@ -176,7 +176,7 @@ namespace DotNetAsm
         /// <param name="expression">The expression to evaluate for function calls</param>
         /// <returns>The modified expression with return values substituted in
         /// for function calls</returns>
-        /// <exception cref="DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
+        /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         string EvalFunctions(string expression)
         {
             Match m = _regFcn.Match(expression);
@@ -266,7 +266,7 @@ namespace DotNetAsm
         /// the evaluator with caching.
         /// </summary>
         /// <param name="expression">The expression string to evaluate</param>
-        /// <returns>True, if the expression contains user-defined symbols, otherwise false</returns>
+        /// <returns><c>True</c>, if the expression contains user-defined symbols, otherwise <c>false</c>.</returns>
         bool ContainsSymbols(string expression) => 
                 _symbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
 
@@ -302,7 +302,7 @@ namespace DotNetAsm
         /// Determines if the character is a math symbol, such as a paranthesis or operator.
         /// </summary>
         /// <param name="c">The character to test</param>
-        /// <returns>True if the character is a math symobl, otherwise false</returns>
+        /// <returns><c>True</c> if the character is a math symbol, otherwise <c>false</c>.</returns>
         static bool IsMathSymbol(char c)
         {
             return _operators.Contains(c) || c.Equals('(') || c.Equals(')');
@@ -313,8 +313,8 @@ namespace DotNetAsm
         /// Reverse Polish Notation) expression, using the Shunting Yard strategy.
         /// </summary>
         /// <param name="expression">The infix expression to convert</param>
-        /// <returns>A System.Generic.Collections.List&lt;string&gt; of outputs
-        /// representing a postfix of the infix expression</returns>
+        /// <returns>A <see cref="System.Collections.Generic.List&lt;string&gt;"/> of outputs
+        /// representing a postfix of the infix expression.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         List<string> Shunt(string expression)
         {
@@ -422,7 +422,7 @@ namespace DotNetAsm
         /// functions.
         /// </summary>
         /// <param name="expression">The string expression to evaluate</param>
-        /// <returns>Returns a System.Double representation of the expression</returns>
+        /// <returns>Returns a <see cref="T:System.Double"/> representation of the expression.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         double EvalInternal(string expression)
         {
@@ -456,8 +456,8 @@ namespace DotNetAsm
         /// symbols, function calls, and unary operations before final evaluation.
         /// </summary>
         /// <param name="expression">The expression string to pre-evaluate</param>
-        /// <returns>The modified expression string ready for final evaluation</returns>
-        /// <exception cref="DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
+        /// <returns>The modified expression string ready for final evaluation.</returns>
+        /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         string PreEvaluate(string expression)
         {
             string unevaluated = expression;
@@ -495,18 +495,18 @@ namespace DotNetAsm
         /// Evaluates a text string as a mathematical expression.
         /// </summary>
         /// <param name="expression">The string representation of the mathematical expression.</param>
-        /// <returns>The result of the expression evaluation as a System.Int64 value</returns>
+        /// <returns>The result of the expression evaluation as a <see cref="T:System.Int64"/> value.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>
         public long Eval(string expression) => (long)EvalInternal(expression);
 
 
         /// <summary>
-        /// Calculates a System.Collections.IEnumerable&lt;string&gt; representing a postfix
+        /// Calculates a <see cref="System.Collections.Generic.IEnumerable&lt;string&gt;"/> representing a postfix
         /// mathematical expression into a real value.
         /// </summary>
-        /// <param name="outputs">A System.Collections.IEnumerable&lt;string&gt;</param>
-        /// <returns>The calculated value</returns>
+        /// <param name="outputs">A <see cref="System.Collections.Generic.IEnumerable&lt;string&gt;"/></param>
+        /// <returns>The calculated value.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>"
         double Calculate(IEnumerable<string> outputs)
@@ -604,7 +604,7 @@ namespace DotNetAsm
         /// lower, a System.OverflowException will occur.</param>
         /// <param name="maxval">The maximum value of the expression. If the evaluated value 
         /// is higher, a System.OverflowException will occur.</param>
-        /// <returns>The result of the expression evaluation as a System.Int64 value</returns>
+        /// <returns>The result of the expression evaluation as a <see cref="T:System.Int64"/> value.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>
         /// <exception cref="T:System.OverflowException">System.OverflowException</exception>
@@ -622,7 +622,7 @@ namespace DotNetAsm
         /// Evaluates a text string as a conditional (boolean) evaluation.
         /// </summary>
         /// <param name="condition">The string representation of the conditional expression.</param>
-        /// <returns>Returns true, if the expression is true, false otherwise.</returns>
+        /// <returns><c>True</c>, if the expression is true, otherwise <c>false</c>.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         public bool EvalCondition(string condition) => Eval(condition) == 1;
 
