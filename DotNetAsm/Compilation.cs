@@ -437,8 +437,8 @@ namespace DotNetAsm
         {
             get
             {
-                if (ProgramStart > 0)
-                    return ProgramStart + (_bytes.Count - 1);
+                if (_bytes.Count > 0)
+                    return (ProgramStart + (_bytes.Count - 1)) & MaxAddress;
                 return 0;
             }
         }
