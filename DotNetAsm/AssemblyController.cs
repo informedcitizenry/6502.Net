@@ -129,7 +129,15 @@ namespace DotNetAsm
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", GetCharValue);
             if (!Options.CaseSensitive)
                 Evaluator.DefineSymbolLookup(Patterns.SymbolBasic + @"\(", (fnc) => fnc.ToLower());
-            Evaluator.DefineSymbolLookup(@"(?>" + Patterns.SymbolUnicodeDot + @")(?!\()", GetNamedSymbolValue);
+            
+
+                                            // The gnarliest regex you have 
+                                            // seen in your life.           
+                                            //              ||              
+                                            //              ||              
+            Evaluator.DefineSymbolLookup(   //              \/
+                @"(?<=^|[^\p{Ll}\p{Lu}\p{Lt}0-9_.$])(?>(_+[\p{Ll}\p{Lu}\p{Lt}0-9]|[\p{Ll}\p{Lu}\p{Lt}])(\.[\p{Ll}\p{Lu}\p{Lt}_]|[\p{Ll}\p{Lu}\p{Lt}0-9_])*)(?=[^(.]|$)",
+                                         GetNamedSymbolValue);
             Evaluator.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
             Evaluator.DefineSymbolLookup(@"(?<![\p{Ll}\p{Lu}\p{Lt}0-9_.)])\*(?![\p{Ll}\p{Lu}\p{Lt}0-9_.(])", (str) => Output.LogicalPC.ToString());
 
@@ -377,7 +385,7 @@ namespace DotNetAsm
                 }
                 catch (ExpressionException exprEx)
                 {
-                    Log.LogEntry(_currentLine, ErrorStrings.BadExpression, exprEx.Message);
+                    Log.LogEntry(_currentLine, exprEx.Message);
                 }
                 catch (Exception)
                 {
