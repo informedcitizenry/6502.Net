@@ -87,7 +87,7 @@ namespace DotNetAsm
         /// Process the command-line arguments passed by the end-user.
         /// </summary>
         /// <param name="args">The argument string.</param>
-        /// <returns>True if version info was requested, otherwise false.</returns>
+        /// <returns><c>True</c> if version info was requested, otherwise <c>false</c>.</returns>
         public void ProcessArgs(string[] args)
         {
             if (args.Length == 0)

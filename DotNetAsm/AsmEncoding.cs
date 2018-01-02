@@ -59,7 +59,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Constructs an instance of the DotNetAsm.AsmEncoding class, used to encode 
+        /// Constructs an instance of the <see cref="T:DotNetAsm.AsmEncoding"/> class, used to encode 
         /// strings from UTF-8 source to architecture-specific encodings.
         /// </summary>
         public AsmEncoding() :

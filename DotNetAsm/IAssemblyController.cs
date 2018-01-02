@@ -60,7 +60,7 @@ namespace DotNetAsm
         /// for the <see cref="T:DotNetAsm.IAssemblyController"/> or any line assemblers.
         /// </summary>
         /// <param name="token">The token to check</param>
-        /// <returns>True, if the token is an instruction or directive</returns>
+        /// <returns><c>True</c> if the token is an instruction or directive, otherwise <c>false</c>.</returns>
         bool IsInstruction(string token);
  
         /// <summary>

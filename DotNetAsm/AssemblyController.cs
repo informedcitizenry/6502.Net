@@ -22,8 +22,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -87,10 +87,10 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of a DotNetAsm.AssemblyController, which controls the 
+        /// Constructs an instance of a <see cref="T:DotNetAsm.AssemblyController"/>, which controls the 
         /// assembly process.
         /// </summary>
-        /// <param name="args">The array of System.String args passed by the commandline.</param>
+        /// <param name="args">The array of <see cref="T:System.String"/> args passed by the commandline.</param>
         public AssemblyController(string[] args)
         {
             Reserved.DefineType("Directives",
@@ -199,10 +199,10 @@ namespace DotNetAsm
 
         /// <summary>
         /// Checks if a given token is actually an instruction or directive, either
-        /// for the DotNetAsm.AssemblyController or any line assemblers.
+        /// for the <see cref="T:DotNetAsm.AssemblyController"/> or any line assemblers.
         /// </summary>
         /// <param name="token">The token to check</param>
-        /// <returns>True, if the token is an instruction or directive</returns>
+        /// <returns><c>True</c> if the token is an instruction or directive, otherwise <c>false</c>.</returns>
         public bool IsInstruction(string token) => Reserved.IsOneOf("Directives", token) ||
                                                     _preprocessor.IsReserved(token) ||
                                                     _blockHandlers.Any(handler => handler.Processes(token)) ||
@@ -224,7 +224,7 @@ namespace DotNetAsm
         /// for it to be a symbol.</param>
         /// <param name="allowDot">Allow the token to have separating dots for it to be
         /// considered a symbol.</param>
-        /// <returns></returns>
+        /// <returns><c>True</c> if the token is a valid symbole name, otherwise <c>false</c>.</returns>
         bool IsSymbolName(string token, bool allowLeadUnderscore = true, bool allowDot = true)
         {
             // empty string 
@@ -248,10 +248,10 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Preprocess the source file into a System.IEnumerable&lt;DotNetAsm.SourceLine&gt;.
+        /// Preprocess the source file into a <see cref="T:System.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>.
         /// Define macros and segments, and add included source files.
         /// </summary>
-        /// <returns>The preprocessed System.IEnumerable&lt;DotNetAsm.SourceLine&gt;</returns>
+        /// <returns>The preprocessed <see cref="T:System.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/></returns>
         IEnumerable<SourceLine> Preprocess()
         {
             List<SourceLine> source = new List<SourceLine>();
@@ -387,7 +387,7 @@ namespace DotNetAsm
                 {
                     Log.LogEntry(_currentLine, exprEx.Message);
                 }
-                catch (Exception)
+                catch 
                 {
                     Log.LogEntry(_currentLine, ErrorStrings.None);
                 }
@@ -398,7 +398,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Performs a first pass on the DotNetAsm.SourceLine, including updating 
+        /// Performs a first pass on the <see cref="T:DotNetAsm.SourceLine"/>, including updating 
         /// the Program Counter and definining labels.
         /// </summary>
         void FirstPassLine()
@@ -438,7 +438,7 @@ namespace DotNetAsm
             }
             catch (Exception ex)
             {
-                // most expressions resulting from calculations we don't care
+                // most exceptions resulting from calculations we don't care
                 // about until final pass, since they are subject to correction
                 if (ex is DivideByZeroException ||
                     ex is Compilation.InvalidPCAssignmentException ||
@@ -456,11 +456,11 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Perform a second or final pass on a DotNetAsm.SourceLine, including final 
+        /// Perform a second or final pass on a <see cref="T:DotNetAsm.SourceLine"/>, including final 
         /// assembly of bytes.
         /// </summary>
         /// <param name="finalPass">A flag indicating this is a final pass</param>
-        /// <returns>True, if another pass is needed. Otherwise false.</returns>
+        /// <returns><c>True</c> if another pass is needed. Otherwise <c>false</c>.</returns>
         bool SecondPassLine(bool finalPass)
         {
             UpdatePC();
@@ -608,7 +608,7 @@ namespace DotNetAsm
         /// some but not all syntax errors, concerned mostly with the probable 
         /// size of the instruction. 
         /// </summary>
-        /// <returns>The size in bytes of the instruction, including opcode and operand</returns>
+        /// <returns>The size in bytes of the instruction, including opcode and operand.</returns>
         int GetInstructionSize()
         {
             try
@@ -624,7 +624,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Examine a DotNetAsm.SourceLine and determine if a label is being defined.
+        /// Examine the current <see cref="T:DotNetAsm.SourceLine"/> and determine if a label is being defined.
         /// </summary>
         void DefineLabel()
         {
@@ -694,7 +694,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Determine if the DotNetAsm.SourceLine updates the output's Program Counter
+        /// Determine if the current <see cref="T:DotNetAsm.SourceLine"/> updates the output's Program Counter
         /// </summary>
         void UpdatePC()
         {
@@ -760,9 +760,10 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Determines whether the SourceLine is defining a constant.
+        /// Determines whether the current <see cref="T:DotNetAsm.SourceLine"/> 
+        /// command is an assignment directive.
         /// </summary>
-        /// <returns>True, if the line is defining a constant, otherwise false.</returns>
+        /// <returns><c>True</c> if the line is defining a constant, otherwise <c>false</c>.</returns>
         bool IsAssignmentDirective()
         {
             if (_currentLine.Operand.EnclosedInQuotes())
@@ -891,7 +892,7 @@ namespace DotNetAsm
 
         /// <summary>
         /// Used by the ToListing method to get the full listing.</summary>
-        /// <returns>Returns a listing string to save to disk.</returns>
+        /// <returns>A listing string to save to disk.</returns>
         string GetListing()
         {
             StringBuilder listing = new StringBuilder();
@@ -985,9 +986,9 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the actual address of an anonymous symbol.
         /// </summary>
-        /// <param name="fromLine">The SourceLine containing the anonymous symbol.</param>
+        /// <param name="fromLine">The <see cref="T:DotNetAsm.SourceLine"/> containing the anonymous symbol.</param>
         /// <param name="operand">The operand.</param>
-        /// <returns>Returns the anonymous symbol address.</returns>
+        /// <returns>The anonymous symbol address.</returns>
         long GetAnonymousAddress(SourceLine fromLine, string operand)
         {
             int count = operand.Length - 1;

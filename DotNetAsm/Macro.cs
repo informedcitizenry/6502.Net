@@ -160,11 +160,11 @@ namespace DotNetAsm
         /// <summary>
         /// Expands the macro into source from the invocation.
         /// </summary>
-        /// <param name="macrocall">The SourceLine that is invoking the macro. The macro
+        /// <param name="macrocall">The <see cref="T:SourceLine"/> that is invoking the macro. The macro
         /// name is in the instruction, while the list of parameters passed 
         /// are in the operand.</param>
-        /// <returns>A System.IEnumerable list of source from the expanded macro, included substituted 
-        /// parameters in source.</returns>
+        /// <returns>A <see cref="T:System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/> 
+        /// from the expanded macro, included substituted parameters in source.</returns>
         public IEnumerable<SourceLine> Expand(SourceLine macrocall)
         {
             List<Param> parms = new List<Param>(Params);
@@ -238,6 +238,16 @@ namespace DotNetAsm
 
         #region Static Methods
 
+        /// <summary>
+        /// Create the specified definition, closure, source, comparer, openBlock and closeBlock.
+        /// </summary>
+        /// <returns>The resulting macro.</returns>
+        /// <param name="definition">Definition.</param>
+        /// <param name="closure">Closure.</param>
+        /// <param name="source">Source.</param>
+        /// <param name="comparer">Comparer.</param>
+        /// <param name="openBlock">Open block.</param>
+        /// <param name="closeBlock">Close block.</param>
         public static Macro Create(SourceLine definition,
                                    SourceLine closure,
                                    IEnumerable<SourceLine> source,
@@ -408,11 +418,10 @@ namespace DotNetAsm
         /// Determines whether the given token is a valid macro name.
         /// </summary>
         /// <param name="token">The token to check</param>
-        /// <returns>True, if the token is a valid macro name</returns>
-        public static bool IsValidMacroName(string token)
-        {
-            return Regex.IsMatch(token, "^" + Patterns.SymbolUnicode + "$");
-        }
+        /// <returns><c>True</c> if the token is a valid macro name,
+        /// otherwise<c>false</c>.</returns>
+        public static bool IsValidMacroName(string token) => 
+            Regex.IsMatch(token, "^" + Patterns.SymbolUnicode + "$");
 
         #endregion
 

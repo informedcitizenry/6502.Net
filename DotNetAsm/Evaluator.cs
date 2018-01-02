@@ -262,11 +262,10 @@ namespace DotNetAsm
         public void AddHexFormat(string regex) => _hexRegexes.Add(new Regex(regex, RegexOptions.Compiled));
 
         /// <summary>
-        /// Determines if the expression string contains user-defined symbols. Assists
-        /// the evaluator with caching.
+        /// Determines if the expression string contains user-defined symbols.
         /// </summary>
-        /// <param name="expression">The expression string to evaluate</param>
-        /// <returns><c>True</c>, if the expression contains user-defined symbols, otherwise <c>false</c>.</returns>
+        /// <param name="expression">The expression string to evaluate.</param>
+        /// <returns><c>True</c> if the expression contains user-defined symbols, otherwise <c>false</c>.</returns>
         bool ContainsSymbols(string expression) => 
                 _symbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
 
@@ -274,9 +273,9 @@ namespace DotNetAsm
         /// Evaluate the expression strings for user-defined symbols, then do a callback
         /// to the user-defined lookup to substitute the symbols for a real value.
         /// </summary>
-        /// <param name="expression">The expression to evaluate</param>
+        /// <param name="expression">The expression to evaluate.</param>
         /// <returns>The modified expression string with user-defined symbols replaced
-        /// with real values</returns>
+        /// with real values.</returns>
         string EvalDefinedSymbols(string expression)
         {
             // convert client-defined symbols into values
@@ -301,7 +300,7 @@ namespace DotNetAsm
         /// <summary>
         /// Determines if the character is a math symbol, such as a paranthesis or operator.
         /// </summary>
-        /// <param name="c">The character to test</param>
+        /// <param name="c">The character to test.</param>
         /// <returns><c>True</c> if the character is a math symbol, otherwise <c>false</c>.</returns>
         static bool IsMathSymbol(char c)
         {
@@ -416,13 +415,12 @@ namespace DotNetAsm
             return outputs;
         }
 
-
         /// <summary>
         /// Internally evaluates expression string as a System.Double. Used primarily by other
         /// functions.
         /// </summary>
         /// <param name="expression">The string expression to evaluate</param>
-        /// <returns>Returns a <see cref="T:System.Double"/> representation of the expression.</returns>
+        /// <returns>A <see cref="T:System.Double"/> representation of the expression.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         double EvalInternal(string expression)
         {
@@ -455,7 +453,7 @@ namespace DotNetAsm
         /// Pre-evaluate the math expression string for hex strings, binary strings,
         /// symbols, function calls, and unary operations before final evaluation.
         /// </summary>
-        /// <param name="expression">The expression string to pre-evaluate</param>
+        /// <param name="expression">The expression string to pre-evaluate.</param>
         /// <returns>The modified expression string ready for final evaluation.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         string PreEvaluate(string expression)

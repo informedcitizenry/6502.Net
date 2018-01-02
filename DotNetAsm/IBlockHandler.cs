@@ -33,14 +33,14 @@ namespace DotNetAsm
         /// Determines if the block handler processes the token (instruction).
         /// </summary>
         /// <param name="token">The instruction to check if the block handler processes</param>
-        /// <returns>True, if the block handler processes, otherwise false</returns>
+        /// <returns><c>True</c> if the block handler processes, otherwise <c>false</c>.</returns>
         bool Processes(string token);
 
         /// <summary>
-        /// Process the DotNetAsm.SourceLine if it is processing or the instruction is a
+        /// Process the <see cref="T:DotNetAsm.SourceLine"/> if it is processing or the instruction is a
         /// block instruction.
         /// </summary>
-        /// <param name="line">The DotNetAsm.SourceLine to process</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to process</param>
         void Process(SourceLine line);
 
         /// <summary>

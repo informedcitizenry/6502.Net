@@ -63,7 +63,7 @@ namespace DotNetAsm
                     reader.Read(buffer, 0, (int)length);
                     Data = new List<byte>(buffer);
                 }
-                this.Filename = filename;
+                Filename = filename;
                 return true;
             }
             catch

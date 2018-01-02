@@ -47,8 +47,8 @@ namespace DotNetAsm
         /// given instruction or directive.
         /// </summary>
         /// <param name="instruction">The instruction.</param>
-        /// <returns>True, if the line assembler can assemble the source, 
-        /// otherwise false.</returns>
+        /// <returns><c>True</c> if the line assembler can assemble the source, 
+        /// otherwise <c>false</c>.</returns>
         bool AssemblesInstruction(string instruction);
     }
 }

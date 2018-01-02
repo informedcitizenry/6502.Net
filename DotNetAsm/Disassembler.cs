@@ -31,7 +31,7 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of the <see cref="T:DotNetAsm.Disasm6502"/> class.
+        /// Constructs an instance of the <see cref="T:DotNetAsm.Disassembler"/> class.
         /// </summary>
         /// <param name="controller">The assembly controller.</param>
         public Disassembler(IAssemblyController controller)
@@ -53,7 +53,7 @@ namespace DotNetAsm
         /// <summary>
         /// Add the file info to the disassembly, if verbose option is set.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
+        /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <returns>A formatted representation of the filename and 
         /// line number of the source.</returns>
         string DisassembleFileLine(SourceLine line)
@@ -72,8 +72,8 @@ namespace DotNetAsm
         /// Add the address of the source to the disassembly. The first method
         /// called in the DisassembleLine method.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
-        /// <returns>Returns a hex representation of the source line address.</returns>
+        /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
+        /// <returns>A hex representation of the source line address.</returns>
         string DisassembleAddress(SourceLine line)
         {
             if ((string.IsNullOrEmpty(line.Label) && (string.IsNullOrEmpty(line.Instruction) ||
@@ -143,7 +143,7 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Disassemble a line of 6502 source into a supplied 
+        /// Disassemble a line of assembly source into a supplied 
         /// <see cref="T:System.Text.StringBuilder"/> object.
         /// </summary>
         /// <param name="line">The source line to disassemble.</param>
@@ -225,7 +225,7 @@ namespace DotNetAsm
         /// <summary>
         /// Disassemble a line of assembly source.
         /// </summary>
-        /// <param name="line">The source line</param>
+        /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <returns>A string representation of the source.</returns>
         public string DisassembleLine(SourceLine line)
         {

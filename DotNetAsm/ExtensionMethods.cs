@@ -33,7 +33,7 @@ namespace DotNetAsm
         /// Removes all trailing occurrences of white spaces from the
         /// current <see cref="T:System.Text.StringBuilder"/> object.
         /// </summary>
-        /// <param name="sb">This StringBuilder.</param>
+        /// <param name="sb">This <see cref="T:System.Text.StringBuilder"/>.</param>
         /// <returns>The trimmed <see cref="T:System.Text.StringBuilder"/>.</returns>
         public static StringBuilder TrimEnd(this StringBuilder sb)
         {
@@ -131,7 +131,7 @@ namespace DotNetAsm
         /// Capture and return the first parenthetical group in the string. 
         /// </summary>
         /// <param name="str">The string to evaluate</param>
-        /// <returns>Returns the first instance of a parenthetical group</returns>
+        /// <returns>The first instance of a parenthetical group</returns>
         /// <exception cref="T:System.FormatException">System.FormatException</exception>
         public static string FirstParenEnclosure(this string str)
         {
@@ -174,11 +174,11 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Does a comma-separated-value analysis on the SourceLine's operand
-        /// and returns the individual value as a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/>
+        /// Does a comma-separated-value analysis on the <see cref="T:DotNetAsm.SourceLine"/>'s operand
+        /// and returns the individual value as a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/>.
         /// </summary>
-        /// <returns>Returns a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
         /// <param name="str">The string to evaluate</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
         public static List<string> CommaSeparate(this string str)
         {
             List<string> csv = new List<string>();
@@ -303,7 +303,7 @@ namespace DotNetAsm
         /// Gets the bitwise AND mask for the value.
         /// </summary>
         /// <param name="value"></param>
-        /// <returns>Returns the AND value as an unsigned 32-bit integer.</returns>
+        /// <returns>The AND value as an unsigned 32-bit integer.</returns>
         public static uint AndMask(this Int64 value)
         {
             int size = value.Size() - 1;

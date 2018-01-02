@@ -167,7 +167,7 @@ namespace DotNetAsm
         /// Reset the logical Program Counter back to the internal Program Counter value.
         /// Used with SetLogicalPC().
         /// </summary>
-        /// <returns>Returns the new logical Program Counter</returns>
+        /// <returns>The new logical Program Counter</returns>
         public int SynchPC()
         {
             _logicalPc = ProgramCounter;
@@ -177,9 +177,10 @@ namespace DotNetAsm
         /// <summary>
         /// Add a value to the compilation
         /// </summary>
-        /// <param name="value">The value to add</param>
-        /// <param name="size">The size, in bytes, of the value</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <param name="value">The value to add.</param>
+        /// <param name="size">The size, in bytes, of the value.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> Add(Int64 value, int size)
         {
             var bytes = BitConverter.GetBytes(value);
@@ -191,7 +192,7 @@ namespace DotNetAsm
         /// logical Program Counter by the specified size, but without adding any data to the
         /// compilation.
         /// </summary>
-        /// <param name="size">The number of bytes to add to the memory space</param>
+        /// <param name="size">The number of bytes to add to the memory space.</param>
         public void AddUninitialized(int size)
         {
             ProgramCounter += size;
@@ -199,45 +200,46 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Add the bytes for a UTF-8 encoded string to the compilation
+        /// Add the bytes for a string to the compilation.
         /// </summary>
-        /// <param name="s">The string to add</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <param name="s">The string to add.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> Add(string s) => Add(s, Encoding.UTF8);
 
         /// <summary>
-        /// Add the bytes for a UTF-8 encoded string to the compilation
+        /// Add the bytes for a string to the compilation.
         /// </summary>
-        /// <param name="s">The string to add</param>
-        /// <param name="encoding">The System.Text.Encoding class to encode the output</param>
+        /// <param name="s">The string to add.</param>
+        /// <param name="encoding">The <see cref="T:System.Text.Encoding"/> class to encode the output</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Add(string s, Encoding encoding) => AddBytes(encoding.GetBytes(s));
 
         /// <summary>
-        /// Add a 32-bit integral value to the compilation
+        /// Add a 32-bit integral value to the compilation.
         /// </summary>
         /// <param name="value">The value to add</param>
         /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
         public List<byte> Add(int value) => Add(value, 4);
 
         /// <summary>
-        /// Add a byte value to the compilation
+        /// Add a byte value to the compilation.
         /// </summary>
-        /// <param name="value">The value to add</param>
+        /// <param name="value">The value to add.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Add(byte value) => Add(Convert.ToInt32(value), 1);
 
         /// <summary>
-        /// Add a 16-bit integral value to the compilation
+        /// Add a 16-bit integral value to the compilation.
         /// </summary>
-        /// <param name="value">The value to add</param>
+        /// <param name="value">The value to add.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
         public List<byte> Add(ushort value) => Add(Convert.ToInt32(value), 2);
 
         /// <summary>
-        /// Reserve uninitialized memory in the compilation by an unspecified amount
+        /// Reserve uninitialized memory in the compilation by an unspecified amount.
         /// </summary>
-        /// <param name="amount">The amount to reserve</param>
+        /// <param name="amount">The amount to reserve.</param>
         public void Fill(int amount)
         {
             LogicalPC += amount;
@@ -247,9 +249,10 @@ namespace DotNetAsm
         /// <summary>
         /// Fill memory with the specified values by the specified amount.
         /// </summary>
-        /// <param name="amount">The amount to fill</param>
-        /// <param name="value">The fill value</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="amount">The amount to fill.</param>
+        /// <param name="value">The fill value.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> Fill(int amount, Int64 value)
         {
             int size = value.Size();
@@ -271,8 +274,9 @@ namespace DotNetAsm
         /// Offset the compilation by a specified amount without updating the logical Program Counter. 
         /// This can be used to create re-locatable code.
         /// </summary>
-        /// <param name="amount">The offset amount</param>
-        /// <returns>A System.Collections.Generic.List&lt;byte&gt; of the bytes added to the compilation.</returns>
+        /// <param name="amount">The offset amount.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/>
+        ///  of the bytes added to the compilation.</returns>
         public List<byte> Offset(int amount) => AddBytes(new List<byte>(amount), amount, true, false);
 
         /// <summary>
@@ -280,9 +284,10 @@ namespace DotNetAsm
         /// For instance, to align the next byte(s) in the compilation to a page boundary you would
         /// set the align amount to 256.
         /// </summary>
-        /// <param name="amount">The amount to align the compilation</param>
-        /// <param name="value">The value to fill before the alignment</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="amount">The amount to align the compilation.</param>
+        /// <param name="value">The value to fill before the alignment.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> Align(int amount, long value)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
@@ -293,8 +298,8 @@ namespace DotNetAsm
         /// Align the compilation to the specified boundary. For instance, to align the next byte(s)
         /// in the compilation to a page boundary you would set the align amount to 256.
         /// </summary>
-        /// <param name="amount">The amount to align</param>
-        /// <returns>Returns the offset needed to align the Program Counter</returns>
+        /// <param name="amount">The amount to align.</param>
+        /// <returns>Returns the offset needed to align the Program Counter.</returns>
         public void Align(int amount)
         {
             int align = GetAlignmentSize(LogicalPC, amount);
@@ -306,11 +311,12 @@ namespace DotNetAsm
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
-        /// <param name="bytes">The collection of bytes to add</param>
-        /// <param name="size">The number of bytes in the collection to add</param>
-        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        /// <param name="updateProgramCounter">Update the Program Counter automatically</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="bytes">The collection of bytes to add.</param>
+        /// <param name="size">The number of bytes in the collection to add.</param>
+        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
+        /// <param name="updateProgramCounter">Update the Program Counter automatically.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian, bool updateProgramCounter)
         {
             if (CompilingHasStarted == false)
@@ -355,10 +361,11 @@ namespace DotNetAsm
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
-        /// <param name="bytes">The collection of bytes to add</param>
-        /// <param name="size">The number of bytes in the collection to add</param>
-        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="bytes">The collection of bytes to add.</param>
+        /// <param name="size">The number of bytes in the collection to add.</param>
+        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
         {
             return AddBytes(bytes, size, ignoreEndian, true);
@@ -367,9 +374,10 @@ namespace DotNetAsm
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
-        /// <param name="bytes">The collection of bytes to add</param>
-        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="bytes">The collection of bytes to add.</param>
+        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, bool ignoreEndian)
         {
             return AddBytes(bytes, bytes.Count(), ignoreEndian);
@@ -378,20 +386,22 @@ namespace DotNetAsm
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
-        /// <param name="bytes">The collection of bytes to add</param>
-        /// <param name="size">The number of bytes in the collection to add</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="bytes">The collection of bytes to add.</param>
+        /// <param name="size">The number of bytes in the collection to add.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes, int size) => AddBytes(bytes, size, true);
 
         /// <summary>
         /// Add a range of bytes to the compilation.
         /// </summary>
-        /// <param name="bytes">The collection of bytes to add</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
+        /// <param name="bytes">The collection of bytes to add.</param>
+        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
+        /// of the bytes added to the compilation.</returns>
         public List<byte> AddBytes(IEnumerable<byte> bytes) => AddBytes(bytes, true);
 
         /// <summary>
-        /// Get the compilation bytes
+        /// Get the compilation bytes.
         /// </summary>
         /// <returns>The bytes of the compilation.</returns>
         public ReadOnlyCollection<byte> GetCompilation() => _bytes.AsReadOnly();
@@ -399,9 +409,9 @@ namespace DotNetAsm
         /// <summary>
         /// Get the relative offset between two addresses. Useful for calculating short jumps.
         /// </summary>
-        /// <param name="address1">Current address</param>
-        /// <param name="address2">Destination address</param>
-        /// <returns>Returns the relative offset between the two addresses</returns>
+        /// <param name="address1">Current address.</param>
+        /// <param name="address2">Destination address.</param>
+        /// <returns>Returns the relative offset between the two addresses.</returns>
         public int GetRelativeOffset(int address1, int address2)
         {
             address2 = address2 & MaxAddress;
@@ -487,7 +497,7 @@ namespace DotNetAsm
         public bool PCOverflow { get { return _overflow; } }
 
         /// <summary>
-        /// Gets the current logical Program Counter
+        /// Gets the current logical Program Counter.
         /// </summary>
         public int LogicalPC
         {

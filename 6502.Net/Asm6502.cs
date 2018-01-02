@@ -217,6 +217,11 @@ namespace Asm6502.Net
 
         #region Methods
 
+        /// <summary>
+        /// Gets the format and opcode of the source.
+        /// </summary>
+        /// <returns>The format and opcode.</returns>
+        /// <param name="line">Line.</param>
         Tuple<OperandFormat, Opcode> GetFormatAndOpcode(SourceLine line)
         {
             bool force16 = false, force24 = false;
@@ -299,6 +304,10 @@ namespace Asm6502.Net
             return new Tuple<OperandFormat, Opcode>(fmt, opc);
         }
 
+        /// <summary>
+        /// Sets the cpu.
+        /// </summary>
+        /// <param name="args">Arguments.</param>
         void SetCpu(CpuChangedEventArgs args)
         {
             if (args.Line.Operand.EnclosedInQuotes() == false &&
@@ -341,6 +350,10 @@ namespace Asm6502.Net
 
         }
 
+        /// <summary>
+        /// Sets the immediate mode of the accumulator.
+        /// </summary>
+        /// <param name="size">The size of the immediate mode operation.</param>
         void SetImmediateA(int size)
         {
             string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
@@ -364,6 +377,10 @@ namespace Asm6502.Net
             _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "sbc" + fmt, Size = size, Index = 0xe9 });
         }
 
+        /// <summary>
+        /// Sets the immediate mode of the index registers.
+        /// </summary>
+        /// <param name="size">The size of the immediate mode operation.</param>
         void SetImmediateXY(int size)
         {
             string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
@@ -379,6 +396,10 @@ namespace Asm6502.Net
             _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "cpx" + fmt, Size = size, Index = 0xe0 });
         }
 
+        /// <summary>
+        /// Sets the reg long short.
+        /// </summary>
+        /// <param name="instruction">Instruction.</param>
         void SetRegLongShort(string instruction)
         {
             if (instruction.StartsWith(".x", Controller.Options.StringComparison))
@@ -411,6 +432,10 @@ namespace Asm6502.Net
             }
         }
 
+        /// <summary>
+        /// Assembles the .rta directive
+        /// </summary>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         void AssembleRta(SourceLine line)
         {
             var csv = line.Operand.CommaSeparate();

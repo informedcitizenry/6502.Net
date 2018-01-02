@@ -252,22 +252,11 @@ namespace DotNetAsm
             _rootBlock.ResetEntries();
         }
 
-        /// <summary>
-        /// Determines whether the <see cref="T:DotNetAsm.ForNextHandler"/> processes the given token.
-        /// </summary>
-        /// <param name="token">The token to determine if is an instruction that
-        /// the handler processes.</param>
-        /// <returns><c>True</c> if the <see cref="T:DotNetAsm.ForNextHandler"/> processes this token,
-        /// otherwise <c>false</c>.</returns>
         public bool Processes(string token)
         {
             return Reserved.IsOneOf("Directives", token);
         }
 
-        /// <summary>
-        /// Processes the <see cref="T:DotNetAsm.SourceLine"/> within a <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>.
-        /// </summary>
-        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to process</param>
         public void Process(SourceLine line)
         {
             string instruction = line.Instruction.ToLower();
@@ -474,21 +463,10 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Performs a reset operation on the <see cref="T:DotNetAsm.ForNextHandler.ForNextBlock"/>.
-        /// </summary>
         public void Reset() => _processedLines.Clear();
 
-        /// <summary>
-        /// Gets the flag that determines if the <see cref="T:DotNetAsm.ForNextHandler"/> is currently in
-        /// processing mode.
-        /// </summary>
-        /// <returns>True, if the block handler is still processing input lines</returns>
         public bool IsProcessing() => _levels > 0 || _breakBlock != null;
 
-        /// <summary>
-        /// Gets the read-only processed blocks of repeated lines.
-        /// </summary>
         public IEnumerable<SourceLine> GetProcessedLines() => _processedLines;
     }
 }

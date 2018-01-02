@@ -32,8 +32,8 @@ namespace DotNetAsm
         /// <summary>
         /// Disassemble a line of assembly source.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
-        /// <returns>A string representation of the source.</returns>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to disassemble.</param>
+        /// <returns>A string representation of the disassembled source.</returns>
         string DisassembleLine(SourceLine line);
 
         /// <summary>

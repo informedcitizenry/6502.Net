@@ -133,7 +133,8 @@ namespace DotNetAsm
         /// Determines if the ReservedWord object contains a type (key) of reserved words.
         /// </summary>
         /// <param name="type">The type to check.</param>
-        /// <returns>True, if the <see cref="T:DotNetAsm.ReservedWord"/> object has the type</returns>
+        /// <returns><c>True</c> if the <see cref="T:DotNetAsm.ReservedWord"/> object has the type, 
+        /// otherwise <c>false</c>.</returns>
         public bool HasType(string type) => _types.ContainsKey(type);
 
         #endregion
@@ -141,7 +142,8 @@ namespace DotNetAsm
         #region Properties
 
         /// <summary>
-        /// Gets or sets the System.StringComparison for the ReservedWords collection.
+        /// Gets or sets the <see cref="T:System.StringComparison"/> for the 
+        /// <see cref="T:DotNetAsm.ReservedWords"/> collection.
         /// </summary>
         public StringComparison Comparer { get; set; }
 

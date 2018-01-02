@@ -147,7 +147,7 @@ namespace DotNetAsm
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
+        /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="source">The error source.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
@@ -159,7 +159,7 @@ namespace DotNetAsm
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
+        /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
         public void LogEntry(SourceLine line, string message, bool isError = true)
@@ -170,7 +170,7 @@ namespace DotNetAsm
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The SourceLine.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
         public void LogEntry(SourceLine line, bool isError = true) => LogEntry(line.Filename, line.LineNumber, isError);
 

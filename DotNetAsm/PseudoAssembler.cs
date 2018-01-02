@@ -28,7 +28,7 @@ using System.Text.RegularExpressions;
 namespace DotNetAsm
 {
     /// <summary>
-    /// An implementation of the DotNetAsm.ILineAssembler interface that assembles
+    /// An implementation of the <see cref="T:DotNetAsm.ILineAssembler"/> interface that assembles
     /// pseudo operations such as byte and string assembly.
     /// </summary>
     public class PseudoAssembler : StringAssemblerBase, ILineAssembler
@@ -127,7 +127,7 @@ namespace DotNetAsm
         /// <summary>
         /// Get the offset and size of the operand of a .binary file
         /// </summary>
-        /// <param name="args">The System.Collections.Generic.List&lt;string&gt; arguments</param>
+        /// <param name="args">The <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> arguments</param>
         /// <param name="binarysize">The size of the binary file</param>
         /// <param name="offs">The offset</param>
         /// <param name="size">The size</param>
@@ -170,7 +170,7 @@ namespace DotNetAsm
         /// for later use.
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
-        /// <returns>Returns a binary file.</returns>
+        /// <returns>A <see cref="T:DotNetAsm.BinaryFile"/>.</returns>
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
             if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
