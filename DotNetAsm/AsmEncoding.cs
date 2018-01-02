@@ -45,7 +45,7 @@ namespace DotNetAsm
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of the DotNetAsm.AsmEncoding class, used to encode 
+        /// Constructs an instance of the <see cref="T:DotNetAsm.AsmEncoding"/> class, used to encode 
         /// strings from UTF-8 source to architecture-specific encodings.
         /// </summary>
         /// <param name="caseSensitive">Indicates whether encoding names 
