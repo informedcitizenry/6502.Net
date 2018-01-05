@@ -1686,6 +1686,7 @@ glyph             ;12345678
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
 <tr><td><b>Example</b></td><td><code>.echo format("Program counter is ${0:x4}", *)</code></td></tr>
 </table>
+<table>
 <tr><td><b>Name</b></td><td><code>frac</code></td></tr>
 <tr><td><b>Definition</b></td><td>The fractional part.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>

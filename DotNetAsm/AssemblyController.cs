@@ -709,7 +709,6 @@ namespace DotNetAsm
                     }
                     catch (SymbolNotDefinedException)
                     {
-                        
                     }
                     Output.SetPC(Convert.ToUInt16(val));
                 }
@@ -738,7 +737,6 @@ namespace DotNetAsm
                         }
                         catch (SymbolNotDefinedException)
                         {
-                            
                         }
                         Output.SetLogicalPC(Convert.ToUInt16(val));
                     }

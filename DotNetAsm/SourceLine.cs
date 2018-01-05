@@ -43,10 +43,7 @@ namespace DotNetAsm
         {
             public override string Message
             {
-                get
-                {
-                    return ErrorStrings.QuoteStringNotEnclosed;
-                }
+                get => ErrorStrings.QuoteStringNotEnclosed;
             }
         }
 
@@ -126,14 +123,12 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="labelOperand">The label or operand string to convert</param>
         /// <returns>A string with unicode characters converted from code points.</returns>
-        string ConvertEscapedUnicode(string labelOperand)
-        {
-            return _regUnicode.Replace(labelOperand, match =>
-            {
-                int codepoint = int.Parse(match.Value.Substring(2), NumberStyles.HexNumber);
-                return char.ConvertFromUtf32(codepoint);
-            });
-        }
+        string ConvertEscapedUnicode(string labelOperand) => 
+            _regUnicode.Replace(labelOperand, match =>
+           {
+               int codepoint = int.Parse(match.Value.Substring(2), NumberStyles.HexNumber);
+               return char.ConvertFromUtf32(codepoint);
+           });
 
         /// <summary>
         /// Parse the SourceLine's SourceString property into its component line,
@@ -141,7 +136,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="checkInstruction">A callback to determine which part of the source
         /// is the instruction.</param>
-        /// <exception cref="T:DotNetAsm.QuoteNotEnclosedException">DotNetAsm.QuoteNotEnclosedException</exception>
+        /// <exception cref="T:DotNetAsm.QuoteNotEnclosedException"></exception>
         public void Parse(Func<string, bool> checkInstruction)
         {
             bool double_enclosed = false;
@@ -249,41 +244,34 @@ namespace DotNetAsm
                                                       , Operand);
         }
 
-        public override int GetHashCode()
-        {
-            return LineNumber.GetHashCode() + Filename.GetHashCode() + SourceString.GetHashCode();
-        }
+        public override int GetHashCode() => LineNumber.GetHashCode() + 
+                                             Filename.GetHashCode() + 
+                                             SourceString.GetHashCode();
 
         #endregion
 
         #region IEquatable
 
-        public bool Equals(SourceLine other)
-        {
-            return (other.LineNumber == this.LineNumber &&
+        public bool Equals(SourceLine other) => 
+                   (other.LineNumber == this.LineNumber &&
                     other.Filename == this.Filename &&
                     other.SourceString == this.SourceString);
-        }
 
         #endregion
 
         #region ICloneable
 
-        public object Clone()
+        public object Clone() => new SourceLine
         {
-            SourceLine clone = new SourceLine
-            {
-                LineNumber = this.LineNumber,
-                Filename = this.Filename,
-                Label = this.Label,
-                Operand = this.Operand,
-                Instruction = this.Instruction,
-                SourceString = this.SourceString,
-                Scope = this.Scope,
-                PC = this.PC
-            };
-            return clone;
-        }
+            LineNumber = this.LineNumber,
+            Filename = this.Filename,
+            Label = this.Label,
+            Operand = this.Operand,
+            Instruction = this.Instruction,
+            SourceString = this.SourceString,
+            Scope = this.Scope,
+            PC = this.PC
+        };
 
         #endregion
 
