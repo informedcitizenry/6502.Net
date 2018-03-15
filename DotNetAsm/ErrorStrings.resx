@@ -162,6 +162,9 @@
   <data name="LabelNotDefined" xml:space="preserve">
     <value>Symbol '{0}' not found</value>
   </data>
+  <data name="LabelNotLeft" xml:space="preserve">
+    <value>Label is not the leftmost character</value>
+  </data>
   <data name="LabelNotValid" xml:space="preserve">
     <value>Symbol '{0}' is not a valid label name</value>
   </data>

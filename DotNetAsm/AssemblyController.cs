@@ -1,5 +1,5 @@
-//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -177,7 +177,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="chr">The character to encode.</param>
         /// <returns>The encoded value as a string.</returns>
-        string GetCharValue(string chr) => Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString();
+        string GetCharValue(string chr) => Encoding.GetEncodedValue(chr.TrimOnce('\'').First()).ToString();
 
         /// <summary>
         /// Used by the expression evaluator to convert an anonymous symbol
@@ -663,7 +663,7 @@ namespace DotNetAsm
                 {
                     string scopedLabel = string.Empty;
 
-                    _currentLine.Label = _currentLine.Label.TrimEnd(':');
+                    _currentLine.Label = _currentLine.Label.TrimEndOnce(':');
 
                     if (Reserved.IsReserved(_currentLine.Label) ||
                         IsInstruction(_currentLine.Label) ||
@@ -688,7 +688,8 @@ namespace DotNetAsm
                         }
                     }    
                     _labelCollection.SetLabel(scopedLabel, val, false, true);
-
+                    if (_currentLine.SourceString.StartsWith(" ", Options.StringComparison))
+                        Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);
                 }
             }
         }

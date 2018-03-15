@@ -1,5 +1,5 @@
-//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -168,22 +168,22 @@ namespace DotNetAsm
                 if (_levels == 0)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
-                    return;
                 }
-                if (string.IsNullOrEmpty(line.Operand) == false)
+                else if (string.IsNullOrEmpty(line.Operand) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-                    return;
                 }
-                if (string.IsNullOrEmpty(line.Label) == false)
+                else if (string.IsNullOrEmpty(line.Label) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.None);
-                    return;
                 }
-                _levels--;
-                _currBlock = _currBlock.BackLink;
-                if (_levels == 0)
-                    ProcessLines(_rootBlock);
+                else
+                {
+                    _levels--;
+                    _currBlock = _currBlock.BackLink;
+                    if (_levels == 0)
+                        ProcessLines(_rootBlock);
+                }
             }
             else
             {

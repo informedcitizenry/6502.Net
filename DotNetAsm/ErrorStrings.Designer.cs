@@ -137,6 +137,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string LabelNotLeft {
+            get {
+                return ResourceManager.GetString("LabelNotLeft", resourceCulture);
+            }
+        }
+        
         public static string LabelNotValid {
             get {
                 return ResourceManager.GetString("LabelNotValid", resourceCulture);

@@ -1,5 +1,5 @@
-//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -101,7 +101,7 @@ namespace DotNetAsm
                     {
                         if (firstparm.Length > 4)
                             throw new ArgumentException(firstparm);
-                        mapstring = firstparm.Trim('"');
+                        mapstring = firstparm.TrimOnce('"');
                     }
                     if (instruction.Equals(".map"))
                     {
@@ -172,7 +172,7 @@ namespace DotNetAsm
             {
                 if (p.Length != 3)
                     throw new ArgumentException(p);
-                return p.Trim('"').First();
+                return p.TrimOnce('"').First();
             }
 
             // else return the evaluated expression
@@ -191,7 +191,7 @@ namespace DotNetAsm
             {
                 var m = _regStrFunc.Match(arg);
                 string strval = m.Groups[1].Value;
-                var param = strval.TrimStart('(').TrimEnd(')');
+                var param = strval.TrimStartOnce('(').TrimEndOnce(')');
                 if (string.IsNullOrEmpty(strval) ||
                     strval.FirstParenEnclosure() != m.Groups[1].Value)
                 {
@@ -220,7 +220,7 @@ namespace DotNetAsm
             {
                 if (s.EnclosedInQuotes())
                 {
-                    size += Controller.Encoding.GetByteCount(s.Trim('"'));
+                    size += Controller.Encoding.GetByteCount(s.TrimOnce('"'));
                 }
                 else
                 {
@@ -313,7 +313,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    string noquotes = arg.Trim('"');
+                    string noquotes = arg.TrimOnce('"');
                     if (string.IsNullOrEmpty(noquotes))
                     {
                         Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -359,7 +359,7 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(parms) || m.Groups[1].Value.FirstParenEnclosure() != parms)
                 throw new Exception(ErrorStrings.None);
 
-            var csvs = parms.TrimStart('(').TrimEnd(')').CommaSeparate();
+            var csvs = parms.TrimStartOnce('(').TrimEndOnce(')').CommaSeparate();
             string fmt = csvs.First();
             if (fmt.Length < 5 || !fmt.EnclosedInQuotes())
                 throw new Exception(ErrorStrings.None);
@@ -370,11 +370,11 @@ namespace DotNetAsm
                 if (string.IsNullOrEmpty(csvs[i]))
                     throw new Exception(ErrorStrings.None);
                 if (csvs[i].EnclosedInQuotes())
-                    parmlist.Add(csvs[i].Trim('"'));
+                    parmlist.Add(csvs[i].TrimOnce('"'));
                 else
                     parmlist.Add(evaluator.Eval(csvs[i]));
             }
-            return string.Format(fmt.Trim('"'), parmlist.ToArray());
+            return string.Format(fmt.TrimOnce('"'), parmlist.ToArray());
         }
 
         #endregion

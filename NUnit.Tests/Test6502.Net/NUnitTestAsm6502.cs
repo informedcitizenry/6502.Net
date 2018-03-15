@@ -1238,8 +1238,8 @@ namespace NUnit.Tests.Test6502.Net
             SourceLine line = new SourceLine();
             string teststring = "\"hello, world\"";
 
-            var ascbytes = Encoding.ASCII.GetBytes(teststring.Trim('"'));
-            var petbytes = Encoding.ASCII.GetBytes(teststring.Trim('"').ToUpper());
+            var ascbytes = Encoding.ASCII.GetBytes(teststring.TrimOnce('"'));
+            var petbytes = Encoding.ASCII.GetBytes(teststring.TrimOnce('"').ToUpper());
             var cbmscreenbytes = petbytes.Select(b =>
             {
                 if (b >= '@' && b <= 'Z')

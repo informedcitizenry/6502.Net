@@ -32,7 +32,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Encoding = new AsmEncoding();
 
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
-                Encoding.GetEncodedValue(chr.Trim('\'').First()).ToString());
+                Encoding.GetEncodedValue(chr.TrimOnce('\'').First()).ToString());
             
             Evaluator.DefineSymbolLookup(@"(?>[a-zA-Z][a-zA-Z0-9]*)(?!\()", GetSymbol);
 

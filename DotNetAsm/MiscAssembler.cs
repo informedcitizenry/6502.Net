@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -118,7 +118,7 @@ namespace DotNetAsm
                     if (!line.Operand.EnclosedInQuotes())
                         Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                     else
-                        Controller.Options.Architecture = line.Operand.Trim('"');
+                        Controller.Options.Architecture = line.Operand.TrimOnce('"');
                     break;
                 default:
                     Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
@@ -141,7 +141,7 @@ namespace DotNetAsm
             }
             else
             {
-                operand = operand.Trim('"');
+                operand = operand.TrimOnce('"');
             }
             string type = line.Instruction.Substring(0, 5).ToLower();
             switch (type)

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -193,7 +193,7 @@ namespace DotNetAsm
                         if (string.IsNullOrEmpty(parms[i].DefaultValue))
                             throw new MacroException(macrocall,
                                 string.Format("Macro '{0}' expects a value for parameter {1}; no default value defined",
-                                macrocall.Instruction.TrimStart('.'),
+                                macrocall.Instruction.TrimStartOnce('.'),
                                 parms[i].Number));
 
                         parms[i].Passed = parms[i].DefaultValue;

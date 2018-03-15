@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -152,7 +152,7 @@ namespace DotNetAsm
         void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.Operand.CommaSeparate();
-            var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].Trim('"')));
+            var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].TrimOnce('"')));
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
             int offs = 0, size = binary.Data.Count;
@@ -191,7 +191,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                 return new BinaryFile(string.Empty);
             }
-            string filename = args.First().Trim('"');
+            string filename = args.First().TrimOnce('"');
             BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
 
             if (binary == null)

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -124,7 +124,7 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                         continue;
                     }
-                    var inclistings = ConvertToSource(filename.Trim('"'));
+                    var inclistings = ConvertToSource(filename.TrimOnce('"'));
                     includedLines.AddRange(inclistings);
                 }
                 else if (line.Instruction.Equals(".binclude", Controller.Options.StringComparison))
@@ -143,7 +143,7 @@ namespace DotNetAsm
                             Controller.Log.LogEntry(line, ErrorStrings.None);
                             continue;
                         }
-                        if (FileRegistry.Add(line.Operand.Trim('"')) == false)
+                        if (FileRegistry.Add(line.Operand.TrimOnce('"')) == false)
                         {
                             throw new Exception(string.Format(ErrorStrings.FilePreviouslyIncluded, line.Operand));
                         }
@@ -156,7 +156,7 @@ namespace DotNetAsm
                     }
                     openblock.Instruction = ConstStrings.OPEN_SCOPE;
                     includedLines.Add(openblock);
-                    var inclistings = ConvertToSource(line.Operand.Trim('"'));
+                    var inclistings = ConvertToSource(line.Operand.TrimOnce('"'));
 
                     includedLines.AddRange(inclistings);
                     includedLines.Add(new SourceLine());

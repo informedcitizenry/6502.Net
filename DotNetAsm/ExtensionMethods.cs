@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -125,6 +125,45 @@ namespace DotNetAsm
                 }
             }
             return enclosed;
+        }
+
+        /// <summary>
+        /// Trims one instance of the specified character at the start of the string.
+        /// </summary>
+        /// <returns>The modified string.</returns>
+        /// <param name="str">String.</param>
+        /// <param name="c">The character to trim.</param>
+        public static string TrimStartOnce(this string str, char c)
+        {
+            if (string.IsNullOrEmpty(str)) return string.Empty;
+            if (str.First().Equals(c))
+                return str.Length > 1 ? str.Substring(1) : string.Empty;
+            return str;
+        }
+
+        /// <summary>
+        /// Trims one instance of the specified character at the end of the string.
+        /// </summary>
+        /// <returns>The modified string.</returns>
+        /// <param name="str">String.</param>
+        /// <param name="c">The character to trim.</param>
+        public static string TrimEndOnce(this string str, char c)
+        {
+            if (string.IsNullOrEmpty(str)) return string.Empty;
+            if (str.Last().Equals(c))
+                return str.Length > 1 ? str.Substring(0, str.Length - 1) : string.Empty;
+            return str;
+        }
+
+        /// <summary>
+        /// Trims one instance of the specified character at the start and the end of the string.
+        /// </summary>
+        /// <returns>The modified string.</returns>
+        /// <param name="str">String.</param>
+        /// <param name="c">The character to trim.</param>
+        public static string TrimOnce(this string str, char c)
+        {
+            return str.TrimStartOnce(c).TrimEndOnce(c);
         }
 
         /// <summary>
@@ -297,66 +336,6 @@ namespace DotNetAsm
                 (size == 4 && value < int.MinValue))
                 size++;
             return size;
-        }
-
-        /// <summary>
-        /// Gets the bitwise AND mask for the value.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns>The AND value as an unsigned 32-bit integer.</returns>
-        public static uint AndMask(this Int64 value)
-        {
-            int size = value.Size() - 1;
-            uint and = 0xFF;
-            while (size > 0)
-            {
-                and *= 256;
-                and += 0xFF;
-                size--;
-            }
-            return and;
-        }
-    }
-
-    public static class List_t_Extension
-    {
-        /// <summary>
-        /// Returns all indexes of the given item in the list.
-        /// </summary>
-        /// <typeparam name="T">The type of the object.</typeparam>
-        /// <param name="list">The list in which to search the item.</param>
-        /// <param name="item">The item to find.</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;int&gt;"/> of all indexes the value is found in the list.</returns>
-        public static List<int> AllIndexesOf<T>(this List<T> list, T item)
-        {
-            if (list == null || list.Count == 0)
-                throw new ArgumentException("The list cannot be null or empty.");
-            List<int> indexes = new List<int>();
-            for (int index = 0; ; index++)
-            {
-                index = list.IndexOf(item, index);
-                if (index == -1)
-                    return indexes;
-                indexes.Add(index);
-            }
-        }
-
-        /// <summary>
-        /// Returns all indexes of the given item in the list.
-        /// </summary>
-        /// <typeparam name="T">The type of the object.</typeparam>
-        /// <param name="list">The list in which to search the item.</param>
-        /// <param name="expression">Filters the list of values based on a predicate.</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;int&gt;"/> of all indexes the value is found in the list.</returns>
-        public static List<int> AllIndexesOf<T>(this List<T> list, System.Func<T, bool> expression)
-        {
-            var any = list.Where(expression);
-            List<int> indexes = new List<int>();
-            foreach (var a in any)
-            {
-                indexes.AddRange(AllIndexesOf(list, a));
-            }
-            return indexes;
         }
     }
 }

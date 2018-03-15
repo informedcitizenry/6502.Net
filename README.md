@@ -5,7 +5,7 @@ The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502,
 
 The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor. 
 
-The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the CPU for the Apple IIc and IIe home computers, as well as the NEC TurboGrafx-16 game system. 
+The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system. 
 
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Legal
@@ -14,7 +14,7 @@ The W65C816S (or 65816 for short), is a true successor to the 6502, a fully back
 
 See LICENSE and LICENSE_third_party for licensing information.
 ## Overview
-The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
+The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net.exe myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
 
 You can specify as many source files as assembly input as needed. For instance, `6502.Net.exe mylib.asm myprg.asm` will assemble both the `mylib.asm` and `myprgm.asm` files sequentially to output. Be aware that if both files define the same symbol an assembler error will result.
 ## General Features
@@ -755,7 +755,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 </tr>
 </table>
 
-*-`JAM` and `STP` are essentially the same command; they both halt the 6502-based CPU.
+*-`JAM` and `STP` are essentially the same command; they both halt the CPU.
 
 **Note:** Illegal mnemonics are only available if the `6502i` option is specified in the `--cpu` commandline or `.cpu` directive.
 
@@ -2039,6 +2039,8 @@ glyph             ;12345678
 `Invalid parameter reference` - The macro reference does not reference a defined parameter.
 
 `Invalid Program Counter assignment` - An attempt was made to set the program counter to an invalid value.
+
+`Label is not the leftmost character` - The label is not the leftmost character in the line (this is a warning by default).
 
 `Macro or segment is being called recursively` - A macro or segment is being invoked in its own definition.
 

@@ -17,7 +17,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Evaluator eval = new Evaluator();
 
             eval.DefineSymbolLookup(@"(?<![a-zA-Z0-9_)])'(.)'(?![a-zA-Z0-9_(])", s =>
-                Convert.ToInt32(s.Trim('\'').First()).ToString());
+                Convert.ToInt32(s.TrimOnce('\'').First()).ToString());
            
             string expression = "3+4";
             long dude = eval.Eval(expression);
@@ -262,7 +262,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestDefineSymbols()
         {
             Evaluator eval = new Evaluator();
-            eval.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", (str) => str.TrimStart('(').TrimEnd(')').Length.ToString());
+            eval.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", (str) => str.TrimStartOnce('(').TrimEndOnce(')').Length.ToString());
             eval.DefineSymbolLookup(@"testvar", (str) => "42");
             eval.DefineSymbolLookup(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str) => "49152");
             eval.DefineSymbolLookup(@"myfunction\(.+\)", m => "34");
