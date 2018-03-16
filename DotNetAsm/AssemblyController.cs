@@ -433,6 +433,11 @@ namespace DotNetAsm
 
                 DefineLabel();
 
+                if (!string.IsNullOrEmpty(_currentLine.Label) && 
+                    _currentLine.SourceString.StartsWith(" ", Options.StringComparison) &&
+                    !Options.NoWarnLeft)
+                    Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);
+
                 if (!IsAssignmentDirective())
                     Output.AddUninitialized(GetInstructionSize());
             }
@@ -688,8 +693,6 @@ namespace DotNetAsm
                         }
                     }    
                     _labelCollection.SetLabel(scopedLabel, val, false, true);
-                    if (_currentLine.SourceString.StartsWith(" ", Options.StringComparison))
-                        Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);
                 }
             }
         }

@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.10.2
+### Version 1.10.3
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -27,14 +27,14 @@ Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal
 ```
 Negative numbers are assembled according to two's complement rules, with the highest bits set. Binary strings can alternatively be expressed as `.` for `0` and `#` for `1`, which is helpful for laying out pixel data:
 ```
-    number1     .byte %...###..
-                .byte %..####..
-                .byte %.#####..
-                .byte %...###..
-                .byte %...###..
-                .byte %...###..
-                .byte %...###..
-                .byte %.#######
+number1     .byte %...###..
+            .byte %..####..
+            .byte %.#####..
+            .byte %...###..
+            .byte %...###..
+            .byte %...###..
+            .byte %...###..
+            .byte %.#######
 ```                
 ### Labels, Symbols and Variables
 When writing assembly code, hand-coding branches, addresses and constants can be time-consuming and lead to errors. Labels take care of this work for you! There is no restriction on name size, but all labels must begin with an underscore or letter, and can only contain underscores, letters, and digits, and they cannot be re-assigned:
@@ -88,20 +88,21 @@ done        rts
 ```
 Anonymous labels allow one to do away with the need to think of unique label names altogether. There are two types of anonymous labels: forward and backward. Forward anonymous labels are declared with a `+`, while backward anonymous labels are declared using a `-`. They are forward or backward to the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
 ```
-printmessage    ldx #0
--               lda msg_ptr,x
-                beq +               ; jump to first forward anonymous from here
-                jsr chrout
-                inx
-                bne -               ; jump to first backward anonymous from here
-+               rts
--               nop
-                jmp --              ; jump to the second backward anonymous from here
+printmessage    
+            ldx #0
+-           lda msg_ptr,x
+            beq +               ; jump to first forward anonymous from here
+            jsr chrout
+            inx
+            bne -               ; jump to first backward anonymous from here
++           rts
+-           nop
+            jmp --              ; jump to the second backward anonymous from here
 ```
 As you can see anonymous labels, though convenient, would hinder readability if used too liberally. They are best for small branch jumps, though can be used in expressions:
 ```
--               .byte $01, $02, $03
-                lda (-),x           ; put anonymous label reference inside paranetheses.
+-           .byte $01, $02, $03
+            lda (-),x           ; put anonymous label reference inside paranetheses.
 ```            
 Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
 ```
@@ -119,21 +120,21 @@ In the above example, the assembler would error assuming `x` has never been decl
 ### Comments
 Adding comments to source promotes readability, particularly in assembly. Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or constant character.
 ```
-    lda #0      ; 0 = color black
-    sta $d020   ; set border color to accumulator
-    lda #';'    ; the first semi-colon is a char literal so will be assembled
-    jsr $ffd2   
+            lda #0      ; 0 = color black
+            sta $d020   ; set border color to accumulator
+            lda #';'    ; the first semi-colon is a char literal so will be assembled
+            jsr $ffd2   
 ```
 Block comments span multiple lines, enclosed in `.comment` and `.endcomment` directives. These are useful when you want to exclude unwanted code:
 ```
-    .comment
+            .comment
 
-    this will set the cpu on fire do not assemble!
+            this will set the cpu on fire do not assemble!
 
-    lda #$ff
-    sta $5231
+            lda #$ff
+            sta $5231
 
-    .endcomment
+            .endcomment
 ```
 ### Non-code (data) assembly
 In addition to 6502 assembly, data can also be assembled. Expressions evaluate internally as 64-bit signed integers, but **must** fit to match the expected operand size; if the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
@@ -189,7 +190,7 @@ Use the `.typedef` directive to redefine a type name. This is useful for cross- 
             .typedef    .byte   defb    ; multiple okay
             .typedef    .string asc
 ```
-Only pseudo operations can have their types redefined. For mnemonics or other assembler directives consider using macros instead.
+Only pseudo operations can have their types redefined. For mnemonics or other assembler directives consider using [macros](#macros-and-segments) instead.
 ### Text processing and encoding
 #### Psuedo Ops
 In addition to integral values, z80DotNet can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes. Escaped double quotes are not recognized, so embedded quotation marks must be "broken out" as separate operands:
@@ -251,23 +252,23 @@ Text encodings are modified using the `.map` and `.unmap` directives. After sele
 ```
 The output can be one to four bytes. Entire character sets can also be mapped, with the re-mapped code treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions.
 ```
-        ;; output lower-case chars as uppercase
-        .map "az", "A"
+            ;; output lower-case chars as uppercase
+            .map "az", "A"
 
-        ;; output digits as actual integral values
-        .map "0","9", 0
+            ;; output digits as actual integral values
+            .map "0","9", 0
 
-        ;; alternatively:
-        .map 48, 48+9, 0
+            ;; alternatively:
+            .map 48, 48+9, 0
 
-        ;; escape sequences are acceptable too:
-        .map "\u21d4", $9f
+            ;; escape sequences are acceptable too:
+            .map "\u21d4", $9f
 ```
 **Caution:** Operand expressions containing a character literal mapped to a custom code will evaluate the character literal accordingly. This may produce unexpected results:
 ```
-        .map 'A', 'a'
+            .map 'A', 'a'
 
-        .map 'a', 'A' ;; this is now the same as .map 'a', 'a'
+            .map 'a', 'A' ;; this is now the same as .map 'a', 'a'
 ```
 Instead express character literals as one-character strings in double-quotes, which will resolve to UTF-8 values.
 
@@ -275,50 +276,50 @@ Instead express character literals as one-character strings in double-quotes, wh
 
 Other files can be included in final assembly, either as 6502.Net-compatible source or as raw binary. Source files are included using the `.include` and `.binclude` directives. This is useful for libraries or other organized source you would not want to include in your main source file. The operand is the file name (and path) enclosed in quotes. `.include` simply inserts the source at the directive.
 ```
-    ;; inside "../lib/library.s"
+            ;; inside "../lib/library.s"
 
-    .macro  inc16 mem
-    inc \mem
-    bne +
-    inc \mem+1
-+   .endmacro
-    ...
+            .macro  inc16 mem
+            inc \mem
+            bne +
+            inc \mem+1
++           .endmacro
+            ...
 ```
-This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the section below for more information about macros). 
+This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the [section below](#macros-and-segments) for more information about macros). 
 ```
-        .include "../lib/library.s"
+            .include "../lib/library.s"
 
-        .inc16 $033c    ; 16-bit increment value at $033c and $033d
+            .inc16 $033c    ; 16-bit increment value at $033c and $033d
 ``` 
 If the included library file also contained its own symbols, caution would be required to ensure no symbol clashes. An alternative to `.include` is `.binclude`, which resolves this problem by enclosing the included source in its own scoped block.
 ```
-lib     .binclude "../lib/library.s"    ; all symbols in "library.s" 
+lib         .binclude "../lib/library.s"    ; all symbols in "library.s" 
                                         ; are in the "lib" scope
 
-        jsr lib.memcopy
+            jsr lib.memcopy
 ```
 If no label is prefixed to the `.binclude` directive then the block is anonymous and labels are not visible to your code.
 
 External files containing raw binary that will be needed to be included in your final output, such as `.sid` files or sprite data, can be assembled using the `.binary` directive.
 ```
-        * = $1000
+            * = $1000
 
-        .binary "../rsrc/sprites.raw"
+            .binary "../rsrc/sprites.raw"
 
-        ...
+            ...
 
-        lda #64     ; pointer to first sprite in "./rsrc/sprites.raw"
-        sta 2040    ; set first sprite to that sprite shape
+            lda #64     ; pointer to first sprite in "./rsrc/sprites.raw"
+            sta 2040    ; set first sprite to that sprite shape
 ```
 You can also control how the binary will be included by specifying the offset (number of bytes from the start) and size to include.
 ```
-        * = $1000
+            * = $1000
 
-        .binary "../rsrc/music.sid", $7e    ; skip first 126 bytes
-                                            ; (SID header)
+            .binary "../rsrc/music.sid", $7e    ; skip first 126 bytes
+                                                ; (SID header)
 
-        .binary "../lib/compiledlib.bin", 2, 256    ; skip load header
-                                                    ; and take 256 bytes
+            .binary "../lib/compiledlib.bin", 2, 256    ; skip load header
+                                                        ; and take 256 bytes
 ```
 
 ### Mathematical and Conditional Expressions
@@ -349,12 +350,12 @@ All non-string operands are treated as math or conditional expressions. Compound
 | &&            | Logical AND                    |
 | &#124;&#124;  | Logical OR                     |
 ```
-    .addr   HIGHSCORE + 3 * 2 ; the third address from HIGHSCORE
-    .byte   * > $f000         ; if program counter > $f000, assemble as 1
-                              ; else 0
+            .addr   HIGHSCORE + 3 * 2 ; the third address from HIGHSCORE
+            .byte   * > $f000         ; if program counter > $f000, assemble as 1
+                                      ; else 0
 
-    ;; bounds check START_ADDR                          
-    .assert START_ADDR >= MIN && START_ADDR <= MAX
+            ;; bounds check START_ADDR                          
+            .assert START_ADDR >= MIN && START_ADDR <= MAX
 ```
 #### Unary Operations
 | Operator      | Meaning                        |
@@ -379,7 +380,7 @@ routine     lda &long_address   ; load the absolute value of long_address
 
 Several built-in math functions that can also be called as part of the expressions.
 ```
-    lda #sqrt(25)
+            lda #sqrt(25)
 ```
 See the section below on functions for a full list of available functions.
 
@@ -387,121 +388,121 @@ See the section below on functions for a full list of available functions.
 
 By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter. The assignment can be either a constant or expression:
 ```
-                * = ZP + 1000       ; program counter now 1000 bytes offset from
-                                    ; the value of the constant ZP
+            * = ZP + 1000       ; program counter now 1000 bytes offset from
+                                ; the value of the constant ZP
 ```                
 (Be aware of the pesky trap of trying to square the program counter using the `**` operator, i.e. `***`. This produces unexpected results. Instead consider the `pow()` function as described in the section on math functions below.)
 
 As assembly continues, the program counter advances automatically. You can manually move the program counter forward, but keep in mind doing so will create a gap that will be filled if any bytes are added to the assembly from that point forward. For instance, consider:
 ```
-                * = $1000
-                lda #0
-                jsr $1234
+            * = $1000
+            lda #0
+            jsr $1234
 
-                * = $2004
-                brk
+            * = $2004
+            brk
 ```                
 This will output 4096 bytes, with 4091 zeros. So this generally is not recommended unless this is the desired result.
 
 To move the program counter forward for the purposes having the symbols use an address space that code will be relocated to later, you can use the `.relocate` directive:
 ```
-                * = $0200
-                newlocation = $a000
+            * = $0200
+            newlocation = $a000
 
-                lda #<torelocate
-                sta $02
-                lda #>torelocate
-                sta $03
-                lda #<newlocation
-                sta $04
-                lda #>newlocation
-                sta $05
-                ldy #0
-                lda ($02),y
-                sta ($04),y
-                ....
+            lda #<torelocate
+            sta $02
+            lda #>torelocate
+            sta $03
+            lda #<newlocation
+            sta $04
+            lda #>newlocation
+            sta $05
+            ldy #0
+            lda ($02),y
+            sta ($04),y
+            ....
 torelocate:                                 
-                .relocate newlocation   ; no gap created
+            .relocate newlocation   ; no gap created
 
-                jsr relocatedsub    ; now in the "newlocation" address space
-                ...
+            jsr relocatedsub    ; now in the "newlocation" address space
+            ...
 relocatedsub    lda #0
                 ...
 ```                
 To reset the program counter back to its regular position use the `.endrelocate` directive:
 ```
-                jsr relocatedsub
-                ...
-                jmp finish
+            jsr relocatedsub
+            ...
+            jmp finish
 torelocate:
-                relocate newlocation
-                ...
-                .endrelocate
-                ;; done with movable code, do final cleanup
-finish          rts
+            relocate newlocation
+            ...
+            .endrelocate
+            ;; done with movable code, do final cleanup
+finish      rts
 ```
 Because the 65xx architecture uses differing addressing modes for the same mnemonics, by default 6502.Net selects the appropriate instruction based on the minimum required size to express the operand. For instance `lda 42` can either be interpreted to be zero-page or absolute addressing, but 6502.Net will choose zero-page. Similarly, for the 65C816 `lda $c000` could either be an absolute or long address, but 6502.Net will again choose the shorter (and faster!) instruction to assemble. You can, however, force the assembler to choose the larger mode explicitly by pre-fixing the operand with the bit-size enclosed in square brackets.
 ```
-                $c000
+            $c000
 
-                ;; zero-page loadA
-                lda 42          ; > .c000 a5 2a
+            ;; zero-page loadA
+            lda 42          ; > .c000 a5 2a
 
-                ;; absolute loadA
-                lda [16] 42     ; > .c002 ad 2a 00
+            ;; absolute loadA
+            lda [16] 42     ; > .c002 ad 2a 00
 
-                ;; long jsr to bank 0 $ffd2
-                jsr [24] $ffd2  ; > .c005 22 d2 ff 00
+            ;; long jsr to bank 0 $ffd2
+            jsr [24] $ffd2  ; > .c005 22 d2 ff 00
 ```
 ## Macros and segments
 One of the more powerful features of the 6502.Net cross assembler is the ability to re-use code segments in multiple places in your source. You define a macro or segment once, and then can invoke it multiple times later in your source; the assembler simply expands the definition where it is invoked as if it is part of the source. Macros have the additional benefit of allowing you to pass parameters, so that the final outputted code can be easily modified for different contexts, behaving much like a function call in a high level language. For instance, one of the more common operations in 6502 assembly is to do a 16-bit increment. You could use a macro for this purpose like this:
 ```
-inc16   .macro  address
-        inc \address
-        bne +
-        inc \address+1
-+       .endmacro
+inc16       .macro  address
+            inc \address
+            bne +
+            inc \address+1
++           .endmacro
 ```
 The macro is called `inc16` and takes a parameter called `address`. The code inside the macro references the parameter with a backslash `\` followed by the parameter name. The parameter is a textual subsitution; whatever you pass will be expanded at the reference point. Note the anonymous forward symbol at the branch instruction will be local to the block, as would any symbols inside the macro definition when expanded. To invoke a macro simply reference the name with a `.` in front:
 ```
-myvariable .word ?
+myvariable  .word ?
 
-        .inc16 myvariable
+            .inc16 myvariable
 ```        
 This macro expands to:
 ```
-        inc myvariable
-        bne +
-        inc myvariable+1
-+       ...
+            inc myvariable
+            bne +
+            inc myvariable+1
++           ...
 ```
 Segments are conceptually identical to macros, except they do not accept parameters and are usually used as larger segments of relocatable code. Segments are defined between `.segment`/`.endsegment` blocks with the segment name after each closure directive.
 ```
-        .segment zp
+            .segment zp
 
-zpvar1  .word ?
-zpvar2  .word ?
-        ...
-        .endsegment zp
+zpvar1      .word ?
+zpvar2      .word ?
+            ...
+            .endsegment zp
 
-        .segment code
-        ldx #0
-+       lda message,x
-        jsr chrout
-        inx
-        cpx #msgsize
-        bne +
-        ...
-        .endsegment code
+            .segment code
+            ldx #0
++           lda message,x
+            jsr chrout
+            inx
+            cpx #msgsize
+            bne +
+            ...
+            .endsegment code
 ```        
 Then you would assemble defined segments as follows:
 ```
-        * = $02
-        .zp
-        .errorif * > $ff, ".zp segment outside of zero-page!"
+            * = $02
+            .zp
+            .errorif * > $ff, ".zp segment outside of zero-page!"
 
-        * = $c000
-        .code
+            * = $c000
+            .code
 ```        
 You can also define segments within other segment definitions. Note that doing this does not make them "nested." The above example would be re-written as:
 ```
@@ -534,121 +535,121 @@ In cases where you want to control the flow of assembly, either based on certain
 ### Conditional Assembly
 Conditional assembly is available using the `.if` and related directive.  Conditions can be nested, but expressions will be evaluated on first pass only.
 ```
-    lda #$41
-    .ifdef APPLE2   ; is the symbol APPLE2 defined?
-        jsr $fbfd
-    .else
-        jsr $ffd2
-    .endif
+            lda #$41
+            .ifdef APPLE2   ; is the symbol APPLE2 defined?
+                jsr $fbfd
+            .else
+                jsr $ffd2
+            .endif
 ```
 **Caution:** Be careful not to use the `.end` directive inside a conditional block, which terminates assembly, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
 ### Basic Repetitions
 On occasions where certain instructions will be repeatedly assembled, it is convenient to repeat their output in a loop. For instance, if you want to pad a series of `nop` instructions. The `.repeat` directive does just that.
 
 ```
-        ;; will assemble $ea ten times
-        .repeat 10
-        nop
-        .endrepeat
+            ;; will assemble $ea ten times
+            .repeat 10
+            nop
+            .endrepeat
 
 ```
 These repetitions can also be nested, as shown below.
 ```
-        ;; print each letter of the alphabet 3 times
-        * = $c000
+            ;; print each letter of the alphabet 3 times
+            * = $c000
 
-        lda #$41
-        .repeat 26
-            .repeat 3
-                jsr $ffd2
+            lda #$41
+            .repeat 26
+                .repeat 3
+                    jsr $ffd2
+                .endrepeat
+                tax
+                inx
+                txa
             .endrepeat
-            tax
-            inx
-            txa
-        .endrepeat
-        .repeat 3
-           jsr $ffd2
-        .endrepeat
-        rts
+            .repeat 3
+               jsr $ffd2
+            .endrepeat
+            rts
 ```
 ### Loop Assembly
 Repetitions can also be handled in for/next loops, where source can be emitted repeatedly until a condition is met. An iteration variable can optionally be initialized, with the advantage is the variable itself can be referenced inside the loop.
 ```
-    lda #0
-    .for i = $0400, i < $0800, i = i + 1
-        sta i
-    .next
+            lda #0
+            .for i = $0400, i < $0800, i = i + 1
+                sta i
+            .next
 ```
 A minimum two operands are required: The initial expression and the condition expression. A third iteration expression is option. The iteration expression can be blank, however.
 ```
-    .let a = 0;
-    .let n = 1;
-    .for , n < 10
-        .if a == 3
-            .let n = n + 1;
-        .else
-            .let n = n + 5;
-        .endif
-        .echo format("{0}",n);
-    .next
+            .let a = 0;
+            .let n = 1;
+            .for , n < 10
+                .if a == 3
+                    .let n = n + 1;
+                .else
+                    .let n = n + 5;
+                .endif
+                .echo format("{0}",n);
+            .next
 
-    .comment
+            .comment
 
-    outputs:
+            outputs:
 
-    6
-    11
+            6
+            11
 
-    .endcomment
+            .endcomment
 ```
 If required, loops can be broken out of using the `.break` directive
 ```
-    .for i = 0, i < 256, i = i + 1
-        .if * >= $1000
-            .break          ; make sure assembly does not go past $1000
-        .endif
-        lda #'A'
-        jsr $ffd2
-    .next
+            .for i = 0, i < 256, i = i + 1
+                .if * >= $1000
+                    .break          ; make sure assembly does not go past $1000
+                .endif
+                lda #'A'
+                jsr $ffd2
+            .next
 ```
 All expressions, including the condition, are only evaluated on the first pass.
 
 **Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable inside its own or nested loops.
 
-## 65C02 and W65C816S support
+## Illegal operations, 65C02 and W65C816S support
 
 By default, 6502.Net "thinks" like a 6502 assembler, compiling only the published 56 mnemonics and 151 instructions of that microprocessor. As of Version 1.7, 6502.Net can also compile illegal instructions as well as those of the successor WDC 65C02 and W65C816S processors. The `.cpu` directive tells the assembler the type of source and instruction set it is to assemble.
 ```
-        .cpu "6502i"    ; enable illegal instructions
+            .cpu "6502i"    ; enable illegal instructions
 
-        ldx #0
-        slo (zpvar,x)
+            ldx #0
+            slo (zpvar,x)
 ```
 There are four options for the `.cpu` directive: `6502`, `6502i`, `65C02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though in the case of the `65816` selection this also includes 65C02 and 6502 (legal) instructions, since it is a superset of both.
 
 Immediate mode on the 65816 differs based on register size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers. 
 ```
-        rep #%00110000
+            rep #%00110000
 
-        .m16
-        lda #$c000      
-        ldx #$03
+            .m16
+            lda #$c000      
+            ldx #$03
 
-        .x16
-        ldy #$1000
-        jml $1012000
+            .x16
+            ldy #$1000
+            jml $1012000
 ```
 Eight-bit modes for registers are default. 
 
 You can also set all registers to the same size with `.mx8` and `.mx16` respectively.
 ```
-        sep #%00110000
+            sep #%00110000
 
-        .mx8
+            .mx8
 
-        lda #$00
-        ldx #$01
-        ldy #$02
+            lda #$00
+            ldx #$01
+            ldy #$02
 ```
 ## Future enhancements under consideration
 * Switch-case conditions
@@ -1900,6 +1901,17 @@ glyph             ;12345678
 <pre>
 6502.Net.exe -w myasm.asm
 6502.Net.exe --no-warn myasm.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--wnoleft</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Suppress warnings for lines where whitespaces precede labels.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+6502.Net.exe --wnoleft myasm.asm
 </pre>
 </td></tr>
 </table>
