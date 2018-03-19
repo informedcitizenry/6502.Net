@@ -17,7 +17,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Handler = new ForNextHandler(Controller);
         }
 
-        private IEnumerable<SourceLine> HandleLines(List<SourceLine> unprocessed)
+        IEnumerable<SourceLine> HandleLines(List<SourceLine> unprocessed)
         {
             for (int i = 0; i < unprocessed.Count; i++)
             {
@@ -39,10 +39,10 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestForNextSimple()
         {
-            List<SourceLine> unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 0, i < 3, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "nop" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>();
+            unprocessed.Add(new SourceLine { Instruction = ".for", Operand = "i = 0, i < 3, i = i + 1" });
+            unprocessed.Add(new SourceLine { Instruction = "nop" });
+            unprocessed.Add(new SourceLine { Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
@@ -52,11 +52,11 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestForNextNested()
         {
-            List<SourceLine> unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>();
+            unprocessed.Add(new SourceLine { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine { Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine { Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
@@ -64,14 +64,14 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(5, unprocessed.Count(l => l.Instruction.Equals("jsr") && l.Operand.Equals("$ffd2")));
 
             unprocessed.Clear();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "nop" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = "iny" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            unprocessed.Add(new SourceLine { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine { Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine { Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
+            unprocessed.Add(new SourceLine { Instruction = "nop" });
+            unprocessed.Add(new SourceLine { Instruction = ".next" });
+            unprocessed.Add(new SourceLine { Instruction = "iny" });
+            unprocessed.Add(new SourceLine { Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
@@ -81,18 +81,18 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestForNextMultiNested()
         {
-            List<SourceLine> unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "nop" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = "iny" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "x = 0, x < 5, x = x + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "inx" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>();
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine {Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "nop" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = "iny" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "x = 0, x < 5, x = x + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "inx" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
@@ -107,40 +107,40 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestForNextBreak()
         {
-            List<SourceLine> unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".break" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>();
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine {Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine {Instruction = ".break" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
             //Assert.AreEqual(2, unprocessed.Count);
 
             unprocessed.Clear();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = ".break" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine {Instruction = ".break" });
+            unprocessed.Add(new SourceLine {Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
             unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "nop" });
-            unprocessed.Add(new SourceLine() { Instruction = ".break" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "j = 0, j < 4, j = j + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "inx" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = "iny" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = "tax" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine {Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "nop" });
+            unprocessed.Add(new SourceLine {Instruction = ".break" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "j = 0, j < 4, j = j + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "inx" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = "iny" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = "tax" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 
@@ -155,20 +155,20 @@ namespace NUnit.Tests.TestDotNetAsm
         [Ignore("Not ready yet")]
         public void TestForNextContinue()
         {
-            List<SourceLine> unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine() { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "nop" });
-            unprocessed.Add(new SourceLine() { Instruction = ".continue" });
-            unprocessed.Add(new SourceLine() { Instruction = ".for", Operand = "j = 0, j < 4, j = j + 1" });
-            unprocessed.Add(new SourceLine() { Instruction = "inx" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = "iny" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
-            unprocessed.Add(new SourceLine() { Instruction = "tax" });
-            unprocessed.Add(new SourceLine() { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>();
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "lda", Operand = "#$41+i" });
+            unprocessed.Add(new SourceLine {Instruction = "jsr", Operand = "$ffd2" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "x = 0, x < 3, x = x + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "nop" });
+            unprocessed.Add(new SourceLine {Instruction = ".continue" });
+            unprocessed.Add(new SourceLine {Instruction = ".for", Operand = "j = 0, j < 4, j = j + 1" });
+            unprocessed.Add(new SourceLine {Instruction = "inx" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = "iny" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
+            unprocessed.Add(new SourceLine {Instruction = "tax" });
+            unprocessed.Add(new SourceLine {Instruction = ".next" });
 
             unprocessed = HandleLines(unprocessed).ToList();
 

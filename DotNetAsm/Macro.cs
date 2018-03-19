@@ -167,7 +167,7 @@ namespace DotNetAsm
         /// from the expanded macro, included substituted parameters in source.</returns>
         public IEnumerable<SourceLine> Expand(SourceLine macrocall)
         {
-            List<Param> parms = new List<Param>(Params);
+            var parms = new List<Param>(Params);
 
             if (IsSegment == false)
             {
@@ -213,7 +213,7 @@ namespace DotNetAsm
 
             foreach (var src in Source)
             {
-                SourceLine repl = src.Clone() as SourceLine;
+                var repl = src.Clone() as SourceLine;
                 repl.Scope = macrocall.Scope + repl.Scope;
 
                 if (IsSegment == false)
@@ -286,14 +286,14 @@ namespace DotNetAsm
                         for (int i = 0; i < parms.Count; i++)
                         {
                             var p = parms[i];
-                            Macro.Param parm = new Macro.Param
+                            var parm = new Macro.Param
                             {
                                 Number = i + 1
                             };
                             if (p.Contains("="))
                             {
-                                string[] ps = p.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
-                                string pname = ps.First().Trim();
+                                var ps = p.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+                                var pname = ps.First().Trim();
                                 if (ps.Count() != 2)
                                 {
                                     throw new MacroException(definition, "Default parameter assignment error");

@@ -77,7 +77,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return;
             }
-            Int64 eor = Controller.Evaluator.Eval(line.Operand);
+            var eor = Controller.Evaluator.Eval(line.Operand);
 
             if (eor < 0) eor += 256;
             if (eor > 255 || eor < 0)
@@ -86,7 +86,7 @@ namespace DotNetAsm
                 return;
             }
 
-            byte eor_b = Convert.ToByte(eor);
+            var eor_b = Convert.ToByte(eor);
             Controller.Output.Transforms.Push(delegate(byte b)
             {
                 b ^= eor_b;
@@ -143,18 +143,17 @@ namespace DotNetAsm
             {
                 operand = operand.TrimOnce('"');
             }
-            string type = line.Instruction.Substring(0, 5).ToLower();
+            var type = line.Instruction.Substring(0, 5).ToLower();
             switch (type)
             {
                 case ".echo":
                     Console.WriteLine(operand);
                     break;
-                case ".asse":
-                case ".erro":
-                    Controller.Log.LogEntry(line, operand);
-                    break;
                 case ".warn":
                     Controller.Log.LogEntry(line, operand, Controller.Options.WarningsAsErrors);
+                    break;
+                default:
+                    Controller.Log.LogEntry(line, operand);
                     break;
             }
         }

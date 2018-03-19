@@ -17,7 +17,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
         protected void TestInstruction(SourceLine line, ILineAssembler asm, int pc, int expectedsize, IEnumerable<byte> expected, bool positive)
         {
-            int size = asm.GetInstructionSize(line);
+            var size = asm.GetInstructionSize(line);
             asm.AssembleLine(line);
             if (positive)
             {
@@ -87,7 +87,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, LineAssembler, pc, expectedsize, expected, true);
         }
 
-        private void ResetController()
+        void ResetController()
         {
             if (Controller.Output.Transforms.Count > 0)
                 Controller.Output.Transforms.Pop();

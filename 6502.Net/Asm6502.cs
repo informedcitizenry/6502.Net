@@ -228,9 +228,9 @@ namespace Asm6502.Net
             OperandFormat fmt = null;
             Opcode opc = null;
 
-            string instruction = line.Instruction.ToLower();
+            var instruction = line.Instruction.ToLower();
 
-            string operand = line.Operand;
+            var operand = line.Operand;
             if (Reserved.IsOneOf("ImpliedAccumulator", instruction) ||
                 (Reserved.IsOneOf("ImpliedAC02", instruction) && !_cpu.Equals("6502"))
                 && (!Controller.Variables.IsSymbol("a") && !Controller.Labels.IsSymbol("a")))
@@ -262,7 +262,7 @@ namespace Asm6502.Net
                     if (fmt == null)
                         continue;
 
-                    string instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
+                    var instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
 
                     if (force16 || force24)
                     {
@@ -319,17 +319,14 @@ namespace Asm6502.Net
             var cpu = args.Line.Operand.Trim('"');
             if (!cpu.Equals("6502") && !cpu.Equals("65C02") && !cpu.Equals("65816") && !cpu.Equals("6502i"))
             {
-                string error = string.Format("Invalid CPU '{0}' specified", cpu);
+                var error = string.Format("Invalid CPU '{0}' specified", cpu);
                 if (args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
                     throw new Exception(string.Format(error));
-                else
-                    Controller.Log.LogEntry(args.Line, error);
+                
+                Controller.Log.LogEntry(args.Line, error);
                 return;
             }
-            else
-            {
-                _cpu = cpu;
-            }
+            _cpu = cpu;
 
             var cpuOpcodes = _opcodes.Where(o => o.CPU.Equals(_cpu));
 
@@ -404,7 +401,7 @@ namespace Asm6502.Net
         {
             if (instruction.StartsWith(".x", Controller.Options.StringComparison))
             {
-                bool x16 = instruction.Equals(".x16", Controller.Options.StringComparison);
+                var x16 = instruction.Equals(".x16", Controller.Options.StringComparison);
                 if (x16 != _x16)
                 {
                     _x16 = x16;
@@ -414,7 +411,7 @@ namespace Asm6502.Net
             else
             {
 
-                bool m16 = instruction.EndsWith("16", Controller.Options.StringComparison);
+                var m16 = instruction.EndsWith("16", Controller.Options.StringComparison);
                 if (m16 != _m16)
                 {
                     _m16 = m16;
@@ -422,7 +419,7 @@ namespace Asm6502.Net
                 }
                 if (instruction.StartsWith(".mx", Controller.Options.StringComparison))
                 {
-                    bool x16 = instruction.EndsWith("16", Controller.Options.StringComparison);
+                    var x16 = instruction.EndsWith("16", Controller.Options.StringComparison);
                     if (x16 != _x16)
                     {
                         _x16 = x16;
@@ -448,7 +445,7 @@ namespace Asm6502.Net
                 }
                 else
                 {
-                    long val = Controller.Evaluator.Eval(rta, ushort.MinValue, ushort.MaxValue + 1);
+                    var val = Controller.Evaluator.Eval(rta, ushort.MinValue, ushort.MaxValue + 1);
                     line.Assembly.AddRange(Controller.Output.Add(val - 1, 2));
                 }
             }
@@ -471,7 +468,7 @@ namespace Asm6502.Net
                 AssembleRta(line);
                 return;
             }
-            else if (Reserved.IsOneOf("LongShort", line.Instruction))
+            if (Reserved.IsOneOf("LongShort", line.Instruction))
             {
                 if (!string.IsNullOrEmpty(line.Operand))
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
@@ -566,9 +563,10 @@ namespace Asm6502.Net
             long operbytes = 0;
             if (!eval1.Equals(long.MinValue))
                 operbytes = eval2.Equals(long.MinValue) ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
-
+            
             line.Disassembly = string.Format(formatOpcode.Item2.DisasmFormat, eval1Abs, eval2);
-            line.Assembly = Controller.Output.Add(operbytes | (long)formatOpcode.Item2.Index, formatOpcode.Item2.Size);
+            line.Assembly = Controller.Output.Add(Convert.ToInt32(operbytes) | formatOpcode.Item2.Index, 
+                                                  formatOpcode.Item2.Size);
         }
 
         string ConvertFuncs(string operand)

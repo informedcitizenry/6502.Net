@@ -20,7 +20,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestDisasmMultiByteFill()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.SourceString = "                            .fill 9*3,%........";
             line.PC = 0x093e;
             line.Assembly.AddRange(Enumerable.Repeat(Convert.ToByte(0), 9 * 3));
@@ -34,7 +34,7 @@ namespace NUnit.Tests.TestDotNetAsm
 ">094e     00 00 00 00 00 00 00 00" + Environment.NewLine +
 ">0956     00 00 00" + Environment.NewLine;
 
-            string result = Controller.Disassembler.DisassembleLine(line);
+            var result = Controller.Disassembler.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
 
@@ -63,9 +63,9 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestDisasmMultiByteString()
         {
-            string teststring = "HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!";
+            var teststring = "HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!";
             var ascbytes = Encoding.ASCII.GetBytes(teststring.ToLower());
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.SourceString = string.Format("            .string \"{0}\"", teststring);
             line.Instruction = ".string";
             line.Operand = string.Format("\"{0}\"", teststring);
@@ -73,7 +73,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Assembly.AddRange(ascbytes);
             line.PC = 0xc03c;
 
-            string expected =
+            var expected =
 ">c03c     68 65 6c 6c 6f 2c 20 77                 .string \"HELLO, WORLD! MY NAME IS OPPENHEIMER I HAVE BECOME DESTROYER OF WORDS!!\"" + Environment.NewLine +
 ">c044     6f 72 6c 64 21 20 6d 79" + Environment.NewLine +
 ">c04c     20 6e 61 6d 65 20 69 73" + Environment.NewLine +
@@ -84,7 +84,7 @@ namespace NUnit.Tests.TestDotNetAsm
 ">c074     6f 79 65 72 20 6f 66 20" + Environment.NewLine +
 ">c07c     77 6f 72 64 73 21 21" + Environment.NewLine;
 
-            string result = Controller.Disassembler.DisassembleLine(line);
+            var result = Controller.Disassembler.DisassembleLine(line);
             Assert.AreEqual(expected, result);
 
         }
@@ -92,7 +92,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestDisasmLabel()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.PC = 0x080b;
             line.Label = "stdout";
             line.SourceString = "stdout      .block";
@@ -100,8 +100,8 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = string.Empty;
             line.Disassembly = string.Empty;
 
-            string expected = ".080b                                 stdout    " + Environment.NewLine;
-            string result = Controller.Disassembler.DisassembleLine(line);
+            var expected = ".080b                                 stdout    " + Environment.NewLine;
+            var result = Controller.Disassembler.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
 
@@ -118,7 +118,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestDisasmEqu()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.SourceString = "               FLAG         =   $34 ";
             line.Instruction = "=";
             line.Operand = "$34";
@@ -127,9 +127,9 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Label = "FLAG";
             Controller.Labels.SetSymbol("FLAG", 52, false);
 
-            string expected =
+            var expected =
 @"=$34                                                 FLAG         =   $34 " + Environment.NewLine;
-            string result = Controller.Disassembler.DisassembleLine(line);
+            var result = Controller.Disassembler.DisassembleLine(line);
 
             Assert.AreEqual(expected, result);
 
@@ -139,7 +139,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestDisasmSimple()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.SourceString = "    ldx #$00 ; comment here!";
             line.Instruction = "ldx";
             line.Operand = "#$00";
@@ -147,9 +147,9 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Disassembly = "ldx #$00";
             line.PC = 0xc000;
 
-            string disasm = Controller.Disassembler.DisassembleLine(line);
+            var disasm = Controller.Disassembler.DisassembleLine(line);
 
-            string expected = @".c000     a2 00       ldx #$00        " +
+            var expected = @".c000     a2 00       ldx #$00        " +
                                 line.SourceString +
                                 Environment.NewLine;
 

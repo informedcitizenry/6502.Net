@@ -35,7 +35,7 @@ namespace DotNetAsm
         /// <summary>
         /// A block of repetitions implemented as a linked list.
         /// </summary>
-        private class RepetitionBlock
+        class RepetitionBlock
         {
             /// <summary>
             /// An entry in a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>.
@@ -151,12 +151,11 @@ namespace DotNetAsm
 
                 if (_levels > 0)
                 {
-                    RepetitionBlock block = new RepetitionBlock
+                    var block = new RepetitionBlock
                     {
                         BackLink = _currBlock
                     };
-                    RepetitionBlock.RepetitionEntry entry =
-                        new RepetitionBlock.RepetitionEntry(null, block);
+                    var entry = new RepetitionBlock.RepetitionEntry(null, block);
                     _currBlock.Entries.Add(entry);
                     _currBlock = block;
                 }
@@ -187,8 +186,7 @@ namespace DotNetAsm
             }
             else
             {
-                RepetitionBlock.RepetitionEntry entry =
-                    new RepetitionBlock.RepetitionEntry(line, null);
+                var entry = new RepetitionBlock.RepetitionEntry(line, null);
                 _currBlock.Entries.Add(entry);
             }
         }

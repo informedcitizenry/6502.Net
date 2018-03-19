@@ -126,7 +126,7 @@ namespace DotNetAsm
         string ConvertEscapedUnicode(string labelOperand) => 
             _regUnicode.Replace(labelOperand, match =>
            {
-               int codepoint = int.Parse(match.Value.Substring(2), NumberStyles.HexNumber);
+               var codepoint = int.Parse(match.Value.Substring(2), NumberStyles.HexNumber);
                return char.ConvertFromUtf32(codepoint);
            });
 
@@ -157,8 +157,8 @@ namespace DotNetAsm
             if (double_enclosed || single_enclosed)
                 throw new QuoteNotEnclosedException();
             
-            string processed = SourceString.Substring(0, length).Trim();
-            Match m = _regThree.Match(processed);
+            var processed = SourceString.Substring(0, length).Trim();
+            var m = _regThree.Match(processed);
             if (string.IsNullOrEmpty(m.Value) == false)
             {
                 if (checkInstruction(m.Groups[1].Value))

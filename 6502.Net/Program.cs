@@ -32,7 +32,7 @@ namespace Asm6502.Net
     {
         static string DisplayBannerEventHandler(object sender, bool isVerbose)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             if (isVerbose)
             {
@@ -57,12 +57,12 @@ namespace Asm6502.Net
 
         static byte[] WriteHeaderEventHandler(object sender)
         {
-            IAssemblyController controller = sender as IAssemblyController;
+            var controller = sender as IAssemblyController;
 
-            string arch = controller.Options.Architecture.ToLower();
-            ushort progstart = Convert.ToUInt16(controller.Output.ProgramStart);
-            ushort progend = Convert.ToUInt16(controller.Output.ProgramCounter);
-            ushort progsize = Convert.ToUInt16(controller.Output.GetCompilation().Count);
+            var arch = controller.Options.Architecture.ToLower();
+            var progstart = Convert.ToUInt16(controller.Output.ProgramStart);
+            var progend = Convert.ToUInt16(controller.Output.ProgramCounter);
+            var progsize = Convert.ToUInt16(controller.Output.GetCompilation().Count);
 
             using(MemoryStream ms = new MemoryStream()) 
             {
@@ -85,7 +85,7 @@ namespace Asm6502.Net
                     }
                     else if (!arch.Equals("flat"))
                     {
-                        string error = string.Format("Unknown architecture specified '{0}'", arch);
+                        var error = string.Format("Unknown architecture specified '{0}'", arch);
                         throw new System.CommandLine.ArgumentSyntaxException(error);
                     }
                     return ms.ToArray();

@@ -14,47 +14,47 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorSimple()
         {
-            Evaluator eval = new Evaluator();
+            var eval = new Evaluator();
 
             eval.DefineSymbolLookup(@"(?<![a-zA-Z0-9_)])'(.)'(?![a-zA-Z0-9_(])", s =>
                 Convert.ToInt32(s.TrimOnce('\'').First()).ToString());
            
             string expression = "3+4";
-            long dude = eval.Eval(expression);
-            Assert.AreEqual(7, dude);
+            var result = eval.Eval(expression);
+            Assert.AreEqual(7, result);
 
-            dude = eval.Eval("3 + 4 * 2");
-            Assert.AreEqual(3 + 4 * 2, dude);
+            result = eval.Eval("3 + 4 * 2");
+            Assert.AreEqual(3 + 4 * 2, result);
 
-            dude = eval.Eval("3 * 4 - 2");
-            Assert.AreEqual(3 * 4 - 2, dude);
+            result = eval.Eval("3 * 4 - 2");
+            Assert.AreEqual(3 * 4 - 2, result);
 
-            dude = eval.Eval("3*(4-2)");
-            Assert.AreEqual(3 * (4 - 2), dude);
+            result = eval.Eval("3*(4-2)");
+            Assert.AreEqual(3 * (4 - 2), result);
 
-            dude = eval.Eval("-3");
-            Assert.AreEqual(-3, dude);
+            result = eval.Eval("-3");
+            Assert.AreEqual(-3, result);
 
-            dude = eval.Eval("+3");
-            Assert.AreEqual(3, dude);
+            result = eval.Eval("+3");
+            Assert.AreEqual(3, result);
 
-            dude = eval.Eval("3-(-4)");
-            Assert.AreEqual(3-(-4), dude);
+            result = eval.Eval("3-(-4)");
+            Assert.AreEqual(3-(-4), result);
 
-            dude = eval.Eval("(2 << 4) << 1");
-            Assert.AreEqual((2 << 4) << 1, dude);
+            result = eval.Eval("(2 << 4) << 1");
+            Assert.AreEqual((2 << 4) << 1, result);
 
-            dude = eval.Eval("(3*(3+4))/9");
-            Assert.AreEqual((3 * (3 + 4)) / 9, dude);
+            result = eval.Eval("(3*(3+4))/9");
+            Assert.AreEqual((3 * (3 + 4)) / 9, result);
 
-            dude = eval.Eval("2**5");
-            Assert.AreEqual((long)Math.Pow(2, 5), dude);
+            result = eval.Eval("2**5");
+            Assert.AreEqual((long)Math.Pow(2, 5), result);
 
-            dude = eval.Eval("432      +    16  /    78 -   ' '");
-            Assert.AreEqual(432 + 16 / 78 - 32, dude);
+            result = eval.Eval("432      +    16  /    78 -   ' '");
+            Assert.AreEqual(432 + 16 / 78 - 32, result);
 
-            dude = eval.Eval("5 <= 6 && 7 < 8");
-            Assert.AreEqual(1, dude);
+            result = eval.Eval("5 <= 6 && 7 < 8");
+            Assert.AreEqual(1, result);
 
             Assert.Throws<ExpressionException>(() => eval.Eval("55 33"));
 
@@ -64,7 +64,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorFunction()
         {
-            Evaluator eval = new Evaluator();
+            var eval = new Evaluator();
 
             // define constant PI
             eval.DefineSymbolLookup(@"(?>_?[a-zA-Z][a-zA-Z0-9_.]*)(?!\()",
@@ -75,27 +75,24 @@ namespace NUnit.Tests.TestDotNetAsm
                     return symbol;
                 });
 
-            long dude = eval.Eval("abs(-3)");
-            Assert.AreEqual(3, dude);
+            var result = eval.Eval("abs(-3)");
+            Assert.AreEqual(3, result);
 
-            dude = eval.Eval("pow(2,4)+pow(2,6)");
-            Assert.AreEqual((long)(Math.Pow(2, 4) + Math.Pow(2, 6)), dude);
+            result = eval.Eval("pow(2,4)+pow(2,6)");
+            Assert.AreEqual((long)(Math.Pow(2, 4) + Math.Pow(2, 6)), result);
 
-            dude = eval.Eval("PI*pow(1,2)");
-            Assert.AreEqual((long)(Math.PI * Math.Pow(1, 2)), dude);
+            result = eval.Eval("PI*pow(1,2)");
+            Assert.AreEqual((long)(Math.PI * Math.Pow(1, 2)), result);
 
-            dude = eval.Eval("pow(pow(2,1),pow(2,2))+pow(3,abs(-3))");
-            var result = Math.Pow(Math.Pow(2, 1), Math.Pow(2, 2)) + Math.Pow(3, Math.Abs(-3));
-            Assert.AreEqual((long)result, dude);
-
-            dude = eval.Eval("pow(pow(2,1),pow(2,2))+pow(3,abs(-3))");
-            Assert.AreEqual((long)result, dude);
+            result = eval.Eval("pow(pow(2,1),pow(2,2))+pow(3,abs(-3))");
+            var result2 = Math.Pow(Math.Pow(2, 1), Math.Pow(2, 2)) + Math.Pow(3, Math.Abs(-3));
+            Assert.AreEqual((long)result2, result);
         }
 
         [Test]
         public void TestExpressionErrors()
         {
-            Evaluator eval = new Evaluator();
+            var eval = new Evaluator();
 
             Assert.Throws<ExpressionException>(() => eval.Eval("56(34)"));
             Assert.Throws<ExpressionException>(() => eval.Eval("*56"));
@@ -109,32 +106,32 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             IEvaluator evaluator = new Evaluator();
 
-            long abs = evaluator.Eval("abs(-2234)");
-            long acos = evaluator.Eval("acos(1.0)");
-            long atan = evaluator.Eval("atan(0.0)");
-            long cbrt = evaluator.Eval("cbrt(2048383)");
-            long ceil = evaluator.Eval("ceil(1.1)");
-            long cos = evaluator.Eval("cos(0.0)");
-            long cosh = evaluator.Eval("cosh(0.0)");
-            long deg = evaluator.Eval("deg(1.0)");
-            long exp = evaluator.Eval("exp(15.0)");
-            long floor = evaluator.Eval("floor(-4.8)");
-            long frac = evaluator.Eval("frac(5.25)*100");
-            long hypot = evaluator.Eval("hypot(4.0, 3.0)");
-            long ln = evaluator.Eval("ln(2048.0)");
-            long log10 = evaluator.Eval("log10(" + 0x7fffff.ToString() + ") + log10(3*4) + (12*3)");
-            long pow = evaluator.Eval("pow(2,16)");
-            long rad = evaluator.Eval("rad(79999.9)");
-            long random = evaluator.Eval("random(-3,2047)");
-            long round = evaluator.Eval("round(18.21, 0)");
-            long negsgn = evaluator.Eval("sgn(-8.0)");
-            long possgn = evaluator.Eval("sgn(14.0)");
-            long nosgn = evaluator.Eval("sgn(0)");
-            long sin = evaluator.Eval("sin(1003.9) * 14");
-            long sinh = evaluator.Eval("sinh(0.0)");
-            long sqrt = evaluator.Eval("sqrt(65536) - 1");
-            long tan = evaluator.Eval("tan(444.0)*5.0");
-            long tanh = evaluator.Eval("tanh(0.0)");
+            var abs = evaluator.Eval("abs(-2234)");
+            var acos = evaluator.Eval("acos(1.0)");
+            var atan = evaluator.Eval("atan(0.0)");
+            var cbrt = evaluator.Eval("cbrt(2048383)");
+            var ceil = evaluator.Eval("ceil(1.1)");
+            var cos = evaluator.Eval("cos(0.0)");
+            var cosh = evaluator.Eval("cosh(0.0)");
+            var deg = evaluator.Eval("deg(1.0)");
+            var exp = evaluator.Eval("exp(15.0)");
+            var floor = evaluator.Eval("floor(-4.8)");
+            var frac = evaluator.Eval("frac(5.25)*100");
+            var hypot = evaluator.Eval("hypot(4.0, 3.0)");
+            var ln = evaluator.Eval("ln(2048.0)");
+            var log10 = evaluator.Eval("log10(" + 0x7fffff.ToString() + ") + log10(3*4) + (12*3)");
+            var pow = evaluator.Eval("pow(2,16)");
+            var rad = evaluator.Eval("rad(79999.9)");
+            var random = evaluator.Eval("random(-3,2047)");
+            var round = evaluator.Eval("round(18.21, 0)");
+            var negsgn = evaluator.Eval("sgn(-8.0)");
+            var possgn = evaluator.Eval("sgn(14.0)");
+            var nosgn = evaluator.Eval("sgn(0)");
+            var sin = evaluator.Eval("sin(1003.9) * 14");
+            var sinh = evaluator.Eval("sinh(0.0)");
+            var sqrt = evaluator.Eval("sqrt(65536) - 1");
+            var tan = evaluator.Eval("tan(444.0)*5.0");
+            var tanh = evaluator.Eval("tanh(0.0)");
 
             
             Assert.AreEqual(Convert.ToInt64(Math.Abs(-2234)), abs);
@@ -173,32 +170,32 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorUnaries()
         {
-            Evaluator eval = new Evaluator(@"\$([a-fA-F0-9]+)");
+            var eval = new Evaluator(@"\$([a-fA-F0-9]+)");
 
-            long dude = eval.Eval("~(53+24)-6*(5-1)");
-            Assert.AreEqual(~(53 + 24) - 6 * (5 - 1), dude);
+            var result = eval.Eval("~(53+24)-6*(5-1)");
+            Assert.AreEqual(~(53 + 24) - 6 * (5 - 1), result);
 
-            dude = eval.Eval(">65490");
-            Assert.AreEqual((65490 / 256), dude);
+            result = eval.Eval(">65490");
+            Assert.AreEqual((65490 / 256), result);
 
-            dude = eval.Eval("<65490");
-            Assert.AreEqual(65490 & 0xFF, dude);
+            result = eval.Eval("<65490");
+            Assert.AreEqual(65490 & 0xFF, result);
 
-            dude = eval.Eval(">65490*<32768");
-            Assert.AreEqual((65490 / 256) * (32768 & 0xFF), dude);
+            result = eval.Eval(">65490*<32768");
+            Assert.AreEqual((65490 / 256) * (32768 & 0xFF), result);
 
             int myvar = 548;
             eval.DefineSymbolLookup("myvar", (s) => myvar.ToString());
 
-            long notZero = eval.Eval("~0");
-            long not255 = eval.Eval("~255");
-            long notmyvar = eval.Eval("~(myvar*2)%256");
-            long lsb = eval.Eval("<$8040ffd2");
-            long msb = eval.Eval(">$8040ffd2");
-            long word = eval.Eval("&$8040ffd2");
-            long bb = eval.Eval("^$8040ffd2");
-            long mixed = eval.Eval("25*<myvar+>$2456*2");
-            long notandnot = eval.Eval("~(35*2) + ~(22*6) + (12*2)");
+            var notZero = eval.Eval("~0");
+            var not255 = eval.Eval("~255");
+            var notmyvar = eval.Eval("~(myvar*2)%256");
+            var lsb = eval.Eval("<$8040ffd2");
+            var msb = eval.Eval(">$8040ffd2");
+            var word = eval.Eval("&$8040ffd2");
+            var bb = eval.Eval("^$8040ffd2");
+            var mixed = eval.Eval("25*<myvar+>$2456*2");
+            var notandnot = eval.Eval("~(35*2) + ~(22*6) + (12*2)");
 
             Assert.AreEqual(~(myvar * 2) % 256, notmyvar);
             Assert.AreEqual(~0, notZero);
@@ -214,13 +211,13 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorHexBins()
         {
-            Evaluator eval = new Evaluator(@"\$([a-fA-F0-9]+)");
+            var eval = new Evaluator(@"\$([a-fA-F0-9]+)");
 
-            long dude = eval.Eval("$100 + %11110000");
-            Assert.AreEqual(256 + 0xF0, dude);
+            var result = eval.Eval("$100 + %11110000");
+            Assert.AreEqual(256 + 0xF0, result);
 
-            dude = eval.Eval("%##..#.#.");
-            Assert.AreEqual(202, dude);
+            result = eval.Eval("%##..#.#.");
+            Assert.AreEqual(202, result);
         }
 
         [Test]
@@ -231,11 +228,11 @@ namespace NUnit.Tests.TestDotNetAsm
             int myvar = 224;
             evaluator.DefineSymbolLookup("myvar", (s) => myvar.ToString());
 
-            long and = evaluator.Eval("myvar&$e0");
-            long or = evaluator.Eval("myvar|$0f");
-            long xor = evaluator.Eval("myvar^$ef");
-            long rol = evaluator.Eval("myvar<<2");
-            long ror = evaluator.Eval("myvar>>2");
+            var and = evaluator.Eval("myvar&$e0");
+            var or = evaluator.Eval("myvar|$0f");
+            var xor = evaluator.Eval("myvar^$ef");
+            var rol = evaluator.Eval("myvar<<2");
+            var ror = evaluator.Eval("myvar>>2");
 
             Assert.AreEqual(myvar & 0xe0, and);
             Assert.AreEqual(myvar | 0x0f, or);
@@ -248,56 +245,60 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestEvaluatorConditionals()
         {
             IEvaluator eval = new Evaluator(@"\$([a-fA-F0-9]+)");
-            bool simple = eval.EvalCondition("1 < 3");
-            bool compound = eval.EvalCondition("5+2 > 6 && 4+3 != 12");
-            bool complex = eval.EvalCondition("((1<3)||!(4>6)&&(13*2!=4||8>0))");
-            bool tricky = eval.EvalCondition("$8000 > $6900 - (16*3 + 32*2)");
-            Assert.AreEqual((1 < 3), simple);
-            Assert.AreEqual((5 + 2 > 6 && 4 + 3 != 12), compound);
-            Assert.AreEqual(((1 < 3) || !(4 > 6) && (13 * 2 != 4 || 8 > 0)), complex);
-            Assert.AreEqual(0x8000 > 0x6900 - (16 * 3 + 32 * 2), tricky);
+            var simple = eval.EvalCondition("1 < 3");
+            var compound = eval.EvalCondition("5+2 > 6 && 4+3 != 12");
+            var complex = eval.EvalCondition("((1<3)||!(4>6)&&(13*2!=4||8>0))");
+            var tricky = eval.EvalCondition("$8000 > $6900 - (16*3 + 32*2)");
+            Assert.IsTrue(simple);
+            Assert.IsTrue(compound);
+            Assert.IsTrue(complex);
+            Assert.IsTrue(tricky);
+            //Assert.AreEqual((1 < 3), simple);
+            //Assert.AreEqual((5 + 2 > 6 && 4 + 3 != 12), compound);
+            //Assert.AreEqual(((1 < 3) || !(4 > 6) && (13 * 2 != 4 || 8 > 0)), complex);
+            //Assert.AreEqual(0x8000 > 0x6900 - (16 * 3 + 32 * 2), tricky);
         }
 
         [Test]
         public void TestDefineSymbols()
         {
-            Evaluator eval = new Evaluator();
+            var eval = new Evaluator();
             eval.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", (str) => str.TrimStartOnce('(').TrimEndOnce(')').Length.ToString());
             eval.DefineSymbolLookup(@"testvar", (str) => "42");
             eval.DefineSymbolLookup(@"(?<![a-zA-Z0-9_.)])\*(?![a-zA-Z0-9_.(])", (str) => "49152");
             eval.DefineSymbolLookup(@"myfunction\(.+\)", m => "34");
 
-            long dude = eval.Eval("5**");
-            Assert.AreEqual(5 * 49152, dude);
+            var result = eval.Eval("5**");
+            Assert.AreEqual(5 * 49152, result);
 
-            dude = eval.Eval("(--)+3");
-            Assert.AreEqual(2 + 3, dude);
+            result = eval.Eval("(--)+3");
+            Assert.AreEqual(2 + 3, result);
 
-            dude = eval.Eval("5**");
-            Assert.AreEqual(5 * 49152, dude);
+            result = eval.Eval("5**");
+            Assert.AreEqual(5 * 49152, result);
 
-            dude = eval.Eval("abs(-34) + myfunction(88.5)");
-            Assert.AreEqual((long)(Math.Abs(-34) + 34), dude);
+            result = eval.Eval("abs(-34) + myfunction(88.5)");
+            Assert.AreEqual((long)(Math.Abs(-34) + 34), result);
 
             string tricky = "testvar * *";
             tricky = System.Text.RegularExpressions.Regex.Replace(tricky, @"\s?\*\s?", "*");
 
-            long result1 = eval.Eval("testvar");
-            long result2 = eval.Eval("testvar*12");
-            long result3 = eval.Eval("testvar**");
-            long result4 = eval.Eval(tricky);
-            long result5 = eval.Eval("*+testvar");
-            long result6 = eval.Eval("testvar**3");
-            long result7 = eval.Eval("<testvar+ */256+ >testvar");
+            var result1 = eval.Eval("testvar");
+            var result2 = eval.Eval("testvar*12");
+            var result3 = eval.Eval("testvar**");
+            var result4 = eval.Eval(tricky);
+            var result5 = eval.Eval("*+testvar");
+            var result6 = eval.Eval("testvar**3");
+            var result7 = eval.Eval("<testvar+ */256+ >testvar");
 
             tricky = System.Text.RegularExpressions.Regex.Replace("sin(1009.3) * 42* *", @"\s?\*\s?", "*");
-            long result8 = eval.Eval(tricky);
+            var result8 = eval.Eval(tricky);
 
             tricky = System.Text.RegularExpressions.Regex.Replace("* * 3", @"\s?\*\s?", "*");
 
-            long result9 = eval.Eval("**3");
-            long result10 = eval.Eval(tricky);
-            long result11 = eval.Eval("pow(*,2)");
+            var result9 = eval.Eval("**3");
+            var result10 = eval.Eval(tricky);
+            var result11 = eval.Eval("pow(*,2)");
 
             Assert.AreEqual(42, result1);
             Assert.AreEqual(42 * 12, result2);

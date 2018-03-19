@@ -110,7 +110,7 @@ namespace DotNetAsm
                 str.EndsWith("\"", StringComparison.CurrentCulture))
             {
                 bool escaped = false;
-                string substr = str.Substring(1);
+                var substr = str.Substring(1);
                 for (int i = 0; i < substr.Length; i++)
                 {
                     if (substr[i] == '"' && !escaped)
@@ -220,7 +220,7 @@ namespace DotNetAsm
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
         public static List<string> CommaSeparate(this string str)
         {
-            List<string> csv = new List<string>();
+            var csv = new List<string>();
 
             if (string.IsNullOrEmpty(str))
                 return csv;
@@ -229,7 +229,7 @@ namespace DotNetAsm
             bool single_enclosed = false;
             bool paren_enclosed = false;
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             int charExpCount = 0;
 
@@ -280,23 +280,23 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    switch (c)
+                    if (c == '"')
                     {
-                        case '"':
-                            double_enclosed = true;
-                            break;
-                        case '\'':
-                            single_enclosed = true;
-                            break;
-                        case '(':
-                            paren_enclosed = true;
-                            break;
-                        case ',':
-                            csv.Add(sb.ToString().Trim());
-                            sb.Clear();
-                            continue;
-                        default:
-                            break;
+                        double_enclosed = true;
+                    }
+                    else if (c == '\'')
+                    {
+                        single_enclosed = true;
+                    }
+                    else if (c == '(')
+                    {
+                        paren_enclosed = true;
+                    }
+                    else if (c == ',')
+                    {
+                        csv.Add(sb.ToString().Trim());
+                        sb.Clear();
+                        continue;
                     }
 
                     sb.Append(c);

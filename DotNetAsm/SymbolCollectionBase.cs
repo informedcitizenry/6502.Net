@@ -115,7 +115,7 @@ namespace DotNetAsm
 
             var split = parent.Split('.').ToList();
             split.RemoveAt(split.Count - 1);
-            string combined = string.Join(".", split);
+            var combined = string.Join(".", split);
             result.AddRange(GetSubScopes(combined));
             return result;
         }
@@ -128,7 +128,7 @@ namespace DotNetAsm
         /// <param name="fromScope">The nearest scope.</param>
         string GetNearestScope(string symbolName, string fromScope)
         {
-            List<string> scopes = GetSubScopes(fromScope);
+            var scopes = GetSubScopes(fromScope);
             foreach (var s in scopes)
             {
                 string scoped = s + "." + symbolName;

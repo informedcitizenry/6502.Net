@@ -18,7 +18,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestGetInstructionSize()
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jsr",
                 Operand = "$ffd2"
@@ -29,7 +29,7 @@ namespace NUnit.Tests.Test6502.Net
 
         void TestRelativeBranch(string mnemonic, byte opcode)
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
 
             Controller.Output.SetPC(0xfffe);
             line.PC = 0xfffe;
@@ -64,7 +64,7 @@ namespace NUnit.Tests.Test6502.Net
 
         protected void TestImplied(string mnemonic, byte opcode)
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = mnemonic,
                 Operand = string.Empty
@@ -106,7 +106,7 @@ namespace NUnit.Tests.Test6502.Net
             "adc ${0:x4},y",    // 79
             "adc ${0:x4},x",    // 7d
             */
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "adc",
                 Operand = "#$34"
@@ -147,7 +147,7 @@ namespace NUnit.Tests.Test6502.Net
             "and ${0:x2},x",    // 35
             "and ${0:x4},y",    // 39
             "and ${0:x4},x",    // 3d*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "and",
                 Operand = "($34,x)"
@@ -185,7 +185,7 @@ namespace NUnit.Tests.Test6502.Net
             "asl ${0:x4}",      // 0e
             "asl ${0:x2},x",    // 16
             "asl ${0:x4},x",    // 1e*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "asl",
                 Operand = "$34"
@@ -246,7 +246,7 @@ namespace NUnit.Tests.Test6502.Net
             "bit ${0:x2}",      // 24
             "bit ${0:x4}",      // 2c*/
 
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "bit",
                 Operand = "$34"
@@ -345,7 +345,7 @@ namespace NUnit.Tests.Test6502.Net
             "cmp ${0:x4},y",    // d9
             "cmp ${0:x4},x",    // dd*/
 
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "cmp",
                 Operand = "($34,x)"
@@ -382,7 +382,7 @@ namespace NUnit.Tests.Test6502.Net
             "cpx ${0:x2}",      // e4
             "cpx ${0:x4}",      // ec
              */
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "cpx",
                 Operand = "#$34"
@@ -418,7 +418,7 @@ namespace NUnit.Tests.Test6502.Net
             "cpy #${0:x2}",     // c0
             "cpy ${0:x2}",      // c4
             "cpy ${0:x4}",      // cc*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "cpy",
                 Operand = "#$34"
@@ -456,7 +456,7 @@ namespace NUnit.Tests.Test6502.Net
             "dec ${0:x2},x",    // d6
             "dec ${0:x4},x",    // de*/
 
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "dec",
                 Operand = "$34"
@@ -506,7 +506,7 @@ namespace NUnit.Tests.Test6502.Net
             "eor ${0:x2},x",    // 55
             "eor ${0:x4},y",    // 59
             "eor ${0:x4},x",    // 5d*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "eor",
                 Operand = "($34,x)"
@@ -543,7 +543,7 @@ namespace NUnit.Tests.Test6502.Net
             "inc ${0:x4}",      // ee
             "inc ${0:x2},x",    // f6
             "inc ${0:x4},x",    // fe*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "inc",
                 Operand = "$34"
@@ -587,7 +587,7 @@ namespace NUnit.Tests.Test6502.Net
             /*
             "jmp ${0:x4}",      // 4c
             "jmp (${0:x4})",    // 6c*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jmp",
                 Operand = "$34"
@@ -619,7 +619,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestJsr()
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jsr",
                 Operand = "$34"
@@ -657,7 +657,7 @@ namespace NUnit.Tests.Test6502.Net
             "lda ${0:x2},x",    // b5
             "lda ${0:x4},y",    // b9
             "lda ${0:x4},x",    // bd*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lda",
                 Operand = "($34,x)"
@@ -695,7 +695,7 @@ namespace NUnit.Tests.Test6502.Net
             "ldx ${0:x4}",      // ae
             "ldx ${0:x2},y",    // b6
             "ldx ${0:x4},y",    // be*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "ldx",
                 Operand = "#$34"
@@ -733,7 +733,7 @@ namespace NUnit.Tests.Test6502.Net
             "ldy ${0:x4}",      // ac
             "ldy ${0:x2},x",    // b4
             "ldy ${0:x4},x",    // bc*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "ldy",
                 Operand = "#$34"
@@ -772,7 +772,7 @@ namespace NUnit.Tests.Test6502.Net
             "lsr ${0:x2},x",    // 56
             "lsr ${0:x4},x",    // 5e*/
 
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lsr",
                 Operand = "$34"
@@ -819,7 +819,7 @@ namespace NUnit.Tests.Test6502.Net
             "ora ${0:x2},x",    // 15
             "ora ${0:x4},y",    // 19
             "ora ${0:x4},x",    // 1d*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "ora",
                 Operand = "($34,x)"
@@ -882,7 +882,7 @@ namespace NUnit.Tests.Test6502.Net
             "rol ${0:x2},x",    // 36
             "rol ${0:x4},x",    // 3e
              */
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "rol",
                 Operand = "$34"
@@ -926,7 +926,7 @@ namespace NUnit.Tests.Test6502.Net
             "ror ${0:x4}",      // 6e
             "ror ${0:x2},x",    // 76
             "ror ${0:x4},x",    // 7e*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "ror",
                 Operand = "$34"
@@ -964,7 +964,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestRta()
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = ".rta",
                 Operand = "$0000"
@@ -1019,7 +1019,7 @@ namespace NUnit.Tests.Test6502.Net
             "sta ${0:x2},x",    // 95
             "sta ${0:x4},y",    // 99
             "sta ${0:x4},x",    // 9d*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sta",
                 Operand = "($34,x)"
@@ -1055,7 +1055,7 @@ namespace NUnit.Tests.Test6502.Net
             "stx ${0:x2}",      // 86
             "stx ${0:x4}",      // 8e
             "stx ${0:x2},y",    // 96*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "stx",
 
@@ -1092,7 +1092,7 @@ namespace NUnit.Tests.Test6502.Net
             "sty ${0:x2}",      // 84
             "sty ${0:x4}",      // 8c
             "sty ${0:x2},x",    // 94*/
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sty",
                 Operand = "$34"
@@ -1160,7 +1160,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestSyntaxErrors()
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lda",
                 Operand = "# 34"
@@ -1234,9 +1234,9 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestEncodings()
         {
-            PseudoAssembler stringAsm = new PseudoAssembler(this.Controller, s => false);
-            SourceLine line = new SourceLine();
-            string teststring = "\"hello, world\"";
+            var stringAsm = new PseudoAssembler(this.Controller, s => false);
+            var line = new SourceLine();
+            var teststring = "\"hello, world\"";
 
             var ascbytes = Encoding.ASCII.GetBytes(teststring.TrimOnce('"'));
             var petbytes = Encoding.ASCII.GetBytes(teststring.TrimOnce('"').ToUpper());

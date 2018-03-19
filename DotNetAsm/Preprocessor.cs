@@ -130,7 +130,7 @@ namespace DotNetAsm
                 else if (line.Instruction.Equals(".binclude", Controller.Options.StringComparison))
                 {
                     var args = line.Operand.CommaSeparate();
-                    SourceLine openblock = new SourceLine();
+                    var openblock = new SourceLine();
                     if (args.Count > 1)
                     {
                         if (string.IsNullOrEmpty(line.Label) == false && _symbolNameFunc(line.Label) == false)
@@ -209,12 +209,12 @@ namespace DotNetAsm
             {
                 Console.WriteLine("Processing input file " + file + "...");
                 int currentline = 1;
-                List<SourceLine> sourcelines = new List<SourceLine>();
+                var sourcelines = new List<SourceLine>();
                 using (StreamReader reader = new StreamReader(File.Open(file, FileMode.Open)))
                 {
                     while (reader.EndOfStream == false)
                     {
-                        string unprocessedline = reader.ReadLine();
+                        var unprocessedline = reader.ReadLine();
                         try
                         {
                             var line = new SourceLine(file, currentline, unprocessedline);

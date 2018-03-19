@@ -97,8 +97,8 @@ namespace DotNetAsm
             if (line.Instruction.StartsWith(".", Controller.Options.StringComparison) &&
                     !Reserved.IsReserved(line.Instruction))
                 return string.Format(">{0:x4}", line.PC);
-            else
-                return string.Format(".{0:x4}", line.PC);
+            
+            return string.Format(".{0:x4}", line.PC);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace DotNetAsm
             if (line.Assembly.Count == 0 || Controller.Options.NoAssembly)
                 return string.Empty;
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             line.Assembly.ForEach(b => sb.AppendFormat(" {0:x2}", b));
 
             if (sb.Length > 24)
@@ -191,7 +191,7 @@ namespace DotNetAsm
 
             if (Controller.Options.NoAssembly == false)
             {
-                string asm = DisassembleAsm(line, sourcestr);
+                var asm = DisassembleAsm(line, sourcestr);
                 if (asm.Length > 24)
                 {
                     sb.Append(asm);
@@ -229,7 +229,7 @@ namespace DotNetAsm
         /// <returns>A string representation of the source.</returns>
         public string DisassembleLine(SourceLine line)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             DisassembleLine(line, sb);
             return sb.ToString();
         }

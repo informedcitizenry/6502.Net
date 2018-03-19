@@ -54,7 +54,7 @@ namespace DotNetAsm
         {
             try
             {
-                string filename = Filename.TrimOnce('"');
+                var filename = Filename.TrimOnce('"');
 
                 using (BinaryReader reader = new BinaryReader(File.OpenRead(filename)))
                 {
@@ -96,7 +96,7 @@ namespace DotNetAsm
         /// <returns><c>True</c> if the files (filenames) are equal, otherwise <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
-            BinaryFile other = obj as BinaryFile;
+            var other = obj as BinaryFile;
             return this.Filename == other.Filename;
         }
 

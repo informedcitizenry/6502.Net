@@ -20,7 +20,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestAssert()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.LineNumber = 1;
             line.Filename = "test";
             line.Instruction = ".assert";
@@ -29,7 +29,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Assert.IsTrue(Controller.Log.HasErrors);
             
-            string error = Controller.Log.Entries.Last();
+            var error = Controller.Log.Entries.Last();
             Assert.AreEqual("Error in file 'test' at line 1: Assertion Failed: '5 == 6'", error);
 
             Controller.Log.ClearAll();
@@ -51,7 +51,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestConditionals()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.LineNumber = 1;
             line.Filename = "test";
             line.Instruction = ".errorif";
@@ -59,7 +59,7 @@ namespace NUnit.Tests.TestDotNetAsm
             LineAssembler.AssembleLine(line);
 
             Assert.IsTrue(Controller.Log.HasErrors);
-            string error = Controller.Log.Entries.Last();
+            var error = Controller.Log.Entries.Last();
 
             Assert.AreEqual("Error in file 'test' at line 1: 5 doesn't equal 6!", error);
             Controller.Log.ClearAll();

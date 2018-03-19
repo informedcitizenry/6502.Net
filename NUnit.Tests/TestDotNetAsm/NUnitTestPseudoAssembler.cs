@@ -7,9 +7,6 @@ using System.Text;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    internal     /// <summary>
-        /// barebones assembly controller
-        /// </summary>
     class TestController : IAssemblyController
     {
         public TestController() :
@@ -18,8 +15,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
         }
 
-        public TestController(string[] args) :
-            base()
+        public TestController(string[] args) 
         {
             Output = new Compilation(true);
 
@@ -33,7 +29,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
                 Encoding.GetEncodedValue(chr.TrimOnce('\'').First()).ToString());
-            
+
             Evaluator.DefineSymbolLookup(@"(?>[a-zA-Z][a-zA-Z0-9]*)(?!\()", GetSymbol);
 
 
@@ -44,11 +40,11 @@ namespace NUnit.Tests.TestDotNetAsm
             Variables = new VariableCollection(Options.StringComparar, Evaluator);
         }
 
-        private string GetSymbol(string arg)
+        string GetSymbol(string arg)
         {
             if (Labels.IsSymbol(arg))
                 return Labels.GetSymbolValue(arg).ToString();
-            else if (Variables.IsSymbol(arg))
+            if (Variables.IsSymbol(arg))
                 return Variables.GetSymbolValue(arg).ToString();
             return string.Empty;
         }
@@ -118,7 +114,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void AssembleLine(SourceLine line)
         {
             if (line.Instruction.Equals(".cpu", StringComparison.CurrentCulture))
-                CpuChanged?.Invoke(new CpuChangedEventArgs{ Line = new SourceLine{ Operand = line.Operand}});
+                CpuChanged?.Invoke(new CpuChangedEventArgs { Line = new SourceLine { Operand = line.Operand } });
         }
 
         public ILineDisassembler Disassembler { get; set; }
@@ -143,7 +139,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestMultiByte()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Instruction = ".byte";
             line.Operand = "$01,$02 , $03, $04, $05";
             TestInstruction(line, 0x0005, 5, new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 });
@@ -174,7 +170,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestByteChar()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Instruction = ".byte";
             line.Operand = "0,255";
             TestInstruction(line, 0x0002, 2, new byte[] { 0x00, 0xff });
@@ -193,7 +189,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestWordSint()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Instruction = ".sint";
             line.Operand = "-32768,32767";
             TestInstruction(line, 0x0004, 4, new byte[] { 0x00, 0x80, 0xff, 0x7f });
@@ -226,10 +222,10 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestDwordDint()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Instruction = ".dint";
             line.Operand = int.MinValue.ToString() + ", " + int.MaxValue.ToString();
-            TestInstruction(line, 0x0008, 8, new byte[] { 0x00, 0x00, 0x00, 0x80, 
+            TestInstruction(line, 0x0008, 8, new byte[] { 0x00, 0x00, 0x00, 0x80,
                                                           0xff, 0xff, 0xff, 0x7f});
             line.Operand = uint.MaxValue.ToString();
             TestForFailure<OverflowException>(line);
@@ -244,10 +240,10 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestLintLong()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Instruction = ".lint";
             line.Operand = Int24.MinValue.ToString() + " , " + Int24.MaxValue.ToString();
-            TestInstruction(line, 0x0006, 6, new byte[] { 0x00, 0x00, 0x80, 
+            TestInstruction(line, 0x0006, 6, new byte[] { 0x00, 0x00, 0x80,
                                                           0xff, 0xff, 0x7f});
 
             line.Operand = "16777215";
@@ -266,9 +262,9 @@ namespace NUnit.Tests.TestDotNetAsm
             string teststring = "HELLO, WORLD";
             var ascbytes = Encoding.ASCII.GetBytes(teststring);
 
-            List<byte> test = new List<byte>();
+            var test = new List<byte>();
 
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
 
             test.Add(0x0c);
             test.AddRange(ascbytes);
@@ -337,7 +333,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestFormatFunction()
         {
-            string testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", Controller.Evaluator);
+            var testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", Controller.Evaluator);
             Assert.AreEqual("TEST=02", testformat);
 
         }
@@ -345,8 +341,8 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEncodingDefine()
         {
-            SourceLine line = new SourceLine();
-            
+            var line = new SourceLine();
+
             line.Instruction = ".encoding";
             line.Operand = "test";
             LineAssembler.AssembleLine(line);
@@ -355,7 +351,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "\"A\", \"a\"";
             LineAssembler.AssembleLine(line);
 
-            char translated = (char)Controller.Encoding.GetEncodedValue('A');
+            var translated = (char)Controller.Encoding.GetEncodedValue('A');
             Assert.AreEqual('a', translated);
 
             line.Instruction = ".byte";
@@ -437,7 +433,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestFill()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
 
             line.Instruction = ".byte";
             line.Operand = "0";
@@ -462,14 +458,14 @@ namespace NUnit.Tests.TestDotNetAsm
 
             // test larger size
             line.Operand = "10, $ffd2";
-            TestInstruction(line, 0x000a, 10, new byte[] { 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff});
+            TestInstruction(line, 0x000a, 10, new byte[] { 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff, 0xd2, 0xff });
 
             line.Operand = "10, $112233";
-            TestInstruction(line, 0x000a, 10, new byte[] { 0x33, 0x22, 0x11, 0x33, 0x22, 0x11, 0x33, 0x22, 0x11, 0x33});
+            TestInstruction(line, 0x000a, 10, new byte[] { 0x33, 0x22, 0x11, 0x33, 0x22, 0x11, 0x33, 0x22, 0x11, 0x33 });
 
             line.Operand = string.Empty;
             TestForFailure<InvalidOperationException>(line);
-            
+
             line.Operand = "10, $ea, $20";
             TestForFailure(line);
 
@@ -478,7 +474,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestAlign()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
 
             line.Instruction = ".byte";
             line.Operand = "0";
@@ -509,7 +505,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Operand = string.Empty;
             TestForFailure<InvalidOperationException>(line);
-           
+
             line.Operand = "$100, $10, $02";
             TestForFailure(line);
         }
@@ -517,7 +513,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestSyntaxErrors()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Instruction = ".byte";
             line.Operand = "3,";
             TestForFailure<ExpressionException>(line);
@@ -543,7 +539,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Operand = "-?";
             TestForFailure<ExpressionException>(line);
-            
+
             line.Operand = "-1,?";
             TestInstruction(line, 0x0002, 2, new byte[] { 0xff });
 

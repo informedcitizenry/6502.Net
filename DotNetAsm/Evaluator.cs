@@ -107,9 +107,9 @@ namespace DotNetAsm
         {
             _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
 
-            _regFcn     = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))",     RegexOptions.Compiled);
-            _regUnary   = new Regex(@"(?<![0-9.)<>])([!+\-~^&<>])(\(.+\)|[0-9.]+)",  RegexOptions.Compiled);
-            _regBinary  = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))",            RegexOptions.Compiled);
+            _regFcn = new Regex(@"(" + Patterns.SymbolBasic + @")(\(.+\))", RegexOptions.Compiled);
+            _regUnary = new Regex(@"(?<![0-9.)<>])([!+\-~^&<>])(\(.+\)|[0-9.]+)", RegexOptions.Compiled);
+            _regBinary = new Regex(@"(?<=^|[^01#.])%(([01]+)|([#.]+))", RegexOptions.Compiled);
 
             _cache = new Dictionary<string, double>();
             _hexRegexes = new List<Regex> { new Regex(hexPattern, RegexOptions.Compiled) };
@@ -179,14 +179,14 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         string EvalFunctions(string expression)
         {
-            Match m = _regFcn.Match(expression);
+            var m = _regFcn.Match(expression);
             while (string.IsNullOrEmpty(m.Value) == false)
             {
-                string fcnName = m.Groups[1].Value;
-                string call_list = m.Groups[2].Value.FirstParenEnclosure();
-                string parens = EvalFunctions(call_list.Substring(1, call_list.Length - 2));
+                var fcnName = m.Groups[1].Value;
+                var call_list = m.Groups[2].Value.FirstParenEnclosure();
+                var parens = EvalFunctions(call_list.Substring(1, call_list.Length - 2));
 
-                string[] parms = parens.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                var parms = parens.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
                 double result = 0;
 
@@ -221,8 +221,8 @@ namespace DotNetAsm
                 // <value =  value        % 256
                 // >value = (value/256)   % 256
                 // ^value = (value/65536) % 256
-                string value = m.Groups[2].Value.FirstParenEnclosure();
-                string post = string.Empty;
+                var value = m.Groups[2].Value.FirstParenEnclosure();
+                var post = string.Empty;
 
                 if (value != m.Groups[2].Value)
                 {
@@ -248,8 +248,6 @@ namespace DotNetAsm
                         return string.Format("{0}{1}", Eval(value) == 0 ? "1" : "0", post);
                     case "+":
                         return value;
-                    default:
-                        break;
                 }
                 long compl = ~Eval(value);
                 if (compl < 0)
@@ -266,7 +264,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="expression">The expression string to evaluate.</param>
         /// <returns><c>True</c> if the expression contains user-defined symbols, otherwise <c>false</c>.</returns>
-        bool ContainsSymbols(string expression) => 
+        bool ContainsSymbols(string expression) =>
                 _symbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
 
         /// <summary>
@@ -317,9 +315,9 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         List<string> Shunt(string expression)
         {
-            StringBuilder outputString = new StringBuilder();
-            List<string> outputs = new List<string>();
-            Stack<char> operators = new Stack<char>();
+            var outputString = new StringBuilder();
+            var outputs = new List<string>();
+            var operators = new Stack<char>();
 
             bool lastWasWS = false;
 
@@ -430,7 +428,7 @@ namespace DotNetAsm
             if (_cache.ContainsKey(expression))
                 return _cache[expression];
 
-            string pre_eval = PreEvaluate(expression);
+            var pre_eval = PreEvaluate(expression);
 
             var outputs = Shunt(pre_eval);
             if (outputs.Count == 0)
@@ -474,7 +472,7 @@ namespace DotNetAsm
 
             expression = _regBinary.Replace(expression, delegate (Match m)
             {
-                string binstring = m.Groups[1].Value.Replace("#", "1").Replace(".", "0");
+                var binstring = m.Groups[1].Value.Replace("#", "1").Replace(".", "0");
                 return Convert.ToInt64(binstring, 2).ToString();
             });
 
@@ -509,7 +507,7 @@ namespace DotNetAsm
         /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>"
         double Calculate(IEnumerable<string> outputs)
         {
-            Stack<double> result = new Stack<double>();
+            var result = new Stack<double>();
 
             bool needOperator = false;
 
@@ -523,8 +521,8 @@ namespace DotNetAsm
                 else
                 {
                     needOperator = false;
-                    double right = result.Pop();
-                    double left = result.Pop();
+                    var right = result.Pop();
+                    var left = result.Pop();
 
                     switch (s)
                     {
@@ -608,7 +606,7 @@ namespace DotNetAsm
         /// <exception cref="T:System.OverflowException">System.OverflowException</exception>
         public long Eval(string expression, long minval, long maxval)
         {
-            double result = EvalInternal(expression);
+            var result = EvalInternal(expression);
             if (double.IsInfinity(result))
                 throw new DivideByZeroException(expression);
             if (result < minval || result > maxval)

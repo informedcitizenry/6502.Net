@@ -11,7 +11,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestSimple()
         {
-            List<SourceLine> source = new List<SourceLine>();
+            var source = new List<SourceLine>();
             source.Add(new SourceLine());
             source.First().Instruction = ".repeat";
             source.First().Operand = "5";
@@ -20,14 +20,14 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine());
             source.Last().Instruction = ".endrepeat";
 
-            RepetitionHandler handler = new RepetitionHandler(new TestController());
+            var handler = new RepetitionHandler(new TestController());
 
             foreach(SourceLine line in source)
             {
                 handler.Process(line);
             }
 
-            List<SourceLine> processed = new List<SourceLine>();
+            var processed = new List<SourceLine>();
             processed.AddRange(handler.GetProcessedLines());
 
             Assert.AreEqual(5, processed.Count);
@@ -36,7 +36,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestMixed()
         {
-            List<SourceLine> source = new List<SourceLine>();
+            var source = new List<SourceLine>();
             source.Add(new SourceLine { Instruction = "lda", Operand = "#$41" });
             source.Add(new SourceLine { Instruction = ".repeat", Operand = "2" });
             source.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2 " });
@@ -46,8 +46,8 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine { Instruction = ".endrepeat" });
             source.Add(new SourceLine { Instruction = "rts" });
 
-            List<SourceLine> processed = new List<SourceLine>();
-            RepetitionHandler handler = new RepetitionHandler(new TestController());
+            var processed = new List<SourceLine>();
+            var handler = new RepetitionHandler(new TestController());
             
             foreach(SourceLine line in source)
             {
@@ -72,7 +72,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestNestedRepititions()
         {
-            List<SourceLine> source = new List<SourceLine>();
+            var source = new List<SourceLine>();
             
             source.Add(new SourceLine { Instruction = ".repeat", Operand = "2" });
             source.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2 " });
@@ -84,8 +84,8 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine { Instruction = ".endrepeat" });
             source.Add(new SourceLine { Instruction = "rts" });
 
-            List<SourceLine> processed = new List<SourceLine>();
-            RepetitionHandler handler = new RepetitionHandler(new TestController());
+            var processed = new List<SourceLine>();
+            var handler = new RepetitionHandler(new TestController());
 
             foreach (SourceLine line in source)
             {
@@ -166,9 +166,9 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestErrors()
         {
-            TestController controller = new TestController();
-            SourceLine line = new SourceLine { Instruction = ".repeat" };
-            RepetitionHandler handler = new RepetitionHandler(controller);
+            var controller = new TestController();
+            var line = new SourceLine { Instruction = ".repeat" };
+            var handler = new RepetitionHandler(controller);
             handler.Process(line);
 
             Assert.IsTrue(controller.Log.HasErrors);

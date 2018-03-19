@@ -255,7 +255,7 @@ namespace DotNetAsm
         /// of the bytes added to the compilation.</returns>
         public List<byte> Fill(int amount, Int64 value)
         {
-            int size = value.Size();
+            var size = value.Size();
             byte[] fillbytes;
 
             if (BitConverter.IsLittleEndian != IsLittleEndian)
@@ -263,7 +263,7 @@ namespace DotNetAsm
             else
                 fillbytes = BitConverter.GetBytes(value).Take(size).ToArray();
 
-            List<byte> repeated = new List<byte>();
+            var repeated = new List<byte>();
             for (int i = 0; i < amount; i++)
                 repeated.AddRange(fillbytes);
 
@@ -290,7 +290,7 @@ namespace DotNetAsm
         /// of the bytes added to the compilation.</returns>
         public List<byte> Align(int amount, long value)
         {
-            int align = GetAlignmentSize(LogicalPC, amount);
+            var align = GetAlignmentSize(LogicalPC, amount);
             return Fill(align, value);
         }
 
@@ -302,7 +302,7 @@ namespace DotNetAsm
         /// <returns>Returns the offset needed to align the Program Counter.</returns>
         public void Align(int amount)
         {
-            int align = GetAlignmentSize(LogicalPC, amount);
+            var align = GetAlignmentSize(LogicalPC, amount);
             LogicalPC += align;
             ProgramCounter += align;
             //return align;
@@ -350,12 +350,9 @@ namespace DotNetAsm
                 _bytes.AddRange(transformed);
                 return transformed;
             }
-            else
-            {
-                var bytesAdded = bytes.ToList().GetRange(0, size);
-                _bytes.AddRange(bytesAdded);
-                return bytesAdded;
-            }
+            var bytesAdded = bytes.ToList().GetRange(0, size);
+            _bytes.AddRange(bytesAdded);
+            return bytesAdded;
         }
 
         /// <summary>

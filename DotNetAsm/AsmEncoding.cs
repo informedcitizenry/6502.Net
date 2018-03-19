@@ -98,8 +98,8 @@ namespace DotNetAsm
         {
             if (_currentMap.ContainsKey(chr))
                 return _currentMap[chr];
-            byte[] charbytes = GetCharBytes(chr);
-            byte[] paddedcodebytes = new byte[4];
+            var charbytes = GetCharBytes(chr);
+            var paddedcodebytes = new byte[4];
             Array.Copy(GetCharBytes(chr), paddedcodebytes, charbytes.Length);
             return BitConverter.ToInt32(paddedcodebytes, 0);
         }
@@ -245,7 +245,7 @@ namespace DotNetAsm
             int numbytes = 0;
             for (int i = 0; i < count; i++)
             {
-                byte[] bytechars = GetCharBytes(chars[i + index]);
+                var bytechars = GetCharBytes(chars[i + index]);
                 numbytes += bytechars.Length; 
             }
             return numbytes;
@@ -271,7 +271,7 @@ namespace DotNetAsm
             int j = byteIndex;
             for (int i = 0; i < charCount; i++)
             {
-                byte[] transBytes = GetCharBytes(chars[i + charIndex]);
+                var transBytes = GetCharBytes(chars[i + charIndex]);
                 foreach (byte b in transBytes)
                     bytes[j++] = b;
             }

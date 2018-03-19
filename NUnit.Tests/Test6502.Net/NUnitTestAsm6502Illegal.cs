@@ -17,12 +17,12 @@ namespace NUnit.Tests.Test6502.Net
 
         void SetCpu(string cpu)
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = ".cpu",
                 Operand = "\"" + cpu + "\""
             };
-            TestDotNetAsm.TestController test = Controller as TestDotNetAsm.TestController;
+            var test = Controller as TestDotNetAsm.TestController;
             test.AssembleLine(line);
         }
 
@@ -30,7 +30,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestAnc()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "anc",
                 Operand = "#$ff"
@@ -46,7 +46,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestAne()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "ane",
                 Operand = "#$ff"
@@ -62,7 +62,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestArr()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "arr",
                 Operand = "#$ff"
@@ -77,7 +77,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestAsr()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "asr",
                 Operand = "#$ff"
@@ -92,7 +92,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestDcp()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "dcp",
                 Operand = "42"
@@ -129,7 +129,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestDop()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "dop"
             };
@@ -164,7 +164,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestIsb()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "isb",
                 Operand = "42"
@@ -200,7 +200,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestJam()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jam"
             };
@@ -214,7 +214,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestLas()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "las",
                 Operand = "42,y"
@@ -229,7 +229,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestLax()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lax",
                 Operand = "42"
@@ -268,7 +268,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestRla()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "rla",
                 Operand = "42"
@@ -304,7 +304,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestRra()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "rra",
                 Operand = "42"
@@ -340,7 +340,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSax()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sax",
                 Operand = "42"
@@ -379,7 +379,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSha()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sha",
                 Operand = "(42),y"
@@ -395,7 +395,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestShx()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "shx",
                 Operand = "42,y"
@@ -411,7 +411,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestShy()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "shy",
                 Operand = "42,x"
@@ -429,7 +429,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSlo()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "slo",
                 Operand = "42"
@@ -465,7 +465,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSre()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sre",
                 Operand = "42"
@@ -501,7 +501,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTas()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tas",
                 Operand = "42,y"
@@ -516,9 +516,9 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTop()
         {
             SetCpu("6502i");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
-                Instruction = "top",
+                Instruction = "top"
             };
             TestInstruction(line, 0x0001, new byte[] { 0x0c }, "top");
 

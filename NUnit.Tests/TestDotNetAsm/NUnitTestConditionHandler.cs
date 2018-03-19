@@ -20,7 +20,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestConditionHandlerBasic()
         {
-            List<SourceLine> testSource = new List<SourceLine>();
+            var testSource = new List<SourceLine>();
             testSource.Add(new SourceLine { Instruction = ".if",    Operand = "3 == 3" });
             testSource.Add(new SourceLine { Instruction = "lda",    Operand = "#$30" });
             testSource.Add(new SourceLine { Instruction = ".if",    Operand = "2 == 6" });
@@ -35,7 +35,7 @@ namespace NUnit.Tests.TestDotNetAsm
             testSource.Add(new SourceLine { Instruction = ".endif", Operand = string.Empty });
             testSource.Add(new SourceLine { Instruction = ".endif", Operand = string.Empty });
 
-            List<SourceLine> expected = new List<SourceLine>();
+            var expected = new List<SourceLine>();
             expected.Add(new SourceLine { Instruction = "lda", Operand = "#$30" });
             expected.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2" });
 

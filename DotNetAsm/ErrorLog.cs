@@ -97,7 +97,7 @@ namespace DotNetAsm
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
         public void LogEntry(string filename, int linenumber, string message, object source, bool isError = true)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             if (string.IsNullOrEmpty(filename))
             {

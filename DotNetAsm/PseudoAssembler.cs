@@ -75,7 +75,7 @@ namespace DotNetAsm
         {
             var csv = line.Operand.CommaSeparate();
 
-            int alignval = (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
+            var alignval = (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
 
             if (csv.Count > 1 && csv.Last().Equals("?") == false)
             {
@@ -84,7 +84,7 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
-                Int64 fillval = Controller.Evaluator.Eval(csv.Last(), int.MinValue, uint.MaxValue);
+                var fillval = Controller.Evaluator.Eval(csv.Last(), int.MinValue, uint.MaxValue);
 
                 if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
                     line.Assembly = Controller.Output.Align(alignval, fillval);
@@ -118,7 +118,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    Int64 val = Controller.Evaluator.Eval(t, minval, maxval);
+                    var val = Controller.Evaluator.Eval(t, minval, maxval);
                     line.Assembly.AddRange(Controller.Output.Add(val, size));
                 }
             }
@@ -186,13 +186,13 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                 return new BinaryFile(string.Empty);
             }
-            else if (!args.First().EnclosedInQuotes())
+            if (!args.First().EnclosedInQuotes())
             {
                 Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                 return new BinaryFile(string.Empty);
             }
-            string filename = args.First().TrimOnce('"');
-            BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
+            var filename = args.First().TrimOnce('"');
+            var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
 
             if (binary == null)
             {
@@ -210,8 +210,7 @@ namespace DotNetAsm
         {
             if (_typeDefs.ContainsKey(line.Instruction))
                 return _typeDefs[line.Instruction].ToLower();
-            else
-                return line.Instruction.ToLower();
+            return line.Instruction.ToLower();
         }
 
         public void AssembleLine(SourceLine line)
@@ -223,7 +222,7 @@ namespace DotNetAsm
                                         Controller.Output.LogicalPC);
                 return;
             }
-            string instruction = GetInstruction(line);
+            var instruction = GetInstruction(line);
 
             switch (instruction)
             {
@@ -285,7 +284,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
-            string currtype = csvs.First();
+            var currtype = csvs.First();
             if (!Reserved.IsOneOf("PseudoOps", currtype) ||
                 !base.IsReserved(currtype))
             {
@@ -293,7 +292,7 @@ namespace DotNetAsm
                 return;
             }
 
-            string newtype = csvs.Last();
+            var newtype = csvs.Last();
             if (!Regex.IsMatch(newtype, @"^\.?" + Patterns.SymbolUnicode + "$"))
             {
                 Controller.Log.LogEntry(line, ErrorStrings.None);
@@ -327,13 +326,13 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return 0;
             }
-            string instruction = GetInstruction(line);
+            var instruction = GetInstruction(line);
 
             switch (instruction)
             {
                 case ".align":
                     {
-                        Int64 alignval = Controller.Evaluator.Eval(csv.First());
+                        var alignval = Controller.Evaluator.Eval(csv.First());
                         return Compilation.GetAlignmentSize(Convert.ToUInt16(line.PC), Convert.ToUInt16(alignval));
                     }
                 case ".binary":

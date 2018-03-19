@@ -14,9 +14,9 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestFormatBuilder()
         {
-            FormatBuilder builder = new FormatBuilder(@"^#(.+)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2);
+            var builder = new FormatBuilder(@"^#(.+)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2);
 
-            OperandFormat fmt = builder.GetFormat("#$34");
+            var fmt = builder.GetFormat("#$34");
             Assert.IsNotNull(fmt);
             Assert.AreEqual("#${0:x2}", fmt.FormatString);
             Assert.AreEqual("$34", fmt.Expression1);

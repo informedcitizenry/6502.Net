@@ -66,7 +66,7 @@ namespace DotNetAsm
         /// <param name="inScope">The scope of the variable</param>
         KeyValuePair<string, long> ParseExpression(string expression, string inScope)
         {
-            Match m = _regExpression.Match(expression);
+            var m = _regExpression.Match(expression);
             if (string.IsNullOrEmpty(m.Value) == false)
                 return new KeyValuePair<string, long>(inScope + m.Groups[1].Value,
                                                       _evaluator.Eval(m.Groups[2].Value, int.MinValue, uint.MaxValue));
@@ -91,7 +91,7 @@ namespace DotNetAsm
         /// <param name="expression">Expression.</param>
         public string GetAssignmentFromExpression(string expression)
         {
-            Match m = _regExpression.Match(expression);
+            var m = _regExpression.Match(expression);
             if (string.IsNullOrEmpty(m.Value) == false)
                 return m.Groups[2].Value;
             return string.Empty;
@@ -108,7 +108,7 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.SymbolCollectionException">DotNetAsm.SymbolCollectionException</exception>
         public KeyValuePair<string, long> SetVariable(string expression, string inScope)
         {
-            KeyValuePair<string, long> result = ParseExpression(expression, inScope);
+            var result = ParseExpression(expression, inScope);
             if (string.IsNullOrEmpty(result.Key))
                 throw new ExpressionException(expression);
             if (IsSymbolValid(result.Key, true) == false)

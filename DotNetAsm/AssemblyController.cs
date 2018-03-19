@@ -129,12 +129,12 @@ namespace DotNetAsm
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", GetCharValue);
             if (!Options.CaseSensitive)
                 Evaluator.DefineSymbolLookup(Patterns.SymbolBasic + @"\(", (fnc) => fnc.ToLower());
-            
 
-                                            // The gnarliest regex you have 
-                                            // seen in your life.           
-                                            //              ||              
-                                            //              ||              
+
+            // The gnarliest regex you have 
+            // seen in your life.           
+            //              ||              
+            //              ||              
             Evaluator.DefineSymbolLookup(   //              \/
                 @"(?<=^|[^\p{Ll}\p{Lu}\p{Lt}0-9_.$])(?>(_+[\p{Ll}\p{Lu}\p{Lt}0-9]|[\p{Ll}\p{Lu}\p{Lt}])(\.[\p{Ll}\p{Lu}\p{Lt}_]|[\p{Ll}\p{Lu}\p{Lt}0-9_])*)(?=[^(.]|$)",
                                          GetNamedSymbolValue);
@@ -187,8 +187,8 @@ namespace DotNetAsm
         /// <returns>The actual address the anonymous symbol will resolve to.</returns>
         string ConvertAnonymous(string symbol)
         {
-            string trimmed = symbol.Trim(new char[] { '(', ')' });
-            long addr = GetAnonymousAddress(_currentLine, trimmed);
+            var trimmed = symbol.Trim(new char[] { '(', ')' });
+            var addr = GetAnonymousAddress(_currentLine, trimmed);
             if (addr < 0 && _passes > 0)
             {
                 Log.LogEntry(_currentLine, ErrorStrings.CannotResolveAnonymousLabel);
@@ -254,7 +254,7 @@ namespace DotNetAsm
         /// <returns>The preprocessed <see cref="T:System.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/></returns>
         IEnumerable<SourceLine> Preprocess()
         {
-            List<SourceLine> source = new List<SourceLine>();
+            var source = new List<SourceLine>();
 
             source.AddRange(ProcessDefinedLabels());
             foreach (var file in Options.InputFiles)
@@ -273,8 +273,8 @@ namespace DotNetAsm
                 return source;
             }
             if (!string.IsNullOrEmpty(Options.CPU))
-                OnCpuChanged(new SourceLine{ SourceString = ConstStrings.COMMANDLINE_ARG, Operand = Options.CPU });
-            
+                OnCpuChanged(new SourceLine { SourceString = ConstStrings.COMMANDLINE_ARG, Operand = Options.CPU });
+
             return null;
         }
 
@@ -336,7 +336,7 @@ namespace DotNetAsm
             _passes = 0;
             int id = 0;
 
-            List<SourceLine> sourceList = source.ToList();
+            var sourceList = source.ToList();
 
             for (int i = 0; i < sourceList.Count; i++)
             {
@@ -387,7 +387,7 @@ namespace DotNetAsm
                 {
                     Log.LogEntry(_currentLine, exprEx.Message);
                 }
-                catch 
+                catch
                 {
                     Log.LogEntry(_currentLine, ErrorStrings.None);
                 }
@@ -413,7 +413,7 @@ namespace DotNetAsm
                         OnCpuChanged(_currentLine);
                     return;
                 }
-                else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
+                if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
                 {
                     var varname = Variables.GetVariableFromExpression(_currentLine.Operand, _currentLine.Scope);
                     try
@@ -426,14 +426,14 @@ namespace DotNetAsm
                         _currentLine.PC = 0;
                     }
                 }
-            
+
                 UpdatePC();
 
                 _currentLine.PC = Output.LogicalPC;
 
                 DefineLabel();
 
-                if (!string.IsNullOrEmpty(_currentLine.Label) && 
+                if (!string.IsNullOrEmpty(_currentLine.Label) &&
                     _currentLine.SourceString.StartsWith(" ", Options.StringComparison) &&
                     !Options.NoWarnLeft)
                     Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);
@@ -548,7 +548,7 @@ namespace DotNetAsm
 
                         _currentLine = line;
 
-                        bool needpass = SecondPassLine(finalPass);
+                        var needpass = SecondPassLine(finalPass);
                         if (!passNeeded)
                             passNeeded = needpass;
                     }
@@ -691,7 +691,7 @@ namespace DotNetAsm
                         {
                             val = 0;
                         }
-                    }    
+                    }
                     _labelCollection.SetLabel(scopedLabel, val, false, true);
                 }
             }
@@ -725,39 +725,30 @@ namespace DotNetAsm
             string instruction = Options.CaseSensitive ? _currentLine.Instruction :
                 _currentLine.Instruction.ToLower();
 
-            switch (instruction)
+            if (instruction.Equals(".relocate") || instruction.Equals(".pseudopc"))
             {
-                case ".relocate":
-                case ".pseudopc":
-                    {
-                        if (string.IsNullOrEmpty(_currentLine.Operand))
-                        {
-                            Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
-                            return;
-                        }
-                        try
-                        {
-                            val = Evaluator.Eval(_currentLine.Operand, uint.MinValue, uint.MaxValue);  
-                        }
-                        catch (SymbolNotDefinedException)
-                        {
-                        }
-                        Output.SetLogicalPC(Convert.ToUInt16(val));
-                    }
-                    break;
-                case ".endrelocate":
-                case ".realpc":
-                    {
-                        if (string.IsNullOrEmpty(_currentLine.Operand) == false)
-                        {
-                            Log.LogEntry(_currentLine, ErrorStrings.TooManyArguments, _currentLine.Instruction);
-                            return;
-                        }
-                        Output.SynchPC();
-                    }
-                    break;
-                default:
-                    break;
+                if (string.IsNullOrEmpty(_currentLine.Operand))
+                {
+                    Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
+                    return;
+                }
+                try
+                {
+                    val = Evaluator.Eval(_currentLine.Operand, uint.MinValue, uint.MaxValue);
+                }
+                catch (SymbolNotDefinedException)
+                {
+                }
+                Output.SetLogicalPC(Convert.ToUInt16(val));
+            }
+            else if (instruction.Equals(".endrelocate") || instruction.Equals(".realpc"))
+            {
+                if (string.IsNullOrEmpty(_currentLine.Operand) == false)
+                {
+                    Log.LogEntry(_currentLine, ErrorStrings.TooManyArguments, _currentLine.Instruction);
+                    return;
+                }
+                Output.SynchPC();
             }
         }
 
@@ -805,7 +796,7 @@ namespace DotNetAsm
 
             if (Log.HasErrors == false)
             {
-                TimeSpan ts = DateTime.Now.Subtract(asmTime);
+                var ts = DateTime.Now.Subtract(asmTime);
 
                 Console.WriteLine("{0} bytes, {1} sec.",
                                     Output.GetCompilation().Count,
@@ -831,9 +822,9 @@ namespace DotNetAsm
                 listing = GetListing();
                 using (StreamWriter writer = new StreamWriter(Options.ListingFile))
                 {
-                    string exec = Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location);
-                    string argstring = string.Join(" ", Options.Arguments);
-                    string bannerstring = DisplayingBanner != null ? DisplayingBanner.Invoke(this, false) : string.Empty;
+                    var exec = Path.GetFileName(System.Reflection.Assembly.GetEntryAssembly().Location);
+                    var argstring = string.Join(" ", Options.Arguments);
+                    var bannerstring = DisplayingBanner != null ? DisplayingBanner.Invoke(this, false) : string.Empty;
 
                     writer.WriteLine(";; {0}", bannerstring.Split(new char[] { '\n', '\r' }).First());
                     writer.WriteLine(";; {0} {1}", exec, argstring);
@@ -881,14 +872,14 @@ namespace DotNetAsm
         /// <returns>A string containing all label definitions.</returns>
         string GetLabelsAndVariables()
         {
-            StringBuilder listing = new StringBuilder();
+            var listing = new StringBuilder();
 
             foreach (var label in _labelCollection)
                 listing.Append(GetSymbolListing(label.Key, label.Value, false));
-          
+
             foreach (var variable in Variables)
                 listing.Append(GetSymbolListing(variable.Key, variable.Value, true));
-            
+
             return listing.ToString();
         }
 
@@ -897,7 +888,7 @@ namespace DotNetAsm
         /// <returns>A listing string to save to disk.</returns>
         string GetListing()
         {
-            StringBuilder listing = new StringBuilder();
+            var listing = new StringBuilder();
 
             _processedLines.ForEach(l => Disassembler.DisassembleLine(l, listing));
 
@@ -944,7 +935,7 @@ namespace DotNetAsm
 
             if (!Options.PrintVersion && DisplayingBanner != null)
                 Console.WriteLine(DisplayingBanner.Invoke(this, false));
-            
+
             DateTime asmTime = DateTime.Now;
 
             var source = Preprocess();
@@ -978,7 +969,7 @@ namespace DotNetAsm
             if (Variables.IsScopedSymbol(symbol, _currentLine.Scope))
                 return Variables.GetScopedSymbolValue(symbol, _currentLine.Scope).ToString();
 
-            long value = _labelCollection.GetScopedSymbolValue(symbol, _currentLine.Scope);
+            var value = _labelCollection.GetScopedSymbolValue(symbol, _currentLine.Scope);
             if (value.Equals(long.MinValue))
                 throw new SymbolNotDefinedException(symbol);
             return value.ToString();

@@ -14,12 +14,12 @@ namespace NUnit.Tests.Test6502.Net
 
         void SetCpu(string cpu)
         {
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = ".cpu",
                 Operand = "\"" + cpu + "\""
             };
-            TestDotNetAsm.TestController test = Controller as TestDotNetAsm.TestController;
+            var test = Controller as TestDotNetAsm.TestController;
             test.AssembleLine(line);
         }
 
@@ -29,7 +29,7 @@ namespace NUnit.Tests.Test6502.Net
             SetCpu("65816");
             Assert.IsFalse(Controller.Log.HasErrors);
 
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sep",
                 Operand = "#%10000000"
@@ -52,7 +52,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestCompatibility()
         {
             SetCpu("6502");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jsr",
                 Operand = "$ffd2"
@@ -89,7 +89,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestAdc16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "adc",
                 Operand = "42,s"
@@ -119,7 +119,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestAnd16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "and",
                 Operand = "42,s"
@@ -149,7 +149,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestBitC02()
         {
             SetCpu("65C02");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "bit",
                 Operand = "42,x"
@@ -167,7 +167,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestBra()
         {
             SetCpu("65C02");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "bra",
                 Operand = "$ffd2"
@@ -179,7 +179,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestBrl()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "brl",
                 Operand = "$ffd2"
@@ -197,7 +197,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestCmp16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "cmp",
                 Operand = "42,s"
@@ -227,7 +227,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestCop()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "cop"
             };
@@ -241,7 +241,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestDeca()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "dec"
             };
@@ -255,7 +255,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestEor16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "eor",
                 Operand = "42,s"
@@ -285,7 +285,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestIncA()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "inc"
             };
@@ -299,7 +299,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestJmpC02()
         {
             SetCpu("65C02");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jmp",
                 Operand = "($ffd2,x)"
@@ -311,7 +311,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestJml()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jml",
                 Operand = "42"
@@ -330,7 +330,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestJsl()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "jsl",
                 Operand = "$123456"
@@ -345,7 +345,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestLda16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lda",
                 Operand = "42,s"
@@ -375,7 +375,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestMisc16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lda",
                 Operand = "(   42  , s  )  , y"
@@ -383,14 +383,14 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0xb3, 0x2a }, "lda ($2a,s),y");
 
             line.Operand = "[   42+(32/5) ] , y";
-            TestInstruction(line, 0x0002, new byte[] { 0xb7, (byte)(42 + (32 / 5)) }, "lda [$30],y");
+            TestInstruction(line, 0x0002, new byte[] { 0xb7, 42 + (32 / 5) }, "lda [$30],y");
         }
 
         [Test]
         public void TestMvn()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "mvn",
                 Operand = "42,21"
@@ -405,7 +405,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestOra16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "ora",
                 Operand = "42,s"
@@ -435,7 +435,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestPea()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "pea",
                 Operand = "$ffd2"
@@ -450,7 +450,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestPei()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "pei",
                 Operand = "(42)"
@@ -465,7 +465,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestPer()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "per",
                 Operand = "$ffd2"
@@ -477,7 +477,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestPushToStack()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "phb"
             };
@@ -500,7 +500,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestPopFromStack()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "plb"
             };
@@ -520,7 +520,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestRep()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "rep",
                 Operand = "#%00000001"
@@ -535,7 +535,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestRtl()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "rtl"
             };
@@ -546,7 +546,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSbc16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sbc",
                 Operand = "42,s"
@@ -576,7 +576,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSep()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sep",
                 Operand = "#%00000001"
@@ -591,7 +591,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSta16()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "sta",
                 Operand = "42,s"
@@ -621,7 +621,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestStp()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "stp"
             };
@@ -632,7 +632,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestStz()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "stz",
                 Operand = "42"
@@ -653,7 +653,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTcd()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tcd"
             };
@@ -664,7 +664,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTcs()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tcs"
             };
@@ -675,7 +675,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTdc()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tdc"
             };
@@ -686,7 +686,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTrb()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "trb",
                 Operand = "42"
@@ -701,7 +701,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTsb()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tsb",
                 Operand = "42"
@@ -716,7 +716,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTsc()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tsc"
             };
@@ -727,7 +727,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTxy()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "txy"
             };
@@ -738,7 +738,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestTyx()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "tyx"
             };
@@ -749,7 +749,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestWai()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "wai"
             };
@@ -760,7 +760,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestXba()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "xba"
             };
@@ -771,7 +771,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestXce()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "xce"
             };
@@ -782,7 +782,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestForceWidth()
         {
             SetCpu("65816");
-            SourceLine line = new SourceLine
+            var line = new SourceLine
             {
                 Instruction = "lda",
                 Operand = "[16] $12"

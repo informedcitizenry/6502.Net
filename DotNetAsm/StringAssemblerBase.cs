@@ -77,8 +77,8 @@ namespace DotNetAsm
         void UpdateEncoding(SourceLine line)
         {
             line.DoNotAssemble = true;
-            string instruction = line.Instruction.ToLower();
-            string encoding = Controller.Options.CaseSensitive ? line.Operand : line.Operand.ToLower();
+            var instruction = line.Instruction.ToLower();
+            var encoding = Controller.Options.CaseSensitive ? line.Operand : line.Operand.ToLower();
             if (instruction.Equals(".encoding"))
             {
                 if (!_regEncName.IsMatch(line.Operand))
@@ -95,8 +95,8 @@ namespace DotNetAsm
                     throw new ArgumentException(line.Operand);
                 try
                 {
-                    string firstparm = parms.First();
-                    string mapstring = string.Empty;
+                    var firstparm = parms.First();
+                    var mapstring = string.Empty;
                     if (firstparm.EnclosedInQuotes() && firstparm.Length > 3)
                     {
                         if (firstparm.Length > 4)
@@ -107,7 +107,7 @@ namespace DotNetAsm
                     {
                         if (parms.Count < 2 || parms.Count > 3)
                             throw new ArgumentException(line.Operand);
-                        char translation = EvalEncodingParam(parms.Last());
+                        var translation = EvalEncodingParam(parms.Last());
 
                         if (parms.Count == 2)
                         {
@@ -117,14 +117,14 @@ namespace DotNetAsm
                             }
                             else
                             {
-                                char mapchar = EvalEncodingParam(firstparm);
+                                var mapchar = EvalEncodingParam(firstparm);
                                 Controller.Encoding.Map(mapchar, translation);
                             }
                         }
                         else
                         {
-                            char firstRange = EvalEncodingParam(firstparm);
-                            char lastRange = EvalEncodingParam(parms[1]);
+                            var firstRange = EvalEncodingParam(firstparm);
+                            var lastRange = EvalEncodingParam(parms[1]);
                             Controller.Encoding.Map(firstRange, lastRange, translation);
                         }
                     }
@@ -137,7 +137,7 @@ namespace DotNetAsm
                         {
                             if (string.IsNullOrEmpty(mapstring))
                             {
-                                char unmap = EvalEncodingParam(firstparm);
+                                var unmap = EvalEncodingParam(firstparm);
                                 Controller.Encoding.Unmap(unmap);
                             }
                             else
@@ -147,8 +147,8 @@ namespace DotNetAsm
                         }
                         else
                         {
-                            char firstunmap = EvalEncodingParam(firstparm);
-                            char lastunmap = EvalEncodingParam(parms[1]);
+                            var firstunmap = EvalEncodingParam(firstparm);
+                            var lastunmap = EvalEncodingParam(parms[1]);
                             Controller.Encoding.Unmap(firstunmap, lastunmap);
                         }
                     }
@@ -230,7 +230,7 @@ namespace DotNetAsm
                     }
                     else
                     {
-                        string atoi = ExpressionToString(line, s);
+                        var atoi = ExpressionToString(line, s);
                         if (string.IsNullOrEmpty(atoi))
                         {
                             var v = Controller.Evaluator.Eval(s);
@@ -266,7 +266,7 @@ namespace DotNetAsm
                 UpdateEncoding(line);
                 return;
             }
-            string format = line.Instruction.ToLower();
+            var format = line.Instruction.ToLower();
 
             if (format.Equals(".pstring"))
             {
@@ -299,7 +299,7 @@ namespace DotNetAsm
                         Controller.Output.AddUninitialized(1);
                         continue;
                     }
-                    string atoi = ExpressionToString(line, arg);
+                    var atoi = ExpressionToString(line, arg);
 
                     if (string.IsNullOrEmpty(atoi))
                     {
@@ -313,7 +313,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    string noquotes = arg.TrimOnce('"');
+                    var noquotes = arg.TrimOnce('"');
                     if (string.IsNullOrEmpty(noquotes))
                     {
                         Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -355,12 +355,12 @@ namespace DotNetAsm
             var m = _regFmtFunc.Match(operand);
             if (string.IsNullOrEmpty(m.Value))
                 return string.Empty;
-            string parms = m.Groups[1].Value;
+            var parms = m.Groups[1].Value;
             if (string.IsNullOrEmpty(parms) || m.Groups[1].Value.FirstParenEnclosure() != parms)
                 throw new Exception(ErrorStrings.None);
 
             var csvs = parms.TrimStartOnce('(').TrimEndOnce(')').CommaSeparate();
-            string fmt = csvs.First();
+            var fmt = csvs.First();
             if (fmt.Length < 5 || !fmt.EnclosedInQuotes())
                 throw new Exception(ErrorStrings.None);
             var parmlist = new List<object>();

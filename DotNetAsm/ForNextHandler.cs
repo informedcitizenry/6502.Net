@@ -155,7 +155,7 @@ namespace DotNetAsm
             /// <returns>A <see cref="T:System.Collections.Generic.IEnumerable&lt;SourceLine&gt;"/>.</returns>
             public IEnumerable<SourceLine> GetProcessedLines()
             {
-                List<SourceLine> processed = new List<SourceLine>();
+                var processed = new List<SourceLine>();
                 foreach (var entry in _entries)
                 {
                     if (entry.LinkedBlock != null)
@@ -171,7 +171,7 @@ namespace DotNetAsm
             /// </summary>
             public void ResetEntries()
             {
-                foreach(var entry in _entries)
+                foreach (var entry in _entries)
                 {
                     if (entry.LinkedBlock != null)
                         entry.LinkedBlock.ResetEntries();
@@ -230,7 +230,7 @@ namespace DotNetAsm
         public ForNextHandler(IAssemblyController controller)
             : base(controller)
         {
-            Reserved.DefineType("Directives", 
+            Reserved.DefineType("Directives",
                 ".for", ".next", ".break",
                 "@@ for @@", "@@ next @@", "@@ break @@"
             );
@@ -259,7 +259,7 @@ namespace DotNetAsm
 
         public void Process(SourceLine line)
         {
-            string instruction = line.Instruction.ToLower();
+            var instruction = line.Instruction.ToLower();
 
             if (instruction.Equals(".for"))
             {
@@ -268,17 +268,17 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Label) == false)
+                if (string.IsNullOrEmpty(line.Label) == false)
                 {
                     // capture the label
-                    _processedLines.Add(new SourceLine()
+                    _processedLines.Add(new SourceLine
                     {
                         Label = line.Label,
                         SourceString = line.Label,
                         LineNumber = line.LineNumber,
                         Filename = line.Filename
                     });
-                }      
+                }
                 // .for <init_expression>, <condition>, <iteration_expression>
                 var csvs = line.Operand.CommaSeparate();
                 if (csvs.Count < 2)
@@ -289,7 +289,7 @@ namespace DotNetAsm
 
                 if (_levels > 0)
                 {
-                    ForNextBlock block = new ForNextBlock();
+                    var block = new ForNextBlock();
                     _currBlock.AddEntry(null, block);
                     _currBlock = block;
                 }
@@ -313,7 +313,7 @@ namespace DotNetAsm
                             Controller.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
                             return;
                         }
-                        _processedLines.Add(new SourceLine()
+                        _processedLines.Add(new SourceLine
                         {
                             SourceString = ConstStrings.SHADOW_SOURCE,
                             Instruction = ConstStrings.VAR_DIRECTIVE,
@@ -321,7 +321,7 @@ namespace DotNetAsm
                         });
                     }
                 }
-                _currBlock.AddEntry(new SourceLine()
+                _currBlock.AddEntry(new SourceLine
                 {
                     SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = "@@ for @@"
@@ -331,8 +331,8 @@ namespace DotNetAsm
                 {
                     _currBlock.IterExpressions.Clear();
                     _currBlock.IterExpressions.AddRange(csvs.GetRange(2, csvs.Count - 2));
-                }   
-     
+                }
+
             }
             else if (instruction.Equals(".next"))
             {
@@ -341,17 +341,17 @@ namespace DotNetAsm
                     Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Operand) == false)
+                if (string.IsNullOrEmpty(line.Operand) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
-                else if (string.IsNullOrEmpty(line.Label) == false)
+                if (string.IsNullOrEmpty(line.Label) == false)
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.None);
                     return;
                 }
-                SourceLine loopLine = new SourceLine()
+                var loopLine = new SourceLine
                 {
                     SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = "@@ next @@"
@@ -375,7 +375,7 @@ namespace DotNetAsm
                     return;
                 }
                 string procinst = "@@ break @@";
-                SourceLine shadow = new SourceLine()
+                var shadow = new SourceLine
                 {
                     SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = procinst
@@ -401,7 +401,7 @@ namespace DotNetAsm
                     if (_breakBlock == null && !string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
                         var initval = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
-                        _processedLines.Add(new SourceLine()
+                        _processedLines.Add(new SourceLine
                         {
                             SourceString = ConstStrings.SHADOW_SOURCE,
                             Instruction = ConstStrings.VAR_DIRECTIVE,
@@ -416,7 +416,7 @@ namespace DotNetAsm
                 {
                     if (_currBlock == _breakBlock)
                         _breakBlock = null;
-      
+
                     _currBlock = _currBlock.Parent;
                     if (_currBlock == null)
                     {
@@ -427,10 +427,10 @@ namespace DotNetAsm
 
                 // update each var in the expressions during runtime as well as
                 // in output source (i.e., emit .let n = ... epxressions)
-                foreach(var iterexp in _currBlock.IterExpressions)
+                foreach (var iterexp in _currBlock.IterExpressions)
                 {
                     var itervar = Controller.Variables.SetVariable(iterexp, _currBlock.Scope);
-                    _processedLines.Add(new SourceLine()
+                    _processedLines.Add(new SourceLine
                     {
                         SourceString = ConstStrings.SHADOW_SOURCE,
                         Instruction = ConstStrings.VAR_DIRECTIVE,

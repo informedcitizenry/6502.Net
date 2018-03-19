@@ -14,7 +14,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestAddUninitialized()
         {
-            Compilation output = new Compilation();
+            var output = new Compilation();
             output.AddUninitialized(4);
             Assert.AreEqual(4, output.LogicalPC);
 
@@ -26,7 +26,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestProgramStart()
         {
-            Compilation output = new Compilation();
+            var output = new Compilation();
 
             output.SetPC(0x02);
             output.AddUninitialized(0x32);
@@ -43,7 +43,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestLittleEndian()
         {
-            Compilation output = new Compilation(true);
+            var output = new Compilation(true);
 
             output.Add(0xffd2, 2);
             Assert.AreEqual(0x0002, output.LogicalPC);
@@ -56,7 +56,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestAlignFill()
         {
-            Compilation output = new Compilation();
+            var output = new Compilation();
             output.SetPC(0x4015);
 
             int foragoodtime = 0xffd220; // for a good time jsr $ffd2
@@ -88,7 +88,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestLogicalRelocation()
         {
-            Compilation output = new Compilation();
+            var output = new Compilation();
 
             output.SetPC(0xc000);
             Assert.AreEqual(0xc000, output.LogicalPC);

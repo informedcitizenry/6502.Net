@@ -14,7 +14,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEncoding()
         {
-            AsmEncoding translator = new AsmEncoding();
+            var translator = new AsmEncoding();
             translator.SelectEncoding("petscii");
             translator.Map("az", 'A');
             translator.Map("AZ", 'a');
@@ -49,7 +49,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEncodingGetChar()
         {
-            AsmEncoding encoding = new AsmEncoding();
+            var encoding = new AsmEncoding();
 
             encoding.SelectEncoding("test");
             string teststring = "τϵστ";
@@ -61,8 +61,8 @@ namespace NUnit.Tests.TestDotNetAsm
             var expectedchars = Encoding.UTF8.GetChars(expectedbytes);
             Assert.AreEqual(expectedchars, testchars);
 
-            int testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
-            int expectedcharcount = Encoding.UTF8.GetChars(expectedbytes, 0, expectedbytes.Length, expectedchars, 0);
+            var testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
+            var expectedcharcount = Encoding.UTF8.GetChars(expectedbytes, 0, expectedbytes.Length, expectedchars, 0);
             Assert.AreEqual(expectedcharcount, testcharcount);
 
             encoding.Map('τ', 0xff);

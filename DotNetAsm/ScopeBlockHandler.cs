@@ -59,7 +59,7 @@ namespace DotNetAsm
         public void Process(SourceLine line)
         {
             var rev = _scope.Reverse();
-            StringBuilder scopeBuilder = new StringBuilder(line.Scope);
+            var scopeBuilder = new StringBuilder(line.Scope);
             foreach (string s in rev)
                 scopeBuilder.AppendFormat("{0}.", s);
 

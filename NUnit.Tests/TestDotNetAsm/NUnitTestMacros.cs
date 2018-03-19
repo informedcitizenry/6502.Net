@@ -24,7 +24,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestMacroBasic()
         {
-            List<SourceLine> source = new List<SourceLine>();
+            var source = new List<SourceLine>();
             source.Add(new SourceLine { Label = "mymacro", Instruction = ".macro" });
             source.Add(new SourceLine { Instruction = "inc", Operand = "$d000" });
             source.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2" });
@@ -34,7 +34,7 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine { Instruction = ".mymacro" });
             source.Add(new SourceLine { Instruction = "inc", Operand = "$d001" });
 
-            List<SourceLine> expected = new List<SourceLine>();
+            var expected = new List<SourceLine>();
             expected.Add(new SourceLine { Instruction = "lda", Operand = "#$30" });
             expected.Add(new SourceLine { Instruction = ".block" });
             expected.Add(new SourceLine { Instruction = "inc", Operand = "$d000" });
@@ -50,7 +50,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestMacroParameterized()
         {
-            List<SourceLine> source = new List<SourceLine>();
+            var source = new List<SourceLine>();
             source.Add(new SourceLine { Label = "mymacro", Instruction = ".macro", Operand = "incr, sub" });
             source.Add(new SourceLine { Instruction = "inc", Operand = "\\incr" });
             source.Add(new SourceLine { Instruction = "jsr", Operand = "\\sub" });
@@ -60,7 +60,7 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine { Instruction = ".mymacro", Operand = "$d000, $ffd2" });
             source.Add(new SourceLine { Instruction = "inc", Operand = "$d001" });
 
-            List<SourceLine> expected = new List<SourceLine>();
+            var expected = new List<SourceLine>();
             expected.Add(new SourceLine { LineNumber = 4, Instruction = "lda", Operand = "#$30" });
             expected.Add(new SourceLine { LineNumber = 0, Instruction = ".block" });
             expected.Add(new SourceLine { LineNumber = 1, Instruction = "inc", Operand = "$d000" });

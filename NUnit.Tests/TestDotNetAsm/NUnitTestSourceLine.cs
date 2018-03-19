@@ -15,7 +15,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestParse()
         {
-            SourceLine line = new SourceLine("myfile", 1, ".text \"He said, \",'\"',\"Hello, World!\"");
+            var line = new SourceLine("myfile", 1, ".text \"He said, \",'\"',\"Hello, World!\"");
             line.Parse(s => s.Equals(".text"));
             Assert.AreEqual(".text", line.Instruction);
             Assert.AreEqual("\"He said, \",'\"',\"Hello, World!\"", line.Operand);
@@ -107,7 +107,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestParseComment()
         {
-            SourceLine line = new SourceLine("myfile", 1, "mylabel .byte 1,2,3;,4,5");
+            var line = new SourceLine("myfile", 1, "mylabel .byte 1,2,3;,4,5");
             line.Parse(s => s.Equals(".byte"));
             Assert.AreEqual(line.Label, "mylabel");
             Assert.AreEqual(line.Instruction, ".byte");
@@ -124,7 +124,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestCsv()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
             line.Operand = "147, \"He said, \",'\"',\"Hello, World!\",'\"', $0d, ','";
             var csv = line.Operand.CommaSeparate();
 
@@ -141,7 +141,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestFlags()
         {
-            SourceLine line = new SourceLine();
+            var line = new SourceLine();
 
             line.IsComment = true;
             // setting comment flag sets DoNotAssemble flag
