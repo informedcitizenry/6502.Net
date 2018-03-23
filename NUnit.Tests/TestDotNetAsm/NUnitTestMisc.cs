@@ -18,6 +18,19 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
+        public void TestEnclosedInQuotes()
+        {
+            string test = "\"hello, world!\"";
+            Assert.IsTrue(test.EnclosedInQuotes());
+
+            test = "\"\"hello, world!";
+            Assert.IsFalse(test.EnclosedInQuotes());
+
+            test = "\"\"hello, world!\"\"";
+            Assert.IsFalse(test.EnclosedInQuotes());
+        }
+
+        [Test]
         public void TestAssert()
         {
             var line = new SourceLine();

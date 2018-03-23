@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    [TestFixture]
     public class NUnitHandlerTestBase
     {
         protected IAssemblyController Controller { get; set; }

@@ -113,8 +113,11 @@ namespace DotNetAsm
                 var substr = str.Substring(1);
                 for (int i = 0; i < substr.Length; i++)
                 {
-                    if (substr[i] == '"' && !escaped)
+                    if (substr[i] == '"' && !escaped) {
                         enclosed = !enclosed;
+                        if (enclosed == false)
+                            break; // catches the ""hello, world"" false positive
+                    }
                     else if (i < substr.Length - 1 && substr[i] == '\\' && substr[i + 1] == '"')
                     {
                         i++;

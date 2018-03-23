@@ -434,6 +434,7 @@ namespace DotNetAsm
                 DefineLabel();
 
                 if (!string.IsNullOrEmpty(_currentLine.Label) &&
+                    !_currentLine.Label.Equals("*") &&
                     _currentLine.SourceString.StartsWith(" ", Options.StringComparison) &&
                     !Options.NoWarnLeft)
                     Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);

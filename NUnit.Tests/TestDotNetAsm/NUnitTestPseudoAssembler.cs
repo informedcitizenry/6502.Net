@@ -30,7 +30,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
                 Encoding.GetEncodedValue(chr.TrimOnce('\'').First()).ToString());
 
-            Evaluator.DefineSymbolLookup(@"(?>[a-zA-Z][a-zA-Z0-9]*)(?!\()", GetSymbol);
+            Evaluator.DefineSymbolLookup(@"(?<=^|[^a-zA-Z0-9_.$])(?>(_+[a-zA-Z0-9]|[a-zA-Z])(\.[a-zA-Z_]|[a-zA-Z0-9_])*)(?=[^(.]|$)", GetSymbol);
 
 
             if (args != null)
@@ -535,7 +535,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0001, 1, new byte[] { 0x05 });
 
             line.Operand = "'";
-            TestForFailure<SourceLine.QuoteNotEnclosedException>(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "-?";
             TestForFailure<ExpressionException>(line);
@@ -545,7 +545,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             line.Instruction = ".string";
             line.Operand = "\"hello, \",\"world";
-            TestForFailure<SourceLine.QuoteNotEnclosedException>(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "\"'''\"";
             TestInstruction(line, 0x0003, 3, new byte[] { 0x27, 0x27, 0x27 });
