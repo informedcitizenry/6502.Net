@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -39,14 +39,22 @@ namespace Asm6502.Net
 
             if (isVerbose)
             {
+<<<<<<< Updated upstream
                 sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
+=======
+                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2018 informedcitizenry.");
+>>>>>>> Stashed changes
                 sb.Append(Environment.NewLine);
                 sb.Append("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
                 sb.Append(Environment.NewLine);
             }
             else
             {
+<<<<<<< Updated upstream
                 sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
+=======
+                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2018 informedcitizenry.");
+>>>>>>> Stashed changes
                 sb.AppendFormat("Version {0}.{1} Build {2}",
                                 Assembly.GetEntryAssembly().GetName().Version.Major,
                                 Assembly.GetEntryAssembly().GetName().Version.Minor,
@@ -98,6 +106,11 @@ namespace Asm6502.Net
 
         static void Main(string[] args)
         {
+            var three = "123";
+            var afterthree = three.Substring(4);
+            var dog = "\u2194\t\x41";
+            var dave = System.Text.RegularExpressions.Regex.Unescape(dog);
+            var bytes = Encoding.UTF8.GetBytes(dave.ToCharArray());
             try
             {
                 IAssemblyController controller = new AssemblyController(args);

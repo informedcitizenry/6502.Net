@@ -44,6 +44,13 @@ namespace NUnit.Tests.TestDotNetAsm
             translator.SelectEncoding("none");
             transbytes = translator.GetBytes("Hello, World!");
             Assert.AreEqual(expected, transbytes);
+
+            var escapeclub = Encoding.ASCII.GetBytes("\t\t\"'");
+
+            translator.SelectEncoding("escapeclub");
+            translator.Map('\t', 14);
+            transbytes = translator.GetBytes("\t\t\"'");
+
         }
 
         [Test]
