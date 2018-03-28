@@ -501,8 +501,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "$10, $ea";
             TestInstruction(line, 0x0010, 10, new byte[] { 0xea, 0xea, 0xea, 0xea, 0xea,
                                                            0xea, 0xea, 0xea, 0xea, 0xea});
-
-
+            
             line.Operand = string.Empty;
             TestForFailure<InvalidOperationException>(line);
 
