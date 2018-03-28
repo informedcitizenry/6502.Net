@@ -191,9 +191,9 @@ namespace DotNetAsm
                                 });
                             sourcelines.Add(line);
                         }
-                        catch (SourceLine.QuoteNotEnclosedException)
+                        catch (Exception ex)
                         {
-                            Controller.Log.LogEntry(file, currentline, ErrorStrings.QuoteStringNotEnclosed);
+                            Controller.Log.LogEntry(file, currentline, ex.Message);
                         }
                         currentline++;
                     }

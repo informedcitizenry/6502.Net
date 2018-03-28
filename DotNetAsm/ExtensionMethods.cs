@@ -211,6 +211,7 @@ namespace DotNetAsm
             var double_enclosed = false;
             var single_enclosed = false;
             var escaped = false;
+            var escapesize = 0;
             for (int i = atIndex; i < str.Length; i++)
             {
                 var c = str[i];
@@ -235,8 +236,9 @@ namespace DotNetAsm
                         single_enclosed = !single_enclosed;
                         if (!single_enclosed)
                         {
-                            if (quoted.Length < 2 || (escaped && quoted.Length > 4) || quoted.Length > 3)
-                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                            if (quoted.Length < 2 || quoted.Length > escapesize + 3)
+                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed
+                                                    + " or invalid escape sequence");
                             quoted.Append(c);
                             break;
                         }
@@ -244,7 +246,8 @@ namespace DotNetAsm
                 }
                 else if (c == '\\')
                 {
-                    escaped = !escaped;
+                    escaped = true;
+                    escapesize++;
                 }
                 if (escaped && c != '\\')
                 {
@@ -260,6 +263,7 @@ namespace DotNetAsm
                                 throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
                             return quoted.ToString();
                         }
+                        escapesize = m.Groups[0].Length;
                         i += m.Value.Length;
                         continue;
                     }

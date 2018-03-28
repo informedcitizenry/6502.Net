@@ -219,7 +219,7 @@ namespace DotNetAsm
             {
                 if (s.EnclosedInQuotes())
                 {
-                    size += Controller.Encoding.GetByteCount(s.TrimOnce('"'));
+                    size += Controller.Encoding.GetByteCount(Regex.Unescape(s.TrimOnce('"')));
                 }
                 else
                 {
