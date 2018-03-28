@@ -26,9 +26,6 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 
-
-using System.Linq;
-
 namespace Asm6502.Net
 {
     class Program
@@ -39,22 +36,14 @@ namespace Asm6502.Net
 
             if (isVerbose)
             {
-<<<<<<< Updated upstream
                 sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
-=======
-                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2018 informedcitizenry.");
->>>>>>> Stashed changes
                 sb.Append(Environment.NewLine);
                 sb.Append("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
                 sb.Append(Environment.NewLine);
             }
             else
             {
-<<<<<<< Updated upstream
                 sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
-=======
-                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2018 informedcitizenry.");
->>>>>>> Stashed changes
                 sb.AppendFormat("Version {0}.{1} Build {2}",
                                 Assembly.GetEntryAssembly().GetName().Version.Major,
                                 Assembly.GetEntryAssembly().GetName().Version.Minor,
@@ -75,7 +64,7 @@ namespace Asm6502.Net
             var progend = Convert.ToUInt16(controller.Output.ProgramCounter);
             var progsize = Convert.ToUInt16(controller.Output.GetCompilation().Count);
 
-            using(MemoryStream ms = new MemoryStream()) 
+            using (MemoryStream ms = new MemoryStream())
             {
                 using (BinaryWriter writer = new BinaryWriter(ms))
                 {
@@ -106,11 +95,6 @@ namespace Asm6502.Net
 
         static void Main(string[] args)
         {
-            var three = "123";
-            var afterthree = three.Substring(4);
-            var dog = "\u2194\t\x41";
-            var dave = System.Text.RegularExpressions.Regex.Unescape(dog);
-            var bytes = Encoding.UTF8.GetBytes(dave.ToCharArray());
             try
             {
                 IAssemblyController controller = new AssemblyController(args);
