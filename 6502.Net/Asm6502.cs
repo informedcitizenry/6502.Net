@@ -471,9 +471,18 @@ namespace Asm6502.Net
             if (Reserved.IsOneOf("LongShort", line.Instruction))
             {
                 if (!string.IsNullOrEmpty(line.Operand))
+                {
                     Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                }
                 else
-                    SetRegLongShort(line.Instruction);
+                {
+                    if (_cpu == null || !_cpu.Equals("65816"))
+                        Controller.Log.LogEntry(line, 
+                            "The current CPU supports only 8-bit immediate mode instructions. The directive '" + line.Instruction + "' will not affect assembly", 
+                            Controller.Options.WarningsAsErrors);
+                    else
+                        SetRegLongShort(line.Instruction);
+                }
                 return;
             }
 
