@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.10.5
+### Version 1.11.0
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -184,19 +184,10 @@ Note that if uninitialized data is defined, but thereafter initialized data is d
 highscore   .dword ?    ; uninitialized highscore variables
             lda #0      ; The output is now 6 bytes in size
 ```
-Use the `.typedef` directive to redefine a type name. This is useful for cross- and backward-compatibility with other assemblers. Each type can have more than one definition.
-```
-            .typedef    .byte   db
-            .typedef    .byte   defb    ; multiple okay
-            .typedef    .string asc
-```
-Only pseudo operations can have their types redefined. For mnemonics or other assembler directives consider using [macros](#macros-and-segments) instead.
 ### Text processing and encoding
 #### Psuedo Ops
-In addition to integral values, z80DotNet can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes. Escaped double quotes are not recognized, so embedded quotation marks must be "broken out" as separate operands:
-```
-"He said, ",'"',"How are you?",'"'
-```
+In addition to integral values, z80DotNet can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes.
+
 Strings can be assembled in a few different ways, according to the needs of the programmer.
 
 | Directive     | Meaning                                                                       |
@@ -234,7 +225,7 @@ Assembly source text is processed as UTF-8, and by default strings and character
 | `cbmscreen`   | CBM screen codes   |
 | `petscii`     | CBM PETSCII        |
 
-The default encoding is `none`.
+The default encoding is `none`. It is worth noting that, for the Commodore-specific encodings, several of the glyphs in those platforms can be represented in Unicode counterparts. For instance, for Petscii encoding, ♥ outputs to `D3` as is expected.
 
 Text encodings are modified using the `.map` and `.unmap` directives. After selecting an encoding, you can map a Unicode character to a custom output code as follows:
 ```
@@ -271,6 +262,27 @@ The output can be one to four bytes. Entire character sets can also be mapped, w
             .map 'a', 'A' ;; this is now the same as .map 'a', 'a'
 ```
 Instead express character literals as one-character strings in double-quotes, which will resolve to UTF-8 values.
+
+#### Escape sequences
+
+All .Net escape sequences will also output, including Unicode and hex. 
+
+```
+            .string "He said, \"How are you?\""
+            .byte '\t', '\''
+```
+
+Here are a few recognized escape sequences:
+
+| Escape Sequence | ASCII/Unicode Representation |
+| --------------- | ---------------------------- |
+| `\n`            | Newline                      |
+| `\r`            | Carriage return              |
+| `\t`            | Tab                          |
+| `\"`            | Double quotation mark        |
+| `\unnnn`        | Unicode U+nnnn               |
+
+For more information about escape sequences, refer [here](https://docs.microsoft.com/en-us/cpp/c-language/escape-sequences).
 
 ### File inclusions
 
@@ -651,10 +663,6 @@ You can also set all registers to the same size with `.mx8` and `.mx16` respecti
             ldx #$01
             ldy #$02
 ```
-## Future enhancements under consideration
-* Switch-case conditions
-* Custom functions
-
 ## Reference
 ### Instruction set
 By default, the 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. The following mnemonics are recognized:
@@ -1535,16 +1543,7 @@ glyph             ;12345678
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.typedef</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Define an existing Pseudo-Op to a user-defined type. The type name adheres to the same rules as labels and variables and cannot be an existing symbol or instruction.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>type, typename</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-            .typedef   .byte, defb
-            * = $c000
-            defb 0,1,2,3 ; >c000 00 01 02 03
-</pre>
-</td></tr>
+<tr><td><b>Note</b></td><td>This feature is currently disabled for now due to a technical issue that caused it not to work correctly in all cases.</td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.unmap</code></td></tr>
@@ -2033,6 +2032,8 @@ glyph             ;12345678
 `error: invalid option` - An invalid option was passed to the command-line.
 
 `error: option requires a value` -  An option was passed in the command-line that expected an argument that was not supplied.
+
+`<Feature> is depricated` - The instruction or feature is depricated (this is a warning by default).
 
 `File previously included. Possible circular reference?` - An input file was given in the command-line or a directive was issued to include a source file that was previously include.
 

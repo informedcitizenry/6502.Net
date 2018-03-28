@@ -168,15 +168,14 @@ namespace DotNetAsm
         char EvalEncodingParam(string p)
         {
             // if char literal return the char itself
-            if (p.EnclosedInQuotes())
-            {
-                if (p.Length != 3)
-                    throw new ArgumentException(p);
-                return p.TrimOnce('"').First();
-            }
+            var quoted = p.GetNextQuotedString();
+            if (string.IsNullOrEmpty(quoted))
+                return (char)Controller.Evaluator.Eval(p);
 
-            // else return the evaluated expression
-            return (char)Controller.Evaluator.Eval(p);
+            var unescaped = Regex.Unescape(quoted);
+            if (unescaped.Length != 3)
+                throw new ArgumentException(p);
+            return unescaped.TrimOnce('"').TrimOnce('\'').First();
         }
 
         /// <summary>
@@ -292,7 +291,8 @@ namespace DotNetAsm
 
             foreach (var arg in args)
             {
-                if (arg.EnclosedInQuotes() == false)
+                var quoted = arg.GetNextQuotedString();
+                if (string.IsNullOrEmpty(quoted))
                 {
                     if (arg == "?")
                     {
@@ -313,13 +313,13 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    var noquotes = arg.TrimOnce('"');
-                    if (string.IsNullOrEmpty(noquotes))
+                    if (!quoted.Equals(arg))
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                        Controller.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
-                    line.Assembly.AddRange(Controller.Output.Add(noquotes, Controller.Encoding));
+                    var unescaped = Regex.Unescape(quoted.TrimOnce('"'));
+                    line.Assembly.AddRange(Controller.Output.Add(unescaped, Controller.Encoding));
                 }
             }
             var lastbyte = Controller.Output.GetCompilation().Last();

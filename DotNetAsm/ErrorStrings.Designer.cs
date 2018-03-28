@@ -89,6 +89,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string Depricated {
+            get {
+                return ResourceManager.GetString("Depricated", resourceCulture);
+            }
+        }
+        
         public static string DirectiveTakesNoArguments {
             get {
                 return ResourceManager.GetString("DirectiveTakesNoArguments", resourceCulture);

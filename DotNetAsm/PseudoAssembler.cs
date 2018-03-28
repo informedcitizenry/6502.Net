@@ -307,8 +307,7 @@ namespace DotNetAsm
             }
             else
             {
-                _typeDefs.Add(newtype, currtype);
-                line.DoNotAssemble = true;
+                Controller.Log.LogEntry(line, ErrorStrings.Depricated, ".typedef", Controller.Options.WarningsAsErrors);
             }
         }
 

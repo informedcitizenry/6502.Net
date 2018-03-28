@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DotNetAsm
 {
@@ -103,31 +104,7 @@ namespace DotNetAsm
         /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInQuotes(this string str)
         {
-            if (string.IsNullOrEmpty(str) || string.IsNullOrWhiteSpace(str))
-                return false;
-            bool enclosed = false;
-            if (str.StartsWith("\"", StringComparison.CurrentCulture) &&
-                str.EndsWith("\"", StringComparison.CurrentCulture))
-            {
-                bool escaped = false;
-                var substr = str.Substring(1);
-                for (int i = 0; i < substr.Length; i++)
-                {
-                    if (substr[i] == '"' && !escaped) {
-                        enclosed = !enclosed;
-                        if (enclosed == false)
-                            break; // catches the ""hello, world"" false positive
-                    }
-                    else if (i < substr.Length - 1 && substr[i] == '\\' && substr[i + 1] == '"')
-                    {
-                        i++;
-                        escaped = true;
-                        continue;
-                    }
-                    escaped = false;
-                }
-            }
-            return enclosed;
+            return str.Equals(str.GetNextQuotedString());
         }
 
         /// <summary>
@@ -177,42 +154,122 @@ namespace DotNetAsm
         /// <exception cref="T:System.FormatException">System.FormatException</exception>
         public static string FirstParenEnclosure(this string str)
         {
-            int parens = 0;
-            string parengroup = string.Empty;
+            var num_parents = 0;
+            var parengroup = new StringBuilder();
             char open = '(', close = ')';
-            bool quote_enclosed = false;
-            foreach (var c in str)
+            for (int i = 0; i < str.Length; i++)
             {
-                if (parens >= 1)
-                    parengroup += c.ToString();
+                var c = str[i];
+                var quoted = string.Empty;
 
-                if (c == '"')
+                if (c == '"' || c == '\'')
                 {
-                    quote_enclosed = !quote_enclosed;
-                }
-                if (quote_enclosed)
+                    quoted = str.GetNextQuotedString(atIndex: i);
+                    if (num_parents >= 1)
+                        parengroup.Append(quoted);
+                    i += quoted.Length - 1;
                     continue;
+                }
+                else if (num_parents >= 1 || c == open)
+                    parengroup.Append(c);
 
                 if (c == open)
                 {
-                    if (parens == 0)
-                        parengroup += c.ToString();
-                    parens++;
+                    num_parents++;
                 }
                 else if (c == close)
                 {
-                    parens--;
-                    if (parens == 0)
-                    {
-                        return parengroup;
-                    }
-                    if (parens < 0)
-                        throw new FormatException();
+                    num_parents--;
+                    if (num_parents == 0)
+                        return parengroup.ToString();
                 }
             }
-            if (parens > 0)
+            if (num_parents != 0)
                 throw new FormatException();
             return str;
+        }
+
+        /// <summary>
+        /// Gets the next double- or single-quoted string within the string.
+        /// </summary>
+        /// <returns>The next quoted string, or empty if no quoted string present.</returns>
+        /// <param name="str">String.</param>
+        public static string GetNextQuotedString(this string str)
+        {
+            return str.GetNextQuotedString(0);
+        }
+
+        /// <summary>
+        /// Gets the next double- or single-quoted string within the string.
+        /// </summary>
+        /// <returns>The next quoted string, or empty if no quoted string present.</returns>
+        /// <param name="str">String.</param>
+        /// <param name="atIndex">The index at which to search the string.</param>
+        public static string GetNextQuotedString(this string str, int atIndex)
+        {
+            var quoted = new StringBuilder();
+            var double_enclosed = false;
+            var single_enclosed = false;
+            var escaped = false;
+            for (int i = atIndex; i < str.Length; i++)
+            {
+                var c = str[i];
+                if (c == '\"')
+                {
+                    if (!escaped && !single_enclosed)
+                    {
+                        double_enclosed = !double_enclosed;
+                        if (!double_enclosed)
+                        {
+                            if (quoted.Length < 2)
+                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                            quoted.Append(c);
+                            break;
+                        }
+                    }    
+                }
+                else if (c == '\'')
+                {
+                    if (!escaped && !double_enclosed)
+                    {
+                        single_enclosed = !single_enclosed;
+                        if (!single_enclosed)
+                        {
+                            if (quoted.Length < 2 || (escaped && quoted.Length > 4) || quoted.Length > 3)
+                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                            quoted.Append(c);
+                            break;
+                        }
+                    }
+                }
+                else if (c == '\\')
+                {
+                    escaped = !escaped;
+                }
+                if (escaped && c != '\\')
+                {
+                    escaped = false;
+                    var m = Regex.Match(str.Substring(i), 
+                                        @"^(u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8}|[0-7]{3}|x[a-fA-F0-9]{4}|x[a-fA-F0-9]{2}).");
+                    if (!string.IsNullOrEmpty(m.Value))
+                    {
+                        quoted.Append(m.Value);
+                        if (single_enclosed)
+                        {
+                            if (!m.Value.Last().Equals('\''))
+                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                            return quoted.ToString();
+                        }
+                        i += m.Value.Length;
+                        continue;
+                    }
+                }
+                if (single_enclosed || double_enclosed)
+                    quoted.Append(c);
+            }
+            if (single_enclosed || double_enclosed)
+                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+            return quoted.ToString();
         }
 
         /// <summary>
@@ -228,72 +285,35 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(str))
                 return csv;
 
-            bool double_enclosed = false;
-            bool single_enclosed = false;
-            bool paren_enclosed = false;
-
+            var num_parens = 0;
             var sb = new StringBuilder();
-
-            int charExpCount = 0;
 
             for (int i = 0; i < str.Length; i++)
             {
                 char c = str[i];
-                if (double_enclosed)
+                if (c.Equals('\'') || c.Equals('\"'))
                 {
-                    sb.Append(c);
-                    if (c == '"')
-                    {
-                        double_enclosed = false;
-                        if (i == str.Length - 1)
-                            csv.Add(sb.ToString().Trim());
-                    }
+                    var quoted = str.GetNextQuotedString(atIndex:i);
+                    i += quoted.Length - 1;
+                    sb.Append(quoted);
+                    if (i >= str.Length - 1)
+                        csv.Add(sb.ToString().Trim());
                 }
-                else if (single_enclosed)
+                else if (num_parens > 0)
                 {
-                    charExpCount++;
                     sb.Append(c);
-                    if (c == '\'')
+                    if (c == ')')
                     {
-                        if (charExpCount == 2)
-                        {
-                            // don't set single quote closed unless we 
-                            // have consumed the char in single quote.
-                            charExpCount = 0;
-                            single_enclosed = false;
-                            if (i == str.Length - 1)
-                                csv.Add(sb.ToString().Trim());
-                        }
-                    }
-                }
-                else if (paren_enclosed)
-                {
-                    if (c == '"' && !single_enclosed)
-                        double_enclosed = true;
-                    else
-                        single_enclosed |= (c == '\'' && !double_enclosed);
-
-                    sb.Append(c);
-                    if (c == ')' && !double_enclosed && !single_enclosed)
-                    {
-                        paren_enclosed = false;
+                        num_parens--;
                         if (i == str.Length - 1)
                             csv.Add(sb.ToString().Trim());
                     }
                 }
                 else
                 {
-                    if (c == '"')
+                    if (c == '(')
                     {
-                        double_enclosed = true;
-                    }
-                    else if (c == '\'')
-                    {
-                        single_enclosed = true;
-                    }
-                    else if (c == '(')
-                    {
-                        paren_enclosed = true;
+                        num_parens++;
                     }
                     else if (c == ',')
                     {
@@ -301,14 +321,13 @@ namespace DotNetAsm
                         sb.Clear();
                         continue;
                     }
-
                     sb.Append(c);
                     if (i == str.Length - 1)
                         csv.Add(sb.ToString().Trim());
                 }
             }
-            if (double_enclosed || single_enclosed)
-                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+            if (num_parens != 0)
+                throw new Exception(ErrorStrings.None);
 
             if (str.Last().Equals(','))
                 csv.Add(string.Empty);

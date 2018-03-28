@@ -309,7 +309,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, test.Count(), test.Count(), test);
 
             line.Operand = line.Operand + "$80";
-            TestForFailure<ExpressionException>(line);
+            TestForFailure(line);
 
             line.Operand = string.Format("42, ?, ?, \"{0}\", $80", teststring);
             TestForFailure<OverflowException>(line);
@@ -399,7 +399,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, test.Length, test.Length, Encoding.UTF8.GetBytes(test));
 
             line.Instruction = ".map";
-            line.Operand = "$80, $ff, '\0'";
+            line.Operand = "$80, $ff, '\\0'";
             LineAssembler.AssembleLine(line);
 
             translated = (char)Controller.Encoding.GetEncodedValue('\xc1');

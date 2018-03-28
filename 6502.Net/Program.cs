@@ -26,6 +26,9 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 
+
+using System.Linq;
+
 namespace Asm6502.Net
 {
     class Program
@@ -36,14 +39,14 @@ namespace Asm6502.Net
 
             if (isVerbose)
             {
-                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
+                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
                 sb.Append(Environment.NewLine);
                 sb.Append("6502.Net comes with ABSOLUTELY NO WARRANTY; see LICENSE!");
                 sb.Append(Environment.NewLine);
             }
             else
             {
-                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017 informedcitizenry.");
+                sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
                 sb.AppendFormat("Version {0}.{1} Build {2}",
                                 Assembly.GetEntryAssembly().GetName().Version.Major,
                                 Assembly.GetEntryAssembly().GetName().Version.Minor,

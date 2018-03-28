@@ -126,15 +126,14 @@ namespace DotNetAsm
             Encoding = new AsmEncoding(Options.CaseSensitive);
 
             Evaluator = new Evaluator(@"\$([a-fA-F0-9]+)");
-            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", GetCharValue);
+            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
             if (!Options.CaseSensitive)
                 Evaluator.DefineSymbolLookup(Patterns.SymbolBasic + @"\(", (fnc) => fnc.ToLower());
-
-
-            // The gnarliest regex you have 
-            // seen in your life.           
-            //              ||              
-            //              ||              
+            
+                                            // The gnarliest regex you have 
+                                            // seen in your life.           
+                                            //              ||              
+                                            //              ||              
             Evaluator.DefineSymbolLookup(   //              \/
                 @"(?<=^|[^\p{Ll}\p{Lu}\p{Lt}0-9_.$])(?>(_+[\p{Ll}\p{Lu}\p{Lt}0-9]|[\p{Ll}\p{Lu}\p{Lt}])(\.[\p{Ll}\p{Lu}\p{Lt}_]|[\p{Ll}\p{Lu}\p{Lt}0-9_])*)(?=[^(.]|$)",
                                          GetNamedSymbolValue);
@@ -177,7 +176,17 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="chr">The character to encode.</param>
         /// <returns>The encoded value as a string.</returns>
-        string GetCharValue(string chr) => Encoding.GetEncodedValue(chr.TrimOnce('\'').First()).ToString();
+        string GetCharValue(string chr)
+        {
+            var literal = chr.GetNextQuotedString();
+            var unescaped = Regex.Unescape(literal.Trim('\''));
+            var charval = Encoding.GetEncodedValue(unescaped.First()).ToString();
+            if (literal.Equals(chr))
+                return charval;
+        
+            var post = chr.Substring(literal.Length);
+            return Evaluator.Eval(charval + post).ToString();              
+        }
 
         /// <summary>
         /// Used by the expression evaluator to convert an anonymous symbol
@@ -436,7 +445,7 @@ namespace DotNetAsm
                 if (!string.IsNullOrEmpty(_currentLine.Label) &&
                     !_currentLine.Label.Equals("*") &&
                     _currentLine.SourceString.StartsWith(" ", Options.StringComparison) &&
-                    !Options.NoWarnLeft)
+                    Options.WarnLeft)
                     Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);
 
                 if (!IsAssignmentDirective())

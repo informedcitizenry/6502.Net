@@ -119,19 +119,7 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Convert escaped code point expressions to actual Unicode strings.
-        /// </summary>
-        /// <param name="labelOperand">The label or operand string to convert</param>
-        /// <returns>A string with unicode characters converted from code points.</returns>
-        string ConvertEscapedUnicode(string labelOperand) => 
-            _regUnicode.Replace(labelOperand, match =>
-           {
-               var codepoint = int.Parse(match.Value.Substring(2), NumberStyles.HexNumber);
-               return char.ConvertFromUtf32(codepoint);
-           });
-
-        /// <summary>
-        /// Parse the SourceLine's SourceString property into its component line,
+        /// Parse the <see cref="DotNetAsm.SourceLine"/>'s SourceString property into its component line,
         /// instruction and operand.
         /// </summary>
         /// <param name="checkInstruction">A callback to determine which part of the source
@@ -139,24 +127,15 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.QuoteNotEnclosedException"></exception>
         public void Parse(Func<string, bool> checkInstruction)
         {
-            bool double_enclosed = false;
-            bool single_enclosed = false;
-
             int length = 0;
             for (; length < SourceString.Length; length++)
             {
                 char c = SourceString[length];
-                if (!single_enclosed && !double_enclosed && c == ';')
+                if (c == '"' || c == '\'')
+                    length += SourceString.GetNextQuotedString(atIndex: length).Length - 1;
+                else if (c == ';')
                     break;
-                if (c == '"' && !single_enclosed)
-                    double_enclosed = !double_enclosed;
-                else if (c == '\'' && !double_enclosed)
-                    single_enclosed = !single_enclosed;
-
             }
-            if (double_enclosed || single_enclosed)
-                throw new QuoteNotEnclosedException();
-            
             var processed = SourceString.Substring(0, length).Trim();
             var m = _regThree.Match(processed);
             if (string.IsNullOrEmpty(m.Value) == false)
@@ -211,9 +190,6 @@ namespace DotNetAsm
                     }
                 }
             }
-            // both label and operand may contain escaped Unicode characters
-            Label = ConvertEscapedUnicode(Label);
-            Operand = ConvertEscapedUnicode(Operand);
         }
 
         /// <summary>

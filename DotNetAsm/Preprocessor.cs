@@ -59,41 +59,6 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Check if all quotes are properly closed.
-        /// </summary>
-        /// <param name="sourcelines">The list of <see cref="T:DotNetAsm.SourceLine"/>s.</param>
-        void CheckQuotes(IEnumerable<SourceLine> sourcelines)
-        {
-            var nocomments = sourcelines.Where(l => !l.IsComment);
-            foreach (var line in nocomments)
-            {
-                bool double_enclosed = false;
-                for (int i = 0; i < line.Operand.Length; i++)
-                {
-                    var c = line.Operand[i];
-                    if (!double_enclosed && c == '\'')
-                    {
-                        i += 2;
-                        if (i >= line.Operand.Length || line.Operand[i] != '\'')
-                        {
-                            Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                            break;
-                        }
-                    }
-                    else if (c == '"')
-                    {
-                        double_enclosed = !double_enclosed;
-                    }
-                }
-                if (double_enclosed)
-                {
-                    Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
         /// Preprocess all comment blocks, macro and segment definitions.
         /// </summary>
         /// <param name="sourcelines">The <see cref="T:System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>collection</param>
@@ -102,7 +67,6 @@ namespace DotNetAsm
         {
             // we can't do this check until all commenting has been processed
             ProcessCommentBlocks(sourcelines);
-            CheckQuotes(sourcelines);
             return ProcessIncludes(sourcelines.Where(l => !l.IsComment));
         }
 

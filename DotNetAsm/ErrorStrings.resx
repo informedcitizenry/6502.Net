@@ -138,6 +138,9 @@
   <data name="DefininingUnknownType" xml:space="preserve">
     <value>Type '{0}' is unknown or not redefinable</value>
   </data>
+  <data name="Depricated" xml:space="preserve">
+    <value>{0} is depricated</value>
+  </data>
   <data name="DirectiveTakesNoArguments" xml:space="preserve">
     <value>Directive '{0}' takes no arguments</value>
   </data>

@@ -50,7 +50,7 @@ namespace DotNetAsm
         bool _noSource;
         bool _printVersion;
         bool _noDisassembly;
-        bool _noWarnLeft;
+        bool _warnLeft;
 
         #endregion
 
@@ -72,7 +72,7 @@ namespace DotNetAsm
             _verboseDasm =
             _werror =
             _noWarn =
-            _noWarnLeft =
+            _warnLeft =
             _noDisassembly =
             _noSource =
             _noAssembly =
@@ -108,8 +108,8 @@ namespace DotNetAsm
                 syntax.DefineOptionList("D|define",     ref _defines,       "Assign value to a global symbol/label in <arg>");
                 syntax.DefineOption("q|quiet",          ref _quiet,         "Assemble in quiet mode (no console messages)");
                 syntax.DefineOption("w|no-warn",        ref _noWarn,        "Suppress all warnings");
-                syntax.DefineOption("wnoleft",          ref _noWarnLeft,    "Suppress warnings about whitespaces before labels");
                 syntax.DefineOption("werror",           ref _werror,        "Treat all warnings as errors");
+                syntax.DefineOption("wleft",            ref _warnLeft,      "Issue warnings about whitespaces before labels");
                 syntax.DefineOption("l|labels",         ref _labelFile,     "Output label definitions to <arg>");
                 syntax.DefineOption("L|list",           ref _listingFile,   "Output listing to <arg>");
                 syntax.DefineOption("a|no-assembly",    ref _noAssembly,    "Suppress assembled bytes from assembly listing");
@@ -197,8 +197,8 @@ namespace DotNetAsm
         /// <summary>
         /// Gets a value indicating whether to suppress warnings for whitespaces before labels.
         /// </summary>
-        /// <value><c>true</c> if no warn left; otherwise, <c>false</c>.</value>
-        public bool NoWarnLeft { get { return _noWarnLeft; } }
+        /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
+        public bool WarnLeft { get { return _warnLeft; } }
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
