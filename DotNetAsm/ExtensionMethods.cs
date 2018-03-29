@@ -221,8 +221,9 @@ namespace DotNetAsm
                 if (escaped)
                 {
                     escaped = false;
+                    // find matches for the variable-length escape sequences
                     var m = Regex.Match(str.Substring(i),
-                                        @"^u([a-fA-F0-9]{4}|U[a-fA-F0-9]{8}|[0-7]{3}|x[a-fA-F0-9]{4}|x[a-fA-F0-9]{2}).");
+                                        @"^(u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8}|x[a-fA-F0-9]{1,4}).");
                     if (!string.IsNullOrEmpty(m.Value))
                     {
                         quoted.Append(m.Value);

@@ -267,7 +267,7 @@ A further note about encodings and source files. As mentioned, source files are 
 
 #### Escape sequences
 
-All .Net escape sequences will also output, including Unicode and hex. 
+All .Net escape sequences will also output, including Unicode. 
 
 ```
             .string "He said, \"How are you?\""
