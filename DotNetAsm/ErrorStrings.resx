@@ -169,7 +169,7 @@
     <value>Label is not the leftmost character</value>
   </data>
   <data name="LabelNotValid" xml:space="preserve">
-    <value>Symbol '{0}' is not a valid label name</value>
+    <value>'{0}' is not a valid symbol name</value>
   </data>
   <data name="LabelRedefinition" xml:space="preserve">
     <value>Redefinition of label '{0}'</value>
@@ -209,6 +209,9 @@
   </data>
   <data name="TooManyArguments" xml:space="preserve">
     <value>Too many arguments for directive '{0}'</value>
+  </data>
+  <data name="TooManyCharacters" xml:space="preserve">
+    <value>Too many characters in character literal</value>
   </data>
   <data name="TypeDefinitionError" xml:space="preserve">
     <value>Cannot redefine type to '{0}' because it is already a type</value>

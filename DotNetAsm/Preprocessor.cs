@@ -176,6 +176,7 @@ namespace DotNetAsm
                 var sourcelines = new List<SourceLine>();
                 using (StreamReader reader = new StreamReader(File.Open(file, FileMode.Open)))
                 {
+                    var encoding = reader.CurrentEncoding;
                     while (reader.EndOfStream == false)
                     {
                         var unprocessedline = reader.ReadLine();

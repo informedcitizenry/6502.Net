@@ -61,7 +61,6 @@ namespace DotNetAsm
         static Regex _regThreeAlt;
         static Regex _regTwo;
         static Regex _regOne;
-        static Regex _regUnicode;
 
         #endregion
 
@@ -108,8 +107,6 @@ namespace DotNetAsm
             _regThreeAlt = new Regex(@"^([^\s]+)\s*(=)\s*(.+)$",        RegexOptions.Compiled);
             _regTwo      = new Regex(@"^([^\s]+)\s+(.+)$",              RegexOptions.Compiled);
             _regOne      = new Regex(@"^([^\s]+)$",                     RegexOptions.Compiled);
-            _regUnicode  = new Regex(@"(\\u[a-fA-F0-9]{4}|\\U[a-fA-F0-9]{8})", 
-                                                                        RegexOptions.Compiled);
         }
 
         #endregion

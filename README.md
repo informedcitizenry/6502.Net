@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.11.1
+### Version 1.11.2
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
 
@@ -262,6 +262,8 @@ The output can be one to four bytes. Entire character sets can also be mapped, w
             .map 'a', 'A' ;; this is now the same as .map 'a', 'a'
 ```
 Instead express character literals as one-character strings in double-quotes, which will resolve to UTF-8 values.
+
+A further note about encodings and source files. As mentioned, source files are read and processed as UTF-8. While it is true that the .Net StreamReader class can auto-detect other encodings, this cannot be guaranteed (for instance if the BOM is lacking in a UTF-16-encoded source). If the source does not assemble as expected, consider converting the source to UTF-8 or at least ASCII. [This article](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/) offers a good overview on the issues concerning text encodings.
 
 #### Escape sequences
 
@@ -2077,7 +2079,7 @@ glyph             ;12345678
 
 `Redefinition of macro` - An attempt was made to redefine a macro.
 
-`Symbol is not a valid label name` - The label name had one or more invalid characters.
+`<Symbol> is not a valid symbol name` - The label or variable has one or more invalid characters.
 
 `Symbol not found` - The expression referenced a symbol that was not defined.
 
@@ -2088,6 +2090,8 @@ glyph             ;12345678
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
 `Too many arguments for directive` - More arguments were provided to the directive than expected.
+
+`Too many characters in character literal` - The character literal has too many characters.
 
 `Type is unknown or not redefinable` - An attempt was made to define an unknown or non-definable type.
 

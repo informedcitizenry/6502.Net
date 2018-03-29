@@ -233,6 +233,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string TooManyCharacters {
+            get {
+                return ResourceManager.GetString("TooManyCharacters", resourceCulture);
+            }
+        }
+        
         public static string TypeDefinitionError {
             get {
                 return ResourceManager.GetString("TypeDefinitionError", resourceCulture);

@@ -151,7 +151,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="str">The string to evaluate</param>
         /// <returns>The first instance of a parenthetical group</returns>
-        /// <exception cref="T:System.FormatException">System.FormatException</exception>
+        /// <exception cref="T:System.FormatException"></exception>
         public static string FirstParenEnclosure(this string str)
         {
             var num_parents = 0;
@@ -194,6 +194,7 @@ namespace DotNetAsm
         /// </summary>
         /// <returns>The next quoted string, or empty if no quoted string present.</returns>
         /// <param name="str">String.</param>
+        /// <exception cref="T:System.Exception"></exception>
         public static string GetNextQuotedString(this string str)
         {
             return str.GetNextQuotedString(0);
@@ -205,68 +206,69 @@ namespace DotNetAsm
         /// <returns>The next quoted string, or empty if no quoted string present.</returns>
         /// <param name="str">String.</param>
         /// <param name="atIndex">The index at which to search the string.</param>
+        /// <exception cref="T:System.Exception"></exception>
         public static string GetNextQuotedString(this string str, int atIndex)
         {
             var quoted = new StringBuilder();
             var double_enclosed = false;
             var single_enclosed = false;
             var escaped = false;
-            var escapesize = 0;
+     
             for (int i = atIndex; i < str.Length; i++)
             {
                 var c = str[i];
-                if (c == '\"')
-                {
-                    if (!escaped && !single_enclosed)
-                    {
-                        double_enclosed = !double_enclosed;
-                        if (!double_enclosed)
-                        {
-                            if (quoted.Length < 2)
-                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-                            quoted.Append(c);
-                            break;
-                        }
-                    }    
-                }
-                else if (c == '\'')
-                {
-                    if (!escaped && !double_enclosed)
-                    {
-                        single_enclosed = !single_enclosed;
-                        if (!single_enclosed)
-                        {
-                            if (quoted.Length < 2 || quoted.Length > escapesize + 3)
-                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed
-                                                    + " or invalid escape sequence");
-                            quoted.Append(c);
-                            break;
-                        }
-                    }
-                }
-                else if (c == '\\')
-                {
-                    escaped = true;
-                    escapesize++;
-                }
-                if (escaped && c != '\\')
+                var escapesize = 0;
+                if (escaped)
                 {
                     escaped = false;
-                    var m = Regex.Match(str.Substring(i), 
-                                        @"^(u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8}|[0-7]{3}|x[a-fA-F0-9]{4}|x[a-fA-F0-9]{2}).");
+                    var m = Regex.Match(str.Substring(i),
+                                        @"^u([a-fA-F0-9]{4}|U[a-fA-F0-9]{8}|[0-7]{3}|x[a-fA-F0-9]{4}|x[a-fA-F0-9]{2}).");
                     if (!string.IsNullOrEmpty(m.Value))
                     {
                         quoted.Append(m.Value);
+                        var last = m.Value.Last();
                         if (single_enclosed)
                         {
-                            if (!m.Value.Last().Equals('\''))
-                                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                            if (!last.Equals('\''))
+                                throw new Exception(ErrorStrings.TooManyCharacters);
                             return quoted.ToString();
                         }
-                        escapesize = m.Groups[0].Length;
-                        i += m.Value.Length;
+                        if (last.Equals('"'))
+                            return quoted.ToString();
+                        
+                        i += m.Value.Length - 1;
                         continue;
                     }
+                }
+                else if (c == '"' && !single_enclosed)
+                {
+                    double_enclosed = !double_enclosed;
+                    if (!double_enclosed)
+                    {
+                        if (quoted.Length < 2)
+                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                        quoted.Append(c);
+                        break;
+                    }    
+                }
+                else if (c == '\'' && !double_enclosed)
+                {
+                    single_enclosed = !single_enclosed;
+                    if (!single_enclosed)
+                    {
+                        if (quoted.Length < 2)
+                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                        if (quoted.Length > escapesize + 3)
+                            throw new Exception(ErrorStrings.TooManyCharacters);
+                        quoted.Append(c);
+                        break;
+                    }
+                }
+                else if (c == '\\' && (double_enclosed || single_enclosed))
+                {
+                    escaped = !escaped;
+                    if (escaped)
+                        escapesize++;
                 }
                 if (single_enclosed || double_enclosed)
                     quoted.Append(c);
@@ -282,6 +284,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="str">The string to evaluate</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
+        /// <exception cref="T:System.Exception"></exception>
         public static List<string> CommaSeparate(this string str)
         {
             var csv = new List<string>();
