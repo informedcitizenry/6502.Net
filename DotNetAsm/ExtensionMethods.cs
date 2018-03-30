@@ -352,20 +352,13 @@ namespace DotNetAsm
         /// <returns>The size in bytes.</returns>
         public static int Size(this Int64 value)
         {
-            int size = 1;
-            Int64 absval = Math.Abs(value) / 256;
-
-            while (absval > 0)
-            {
-                size++;
-                absval /= 256;
-            }
-            if ((size == 1 && value < sbyte.MinValue) ||
-                (size == 2 && value < short.MinValue) ||
-                (size == 3 && value < Int24.MinValue) ||
-                (size == 4 && value < int.MinValue))
-                size++;
-            return size;
+            if (value < 0)
+                value = (~value) << 1;
+            
+            if ((value & 0xFFFFFF00) == 0) return 1;
+            if ((value & 0xFFFF0000) == 0) return 2;
+            if ((value & 0xFF000000) == 0) return 3;
+            return 4;
         }
     }
 }
