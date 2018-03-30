@@ -83,6 +83,12 @@ namespace DotNetAsm {
             }
         }
         
+        internal static string SymbolUnicodeNoLeadingUnderscore {
+            get {
+                return ResourceManager.GetString("SymbolUnicodeNoLeadingUnderscore", resourceCulture);
+            }
+        }
+        
         internal static string SymbolUnicodeChar {
             get {
                 return ResourceManager.GetString("SymbolUnicodeChar", resourceCulture);

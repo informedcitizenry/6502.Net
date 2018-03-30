@@ -77,15 +77,7 @@ namespace DotNetAsm
                 Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return;
             }
-            var eor = Controller.Evaluator.Eval(line.Operand);
-
-            if (eor < 0) eor += 256;
-            if (eor > 255 || eor < 0)
-            {
-                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, eor);
-                return;
-            }
-
+            var eor = Controller.Evaluator.Eval(line.Operand, sbyte.MinValue, byte.MaxValue);
             var eor_b = Convert.ToByte(eor);
             Controller.Output.Transforms.Push(delegate(byte b)
             {

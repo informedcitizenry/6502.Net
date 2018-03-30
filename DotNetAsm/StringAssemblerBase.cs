@@ -219,7 +219,7 @@ namespace DotNetAsm
             {
                 if (s.EnclosedInQuotes())
                 {
-                    size += Controller.Encoding.GetByteCount(Regex.Unescape(s.TrimOnce('"')));
+                    size += Controller.Encoding.GetByteCount(Regex.Unescape(s.TrimOnce(s.First())));
                 }
                 else
                 {
@@ -318,7 +318,7 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
-                    var unescaped = Regex.Unescape(quoted.TrimOnce('"'));
+                    var unescaped = Regex.Unescape(quoted.TrimOnce(quoted.First()));
                     line.Assembly.AddRange(Controller.Output.Add(unescaped, Controller.Encoding));
                 }
             }

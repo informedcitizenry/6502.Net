@@ -62,6 +62,30 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
+        public void TestEor()
+        {
+            var pseudoAsm = new PseudoAssembler(Controller, m => false);
+            var line = new SourceLine
+            {
+                Instruction = ".eor",
+                Operand = "$ff"
+            };
+            LineAssembler.AssembleLine(line);
+            Assert.IsFalse(Controller.Log.HasErrors);
+
+            line.Instruction = ".byte";
+            line.Operand = "$00";
+            TestInstruction(line, pseudoAsm, 0x0001, 0x0001, new byte[] { 0xff });
+
+            line.Instruction = ".eor";
+            line.Operand = "-129";
+            TestForFailure<OverflowException>(line);
+
+            line.Operand = "256";
+            TestForFailure<OverflowException>(line);
+        }
+
+        [Test]
         public void TestConditionals()
         {
             var line = new SourceLine();

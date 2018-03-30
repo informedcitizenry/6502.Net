@@ -263,7 +263,7 @@ The output can be one to four bytes. Entire character sets can also be mapped, w
 ```
 Instead express character literals as one-character strings in double-quotes, which will resolve to UTF-8 values.
 
-A further note about encodings and source files. As mentioned, source files are read and processed as UTF-8. While it is true that the .Net StreamReader class can auto-detect other encodings, this cannot be guaranteed (for instance if the BOM is lacking in a UTF-16-encoded source). If the source does not assemble as expected, consider converting the source to UTF-8 or at least ASCII. [This article](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/) offers a good overview on the issues concerning text encodings.
+A further note about encodings and source files. As mentioned, source files are read and processed as UTF-8. While it is true that the .Net StreamReader class can auto-detect other encodings, this cannot be guaranteed (for instance if the BOM is lacking in a UTF-16-encoded source). If the source does not assemble as expected, consider converting it to UTF-8 or at least ASCII. [This article](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/) offers a good overview on the issues concerning text encodings.
 
 #### Escape sequences
 

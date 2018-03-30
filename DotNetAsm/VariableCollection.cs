@@ -51,7 +51,7 @@ namespace DotNetAsm
             RegexOptions option = RegexOptions.Compiled;
             option |= comparer == StringComparer.CurrentCultureIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             _evaluator = evaluator;
-            _regExpression = new Regex("^(_*" + Patterns.SymbolUnicode + @")\s*=\s*(.+)$", option);
+            _regExpression = new Regex("^(" + Patterns.SymbolUnicode + @")\s*=\s*(.+)$", option);
         }
 
         #endregion
@@ -69,7 +69,7 @@ namespace DotNetAsm
             var m = _regExpression.Match(expression);
             if (string.IsNullOrEmpty(m.Value) == false)
                 return new KeyValuePair<string, long>(inScope + m.Groups[1].Value,
-                                                      _evaluator.Eval(m.Groups[2].Value, int.MinValue, uint.MaxValue));
+                                                      _evaluator.Eval(m.Groups[3].Value, int.MinValue, uint.MaxValue));
             return new KeyValuePair<string, long>(string.Empty, long.MinValue);
         }
 
@@ -93,7 +93,7 @@ namespace DotNetAsm
         {
             var m = _regExpression.Match(expression);
             if (string.IsNullOrEmpty(m.Value) == false)
-                return m.Groups[2].Value;
+                return m.Groups[3].Value;
             return string.Empty;
         }
 

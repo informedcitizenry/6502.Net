@@ -45,12 +45,17 @@ namespace NUnit.Tests.TestDotNetAsm
             transbytes = translator.GetBytes("Hello, World!");
             Assert.AreEqual(expected, transbytes);
 
-            var escapeclub = Encoding.ASCII.GetBytes("\t\t\"'");
+            expected = Encoding.ASCII.GetBytes("\t\t\"'");
+            expected = expected.Select(delegate (byte b)
+            {
+                if (b == '\t') return (byte)14;
+                return b;
+            }).ToArray();
 
             translator.SelectEncoding("escapeclub");
             translator.Map('\t', 14);
             transbytes = translator.GetBytes("\t\t\"'");
-
+            Assert.AreEqual(expected, transbytes);
         }
 
         [Test]

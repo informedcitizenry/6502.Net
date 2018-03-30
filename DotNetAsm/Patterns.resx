@@ -133,6 +133,9 @@
     <value>[a-zA-Z][a-zA-Z0-9_]*</value>
   </data>
   <data name="SymbolUnicode" xml:space="preserve">
+    <value>(_+[\p{Ll}\p{Lu}\p{Lt}0-9]|[\p{Ll}\p{Lu}\p{Lt}])[\p{Ll}\p{Lu}\p{Lt}0-9_]*</value>
+  </data>
+  <data name="SymbolUnicodeNoLeadingUnderscore" xml:space="preserve">
     <value>[\p{Ll}\p{Lu}\p{Lt}][\p{Ll}\p{Lu}\p{Lt}0-9_]*</value>
   </data>
   <data name="SymbolUnicodeChar" xml:space="preserve">
