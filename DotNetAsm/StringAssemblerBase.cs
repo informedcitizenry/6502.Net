@@ -284,9 +284,6 @@ namespace DotNetAsm
             {
                 Controller.Output.Transforms.Push(b => Convert.ToByte(b << 1));
             }
-
-            string operand = line.Operand;
-
             var args = line.Operand.CommaSeparate();
 
             foreach (var arg in args)
