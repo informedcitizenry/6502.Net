@@ -308,7 +308,7 @@ namespace DotNetAsm
                     }
                     else
                     {
-                        line.Assembly.AddRange(Controller.Output.Add(atoi));
+                        line.Assembly.AddRange(Controller.Output.Add(atoi, Controller.Encoding));
                     }
                 }
                 else
