@@ -56,6 +56,11 @@ namespace NUnit.Tests.TestDotNetAsm
             translator.Map('\t', 14);
             transbytes = translator.GetBytes("\t\t\"'");
             Assert.AreEqual(expected, transbytes);
+
+            expected = new byte[] { 0x9f };
+            translator.Map('\u21d4', 0x9f);
+            transbytes = translator.GetBytes("\u21d4");
+            Assert.AreEqual(expected, transbytes);
         }
 
         [Test]

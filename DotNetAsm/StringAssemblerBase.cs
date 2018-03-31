@@ -378,11 +378,11 @@ namespace DotNetAsm
                 if (string.IsNullOrEmpty(csvs[i]))
                     throw new Exception(ErrorStrings.None);
                 if (csvs[i].EnclosedInQuotes())
-                    parmlist.Add(csvs[i].TrimOnce('"'));
+                    parmlist.Add(Regex.Unescape(csvs[i].TrimOnce('"')));
                 else
                     parmlist.Add(evaluator.Eval(csvs[i]));
             }
-            return string.Format(fmt.TrimOnce('"'), parmlist.ToArray());
+            return string.Format(Regex.Unescape(fmt.TrimOnce('"')), parmlist.ToArray());
         }
 
         #endregion
