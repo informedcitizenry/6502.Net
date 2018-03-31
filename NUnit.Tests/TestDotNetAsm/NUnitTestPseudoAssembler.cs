@@ -312,7 +312,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestForFailure<ExpressionException>(line);
 
             line.Operand = string.Format("42, ?, ?, \"{0}\", $80", teststring);
-            TestForFailure<OverflowException>(line);
+            TestForFailure(line);
 
             test.Clear();
             test.AddRange(BitConverter.GetBytes(0x0d0d).Take(2));

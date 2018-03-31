@@ -291,6 +291,7 @@ namespace DotNetAsm
 
             foreach (var arg in args)
             {
+                List<byte> encoded;
                 var quoted = arg.GetNextQuotedString();
                 if (string.IsNullOrEmpty(quoted))
                 {
@@ -304,11 +305,11 @@ namespace DotNetAsm
                     if (string.IsNullOrEmpty(atoi))
                     {
                         var val = Controller.Evaluator.Eval(arg);
-                        line.Assembly.AddRange(Controller.Output.Add(val, val.Size()));
+                        encoded = Controller.Output.Add(val, val.Size());
                     }
                     else
                     {
-                        line.Assembly.AddRange(Controller.Output.Add(atoi, Controller.Encoding));
+                        encoded = Controller.Output.Add(atoi, Controller.Encoding);
                     }
                 }
                 else
@@ -319,8 +320,18 @@ namespace DotNetAsm
                         return;
                     }
                     var unescaped = Regex.Unescape(quoted.TrimOnce(quoted.First()));
-                    line.Assembly.AddRange(Controller.Output.Add(unescaped, Controller.Encoding));
+                    encoded = Controller.Output.Add(unescaped, Controller.Encoding);
                 }
+                if (format.Equals(".nstring"))
+                {
+                    var neg = encoded.FirstOrDefault(b => b > 0x7f);
+                    if (neg > 0x7f)
+                    {
+                        Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, neg);
+                        return;
+                    }
+                }
+                line.Assembly.AddRange(encoded);
             }
             var lastbyte = Controller.Output.GetCompilation().Last();
 
