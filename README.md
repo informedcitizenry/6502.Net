@@ -284,8 +284,6 @@ Here are a few recognized escape sequences:
 | `\"`            | Double quotation mark        |
 | `\unnnn`        | Unicode U+nnnn               |
 
-For more information about escape sequences, refer [here](https://docs.microsoft.com/en-us/cpp/c-language/escape-sequences).
-
 ### File inclusions
 
 Other files can be included in final assembly, either as 6502.Net-compatible source or as raw binary. Source files are included using the `.include` and `.binclude` directives. This is useful for libraries or other organized source you would not want to include in your main source file. The operand is the file name (and path) enclosed in quotes. `.include` simply inserts the source at the directive.

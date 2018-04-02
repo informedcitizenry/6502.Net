@@ -82,16 +82,25 @@ namespace DotNetAsm
                 return string.Empty;
                       
             if (line.Instruction == "=" || 
+                line.Instruction.Equals(".let", Controller.Options.StringComparison) ||
                 line.Instruction.Equals(".equ", Controller.Options.StringComparison))
             {
                 Int64 value = 0;
                 if (line.Label == "*" || Controller.Options.NoSource)
                     return string.Empty;
                 if (line.Label == "-" || line.Label == "+")
+                {
                     value = line.PC;
+                }
+                else if (line.Instruction.Equals(".let", Controller.Options.StringComparison))
+                {
+                    var variable = Controller.Variables.GetVariableFromExpression(line.Operand, line.Scope);
+                    value = Controller.Variables.GetSymbolValue(variable);
+                }
                 else
+                {
                     value = Controller.Labels.GetSymbolValue(line.Scope + line.Label);
-
+                }
                 return string.Format("=${0:x" + value.Size() * 2 + "}", value);
             }
             if (line.Instruction.StartsWith(".", Controller.Options.StringComparison) &&
