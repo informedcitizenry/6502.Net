@@ -6,7 +6,6 @@ using System.Text;
 
 namespace NUnit.Tests.Test6502.Net
 {
-    [TestFixture]
     public class NUnitTestAsm6502 : TestDotNetAsm.NUnitAsmTestBase
     {
         public NUnitTestAsm6502()

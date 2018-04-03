@@ -100,7 +100,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0, 0, null, false);
         }
 
-        protected void TestForFailure<Texc>(SourceLine line) where Texc : System.Exception
+        public void TestForFailure<Texc>(SourceLine line) where Texc : System.Exception
         {
             Assert.Throws<Texc>(() => TestForFailure(line));
             ResetController();

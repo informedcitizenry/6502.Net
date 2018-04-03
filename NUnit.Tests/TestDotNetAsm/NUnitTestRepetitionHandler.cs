@@ -5,7 +5,6 @@ using System.Linq;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    [TestFixture]
     public class NUnitTestRepetitionHandler
     {
         [Test]

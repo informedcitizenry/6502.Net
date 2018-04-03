@@ -8,8 +8,7 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    [TestFixture]
-    public class NUnitTestMacros : NUnitHandlerTestBase
+     public class NUnitTestMacros : NUnitHandlerTestBase
     {
         public NUnitTestMacros()
         {

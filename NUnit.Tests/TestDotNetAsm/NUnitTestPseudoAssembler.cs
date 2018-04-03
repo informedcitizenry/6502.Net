@@ -128,7 +128,6 @@ namespace NUnit.Tests.TestDotNetAsm
         public event WriteBytesEventHandler WritingFooter;
     }
 
-    [TestFixture]
     public class NUnitTestPseudoAssembler : NUnitAsmTestBase
     {
         public NUnitTestPseudoAssembler()

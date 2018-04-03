@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    [TestFixture]
     public class NUnitTestOpcode
     {
         [Test]

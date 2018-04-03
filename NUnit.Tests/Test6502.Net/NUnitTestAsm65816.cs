@@ -3,7 +3,6 @@ using NUnit.Framework;
 
 namespace NUnit.Tests.Test6502.Net
 {
-    [TestFixture]
     public class NUnitTestAsm65816 : TestDotNetAsm.NUnitAsmTestBase
     {
         public NUnitTestAsm65816()
