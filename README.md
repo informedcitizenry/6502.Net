@@ -1,11 +1,11 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
 ### Version 1.11.2
 ## Introduction
-The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816. 
+The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
-The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor. 
+The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
 
-The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system. 
+The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system.
 
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Legal
@@ -186,7 +186,7 @@ highscore   .dword ?    ; uninitialized highscore variables
 ```
 ### Text processing and encoding
 #### Psuedo Ops
-In addition to integral values, z80DotNet can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes.
+In addition to integral values, 6502.Net can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes.
 
 Strings can be assembled in a few different ways, according to the needs of the programmer.
 
@@ -267,7 +267,7 @@ A further note about encodings and source files. As mentioned, source files are 
 
 #### Escape sequences
 
-All .Net escape sequences will also output, including Unicode. 
+All .Net escape sequences will also output, including Unicode.
 
 ```
             .string "He said, \"How are you?\""
@@ -297,15 +297,15 @@ Other files can be included in final assembly, either as 6502.Net-compatible sou
 +           .endmacro
             ...
 ```
-This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the [section below](#macros-and-segments) for more information about macros). 
+This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the [section below](#macros-and-segments) for more information about macros).
 ```
             .include "../lib/library.s"
 
             .inc16 $033c    ; 16-bit increment value at $033c and $033d
-``` 
+```
 If the included library file also contained its own symbols, caution would be required to ensure no symbol clashes. An alternative to `.include` is `.binclude`, which resolves this problem by enclosing the included source in its own scoped block.
 ```
-lib         .binclude "../lib/library.s"    ; all symbols in "library.s" 
+lib         .binclude "../lib/library.s"    ; all symbols in "library.s"
                                         ; are in the "lib" scope
 
             jsr lib.memcopy
@@ -386,7 +386,7 @@ All non-string operands are treated as math or conditional expressions. Compound
             pha                 
             rts                 ; RTS jump to "routine"
 
-routine     lda &long_address   ; load the absolute value of long_address 
+routine     lda &long_address   ; load the absolute value of long_address
                                 ; (truncate bank byte) into accummulator
 ```
 
@@ -639,7 +639,7 @@ By default, 6502.Net "thinks" like a 6502 assembler, compiling only the publishe
 ```
 There are four options for the `.cpu` directive: `6502`, `6502i`, `65C02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though in the case of the `65816` selection this also includes 65C02 and 6502 (legal) instructions, since it is a superset of both.
 
-Immediate mode on the 65816 differs based on register size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers. 
+Immediate mode on the 65816 differs based on register size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers.
 ```
             rep #%00110000
 
@@ -651,7 +651,7 @@ Immediate mode on the 65816 differs based on register size. 6502.Net must be tol
             ldy #$1000
             jml $1012000
 ```
-Eight-bit modes for registers are default. 
+Eight-bit modes for registers are default.
 
 You can also set all registers to the same size with `.mx8` and `.mx16` respectively.
 ```

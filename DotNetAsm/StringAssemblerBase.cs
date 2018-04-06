@@ -61,7 +61,7 @@ namespace DotNetAsm
             _regFmtFunc = new Regex(@"format(\(.+\))",
                 Controller.Options.RegexOption | RegexOptions.Compiled);
 
-            _regEncName = new Regex(@"^_?[a-z][a-z0-9_]*$",
+            _regEncName = new Regex("^" + Patterns.SymbolBasic + "$",
                 Controller.Options.RegexOption | RegexOptions.Compiled);
 
         }

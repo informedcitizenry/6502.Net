@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
@@ -13,6 +14,18 @@ namespace NUnit.Tests.TestDotNetAsm
             this(null)
         {
 
+        }
+
+        string GetCharValue(string chr)
+        {
+            var literal = chr.GetNextQuotedString();
+            var unescaped = Regex.Unescape(literal.Trim('\''));
+            var charval = Encoding.GetEncodedValue(unescaped.First()).ToString();
+            if (literal.Equals(chr))
+                return charval;
+
+            var post = chr.Substring(literal.Length);
+            return Evaluator.Eval(charval + post).ToString();
         }
 
         public TestController(string[] args) 
@@ -27,11 +40,9 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Encoding = new AsmEncoding();
 
-            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.)'(?=\B)", (chr) =>
-                Encoding.GetEncodedValue(chr.TrimOnce('\'').First()).ToString());
+            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
 
             Evaluator.DefineSymbolLookup(@"(?<=^|[^a-zA-Z0-9_.$])(?>(_+[a-zA-Z0-9]|[a-zA-Z])(\.[a-zA-Z_]|[a-zA-Z0-9_])*)(?=[^(.]|$)", GetSymbol);
-
 
             if (args != null)
                 Options.ProcessArgs(args);

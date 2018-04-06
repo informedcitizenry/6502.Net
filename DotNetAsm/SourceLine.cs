@@ -22,9 +22,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace DotNetAsm
@@ -34,21 +31,6 @@ namespace DotNetAsm
     /// </summary>
     public class SourceLine : IEquatable<SourceLine>, ICloneable
     {
-        #region Exception
-
-        /// <summary>
-        /// An exception class to handle strings not properly closed in quotation marks
-        /// </summary>
-        public class QuoteNotEnclosedException : Exception
-        {
-            public override string Message
-            {
-                get => ErrorStrings.QuoteStringNotEnclosed;
-            }
-        }
-
-        #endregion
-
         #region Members
 
         bool _doNotAssemble;
@@ -121,7 +103,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="checkInstruction">A callback to determine which part of the source
         /// is the instruction.</param>
-        /// <exception cref="T:DotNetAsm.QuoteNotEnclosedException"></exception>
+        /// <exception cref="System.Exception"></exception>
         public void Parse(Func<string, bool> checkInstruction)
         {
             int length = 0;
