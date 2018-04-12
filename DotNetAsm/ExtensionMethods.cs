@@ -154,7 +154,7 @@ namespace DotNetAsm
         /// <exception cref="T:System.FormatException"></exception>
         public static string FirstParenEnclosure(this string str)
         {
-            var num_parents = 0;
+            var num_parens = 0;
             var parengroup = new StringBuilder();
             char open = '(', close = ')';
             for (int i = 0; i < str.Length; i++)
@@ -165,26 +165,26 @@ namespace DotNetAsm
                 if (c == '"' || c == '\'')
                 {
                     quoted = str.GetNextQuotedString(atIndex: i);
-                    if (num_parents >= 1)
+                    if (num_parens >= 1)
                         parengroup.Append(quoted);
                     i += quoted.Length - 1;
                     continue;
                 }
-                else if (num_parents >= 1 || c == open)
+                else if (num_parens >= 1 || c == open)
                     parengroup.Append(c);
 
                 if (c == open)
                 {
-                    num_parents++;
+                    num_parens++;
                 }
                 else if (c == close)
                 {
-                    num_parents--;
-                    if (num_parents == 0)
+                    num_parens--;
+                    if (num_parens == 0)
                         return parengroup.ToString();
                 }
             }
-            if (num_parents != 0)
+            if (num_parens != 0)
                 throw new FormatException();
             return str;
         }
@@ -207,6 +207,7 @@ namespace DotNetAsm
         /// <param name="str">String.</param>
         /// <param name="atIndex">The index at which to search the string.</param>
         /// <exception cref="T:System.Exception"></exception>
+        /// <exception cref="T:System.IndexOutOfRangeException"></exception>
         public static string GetNextQuotedString(this string str, int atIndex)
         {
             var quoted = new StringBuilder();
