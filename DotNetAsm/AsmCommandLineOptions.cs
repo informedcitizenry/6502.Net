@@ -89,7 +89,6 @@ namespace DotNetAsm
         /// Process the command-line arguments passed by the end-user.
         /// </summary>
         /// <param name="args">The argument string.</param>
-        /// <returns><c>True</c> if version info was requested, otherwise <c>false</c>.</returns>
         public void ProcessArgs(string[] args)
         {
             if (args.Length == 0)
@@ -120,6 +119,7 @@ namespace DotNetAsm
                 syntax.DefineOption("V|version",        ref _printVersion,  "Print current version");
                 syntax.DefineParameterList("source",    ref _source,        "The source files to assemble");
             });
+            ArgsPassed = args.Length;
         }
 
         #endregion
@@ -212,6 +212,13 @@ namespace DotNetAsm
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets the number of arguments passed after the call to 
+        /// <see cref="T:DotNetAsm.AsmCommandLineOptions.ProcessArgs"/>.
+        /// </summary>
+        /// <value>The arguments passed.</value>
+        public int ArgsPassed { get; private set; }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 

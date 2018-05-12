@@ -32,7 +32,7 @@ namespace DotNetAsm
     /// <summary>
     /// Handler for the DisplayBanner event.
     /// </summary>
-    public delegate string DisplayBannerEventHandler(object sender, bool isVerbose);
+    public delegate string DisplayBannerEventHandler(object sender, bool showVersion);
 
     /// <summary>
     /// Handler for the WriteBytes event.
@@ -791,7 +791,7 @@ namespace DotNetAsm
             }
             if (Log.HasErrors == false)
             {
-                Console.WriteLine("\n********************************");
+                Console.WriteLine("\n*********************************");
                 Console.WriteLine("Assembly start: ${0:X4}", Output.ProgramStart);
                 Console.WriteLine("Assembly end:   ${0:X4}", Output.ProgramEnd);
                 Console.WriteLine("Passes: {0}", _passes);
@@ -937,13 +937,18 @@ namespace DotNetAsm
             if (Options.InputFiles.Count == 0)
                 return;
 
-            if (Options.PrintVersion && DisplayingBanner != null)
+            if (Options.PrintVersion && DisplayingBanner != null) 
+            {
                 Console.WriteLine(DisplayingBanner.Invoke(this, true));
+                if (Options.ArgsPassed > 1)
+                    Console.WriteLine("Additional options ignored.");
+                return;
+            }
 
             if (Options.Quiet)
                 Console.SetOut(TextWriter.Null);
 
-            if (!Options.PrintVersion && DisplayingBanner != null)
+            if (DisplayingBanner != null)
                 Console.WriteLine(DisplayingBanner.Invoke(this, false));
 
             DateTime asmTime = DateTime.Now;
