@@ -237,7 +237,7 @@ namespace DotNetAsm
                         }
                         else
                         {
-                            size += atoi.Length;
+                            size += Controller.Encoding.GetByteCount(atoi);
                         }
                     }
                 }
