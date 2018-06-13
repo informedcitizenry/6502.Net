@@ -107,7 +107,8 @@ namespace DotNetAsm
 
                         if (lastparm.EnclosedInQuotes() && lastparm.First().Equals('"'))
                         {
-                            var translationBytes = System.Text.Encoding.UTF8.GetBytes(lastparm.TrimOnce('"'));
+                            var transString = EvalEncodingParam(lastparm);
+                            var translationBytes = System.Text.Encoding.UTF8.GetBytes(transString);
                             if (translationBytes.Length < 4)
                                 Array.Resize(ref translationBytes, 4);
                             translation = BitConverter.ToInt32(translationBytes, 0);

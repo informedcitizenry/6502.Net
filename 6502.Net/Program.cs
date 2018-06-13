@@ -104,48 +104,5 @@ namespace Asm6502.Net
                 Console.WriteLine(ex.Message);
             }
         }
-
-        public static void EnumerateTextElements(string str)
-        {
-            // Creates a TextElementEnumerator.
-            int[] TEIndices = null;
-            TextElementEnumerator TEEnum = null;
-
-            // Parses the string using the ParseCombiningCharacters() method.
-            Console.WriteLine
-               ("\r\nParsing '{0}' Using ParseCombiningCharacters()...", str);
-            int i;
-            TEIndices = StringInfo.ParseCombiningCharacters(str);
-            for (i = 0; i < (TEIndices.Length - 1); i++)
-            {
-                Console.WriteLine("Text Element {0} ({1}..{2}) = {3}",i,TEIndices[i],TEIndices[i+1] - 1,
-                    str.Substring(TEIndices[i], TEIndices[i + 1] - TEIndices[i]));
-            }
-            Console.WriteLine("Text Element {0} ({1}..{2})= {3}",i,TEIndices[i],str.Length - 
-             1, str.Substring(TEIndices[i]));
-
-            // Parses the string using the GetTextElementEnumerator method.
-            Console.WriteLine("\r\nParsing '{0}' Using TextElementEnumerator...",str);
-            TEEnum = StringInfo.GetTextElementEnumerator(str);
-
-            bool Continue = false;
-            int TECount = -1;
-
-            // Note: Begins at element -1 (none).
-            Continue = TEEnum.MoveNext();
-            while (Continue)
-            {
-                // Prints the current element.
-                // Both GetTextElement() and Current retrieve the current
-                // text element. The latter returns it as an Object.
-                TECount++;
-                Console.WriteLine("Text Element {0} ({1}..{2})= {3}",TECount,TEEnum.ElementIndex,
-                   TEEnum.ElementIndex + TEEnum.GetTextElement().Length - 1, 
-                   TEEnum.Current);
-
-                // Moves to the next element.
-                Continue = TEEnum.MoveNext();
-             }
-        }
     }
 }
