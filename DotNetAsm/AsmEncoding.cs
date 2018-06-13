@@ -1,27 +1,6 @@
-﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
-//-----------------------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -35,10 +14,10 @@ namespace DotNetAsm
     public sealed class AsmEncoding : Encoding
     {
         #region Members
-        
-        Dictionary<string, Dictionary<char, int>> _maps;
 
-        Dictionary<char, int> _currentMap;
+        Dictionary<string, Dictionary<string, int>> _maps;
+
+        Dictionary<string, int> _currentMap;
 
         #endregion
 
@@ -54,7 +33,7 @@ namespace DotNetAsm
         public AsmEncoding(bool caseSensitive)
         {
             StringComparer comparer = caseSensitive ? StringComparer.CurrentCulture : StringComparer.CurrentCultureIgnoreCase;
-            _maps = new Dictionary<string, Dictionary<char, int>>(comparer);
+            _maps = new Dictionary<string, Dictionary<string, int>>(comparer);
             SelectEncoding("none");
         }
 
@@ -65,7 +44,7 @@ namespace DotNetAsm
         public AsmEncoding() :
             this(false)
         {
-            
+
         }
 
         #endregion
@@ -73,141 +52,145 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Get the actual encoded bytes for a given character.
+        /// Get the actual encoded bytes for a string element.
         /// </summary>
-        /// <param name="chr">The character to encode.</param>
+        /// <param name="s">The string element to encode.</param>
         /// <returns>An array of encoded bytes for the character.</returns>
-        byte[] GetCharBytes(char chr)
+        byte[] GetCharBytes(string s)
         {
-            if (_currentMap.ContainsKey(chr))
+            if (_currentMap.ContainsKey(s))
             {
-                long code = _currentMap[chr];
+                long code = _currentMap[s];
                 var codebytes = BitConverter.GetBytes(code);
                 return codebytes.Take(code.Size()).ToArray();
             }
-            return Encoding.UTF8.GetBytes(new char[] { chr });
+            return Encoding.UTF8.GetBytes(s);
         }
 
+
         /// <summary>
-        /// Get the encoded binary value of the given character.
+        /// Get the encoded binary value of the given character as a 
+        /// <see cref="T:System.Int32" /> value.
         /// </summary>
-        /// <param name="chr">The character to encode.</param>
+        /// <param name="s">The string element to encode.</param>
         /// <returns>An unsigned 32-bit integer representing the 
         /// encoding of the character.</returns>
-        public int GetEncodedValue(char chr)
-        {
-            if (_currentMap.ContainsKey(chr))
-                return _currentMap[chr];
-            var charbytes = GetCharBytes(chr);
-            var paddedcodebytes = new byte[4];
-            Array.Copy(GetCharBytes(chr), paddedcodebytes, charbytes.Length);
-            return BitConverter.ToInt32(paddedcodebytes, 0);
-        }
-
-        /// <summary>
-        /// Adds a character mapping to translate from source to object
-        /// </summary>
-        /// <param name="mapping">The char to map</param>
-        /// <param name="code">The corresponding code</param>
-        public void Map(char mapping, int code)
-        {
-            // the default encoding cannot be changed
-            if (_currentMap != _maps.First().Value)
-                _currentMap.Add(mapping, code);
-        }
-
-        /// <summary>
-        /// Adds a character mapping to translate from source to object
-        /// </summary>
-        /// <param name="range">The range of characters to map</param>
-        /// <param name="firstcode">The first char code</param>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
-        public void Map(string range, int firstcode)
+        /// <exception cref="T:System.ArgumentNullException"></exception>
+        public int GetEncodedValue(string s)
         {
-            var rangeChars = range.ToCharArray();
-            if (rangeChars.Length != 2)
-                throw new ArgumentException(range);
+            if (string.IsNullOrEmpty(s))
+                throw new ArgumentNullException();
 
-            Map(System.Convert.ToInt32(rangeChars.First()),
-                System.Convert.ToInt32(rangeChars.Last()),
-                firstcode);
+            if (_currentMap.ContainsKey(s))
+                return _currentMap[s];
+
+            var stringInfo = StringInfo.ParseCombiningCharacters(s);
+            if (stringInfo.Length > 1)
+                throw new ArgumentException(s);
+
+            var charbytes = GetCharBytes(s);
+            if (charbytes.Length < 4)
+                Array.Resize(ref charbytes, 4);
+            return BitConverter.ToInt32(charbytes, 0);
         }
 
         /// <summary>
         /// Adds a character mapping to translate from source to object
         /// </summary>
-        /// <param name="firstRange">The first character in the mapping range</param>
-        /// <param name="lastRange">The last character in the mapping range</param>
-        /// <param name="firstcode">The first char code</param>
-        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
-        public void Map(int firstRange, int lastRange, int firstcode)
+        /// <param name="mapping">The text element, or range of text elements to map.</param>
+        /// <param name="code">The code of the mapping.</param>
+        /// <exception cref="System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        public void Map(string mapping, int code)
         {
-            if (firstRange > lastRange)
-                throw new ArgumentException(firstRange.ToString());
-
             // the default encoding cannot be changed
             if (_currentMap == _maps.First().Value)
                 return;
 
-            int displace = firstcode - firstRange;
+            if (string.IsNullOrEmpty(mapping))
+                throw new ArgumentNullException();
 
-            while (firstRange <= lastRange)
+            var stringInfo = StringInfo.ParseCombiningCharacters(mapping);
+            if (stringInfo.Length > 1)
             {
-                var charMap = System.Convert.ToChar(firstRange);
-                var code = System.Convert.ToInt32(firstRange + displace);
-                _currentMap.Add(charMap, code);
-                firstRange++;
+                if (stringInfo.Length > 2)
+                    throw new ArgumentException(mapping);
+
+                var first = char.ConvertToUtf32(mapping, stringInfo.First());
+                var last = char.ConvertToUtf32(mapping, stringInfo.Last());
+
+                if (first > last)
+                    throw new ArgumentException(mapping);
+
+                while (first <= last)
+                {
+                    var firstAsStr = char.ConvertFromUtf32(first);
+                    if (_currentMap.ContainsKey(firstAsStr))
+                        _currentMap[firstAsStr] = code++;
+                    else
+                        _currentMap.Add(firstAsStr, code++);
+                    first++;
+                }
+            }
+            else
+            {
+                if (_currentMap.ContainsKey(mapping))
+                    _currentMap[mapping] = code;
+                else
+                    _currentMap.Add(mapping, code);
             }
         }
 
         /// <summary>
-        /// Get the encoding of the mapped character.
+        /// Adds a character mapping to translate from source to object
         /// </summary>
-        /// <param name="mapping">The mapped character</param>
-        /// <returns>The mapped character encoding</returns>
-        public int GetCode(char mapping)
+        /// <param name="mapping">The character to map</param>
+        /// <param name="code">The code of the mapping.</param>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentNullException"></exception>
+        public void Map(char mapping, int code)
         {
-            if (_currentMap.ContainsKey(mapping))
-                return _currentMap[mapping];
-            return mapping;
+            Map(mapping.ToString(), code);
         }
 
         /// <summary>
         /// Remove a mapping for the current encoding.
         /// </summary>
-        /// <param name="mapping">The character to unmap</param>
-        public void Unmap(char mapping)
+        /// <param name="mapping">The text element, or range of text elements to unmap.</param>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="T:System.ArgumentNullException"></exception>
+        public void Unmap(string mapping)
         {
-            if (_currentMap.ContainsKey(mapping))
+            // the default encoding cannot be changed
+            if (_currentMap == _maps.First().Value)
+                return;
+
+            if (string.IsNullOrEmpty(mapping))
+                throw new ArgumentNullException();
+
+            var stringInfo = StringInfo.ParseCombiningCharacters(mapping);
+            if (stringInfo.Length > 1)
+            {
+                if (stringInfo.Length > 2)
+                    throw new ArgumentException(mapping);
+
+                var first = char.ConvertToUtf32(mapping, stringInfo.First());
+                var last = char.ConvertToUtf32(mapping, stringInfo.Last());
+
+                if (first > last)
+                    throw new ArgumentException(mapping);
+
+                while (first <= last)
+                {
+                    var firstAsStr = char.ConvertFromUtf32(first++);
+                    _currentMap.Remove(firstAsStr);
+                }
+            }
+            else
+            {
                 _currentMap.Remove(mapping);
-        }
-
-        /// <summary>
-        /// Remove a mapping for the current encoding.
-        /// </summary>
-        /// <param name="range">The range of of chars as a string to unmap</param>
-        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
-        public void Unmap(string range)
-        {
-            if (range.Length != 2)
-                throw new ArgumentException(range);
-
-            Unmap(range.First(), range.Last());
-        }
-
-        /// <summary>
-        /// Remove a mapping for the current encoding.
-        /// </summary>
-        /// <param name="firstRange">The first char in the range to unamp</param>
-        /// <param name="lastRange">The last char in the range to unmap</param>
-        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
-        public void Unmap(char firstRange, char lastRange)
-        {
-            if (firstRange >= lastRange)
-                throw new ArgumentException(lastRange.ToString());
-
-            while (firstRange != lastRange)
-                Unmap(firstRange++);
+            }
         }
 
         /// <summary>
@@ -225,11 +208,30 @@ namespace DotNetAsm
         public void SelectEncoding(string encodingName)
         {
             if (!_maps.ContainsKey(encodingName))
-                _maps.Add(encodingName, new Dictionary<char, int>());
+                _maps.Add(encodingName, new Dictionary<string, int>());
             _currentMap = _maps[encodingName];
         }
 
         #region Encoding Methods
+
+        /// <summary>
+        /// Calculates the number of bytes produced by encoding the string.
+        /// </summary>
+        /// <param name="s">The string to encode</param>
+        public override int GetByteCount(string s)
+        {
+            int numbytes = 0;
+            var textEnumerator = StringInfo.GetTextElementEnumerator(s);
+            while (textEnumerator.MoveNext())
+            {
+                var elem = textEnumerator.GetTextElement();
+                if (_currentMap.ContainsKey(elem))
+                    numbytes += ((long)_currentMap[elem]).Size();
+                else
+                    numbytes += UTF8.GetByteCount(elem); 
+            }
+            return numbytes;
+        }
 
         /// <summary>
         /// Calculates the number of bytes produced by encoding all the characters
@@ -242,13 +244,28 @@ namespace DotNetAsm
         /// <exception cref="T:System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetByteCount(char[] chars, int index, int count)
         {
-            int numbytes = 0;
-            for (int i = 0; i < count; i++)
+            var s = new string(chars.Skip(index).Take(count).ToArray());
+            return GetByteCount(s);
+        }
+
+        /// <summary>
+        /// Encodes a string into a byte array.
+        /// </summary>
+        /// <param name="s">The string to encode</param>
+        /// <returns>The array of bytes representing the string encoding.</returns>
+        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
+        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        public override byte[] GetBytes(string s)
+        {
+            var bytes = new List<byte>();
+            var textEnumerator = StringInfo.GetTextElementEnumerator(s);
+
+            while (textEnumerator.MoveNext())
             {
-                var bytechars = GetCharBytes(chars[i + index]);
-                numbytes += bytechars.Length; 
+                var elem = textEnumerator.GetTextElement();
+                bytes.AddRange(GetCharBytes(elem));
             }
-            return numbytes;
+            return bytes.ToArray();
         }
 
         /// <summary>
@@ -263,18 +280,17 @@ namespace DotNetAsm
         /// sequence of bytes</param>
         /// <returns>The actual number of bytes written into bytes.</returns>
         /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         /// <exception cref="T:System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            int j = byteIndex;
-            for (int i = 0; i < charCount; i++)
-            {
-                var transBytes = GetCharBytes(chars[i + charIndex]);
-                foreach (byte b in transBytes)
-                    bytes[j++] = b;
-            }
+            var s = new string(chars.Skip(charIndex).Take(charCount).ToArray());
+            var charBytes = GetBytes(s);
+            var j = byteIndex;
+
+            foreach (var b in charBytes)
+                bytes[j++] = b;
+
             return j - byteIndex;
         }
 
@@ -313,15 +329,14 @@ namespace DotNetAsm
         {
             int j = charIndex;
             int i = 0;
-            int bsize = bytes.Length;
             while (i < byteCount)
             {
                 int displ = 0;
                 int encoding = 0;
-                if (i + 3 + byteIndex < bsize)
+                if (i + 3 + byteIndex < byteCount)
                 {
-                    encoding = bytes[i + byteIndex] | 
-                               (bytes[i + 1 + byteIndex] * 0x100) | 
+                    encoding = bytes[i + byteIndex] |
+                               (bytes[i + 1 + byteIndex] * 0x100) |
                                (bytes[i + 2 + byteIndex] * 0x10000) |
                                (bytes[i + 3 + byteIndex] * 0x1000000);
                     if (_currentMap.ContainsValue(encoding))
@@ -330,7 +345,7 @@ namespace DotNetAsm
                         goto SetChar;
                     }
                 }
-                if (i + 2 + byteIndex < bsize)
+                if (i + 2 + byteIndex < byteCount)
                 {
                     encoding = bytes[i + byteIndex] |
                                (bytes[i + 1 + byteIndex] * 0x100) |
@@ -341,7 +356,7 @@ namespace DotNetAsm
                         goto SetChar;
                     }
                 }
-                if (i + 1 + byteIndex < bsize)
+                if (i + 1 + byteIndex < byteCount)
                 {
                     encoding = bytes[i + byteIndex] |
                                (bytes[i + 1 + byteIndex] * 0x100);
@@ -358,16 +373,32 @@ namespace DotNetAsm
                     goto SetChar;
                 }
 
-                var utfChar = UTF8.GetChars(bytes.Skip(i).ToArray(), 0, byteCount - i).First();
-                chars[j++] = utfChar;
-                i += UTF8.GetByteCount(new char[] { utfChar }, 0, 1);
+                var count = 1;
+                var utfChars = UTF8.GetChars(bytes.Skip(i).ToArray(), 0, byteCount - i);
+
+                if (char.IsSurrogate(utfChars.First()))
+                    count++;
+
+                utfChars = utfChars.Take(count).ToArray();
+                foreach (var utfChar in utfChars)
+                    chars[j++] = utfChar;
+
+                i += UTF8.GetByteCount(utfChars);
                 continue;
 
             SetChar:
-                chars[j++] = _currentMap.First(e => e.Value.Equals(encoding)).Key;
+                var key = _currentMap.First(e => e.Value.Equals(encoding)).Key;
+                var utfchars = key.ToCharArray();
+                foreach (var utfc in utfchars)
+                    chars[j++] = utfc;
                 i += displ;
             }
             return j - charIndex;
+        }
+
+        public char GetEncodedValue(char v)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -379,7 +410,7 @@ namespace DotNetAsm
         /// encoding the specified number of characters.</returns>
         public override int GetMaxByteCount(int charCount)
         {
-            return charCount * sizeof(uint);
+            return charCount * sizeof(Int32);
         }
 
         /// <summary>
@@ -391,7 +422,8 @@ namespace DotNetAsm
         /// decoding the specified number of bytes.</returns>
         public override int GetMaxCharCount(int byteCount)
         {
-            return byteCount;
+            // An encoding could be mapped to a surrogate pair, so we must double max char count
+            return byteCount * sizeof(char);
         }
 
         #endregion

@@ -92,7 +92,7 @@ namespace NUnit.Tests.TestDotNetAsm
             testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
             Assert.AreEqual(expectedcharcount, testcharcount);
 
-            encoding.Unmap('τ');
+            encoding.Unmap("τ");
             expectedbytes = Encoding.UTF8.GetBytes(teststring);
             testbytes = encoding.GetBytes(teststring);
             Assert.AreEqual(expectedbytes, testbytes);
@@ -102,6 +102,28 @@ namespace NUnit.Tests.TestDotNetAsm
 
             testcharcount = encoding.GetChars(testbytes, 0, testbytes.Length, testchars, 0);
             Assert.AreEqual(expectedcharcount, testcharcount);
+        }
+
+        [Test]
+        public void TestEmojis()
+        {
+            var encoding = new AsmEncoding();
+            string smiley = "😀"; // smiley face
+            var expectedbytes = new byte[] { 0xF0, 0x9F, 0x98, 0x80 }; // utf-8 encoding of U+1F600
+            var testbytes = encoding.GetBytes(smiley);
+            Assert.AreEqual(expectedbytes, testbytes);
+
+            encoding.SelectEncoding("emojis");
+            encoding.Map("😀", 204);
+            expectedbytes = new byte[] { 204 };
+            testbytes = encoding.GetBytes(smiley);
+            Assert.AreEqual(expectedbytes, testbytes);
+
+            encoding.SelectDefaultEncoding();
+
+            var expectedchars = smiley.ToCharArray();
+            var testchars = encoding.GetChars(new byte[] { 0xF0, 0x9F, 0x98, 0x80 });
+            Assert.AreEqual(expectedchars, testchars);
         }
     }
 }

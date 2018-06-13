@@ -96,36 +96,37 @@ namespace DotNetAsm
                 try
                 {
                     var firstparm = parms.First();
-                    var mapstring = string.Empty;
-                    if (firstparm.EnclosedInQuotes() && firstparm.Length > 3)
-                    {
-                        if (firstparm.Length > 4)
-                            throw new ArgumentException(firstparm);
-                        mapstring = firstparm.TrimOnce('"');
-                    }
+                    var lastparm = parms.Last();
+
                     if (instruction.Equals(".map"))
                     {
                         if (parms.Count < 2 || parms.Count > 3)
                             throw new ArgumentException(line.Operand);
-                        var translation = EvalEncodingParam(parms.Last());
+
+                        int translation = 0;
+
+                        if (lastparm.EnclosedInQuotes() && lastparm.First().Equals('"'))
+                        {
+                            var translationBytes = System.Text.Encoding.UTF8.GetBytes(lastparm.TrimOnce('"'));
+                            if (translationBytes.Length < 4)
+                                Array.Resize(ref translationBytes, 4);
+                            translation = BitConverter.ToInt32(translationBytes, 0);
+                        }
+                        else
+                        {
+                            translation = char.ConvertToUtf32(EvalEncodingParam(lastparm), 0);
+                        }
 
                         if (parms.Count == 2)
                         {
-                            if (string.IsNullOrEmpty(mapstring) == false)
-                            {
-                                Controller.Encoding.Map(mapstring, translation);
-                            }
-                            else
-                            {
-                                var mapchar = EvalEncodingParam(firstparm);
-                                Controller.Encoding.Map(mapchar, translation);
-                            }
+                            var mapchar = EvalEncodingParam(firstparm);
+                            Controller.Encoding.Map(mapchar, translation);
                         }
                         else
                         {
                             var firstRange = EvalEncodingParam(firstparm);
                             var lastRange = EvalEncodingParam(parms[1]);
-                            Controller.Encoding.Map(firstRange, lastRange, translation);
+                            Controller.Encoding.Map(string.Concat(firstRange, lastRange), translation);
                         }
                     }
                     else
@@ -135,21 +136,14 @@ namespace DotNetAsm
 
                         if (parms.Count == 1)
                         {
-                            if (string.IsNullOrEmpty(mapstring))
-                            {
-                                var unmap = EvalEncodingParam(firstparm);
-                                Controller.Encoding.Unmap(unmap);
-                            }
-                            else
-                            {
-                                Controller.Encoding.Unmap(mapstring);
-                            }
+                            var unmap = EvalEncodingParam(firstparm);
+                            Controller.Encoding.Unmap(unmap);
                         }
                         else
                         {
                             var firstunmap = EvalEncodingParam(firstparm);
                             var lastunmap = EvalEncodingParam(parms[1]);
-                            Controller.Encoding.Unmap(firstunmap, lastunmap);
+                            Controller.Encoding.Unmap(string.Concat(firstunmap, lastunmap));
                         }
                     }
                 }
@@ -164,18 +158,27 @@ namespace DotNetAsm
         /// Evaluate parameter the string as either a char literal or expression
         /// </summary>
         /// <param name="p">The string parameter</param>
-        /// <returns>A char representation of the parameter</returns>
-        char EvalEncodingParam(string p)
+        /// <returns>A string representation of the parameter</returns>
+        string EvalEncodingParam(string p)
         {
             // if char literal return the char itself
             var quoted = p.GetNextQuotedString();
             if (string.IsNullOrEmpty(quoted))
-                return (char)Controller.Evaluator.Eval(p);
-
+            {
+                var result = (int)Controller.Evaluator.Eval(p, 0, 0x10FFFF);
+                try
+                {
+                    return char.ConvertFromUtf32(result);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    throw new ArgumentException(p);
+                }
+            }   
             var unescaped = Regex.Unescape(quoted);
-            if (unescaped.Length != 3)
-                throw new ArgumentException(p);
-            return unescaped.TrimOnce('"').TrimOnce('\'').First();
+            if (unescaped.First().Equals('"'))
+                return unescaped.TrimOnce('"');
+            return unescaped.TrimOnce('\'');
         }
 
         /// <summary>
@@ -183,7 +186,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> associated to the expression</param>
         /// <param name="arg">The string expression to convert</param>
-        /// <returns></returns>
+        /// <returns>The expression as a string</returns>
         string ExpressionToString(SourceLine line, string arg)
         {
             if (_regStrFunc.IsMatch(arg))
@@ -237,7 +240,7 @@ namespace DotNetAsm
                         }
                         else
                         {
-                            size += Controller.Encoding.GetByteCount(atoi);
+                            size += atoi.Length;//Controller.Encoding.GetByteCount(atoi);
                         }
                     }
                 }

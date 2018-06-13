@@ -20,7 +20,7 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             var literal = chr.GetNextQuotedString();
             var unescaped = Regex.Unescape(literal.Trim('\''));
-            var charval = Encoding.GetEncodedValue(unescaped.First()).ToString();
+            var charval = Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
             if (literal.Equals(chr))
                 return charval;
 
@@ -361,7 +361,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "\"A\", \"a\"";
             LineAssembler.AssembleLine(line);
 
-            var translated = (char)Controller.Encoding.GetEncodedValue('A');
+            var translated = (char)Controller.Encoding.GetEncodedValue("A");
             Assert.AreEqual('a', translated);
 
             line.Instruction = ".byte";
@@ -380,7 +380,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "none";
             LineAssembler.AssembleLine(line);
 
-            translated = (char)Controller.Encoding.GetEncodedValue('A');
+            translated = (char)Controller.Encoding.GetEncodedValue("A");
             Assert.AreEqual('A', translated);
 
             line.Instruction = ".byte";
@@ -412,7 +412,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "$80, $ff, '\\0'";
             LineAssembler.AssembleLine(line);
 
-            translated = (char)Controller.Encoding.GetEncodedValue('\xc1');
+            translated = (char)Controller.Encoding.GetEncodedValue("\xc1");
             Assert.AreEqual('A', translated);
 
             line.Instruction = ".map";

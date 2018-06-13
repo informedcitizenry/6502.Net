@@ -180,7 +180,7 @@ namespace DotNetAsm
         {
             var literal = chr.GetNextQuotedString();
             var unescaped = Regex.Unescape(literal.Trim('\''));
-            var charval = Encoding.GetEncodedValue(unescaped.First()).ToString();
+            var charval = Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
             if (literal.Equals(chr))
                 return charval;
         
