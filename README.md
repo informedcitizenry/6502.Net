@@ -241,8 +241,8 @@ Text encodings are modified using the `.map` and `.unmap` directives. After sele
             ;; char literals are also affected
             lda #'A'    ;; a9 00
 
-            ;; you can use emoji too!
-            .string "😁�"    ;; f0 9f 98 81
+            ;; emoji will assemble too!
+            .string "😁"    ;; f0 9f 98 81
 ```
 The output can be one to four bytes. Entire character sets can also be mapped, with the re-mapped code treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions.
 ```
