@@ -105,17 +105,24 @@ namespace DotNetAsm
 
                         int translation = 0;
 
-                        if (lastparm.EnclosedInQuotes() && lastparm.First().Equals('"'))
+                        if (lastparm.EnclosedInQuotes())
                         {
-                            var transString = EvalEncodingParam(lastparm);
-                            var translationBytes = System.Text.Encoding.UTF8.GetBytes(transString);
-                            if (translationBytes.Length < 4)
-                                Array.Resize(ref translationBytes, 4);
-                            translation = BitConverter.ToInt32(translationBytes, 0);
+                            if (lastparm.First().Equals('"'))
+                            {
+                                var transString = EvalEncodingParam(lastparm);
+                                var translationBytes = System.Text.Encoding.UTF8.GetBytes(transString);
+                                if (translationBytes.Length < 4)
+                                    Array.Resize(ref translationBytes, 4);
+                                translation = BitConverter.ToInt32(translationBytes, 0);
+                            }
+                            else
+                            {
+                                translation = char.ConvertToUtf32(EvalEncodingParam(lastparm), 0);
+                            }
                         }
                         else
                         {
-                            translation = char.ConvertToUtf32(EvalEncodingParam(lastparm), 0);
+                            translation = (int)Controller.Evaluator.Eval(lastparm, int.MinValue, int.MaxValue);
                         }
 
                         if (parms.Count == 2)

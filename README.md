@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.12
+### Version 1.12.0.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -10,7 +10,7 @@ The 65C02 is an enhancement to the 6502, offering some improvements, including u
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Legal
 * 6502.Net (c) 2017, 2018 informedcitizenry
-* System.CommandLine, a [command-line argument parser](https://github.com/dotnet/corefxlab/tree/master/src/System.CommandLine) (c) Microsoft Corporation
+* System.CommandLine, a [command-line argument parser](https://github.com/dotnet/corefxlab/tree/master/archived_projects/src/System.CommandLine) (c) Microsoft Corporation
 
 See LICENSE and LICENSE_third_party for licensing information.
 ## Overview
@@ -241,8 +241,8 @@ Text encodings are modified using the `.map` and `.unmap` directives. After sele
             ;; char literals are also affected
             lda #'A'    ;; a9 00
 
-            ;; emoji are acceptable
-            .string "😀"    ;; f0 9f 98 80
+            ;; you can use emoji too!
+            .string "😁�"    ;; f0 9f 98 81
 ```
 The output can be one to four bytes. Entire character sets can also be mapped, with the re-mapped code treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions.
 ```
