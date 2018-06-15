@@ -544,7 +544,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0001, 1, new byte[] { 0x05 });
 
             line.Operand = "'";
-            TestForFailure<Exception>(line);
+            TestForFailure<ExpressionException>(line);
 
             line.Operand = "-?";
             TestForFailure<ExpressionException>(line);

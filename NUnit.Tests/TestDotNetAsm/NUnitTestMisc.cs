@@ -23,10 +23,10 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.IsTrue(test.EnclosedInQuotes());
 
             test = "\"\"hello, world!";
-            Assert.Throws<System.Exception>(() => test.EnclosedInQuotes());//Assert.IsFalse(test.EnclosedInQuotes());
+            Assert.IsFalse(test.EnclosedInQuotes());
 
             test = "\"\"hello, world!\"\"";
-            Assert.Throws<System.Exception>(() => test.EnclosedInQuotes());//Assert.IsFalse(test.EnclosedInQuotes());
+            Assert.IsFalse(test.EnclosedInQuotes());
         }
 
         [Test]

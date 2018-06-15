@@ -154,38 +154,41 @@ namespace DotNetAsm
         /// <exception cref="T:System.FormatException"></exception>
         public static string FirstParenEnclosure(this string str)
         {
-            var num_parens = 0;
-            var parengroup = new StringBuilder();
-            char open = '(', close = ')';
-            for (int i = 0; i < str.Length; i++)
+            if (str.Contains("(") || str.Contains(")"))
             {
-                var c = str[i];
-                var quoted = string.Empty;
+                var num_parens = 0;
+                var parengroup = new StringBuilder();
+                char open = '(', close = ')';
+                for (int i = 0; i < str.Length; i++)
+                {
+                    var c = str[i];
+                    var quoted = string.Empty;
 
-                if (c == '"' || c == '\'')
-                {
-                    quoted = str.GetNextQuotedString(atIndex: i);
-                    if (num_parens >= 1)
-                        parengroup.Append(quoted);
-                    i += quoted.Length - 1;
-                    continue;
-                }
-                else if (num_parens >= 1 || c == open)
-                    parengroup.Append(c);
+                    if (c == '"' || c == '\'')
+                    {
+                        quoted = str.GetNextQuotedString(atIndex: i);
+                        if (num_parens >= 1)
+                            parengroup.Append(quoted);
+                        i += quoted.Length - 1;
+                        continue;
+                    }
+                    else if (num_parens >= 1 || c == open)
+                        parengroup.Append(c);
 
-                if (c == open)
-                {
-                    num_parens++;
+                    if (c == open)
+                    {
+                        num_parens++;
+                    }
+                    else if (c == close)
+                    {
+                        num_parens--;
+                        if (num_parens == 0)
+                            return parengroup.ToString();
+                    }
                 }
-                else if (c == close)
-                {
-                    num_parens--;
-                    if (num_parens == 0)
-                        return parengroup.ToString();
-                }
+                if (num_parens != 0)
+                    throw new FormatException();
             }
-            if (num_parens != 0)
-                throw new FormatException();
             return str;
         }
 
@@ -207,76 +210,56 @@ namespace DotNetAsm
         /// <param name="str">String.</param>
         /// <param name="atIndex">The index at which to search the string.</param>
         /// <exception cref="T:System.Exception"></exception>
-        /// <exception cref="T:System.IndexOutOfRangeException"></exception>
         public static string GetNextQuotedString(this string str, int atIndex)
         {
+            if (!str.Contains("\"") && !str.Contains("'"))
+                return string.Empty;
+
             var quoted = new StringBuilder();
-            var double_enclosed = false;
-            var single_enclosed = false;
-            var escaped = false;
-     
+            var enclosestring = char.MinValue;
+            int stringsize = 0;
+
             for (int i = atIndex; i < str.Length; i++)
             {
                 var c = str[i];
-                var escapesize = 0;
-                if (escaped)
+                if (!enclosestring.Equals(char.MinValue) || c == '\'' || c == '"')
                 {
-                    escaped = false;
-                    // find matches for the variable-length escape sequences
-                    var m = Regex.Match(str.Substring(i),
-                                        @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2}).");
-                    if (!string.IsNullOrEmpty(m.Value))
-                    {
-                        quoted.Append(m.Value);
-                        var last = m.Value.Last();
-                        if (single_enclosed)
-                        {
-                            if (!last.Equals('\''))
-                                throw new Exception(ErrorStrings.TooManyCharacters);
-                            return quoted.ToString();
-                        }
-                        if (last.Equals('"'))
-                            return quoted.ToString();
-                        
-                        i += m.Value.Length - 1;
-                        continue;
-                    }
-                }
-                else if (c == '"' && !single_enclosed)
-                {
-                    double_enclosed = !double_enclosed;
-                    if (!double_enclosed)
-                    {
-                        if (quoted.Length < 2)
-                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-                        quoted.Append(c);
-                        break;
-                    }    
-                }
-                else if (c == '\'' && !double_enclosed)
-                {
-                    single_enclosed = !single_enclosed;
-                    if (!single_enclosed)
-                    {
-                        if (quoted.Length < 2)
-                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-                        if (quoted.Length > escapesize + 3)
-                            throw new Exception(ErrorStrings.TooManyCharacters);
-                        quoted.Append(c);
-                        break;
-                    }
-                }
-                else if (c == '\\' && (double_enclosed || single_enclosed))
-                {
-                    escaped = !escaped;
-                    if (escaped)
-                        escapesize++;
-                }
-                if (single_enclosed || double_enclosed)
                     quoted.Append(c);
+                    stringsize++;
+                    if (c == '\'' || c == '"')
+                    {
+                        if (enclosestring.Equals(char.MinValue))
+                            enclosestring = c;
+                        else if (enclosestring.Equals(c))
+                            break;
+                    }
+                    else if (c == '\\')
+                    {
+                        // escape cannot be the last char in the string
+                        if (++i == str.Length - 1)
+                            throw new Exception("QuoteStringNotEnclosed");
+                        var m = Regex.Match(str.Substring(i), @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2})");
+                        if (!string.IsNullOrEmpty(m.Value))
+                        {
+
+                            quoted.Append(m.Value);
+                            i += m.Value.Length - 1;
+                        }
+                        else
+                        {
+                            quoted.Append(str[i]);
+                        }
+                    }
+                }
             }
-            if (single_enclosed || double_enclosed)
-                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+            if (!enclosestring.Equals(char.MinValue))
+            {
+                if (stringsize < 2 || !quoted[quoted.Length - 1].Equals(enclosestring))
+                    throw new Exception("QuoteStringNotEnclosed");
+
+                if (enclosestring.Equals('\'') && stringsize > 3)
+                    throw new Exception(string.Format("TooManyCharacters: {0}", stringsize));
+            }
             return quoted.ToString();
         }
 
@@ -293,6 +276,9 @@ namespace DotNetAsm
 
             if (string.IsNullOrEmpty(str))
                 return csv;
+
+            if (!str.Contains(","))
+                return new List<string> { str };
 
             var num_parens = 0;
             var sb = new StringBuilder();
