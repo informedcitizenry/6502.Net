@@ -104,8 +104,7 @@ namespace DotNetAsm
         /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInQuotes(this string str)
         {
-            var q = str.GetNextQuotedString(0);
-            return !string.IsNullOrEmpty(q) && str.Equals(q);
+            return !string.IsNullOrEmpty(str) && str.Equals(str.GetNextQuotedString(0));
         }
 
         /// <summary>
