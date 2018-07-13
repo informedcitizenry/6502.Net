@@ -93,7 +93,7 @@ namespace DotNetAsm
             { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),            1) }
         };
 
-            static Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
+        static Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
         {
 
             { "||",     new OperationDef(parms => (int)parms[1]  | (int)parms[0],            0) },
