@@ -1739,8 +1739,8 @@ glyph             ;12345678
 <table>
 <tr><td><b>Name</b></td><td><code>round</code></td></tr>
 <tr><td><b>Definition</b></td><td>Round number.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value[, places]</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte round(18.21, 0) ; > 12</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte round(18.21) ; > 12</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>sgn</code></td></tr>
