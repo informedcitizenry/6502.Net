@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using FunctionDef = System.Tuple<System.Func<System.Collections.Generic.List<double>, double>, int>;
+using OperationDef = System.Tuple<System.Func<System.Collections.Generic.List<double>, double>, int>;
 
 namespace DotNetAsm
 {
