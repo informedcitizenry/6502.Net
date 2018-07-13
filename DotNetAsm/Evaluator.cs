@@ -95,20 +95,13 @@ namespace DotNetAsm
                 { "pow",    new FunctionDef(parms => Math.Pow(parms[1], parms[0]),   2) },
                 { "rad",    new FunctionDef(parms => (parms[0] * Math.PI / 180),     1) },
                 { "random", new FunctionDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
+				{ "round",  new FunctionDef(parms => Math.Round(parms[0]), 			 1) },
                 { "sgn",    new FunctionDef(parms => Math.Sign(parms[0]),            1) },
                 { "sin",    new FunctionDef(parms => Math.Sin(parms[0]),             1) },
                 { "sinh",   new FunctionDef(parms => Math.Sinh(parms[0]),            1) },
                 { "sqrt",   new FunctionDef(parms => Math.Sqrt(parms[0]),            1) },
                 { "tan",    new FunctionDef(parms => Math.Tan(parms[0]),             1) },
-                { "tanh",   new FunctionDef(parms => Math.Tanh(parms[0]),            1) },
-                { "round",
-                    new FunctionDef(delegate (List<double> parms)
-                     {
-                         if (parms.Count == 2)
-                             return Math.Round(parms[1], (int)parms[0]);
-                         return Math.Round(parms[0]);
-                     }, 2)
-                }
+                { "tanh",   new FunctionDef(parms => Math.Tanh(parms[0]),            1) }
             };
 
             _operators = new Dictionary<string, FunctionDef>
