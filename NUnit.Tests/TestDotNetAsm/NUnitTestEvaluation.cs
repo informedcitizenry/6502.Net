@@ -122,7 +122,7 @@ namespace NUnit.Tests.TestDotNetAsm
             var pow = evaluator.Eval("pow(2,16)");
             var rad = evaluator.Eval("rad(79999.9)");
             var random = evaluator.Eval("random(-3,2047)");
-            var round = evaluator.Eval("round(18.21, 0)");
+            var round = evaluator.Eval("round(18.21)");
             var negsgn = evaluator.Eval("sgn(-8.0)");
             var possgn = evaluator.Eval("sgn(14.0)");
             var nosgn = evaluator.Eval("sgn(0)");
@@ -155,7 +155,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual((long)Math.Log(2048.0), ln);
             Assert.AreEqual((long)(Math.Log10(0x7fffff) + Math.Log10(3 * 4) + (12 * 3)), log10);
             Assert.AreEqual((long)Math.Pow(2, 16), pow);
-            Assert.AreEqual((long)Math.Round(18.21, 0), round);
+            Assert.AreEqual((long)Math.Round(18.21), round);
             Assert.AreEqual((long)Math.Sign(-8.0), negsgn);
             Assert.AreEqual((long)Math.Sign(14.0), possgn);
             Assert.AreEqual((long)Math.Sign(0), nosgn);
