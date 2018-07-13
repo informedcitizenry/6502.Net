@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
@@ -57,10 +57,78 @@ namespace DotNetAsm
 
         #region Members
 
-        Random _rng;
-        Dictionary<string, double> _cache;
         readonly Dictionary<string, Tuple<Regex, Func<string, string>>> _symbolLookups;
-        Dictionary<string, FunctionDef> _functions, _operators;
+        
+        #region Static Members
+        
+        static Random _rng = new Random();
+        
+        static Dictionary<string, double> _cache = new Dictionary<string, double>();
+            
+        static Dictionary<string, OperationDef> _functions = new Dictionary<string, OperationDef>
+        {
+            { "abs",    new OperationDef(parms => Math.Abs(parms[0]),             1) },
+            { "acos",   new OperationDef(parms => Math.Acos(parms[0]),            1) },
+            { "atan",   new OperationDef(parms => Math.Atan(parms[0]),            1) },
+            { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),  1) },
+            { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),         1) },
+            { "cos",    new OperationDef(parms => Math.Cos(parms[0]),             1) },
+            { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),            1) },
+            { "deg",    new OperationDef(parms => (parms[0] * 180 / Math.PI),     1) },
+            { "exp",    new OperationDef(parms => Math.Exp(parms[0]),             1) },
+            { "floor",  new OperationDef(parms => Math.Floor(parms[0]),           1) },
+            { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
+            { "hypot",  new OperationDef(parms => Math.Sqrt(Math.Pow(parms[1], 2) + Math.Pow(parms[0], 2)), 2) },
+            { "ln",     new OperationDef(parms => Math.Log(parms[0]),             1) },
+            { "log10",  new OperationDef(parms => Math.Log10(parms[0]),           1) },
+            { "pow",    new OperationDef(parms => Math.Pow(parms[1], parms[0]),   2) },
+            { "rad",    new OperationDef(parms => (parms[0] * Math.PI / 180),     1) },
+            { "random", new OperationDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
+            { "round",  new OperationDef(parms => Math.Round(parms[0]),              1) },
+            { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),            1) },
+            { "sin",    new OperationDef(parms => Math.Sin(parms[0]),             1) },
+            { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),            1) },
+            { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),            1) },
+            { "tan",    new OperationDef(parms => Math.Tan(parms[0]),             1) },
+            { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),            1) }
+        };
+
+            static Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
+        {
+
+            { "||",     new OperationDef(parms => (int)parms[1]  | (int)parms[0],            0) },
+            { "&&",     new OperationDef(parms => (int)parms[1]  & (int)parms[0],            1) },
+            { "|",      new OperationDef(parms => (long)parms[1] | (long)parms[0],           2) },
+            { "^",      new OperationDef(parms => (long)parms[1] ^ (long)parms[0],           3) },
+            { "&",      new OperationDef(parms => (long)parms[1] & (long)parms[0],           4) },
+            { "!=",     new OperationDef(parms => (long)parms[1] != (long)parms[0] ? 1 : 0,  5) },
+            { "==",     new OperationDef(parms => (long)parms[1] == (long)parms[0] ? 1 : 0,  5) },
+            { "<",      new OperationDef(parms => (long)parms[1] <  (long)parms[0] ? 1 : 0,  6) },
+            { "<=",     new OperationDef(parms => (long)parms[1] <= (long)parms[0] ? 1 : 0,  6) },
+            { ">=",     new OperationDef(parms => (long)parms[1] >= (long)parms[0] ? 1 : 0,  6) },
+            { ">",      new OperationDef(parms => (long)parms[1] >  (long)parms[0] ? 1 : 0,  6) },
+            { "=",      new OperationDef(parms => Double.NaN,                                6) },
+            { "<<",     new OperationDef(parms => (int)parms[1]  << (int)parms[0],           7) },
+            { ">>",     new OperationDef(parms => (int)parms[1]  >> (int)parms[0],           7) },
+            { "-",      new OperationDef(parms => parms[1]       - parms[0],                 8) },
+            { "+",      new OperationDef(parms => parms[1]       + parms[0],                 8) },
+            { "/",      new OperationDef(parms => parms[1]       / parms[0],                 9) },
+            { "*",      new OperationDef(parms => parms[1]       * parms[0],                 9) },
+            { "%",      new OperationDef(parms => (long)parms[1] % (long)parms[0],           9) },
+            { "!",      new OperationDef(parms => Double.NaN,                                10) },
+            { "~",      new OperationDef(parms => Double.NaN,                                10) },
+            { "\x11-",  new OperationDef(parms => -parms[0],                                 11) },
+            { "\x11+",  new OperationDef(parms => parms[0],                                  11) },
+            { "\x11~",  new OperationDef(parms => ~((long)parms[0]),                         12) },
+            { "\x11!",  new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,               12) },
+            { "**",     new OperationDef(parms => Math.Pow(parms[1], parms[0]),              13) },
+            { "\x11>",  new OperationDef(parms => (long)(parms[0] / 0x100) % 256,            14) },
+            { "\x11<",  new OperationDef(parms => (long)parms[0]  % 256,                     14) },
+            { "\x11&",  new OperationDef(parms => (long)parms[0]  % 65536,                   14) },
+            { "\x11^",  new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,          14) }
+        };
+        
+        #endregion      
 
         #endregion
 
@@ -70,75 +138,7 @@ namespace DotNetAsm
         /// Constructs an instance of the <see cref="T:DotNetAsm.Evaluator"/> class, used to evaluate 
         /// strings as mathematical expressions.
         /// </summary>
-        public Evaluator()
-        {
-            _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
-            _cache = new Dictionary<string, double>();
-            _rng = new Random();
-
-            _functions = new Dictionary<string, FunctionDef>
-            {
-                { "abs",    new FunctionDef(parms => Math.Abs(parms[0]),             1) },
-                { "acos",   new FunctionDef(parms => Math.Acos(parms[0]),            1) },
-                { "atan",   new FunctionDef(parms => Math.Atan(parms[0]),            1) },
-                { "cbrt",   new FunctionDef(parms => Math.Pow(parms[0], 1.0 / 3.0),  1) },
-                { "ceil",   new FunctionDef(parms => Math.Ceiling(parms[0]),         1) },
-                { "cos",    new FunctionDef(parms => Math.Cos(parms[0]),             1) },
-                { "cosh",   new FunctionDef(parms => Math.Cosh(parms[0]),            1) },
-                { "deg",    new FunctionDef(parms => (parms[0] * 180 / Math.PI),     1) },
-                { "exp",    new FunctionDef(parms => Math.Exp(parms[0]),             1) },
-                { "floor",  new FunctionDef(parms => Math.Floor(parms[0]),           1) },
-                { "frac",   new FunctionDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
-                { "hypot",  new FunctionDef(parms => Math.Sqrt(Math.Pow(parms[1], 2) + Math.Pow(parms[0], 2)), 2) },
-                { "ln",     new FunctionDef(parms => Math.Log(parms[0]),             1) },
-                { "log10",  new FunctionDef(parms => Math.Log10(parms[0]),           1) },
-                { "pow",    new FunctionDef(parms => Math.Pow(parms[1], parms[0]),   2) },
-                { "rad",    new FunctionDef(parms => (parms[0] * Math.PI / 180),     1) },
-                { "random", new FunctionDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
-				{ "round",  new FunctionDef(parms => Math.Round(parms[0]), 			 1) },
-                { "sgn",    new FunctionDef(parms => Math.Sign(parms[0]),            1) },
-                { "sin",    new FunctionDef(parms => Math.Sin(parms[0]),             1) },
-                { "sinh",   new FunctionDef(parms => Math.Sinh(parms[0]),            1) },
-                { "sqrt",   new FunctionDef(parms => Math.Sqrt(parms[0]),            1) },
-                { "tan",    new FunctionDef(parms => Math.Tan(parms[0]),             1) },
-                { "tanh",   new FunctionDef(parms => Math.Tanh(parms[0]),            1) }
-            };
-
-            _operators = new Dictionary<string, FunctionDef>
-            {
-
-                { "||",     new FunctionDef(parms => (int)parms[1]  | (int)parms[0],            0) },
-                { "&&",     new FunctionDef(parms => (int)parms[1]  & (int)parms[0],            1) },
-                { "|",      new FunctionDef(parms => (long)parms[1] | (long)parms[0],           2) },
-                { "^",      new FunctionDef(parms => (long)parms[1] ^ (long)parms[0],           3) },
-                { "&",      new FunctionDef(parms => (long)parms[1] & (long)parms[0],           4) },
-                { "!=",     new FunctionDef(parms => (long)parms[1] != (long)parms[0] ? 1 : 0,  5) },
-                { "==",     new FunctionDef(parms => (long)parms[1] == (long)parms[0] ? 1 : 0,  5) },
-                { "<",      new FunctionDef(parms => (long)parms[1] < (long)parms[0]  ? 1 : 0,  6) },
-                { "<=",     new FunctionDef(parms => (long)parms[1] <= (long)parms[0] ? 1 : 0,  6) },
-                { ">=",     new FunctionDef(parms => (long)parms[1] >= (long)parms[0] ? 1 : 0,  6) },
-                { ">",      new FunctionDef(parms => (long)parms[1] > (long)parms[0]  ? 1 : 0,  6) },
-                { "=",      new FunctionDef(parms => Double.NaN,                                6) },
-                { "<<",     new FunctionDef(parms => (int)parms[1]  << (int)parms[0],           7) },
-                { ">>",     new FunctionDef(parms => (int)parms[1]  >> (int)parms[0],           7) },
-                { "-",      new FunctionDef(parms => parms[1]       - parms[0],                 8) },
-                { "+",      new FunctionDef(parms => parms[1]       + parms[0],                 8) },
-                { "/",      new FunctionDef(parms => parms[1]       / parms[0],                 9) },
-                { "*",      new FunctionDef(parms => parms[1]       * parms[0],                 9) },
-                { "%",      new FunctionDef(parms => (long)parms[1] % (long)parms[0],           9) },
-                { "!",      new FunctionDef(parms => Double.NaN,                                10) },
-                { "~",      new FunctionDef(parms => Double.NaN,                                10) },
-                { "\x11-",  new FunctionDef(parms => -parms[0],                                 11) },
-                { "\x11+",  new FunctionDef(parms => parms[0],                                  11) },
-                { "\x11~",  new FunctionDef(parms => ~((long)parms[0]),                         12) },
-                { "\x11!",  new FunctionDef(parms => (long)parms[0] == 0 ? 1 : 0,               12) },
-                { "**",     new FunctionDef(parms => Math.Pow(parms[1], parms[0]),              13) },
-                { "\x11>",  new FunctionDef(parms => (long)(parms[0] / 0x100) % 256,            14) },
-                { "\x11<",  new FunctionDef(parms => (long)parms[0]  % 256,                     14) },
-                { "\x11&",  new FunctionDef(parms => (long)parms[0]  % 65536,                   14) },
-                { "\x11^",  new FunctionDef(parms => (long)(parms[0] / 0x10000) % 256,          14) }
-            };
-        }
+        public Evaluator() => _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
 
         #endregion
 
@@ -350,7 +350,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    FunctionDef operation;
+                    OperationDef operation;
                     List<double> parms = new List<double> { result.Pop() };
 
                     if (_functions.ContainsKey(s))
