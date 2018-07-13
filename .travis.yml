@@ -5,4 +5,6 @@ install:
   - nuget install Nunit.Runners -Version 3.6.1.0 -OutputDirectory testrunner
 script:
   - xbuild /p:Configuration=Release DotNetAsm.sln
+  - mono ./6502.Net/bin/Release/6502.Net.exe --version
   - mono ./testrunner/NUnit.ConsoleRunner.3.6.1/tools/nunit3-console.exe ./NUnit.Tests/bin/Release/NUnit.Tests.dll
+# - mono ./6502.Net/bin/Release/6502.Net.exe mysource.asm -o myprog -list==mysource_list.asm
