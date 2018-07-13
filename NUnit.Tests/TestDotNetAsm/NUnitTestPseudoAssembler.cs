@@ -36,7 +36,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Log = new ErrorLog();
 
-            Evaluator = new Evaluator(@"\$([a-fA-F0-9]+)");
+            Evaluator = new Evaluator();
 
             Encoding = new AsmEncoding();
 

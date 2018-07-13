@@ -133,17 +133,17 @@ namespace NUnit.Tests.TestDotNetAsm
             var tanh = evaluator.Eval("tanh(0.0)");
 
             
-            Assert.AreEqual(Convert.ToInt64(Math.Abs(-2234)), abs);
-            Assert.AreEqual(Convert.ToInt64(Math.Acos(1.0)), acos);
-            Assert.AreEqual(Convert.ToInt64(Math.Atan(0.0)), atan);
-            Assert.AreEqual(Convert.ToInt64(Math.Pow(2048383, 1.0 / 3.0)), cbrt);
-            Assert.AreEqual(Convert.ToInt64(Math.Ceiling(1.1)), ceil);
-            Assert.AreEqual(Convert.ToInt64(Math.Cos(0.0)), cos);
-            Assert.AreEqual(Convert.ToInt64(Math.Cosh(0.0)), cosh);
-            Assert.AreEqual(Convert.ToInt64((1.0 * 180.0) / Math.PI), deg);
-            Assert.AreEqual(Convert.ToInt64((Math.Abs(5.25) - Math.Abs(Math.Round(5.25, 0))) * 100), frac);
-            Assert.AreEqual(Convert.ToInt64((79999.9 * Math.PI) / 180.0), rad);
-            Assert.AreEqual(Convert.ToInt64(Math.Sqrt(Math.Pow(3.0, 2) + Math.Pow(4.0, 2))), hypot);
+            Assert.AreEqual((long)Math.Abs(-2234), abs);
+            Assert.AreEqual((long)Math.Acos(1.0), acos);
+            Assert.AreEqual((long)Math.Atan(0.0), atan);
+            Assert.AreEqual((long)Math.Pow(2048383, 1.0 / 3.0), cbrt);
+            Assert.AreEqual((long)Math.Ceiling(1.1), ceil);
+            Assert.AreEqual((long)Math.Cos(0.0), cos);
+            Assert.AreEqual((long)Math.Cosh(0.0), cosh);
+            Assert.AreEqual((long)((1.0 * 180.0) / Math.PI), deg);
+            Assert.AreEqual((long)((Math.Abs(5.25) - Math.Abs(Math.Round(5.25, 0))) * 100), frac);
+            Assert.AreEqual((long)((79999.9 * Math.PI) / 180.0), rad);
+            Assert.AreEqual((long)Math.Sqrt(Math.Pow(3.0, 2) + Math.Pow(4.0, 2)), hypot);
 
             // random should be sufficiently random at each test, but
             // really no easy way to test "randommness" so we test if it
@@ -169,7 +169,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorUnaries()
         {
-            var eval = new Evaluator(@"\$([a-fA-F0-9]+)");
+            var eval = new Evaluator();
 
             var result = eval.Eval("~(53+24)-6*(5-1)");
             Assert.AreEqual(~(53 + 24) - 6 * (5 - 1), result);
@@ -210,7 +210,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorHexBins()
         {
-            var eval = new Evaluator(@"\$([a-fA-F0-9]+)");
+            var eval = new Evaluator();
 
             var result = eval.Eval("$100 + %11110000");
             Assert.AreEqual(256 + 0xF0, result);
@@ -222,7 +222,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorBitwise()
         {
-            IEvaluator evaluator = new Evaluator(@"\$([a-fA-F0-9]+)");
+            IEvaluator evaluator = new Evaluator();
 
             int myvar = 224;
             evaluator.DefineSymbolLookup("myvar", (s) => myvar.ToString());
@@ -243,7 +243,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorConditionals()
         {
-            IEvaluator eval = new Evaluator(@"\$([a-fA-F0-9]+)");
+            IEvaluator eval = new Evaluator();
             var simple = eval.EvalCondition("1 < 3");
             var compound = eval.EvalCondition("5+2 > 6 && 4+3 != 12");
             var complex = eval.EvalCondition("((1<3)||!(4>6)&&(13*2!=4||8>0))");

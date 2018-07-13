@@ -125,7 +125,7 @@ namespace DotNetAsm
 
             Encoding = new AsmEncoding(Options.CaseSensitive);
 
-            Evaluator = new Evaluator(@"\$([a-fA-F0-9]+)");
+            Evaluator = new Evaluator();
             Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
             if (!Options.CaseSensitive)
                 Evaluator.DefineSymbolLookup(Patterns.SymbolBasic + @"\(", (fnc) => fnc.ToLower());
@@ -396,7 +396,7 @@ namespace DotNetAsm
                 {
                     Log.LogEntry(_currentLine, exprEx.Message);
                 }
-                catch
+                catch (Exception)
                 {
                     Log.LogEntry(_currentLine, ErrorStrings.None);
                 }
