@@ -42,18 +42,10 @@ namespace DotNetAsm
 
     /// <summary>
     /// Math expression evaluator class. Takes string input and parses and evaluates 
-    /// to a <see cref="T:System.Int64"/>.
+    /// to a <see cref="System.Int64"/> value.
     /// </summary>
     public class Evaluator : IEvaluator
     {
-        #region Constants
-
-        /// <summary>
-        /// Represents the string indicating the expression cannot be evaluated.
-        /// </summary>
-        public const string EVAL_FAIL = "?FAIL";
-        #endregion
-
         #region Members
 
         readonly Dictionary<string, Tuple<Regex, Func<string, string>>> _symbolLookups;
@@ -168,7 +160,6 @@ namespace DotNetAsm
                 {
                     AddToken(token: operatorString, toList: tokens);
                     operandString.Append(c);
-                    continue;
                 }
                 else if (_operators.ContainsKey(c.ToString()) || c.Equals('(') || c.Equals(')') || c.Equals(','))
                 {
@@ -185,10 +176,15 @@ namespace DotNetAsm
                             AddToken(token: operatorString, toList: tokens);
                         operatorString.Append(c);
                     }
-                    continue;
                 }
-                if (!AddToken(token: operandString, toList: tokens))
-                    AddToken(token: operatorString, toList: tokens);
+                else 
+                {
+                    if (!char.IsWhiteSpace(c))
+                        throw new ExpressionException(expression);
+                    
+                    if (!AddToken(token: operandString, toList: tokens))
+                        AddToken(token: operatorString, toList: tokens);
+                }
             }
             if (!AddToken(token: operandString, toList: tokens))
                 AddToken(token: operatorString, toList: tokens);
@@ -388,8 +384,6 @@ namespace DotNetAsm
                         return f(match);
                     return match;
                 });
-                if (expression.Contains(EVAL_FAIL))
-                    throw new ExpressionException(expression);
             }
             return expression;
         }
@@ -474,7 +468,6 @@ namespace DotNetAsm
             else
                 _symbolLookups.Add(pattern, value);
         }
-
         #endregion
     }
 }
