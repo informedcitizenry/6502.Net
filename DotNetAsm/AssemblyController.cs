@@ -171,11 +171,9 @@ namespace DotNetAsm
 
         #region Methods
 
-        /// <summary>
+        /// <remarks>
         /// Get the encoded value of the character and return it as a string.
-        /// </summary>
-        /// <param name="chr">The character to encode.</param>
-        /// <returns>The encoded value as a string.</returns>
+        /// </remarks>
         string GetCharValue(string chr)
         {
             var literal = chr.GetNextQuotedString();
@@ -188,12 +186,10 @@ namespace DotNetAsm
             return Evaluator.Eval(charval + post).ToString();              
         }
 
-        /// <summary>
+        /// <remarks>
         /// Used by the expression evaluator to convert an anonymous symbol
         /// to an address.
-        /// </summary>
-        /// <param name="symbol">The anonymous symbol.</param>
-        /// <returns>The actual address the anonymous symbol will resolve to.</returns>
+        /// </remarks>
         string ConvertAnonymous(string symbol)
         {
             var trimmed = symbol.Trim(new char[] { '(', ')' });
@@ -225,15 +221,6 @@ namespace DotNetAsm
         /// <returns>True, if the token is a reserved word, otherwise false.</returns>
         public override bool IsReserved(string token) => IsInstruction(token) || Reserved.IsReserved(token);
 
-        /// <summary>
-        /// Checks whether the token is a valid symbol/label name.
-        /// </summary>
-        /// <param name="token">The token to check.</param>
-        /// <param name="allowLeadUnderscore">Allow the token to have a leading underscore
-        /// for it to be a symbol.</param>
-        /// <param name="allowDot">Allow the token to have separating dots for it to be
-        /// considered a symbol.</param>
-        /// <returns><c>True</c> if the token is a valid symbole name, otherwise <c>false</c>.</returns>
         bool IsSymbolName(string token, bool allowLeadUnderscore = true, bool allowDot = true)
         {
             // empty string 
@@ -256,11 +243,9 @@ namespace DotNetAsm
             return _labelCollection.IsSymbolValid(token, true);
         }
 
-        /// <summary>
-        /// Preprocess the source file into a <see cref="T:System.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>.
+        /// <remarks>
         /// Define macros and segments, and add included source files.
-        /// </summary>
-        /// <returns>The preprocessed <see cref="T:System.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/></returns>
+        /// </remarks>
         IEnumerable<SourceLine> Preprocess()
         {
             var source = new List<SourceLine>();
@@ -288,11 +273,9 @@ namespace DotNetAsm
         }
 
 
-        /// <summary>
+        /// <remarks>
         /// Add labels defined with command-line -D option
-        /// </summary>
-        /// <returns>Returns a System.Collections.Generic.IEnumerable&lt;SourceLine&gt; 
-        /// that will define the labels at assembly time.</returns>
+        /// </remarks>
         IEnumerable<SourceLine> ProcessDefinedLabels()
         {
             var labels = new List<SourceLine>();
@@ -334,12 +317,6 @@ namespace DotNetAsm
                 Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
         }
 
-        /// <summary>
-        /// Performs a first (or more) pass of preprocessed source to resolve all 
-        /// actual symbol values, process conditions and repetitions, and add to 
-        /// Processed Lines.
-        /// </summary>
-        /// <param name="source">The preprocessed System.IEnumerable&lt;DotNetAsm&gt;</param>
         void FirstPass(IEnumerable<SourceLine> source)
         {
             _passes = 0;
@@ -406,10 +383,6 @@ namespace DotNetAsm
                 Log.LogEntry(_processedLines.Last(), ErrorStrings.MissingClosure);
         }
 
-        /// <summary>
-        /// Performs a first pass on the <see cref="T:DotNetAsm.SourceLine"/>, including updating 
-        /// the Program Counter and definining labels.
-        /// </summary>
         void FirstPassLine()
         {
             try
@@ -470,12 +443,6 @@ namespace DotNetAsm
 
         }
 
-        /// <summary>
-        /// Perform a second or final pass on a <see cref="T:DotNetAsm.SourceLine"/>, including final 
-        /// assembly of bytes.
-        /// </summary>
-        /// <param name="finalPass">A flag indicating this is a final pass</param>
-        /// <returns><c>True</c> if another pass is needed. Otherwise <c>false</c>.</returns>
         bool SecondPassLine(bool finalPass)
         {
             UpdatePC();
@@ -530,9 +497,6 @@ namespace DotNetAsm
             return passNeeded;
         }
 
-        /// <summary>
-        /// Perform a second pass on the processed source, including output to binary.
-        /// </summary>
         void SecondPass()
         {
             const int MAX_PASSES = 4;
@@ -618,12 +582,11 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
+        /// <remarks>
         /// This does a quick and "dirty" look at instructions. It will catch
         /// some but not all syntax errors, concerned mostly with the probable 
         /// size of the instruction. 
-        /// </summary>
-        /// <returns>The size in bytes of the instruction, including opcode and operand.</returns>
+        /// </remarks>
         int GetInstructionSize()
         {
             try
@@ -638,9 +601,6 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Examine the current <see cref="T:DotNetAsm.SourceLine"/> and determine if a label is being defined.
-        /// </summary>
         void DefineLabel()
         {
             if (string.IsNullOrEmpty(_currentLine.Label) == false)
@@ -707,9 +667,7 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Determine if the current <see cref="T:DotNetAsm.SourceLine"/> updates the output's Program Counter
-        /// </summary>
+        // Are we updating the program counter?
         void UpdatePC()
         {
             long val = 0;
@@ -762,11 +720,6 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Determines whether the current <see cref="T:DotNetAsm.SourceLine"/> 
-        /// command is an assignment directive.
-        /// </summary>
-        /// <returns><c>True</c> if the line is defining a constant, otherwise <c>false</c>.</returns>
         bool IsAssignmentDirective()
         {
             if (_currentLine.Operand.EnclosedInQuotes())
@@ -779,9 +732,6 @@ namespace DotNetAsm
             return false;
         }
 
-        /// <summary>
-        /// Print the status of the assembly results to console output.
-        /// </summary>
         void PrintStatus(DateTime asmTime)
         {
             if (Log.HasWarnings && !Options.NoWarnings)
@@ -816,10 +766,6 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Sends the assembled source to listing, either as a list of labels or 
-        /// a full assembly listing, including assembled bytes and disassembly.
-        /// </summary>
         void ToListing()
         {
             if (string.IsNullOrEmpty(Options.ListingFile) && string.IsNullOrEmpty(Options.LabelFile))
@@ -876,10 +822,9 @@ namespace DotNetAsm
                                 Environment.NewLine);
         }
 
-        /// <summary>
+        /// <remarks>
         /// Used by the ToListing method to get a listing of all defined labels.
-        /// </summary>
-        /// <returns>A string containing all label definitions.</returns>
+        /// </remarks>
         string GetLabelsAndVariables()
         {
             var listing = new StringBuilder();
@@ -893,9 +838,8 @@ namespace DotNetAsm
             return listing.ToString();
         }
 
-        /// <summary>
-        /// Used by the ToListing method to get the full listing.</summary>
-        /// <returns>A listing string to save to disk.</returns>
+        /// <remarks>
+        /// Used by the ToListing method to get the full listing.</remarks>
         string GetListing()
         {
             var listing = new StringBuilder();
@@ -908,9 +852,6 @@ namespace DotNetAsm
             return listing.ToString();
         }
 
-        /// <summary>
-        /// Saves the output to disk.
-        /// </summary>
         void SaveOutput()
         {
             if (!Options.GenerateOutput)
@@ -974,11 +915,6 @@ namespace DotNetAsm
             PrintStatus(asmTime);
         }
 
-        /// <summary>
-        /// Used by the expression evaluator to get the actual value of the symbol.
-        /// </summary>
-        /// <param name="symbol">The symbol to look up.</param>
-        /// <returns>The underlying value of the symbol.</returns>
         string GetNamedSymbolValue(string symbol)
         {
             if (Variables.IsScopedSymbol(symbol, _currentLine.Scope))
@@ -987,16 +923,12 @@ namespace DotNetAsm
             var value = _labelCollection.GetScopedSymbolValue(symbol, _currentLine.Scope);
             if (value.Equals(long.MinValue))
                 throw new SymbolNotDefinedException(symbol);
+                
             return value.ToString();
 
         }
 
-        /// <summary>
-        /// Gets the actual address of an anonymous symbol.
-        /// </summary>
-        /// <param name="fromLine">The <see cref="T:DotNetAsm.SourceLine"/> containing the anonymous symbol.</param>
-        /// <param name="operand">The operand.</param>
-        /// <returns>The anonymous symbol address.</returns>
+        // Get the actual long address of the anonymous symbol.
         long GetAnonymousAddress(SourceLine fromLine, string operand)
         {
             int count = operand.Length - 1;

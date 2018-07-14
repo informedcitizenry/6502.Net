@@ -52,7 +52,6 @@ namespace DotNetAsm
         /// Represents the string indicating the expression cannot be evaluated.
         /// </summary>
         public const string EVAL_FAIL = "?FAIL";
-
         #endregion
 
         #region Members
@@ -62,9 +61,7 @@ namespace DotNetAsm
         #region Static Members
         
         static Random _rng = new Random();
-        
-        static Dictionary<string, double> _cache = new Dictionary<string, double>();
-            
+
         static Dictionary<string, OperationDef> _functions = new Dictionary<string, OperationDef>
         {
             { "abs",    new OperationDef(parms => Math.Abs(parms[0]),             1) },
@@ -165,6 +162,7 @@ namespace DotNetAsm
             for (int i = 0; i < expression.Length; i++)
             {
                 var c = expression[i];
+
                 if ((c.Equals('%') && operandString.Length == 0 && (i == 0 || (!_operators.ContainsKey(expression[i - 1].ToString()) && expression[i - 1] != ')' ))) ||
                      c.Equals('$') || char.IsLetterOrDigit(c) || c.Equals('.') || c.Equals('#'))
                 {
@@ -402,14 +400,6 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(expression))
                 throw new ExpressionException(expression);
 
-            // if we have already cached the expression, just return the cached evaluation.
-            if (_cache.ContainsKey(expression))
-                return _cache[expression];
-
-            // symbols are assumed to be volatile, so we cannot cache them.
-            if (!ContainsSymbols(expression))
-                _cache.Add(expression, Double.NaN);
-
             var output = ToRpn(EvalDefinedSymbols(expression));
             if (output.Count == 0)
                 throw new ExpressionException(expression);
@@ -423,10 +413,7 @@ namespace DotNetAsm
 
                 if (double.IsNaN(result))
                     throw new ExpressionException(expression);
-
-                // update the cached value
-                if (_cache.ContainsKey(expression))
-                    _cache[expression] = result;
+                
                 return result;
             }
             catch (Exception)
