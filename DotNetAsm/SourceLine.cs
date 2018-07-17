@@ -1,28 +1,13 @@
 ﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// Licensed under the MIT license. See LICENSE for full license information.
 // 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Text;
 
 namespace DotNetAsm
 {
@@ -36,15 +21,6 @@ namespace DotNetAsm
         bool _doNotAssemble;
 
         bool _comment;
-
-        #region Static Members
-
-        static Regex _regThree;
-        static Regex _regThreeAlt;
-        static Regex _regTwo;
-        static Regex _regOne;
-
-        #endregion
 
         #endregion
 
@@ -78,97 +54,78 @@ namespace DotNetAsm
             
         }
 
-        #region Static Constructors
-
-        /// <summary>
-        /// Initializes the <see cref="T:DotNetAsm.SourceLine"/> class.
-        /// </summary>
-        static SourceLine()
-        {
-            _regThree    = new Regex(@"^([^\s]+)\s+(([^\s]+)\s+(.+))$", RegexOptions.Compiled);
-            _regThreeAlt = new Regex(@"^([^\s]+)\s*(=)\s*(.+)$",        RegexOptions.Compiled);
-            _regTwo      = new Regex(@"^([^\s]+)\s+(.+)$",              RegexOptions.Compiled);
-            _regOne      = new Regex(@"^([^\s]+)$",                     RegexOptions.Compiled);
-        }
-
-        #endregion
-
         #endregion
 
         #region Methods
 
         /// <summary>
-        /// Parse the <see cref="DotNetAsm.SourceLine"/>'s SourceString property into its component line,
-        /// instruction and operand.
+        /// Parse the <see cref="DotNetAsm.SourceLine"/>'s SourceString property 
+        /// into its component line, instruction and operand.
         /// </summary>
-        /// <param name="checkInstruction">A callback to determine which part of the source
+        /// <param name="isInstruction">A callback to determine which part of the source
         /// is the instruction.</param>
-        /// <exception cref="System.Exception"></exception>
-        public void Parse(Func<string, bool> checkInstruction)
+        public void Parse(Func<string, bool> isInstruction)
         {
-            int length = 0;
-            for (; length < SourceString.Length; length++)
+            var tokenBuilder = new StringBuilder();
+            var trimmedSource = SourceString.TrimStart();
+            var len = trimmedSource.Length;
+            Label = Instruction = Operand = string.Empty;
+
+            for (var i = 0; i < len; i++)
             {
-                char c = SourceString[length];
-                if (c == '"' || c == '\'')
-                    length += SourceString.GetNextQuotedString(atIndex: length).Length - 1;
-                else if (c == ';')
-                    break;
-            }
-            var processed = SourceString.Substring(0, length).Trim();
-            var m = _regThree.Match(processed);
-            if (string.IsNullOrEmpty(m.Value) == false)
-            {
-                if (checkInstruction(m.Groups[1].Value))
+                var c = trimmedSource[i];
+
+                if (char.IsWhiteSpace(c) || c.Equals(';') || i == len - 1)
                 {
-                    Instruction = m.Groups[1].Value;
-                    Operand = m.Groups[2].Value;
-                }
-                else
-                {
-                    Label = m.Groups[1].Value;
-                    Instruction = m.Groups[3].Value;
-                    Operand = m.Groups[4].Value;
-                }
-            }
-            else
-            {
-                m = _regThreeAlt.Match(processed);
-                if (string.IsNullOrEmpty(m.Value) == false)
-                {
-                    Label = m.Groups[1].Value;
-                    Instruction = m.Groups[2].Value;
-                    Operand = m.Groups[3].Value;
-                }
-                else
-                {
-                    m = _regTwo.Match(processed);
-                    if (string.IsNullOrEmpty(m.Value) == false)
+                    // stop at a white space or the last character in the string
+                    if (!char.IsWhiteSpace(c) && !c.Equals(';'))
+                        tokenBuilder.Append(c);
+                    var token = tokenBuilder.ToString();
+                    if (string.IsNullOrEmpty(Instruction))
                     {
-                        if (checkInstruction(m.Groups[2].Value))
+                        if (string.IsNullOrEmpty(Label))
                         {
-                            Label = m.Groups[1].Value;
-                            Instruction = m.Groups[2].Value;
+                            if (isInstruction(token))
+                                Instruction = token;
+                            else
+                                Label = token;
                         }
                         else
                         {
-                            Instruction = m.Groups[1].Value;
-                            Operand = m.Groups[2].Value;
+                            Instruction = token;
                         }
+                        tokenBuilder.Clear();
                     }
-                    else
+                    else if (char.IsWhiteSpace(c) && tokenBuilder.Length > 0)
                     {
-                        m = _regOne.Match(processed);
-                        if (string.IsNullOrEmpty(m.Value) == false)
-                        {
-                            if (checkInstruction(m.Groups[1].Value))
-                                Instruction = m.Groups[1].Value;
-                            else
-                                Label = m.Groups[1].Value;
-                        }
+                        // operand can include white spaces, so capture...
+                        tokenBuilder.Append(c);
                     }
+                    if (c.Equals(';')) // semicolon means hard break!
+                            break;
+                }
+                else if (c.Equals('"') || c.Equals('\''))
+                {
+                    // process quotes separately
+                    var quoted = trimmedSource.GetNextQuotedString(atIndex: i);
+                    tokenBuilder.Append(quoted);
+                    i += quoted.Length - 1;
+                }
+                else if (c.Equals('=') && string.IsNullOrEmpty(Instruction))
+                {
+                    // constructions such as label=value must be picked up 
+                    // so the instruction is the assignment operator
+                    if (string.IsNullOrEmpty(Label))
+                        Label = tokenBuilder.ToString();
+                    Instruction = "=";
+                    tokenBuilder.Clear();
+                }
+                else
+                {
+                    tokenBuilder.Append(c);
                 }
             }
+            Operand = tokenBuilder.ToString().TrimEnd();
         }
 
         /// <summary>

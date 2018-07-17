@@ -1,23 +1,8 @@
 ﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// Licensed under the MIT license. See LICENSE for full license information.
 // 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 using System;
@@ -226,28 +211,32 @@ namespace DotNetAsm
                 {
                     quoted.Append(c);
                     stringsize++;
-                    if (c == '\'' || c == '"')
+                    if (c.Equals('\'') || c.Equals('"'))
                     {
                         if (enclosestring.Equals(char.MinValue))
                             enclosestring = c;
                         else if (enclosestring.Equals(c))
                             break;
                     }
-                    else if (c == '\\')
+                    else if (c.Equals('\\'))
                     {
                         // escape cannot be the last char in the string
                         if (++i == str.Length - 1)
-                            throw new Exception("QuoteStringNotEnclosed");
-                        var m = Regex.Match(str.Substring(i), @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2})");
-                        if (!string.IsNullOrEmpty(m.Value))
+                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                        c = str[i];
+                        if (c.Equals('u') || c.Equals('x'))
                         {
+                            var m = Regex.Match(str.Substring(i), @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2})");
+                            if (!string.IsNullOrEmpty(m.Value))
+                            {
 
-                            quoted.Append(m.Value);
-                            i += m.Value.Length - 1;
+                                quoted.Append(m.Value);
+                                i += m.Value.Length - 1;
+                            }
                         }
                         else
                         {
-                            quoted.Append(str[i]);
+                            quoted.Append(c);
                         }
                     }
                 }
@@ -255,10 +244,10 @@ namespace DotNetAsm
             if (!enclosestring.Equals(char.MinValue))
             {
                 if (stringsize < 2 || !quoted[quoted.Length - 1].Equals(enclosestring))
-                    throw new Exception("QuoteStringNotEnclosed");
+                    throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
 
                 if (enclosestring.Equals('\'') && stringsize > 3)
-                    throw new Exception(string.Format("TooManyCharacters: {0}", stringsize));
+                    throw new Exception(ErrorStrings.TooManyCharacters);
             }
             return quoted.ToString();
         }

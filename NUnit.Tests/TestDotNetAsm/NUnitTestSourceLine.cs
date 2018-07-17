@@ -20,14 +20,12 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("\"He said, \",'\"',\"Hello, World!\"", line.Operand);
 
             line.SourceString = "*=something";
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.Parse(s => false);
 
             Assert.AreEqual("*", line.Label);
             Assert.AreEqual("=", line.Instruction);
             Assert.AreEqual("something", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "*= something";
             line.Parse(s => false);
 
@@ -35,7 +33,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("=", line.Instruction);
             Assert.AreEqual("something", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "mylabel =something";
             line.Parse(s => false);
 
@@ -43,14 +40,12 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("=", line.Instruction);
             Assert.AreEqual("something", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "   .block";
             line.Parse(s => s.Equals(".block"));
             Assert.IsTrue(string.IsNullOrEmpty(line.Label));
             Assert.AreEqual(".block", line.Instruction);
             Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "label .block";
             line.Parse(s => s.Equals(".block"));
 
@@ -58,7 +53,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(".block", line.Instruction);
             Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "    .segment   code";
             line.Parse(s => s.Equals(".segment"));
 
@@ -66,7 +60,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(".segment", line.Instruction);
             Assert.AreEqual("code", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "            .BYTE TASKS.PRNTMAZE    ; DRAW MAZE";
             line.Parse(s => s.Equals(".BYTE") ||
                 System.Text.RegularExpressions.Regex.IsMatch(s, @"^\.[a-zA-Z][a-zA-Z0-9]*$"));
@@ -75,7 +68,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(".BYTE", line.Instruction);
             Assert.AreEqual("TASKS.PRNTMAZE", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "            .BYTE %10000000 | MESSAGES.READY";
             line.Parse(s => s.Equals(".BYTE") ||
                 System.Text.RegularExpressions.Regex.IsMatch(s, @"^\.[a-zA-Z][a-zA-Z0-9]*$"));
@@ -84,7 +76,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(".BYTE", line.Instruction);
             Assert.AreEqual("%10000000 | MESSAGES.READY", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "            and a               ; is a == 0?";
             line.Parse(s => s.Equals("and") ||
                 System.Text.RegularExpressions.Regex.IsMatch(s, @"^\.[a-zA-Z][a-zA-Z0-9]*$"));
@@ -93,7 +84,6 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("and", line.Instruction);
             Assert.AreEqual("a", line.Operand);
 
-            line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = " - ";
             line.Parse(s => false);
 
@@ -114,10 +104,17 @@ namespace NUnit.Tests.TestDotNetAsm
 
             // reset
             line.SourceString = "mylabel .byte 1,2,';',3";
-            line.Label = line.Instruction = line.Operand = string.Empty;
 
             line.Parse(instr => instr.Equals(".byte"));
             Assert.AreEqual(line.Operand, "1,2,';',3");
+
+            line.SourceString = "    clc    ; Clear carry first!";
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.Parse(s => s.Equals("clc"));
+
+            Assert.IsTrue(string.IsNullOrEmpty(line.Label));
+            Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
+            Assert.AreEqual("clc", line.Instruction);
         }
 
         [Test]
