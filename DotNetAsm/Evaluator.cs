@@ -155,16 +155,16 @@ namespace DotNetAsm
             {
                 var c = expression[i];
 
-                if ((c.Equals('%') && operandString.Length == 0 && (i == 0 || (!_operators.ContainsKey(expression[i - 1].ToString()) && expression[i - 1] != ')' ))) ||
-                     c.Equals('$') || char.IsLetterOrDigit(c) || c.Equals('.') || c.Equals('#'))
+                if ((c == '%' && operandString.Length == 0 && (i == 0 || (!_operators.ContainsKey(expression[i - 1].ToString()) && expression[i - 1] != ')'))) ||
+                     c == '$' || char.IsLetterOrDigit(c) || c == '.' || c == '#')
                 {
                     AddToken(token: operatorString, toList: tokens);
                     operandString.Append(c);
                 }
-                else if (_operators.ContainsKey(c.ToString()) || c.Equals('(') || c.Equals(')') || c.Equals(','))
+                else if (_operators.ContainsKey(c.ToString()) || c == '(' || c == ')' || c == ',')
                 {
                     AddToken(token: operandString, toList: tokens);
-                    if (c.Equals('(') || c.Equals(')'))
+                    if (c == '(' || c == ')')
                     {
                         AddToken(token: operatorString, toList: tokens);
                         tokens.Add(c.ToString());
@@ -177,11 +177,11 @@ namespace DotNetAsm
                         operatorString.Append(c);
                     }
                 }
-                else 
+                else
                 {
                     if (!char.IsWhiteSpace(c))
                         throw new ExpressionException(expression);
-                    
+
                     if (!AddToken(token: operandString, toList: tokens))
                         AddToken(token: operatorString, toList: tokens);
                 }

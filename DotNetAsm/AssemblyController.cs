@@ -64,6 +64,7 @@ namespace DotNetAsm
         int _passes;
 
         Regex _specialLabels;
+        string _localLabelScope;
 
         HashSet<int> _anonPlus, _anonMinus;
 
@@ -130,6 +131,8 @@ namespace DotNetAsm
 
             _labelCollection.AddCrossCheck(Variables);
             Variables.AddCrossCheck(_labelCollection);
+
+            _localLabelScope = string.Empty;
 
             _preprocessor = new Preprocessor(this, s => IsSymbolName(s.TrimEnd(':'), true, false));
             _assemblers = new Stack<ILineAssembler>();
@@ -432,9 +435,23 @@ namespace DotNetAsm
         {
             UpdatePC();
             bool passNeeded = false;
+
+            string label = string.Empty;
+
+            if (!string.IsNullOrEmpty(_currentLine.Label))
+            {
+                if (_currentLine.Label.First() == '_')
+                    label = string.Concat(_localLabelScope, _currentLine.Label);
+                else if (!_currentLine.Label.Equals("*") && 
+                         !_currentLine.Label.Equals("-") && 
+                         !_currentLine.Label.Equals("+"))
+                    label = _localLabelScope = _currentLine.Label;
+            }
+
             if (IsAssignmentDirective())
             {
                 if (_currentLine.Label.Equals("*")) return false;
+
                 long val = long.MinValue;
 
                 // for .vars initialization is optional
@@ -452,8 +469,8 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
                         return false;
                     }
-                    passNeeded = !(val.Equals(_labelCollection.GetScopedSymbolValue(_currentLine.Label, _currentLine.Scope)));
-                    _labelCollection.SetLabel(_currentLine.Scope + _currentLine.Label, val, false, false);
+                    passNeeded = !(val.Equals(_labelCollection.GetScopedSymbolValue(label, _currentLine.Scope)));
+                    _labelCollection.SetLabel(_currentLine.Scope + label, val, false, false);
 
                 }
                 _currentLine.PC = val;
@@ -470,8 +487,8 @@ namespace DotNetAsm
             }
             else
             {
-                if (_labelCollection.IsScopedSymbol(_currentLine.Label, _currentLine.Scope))
-                    _labelCollection.SetLabel(_currentLine.Scope + _currentLine.Label, Output.LogicalPC, false, false);
+                if (_labelCollection.IsScopedSymbol(label, _currentLine.Scope))
+                    _labelCollection.SetLabel(_currentLine.Scope + label, Output.LogicalPC, false, false);
                 passNeeded = _currentLine.PC != Output.LogicalPC;
                 _currentLine.PC = Output.LogicalPC;
                 if (finalPass)
@@ -497,6 +514,8 @@ namespace DotNetAsm
                 Output.Reset();
 
                 Variables.Clear();
+
+                _localLabelScope = string.Empty;
 
                 foreach (SourceLine line in assembleLines)
                 {
@@ -588,7 +607,7 @@ namespace DotNetAsm
 
         void DefineLabel()
         {
-            if (string.IsNullOrEmpty(_currentLine.Label) == false)
+            if (!string.IsNullOrEmpty(_currentLine.Label))
             {
                 if (_currentLine.Label.Equals("*"))
                     return;
@@ -633,7 +652,16 @@ namespace DotNetAsm
                         return;
                     }
 
-                    scopedLabel = _currentLine.Scope + _currentLine.Label;
+                    if (_currentLine.Label.First() == '_')
+                    {
+                        scopedLabel = _currentLine.Scope + _localLabelScope + _currentLine.Label;
+                    }
+                    else 
+                    {
+                        _localLabelScope = _currentLine.Label;
+                        scopedLabel = _currentLine.Scope + _currentLine.Label;
+                    }
+
 
                     long val = _currentLine.PC;
                     if (IsAssignmentDirective())
@@ -902,6 +930,8 @@ namespace DotNetAsm
 
         string GetNamedSymbolValue(string symbol)
         {
+            if (symbol.First() == '_')
+                symbol = string.Concat(_localLabelScope, symbol);
             if (Variables.IsScopedSymbol(symbol, _currentLine.Scope))
                 return Variables.GetScopedSymbolValue(symbol, _currentLine.Scope).ToString();
 

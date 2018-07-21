@@ -75,10 +75,10 @@ namespace DotNetAsm
             {
                 var c = trimmedSource[i];
 
-                if (char.IsWhiteSpace(c) || c.Equals(';') || i == len - 1)
+                if (char.IsWhiteSpace(c) || c == ';' || i == len - 1)
                 {
                     // stop at a white space or the last character in the string
-                    if (!char.IsWhiteSpace(c) && !c.Equals(';'))
+                    if (!char.IsWhiteSpace(c) && c != ';')
                         tokenBuilder.Append(c);
                     var token = tokenBuilder.ToString();
                     if (string.IsNullOrEmpty(Instruction))
@@ -101,17 +101,17 @@ namespace DotNetAsm
                         // operand can include white spaces, so capture...
                         tokenBuilder.Append(c);
                     }
-                    if (c.Equals(';')) // semicolon means hard break!
-                            break;
+                    if (c == ';') // semicolon means hard break!
+                        break;
                 }
-                else if (c.Equals('"') || c.Equals('\''))
+                else if (c == '"' || c == '\'')
                 {
                     // process quotes separately
                     var quoted = trimmedSource.GetNextQuotedString(atIndex: i);
                     tokenBuilder.Append(quoted);
                     i += quoted.Length - 1;
                 }
-                else if (c.Equals('=') && string.IsNullOrEmpty(Instruction))
+                else if (c == '=' && string.IsNullOrEmpty(Instruction))
                 {
                     // constructions such as label=value must be picked up 
                     // so the instruction is the assignment operator
@@ -127,7 +127,6 @@ namespace DotNetAsm
             }
             Operand = tokenBuilder.ToString().TrimEnd();
         }
-
         /// <summary>
         /// A unique identifier combination of the source's filename and line number.
         /// </summary>

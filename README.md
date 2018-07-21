@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.13.2
+### Version 1.14
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -48,7 +48,27 @@ setborder:  sta $d020       ; poke border color with acc.
 ```
 Trailing colons for jump instructions are optional.
 
-Using the `.block`/`.endblock` directives, labels can be placed in scope blocks to avoid the problem of label reduplication:
+Once labels are defined they cannot be redinfed in other parts of code. This gets tricky as source grows, since one must choose a unique name for each label. There are a few ways to avoid this problem.
+
+The first is to append the label with an underscore, making it a local label. 
+```
+routine1    lda message,x
+            beq _done
+            jsr $ffd2
+            inx
+            jmp routine1
+_done       rts
+
+routine2    ldy flag
+            beq _done
+            jmp dosomething
+_done       rts
+```
+In the routine above, there are two labels called `_done` but the assembler will differentiate between them, since the second `_done` follows a different non-local label than the first.
+
+In addition to local labels, scope blocks can be used. All source inside a pair of `.block` and `.endblock` directives are considered local to that block, but unlike local labels can be accessed elsewhere, and furthermore can also be nested.
+
+A scope block looks like this:
 ```
             ...
 endloop     lda #$ff    
@@ -61,7 +81,7 @@ endloop     lda #0
             rts
             .endblock
 ```
-Labels inside named scopes can be referenced with dot notation:
+Labels inside a named scope block can be referenced with dot notation from other places outside of the scope:
 ```
 kernal      .block
 
@@ -73,7 +93,7 @@ chrout      = $ffd2
             jsr kernal.chrout   ; call the subroutine whose label        
                                 ; is defined in the kernal block
 ```
-Blocks can also be nested. Labels in unnamed blocks are only visible in their own block, and are unavailable outside:
+Any block not preceded by a label is an anonymous block. All symbols inside an anonymous block are only visible within the block, and are unavailable outside:
 ```
             .block
             jsr increment
@@ -104,7 +124,7 @@ As you can see anonymous labels, though convenient, would hinder readability if 
 -           .byte $01, $02, $03
             lda (-),x           ; put anonymous label reference inside paranetheses.
 ```            
-Label values are defined at first reference and cannot be changed. An alternative to labels are variables. Variables, like labels, are named references to values in operand expressions, but can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
+Another type of named symbol besides a label is a variable. Variables, like labels, are named references to values in operand expressions, but whose value can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
 ```
             .let myvar = 34
             lda #myvar
