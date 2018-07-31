@@ -31,7 +31,7 @@ namespace DotNetAsm
             if (controller == null)
                 Reserved = new ReservedWords();
             else
-                Reserved = new ReservedWords(Controller.Options.StringComparison);
+                Reserved = new ReservedWords(Controller.Options.StringComparar);
         }
 
         /// <summary>

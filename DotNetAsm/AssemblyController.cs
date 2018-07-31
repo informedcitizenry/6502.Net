@@ -75,6 +75,13 @@ namespace DotNetAsm
         /// <param name="args">The array of <see cref="T:System.String"/> args passed by the commandline.</param>
         public AssemblyController(string[] args)
         {
+            Controller = this;
+
+            Options = new AsmCommandLineOptions();
+            Options.ProcessArgs(args);
+
+            Reserved.Comparer = Options.StringComparar;
+
             Reserved.DefineType("Directives",
                     ".cpu", ".endrelocate", ".equ", ".pseudopc", ".realpc", ".relocate", ".end",
                     ".endrepeat", ".proff", ".pron", ".repeat", ConstStrings.VAR_DIRECTIVE
@@ -89,17 +96,11 @@ namespace DotNetAsm
 
             Reserved.DefineType("UserDefined");
 
-            Controller = this;
 
             Log = new ErrorLog();
 
             _processedLines = new List<SourceLine>();
 
-            Options = new AsmCommandLineOptions();
-            Options.ProcessArgs(args);
-
-            Reserved.Comparer = Options.StringComparison;
-           
             Output = new Compilation(!Options.BigEndian);
 
             _specialLabels = new Regex(@"^\*|\+|-$", RegexOptions.Compiled);
