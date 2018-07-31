@@ -122,7 +122,7 @@ printmessage
 As you can see anonymous labels, though convenient, would hinder readability if used too liberally. They are best for small branch jumps, though can be used in expressions:
 ```
 -           .byte $01, $02, $03
-            lda (-),x           ; put anonymous label reference inside paranetheses.
+            lda -,x           
 ```            
 Another type of named symbol besides a label is a variable. Variables, like labels, are named references to values in operand expressions, but whose value can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
 ```
@@ -794,7 +794,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 ### Pseudo-Ops
 Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops. A pseudo-op is similar to a mnemonic in that it tells the assembler to output some number of bytes, but different in that it is not part of the CPU's instruction set. For each pseudo-op description is its name, any aliases, a definition, arguments, and examples of usage. Optional arguments are in square brackets (`[` and `]`).
 
-Note that every argument, unless specified, is a legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. Anonymous labels should be referenced in parantheses, otherwise the expression engine might misinterpret them. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
+Note that every argument, unless specified, is a legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
 
 <p align="center"><b>Data/text insertions</b></p>
 <table>
