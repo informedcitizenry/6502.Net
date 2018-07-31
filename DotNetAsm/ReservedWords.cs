@@ -117,7 +117,6 @@ namespace DotNetAsm
         /// </summary>
         public StringComparer Comparer 
         {
-            get { return _comparer; }
             set
             {
                 _comparer = value;
