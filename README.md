@@ -66,7 +66,7 @@ _done       rts
 ```
 In the routine above, there are two labels called `_done` but the assembler will differentiate between them, since the second `_done` follows a different non-local label than the first.
 
-In addition to local labels, scope blocks can be used. All source inside a pair of `.block` and `.endblock` directives are considered local to that block, but unlike local labels can be accessed elsewhere, and furthermore can also be nested.
+In addition to local labels, scope blocks can be used. All source inside a pair of `.block` and `.endblock` directives are considered local to that block, but can also be nested, making them much like namespaces.
 
 A scope block looks like this:
 ```
