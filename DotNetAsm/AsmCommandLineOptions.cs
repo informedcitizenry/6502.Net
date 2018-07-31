@@ -239,7 +239,7 @@ namespace DotNetAsm
         {
             get
             {
-                return _caseSensitive ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
+                return _caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
             }
         }
 
@@ -250,7 +250,7 @@ namespace DotNetAsm
         {
             get
             {
-                return _caseSensitive ? StringComparer.CurrentCulture : StringComparer.CurrentCultureIgnoreCase;
+                return _caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
             }
         }
 

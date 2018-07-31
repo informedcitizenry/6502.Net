@@ -1200,7 +1200,7 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($1234),y";
-            TestForFailure(line);
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "($12,x)";
             TestInstruction(line, 0x0002, new byte[] { 0xa1, 0x12 }, "lda ($12,x)");
@@ -1212,7 +1212,7 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0x12, 0x00 }, "jmp ($0012)");
 
             line.Operand = "(65535+1)";
-            TestForFailure(line);
+            TestForFailure<OverflowException>(line);
 
             line.Operand = "(65535)";
             TestInstruction(line, 0x0003, new byte[] { 0x6c, 0xff, 0xff }, "jmp ($ffff)");

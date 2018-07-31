@@ -124,7 +124,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Disassembly = string.Empty;
             line.PC = 0x080b;
             line.Label = "FLAG";
-            Controller.Labels.SetSymbol("FLAG", 52, false);
+            Controller.Symbols.Labels.SetSymbol("FLAG", 52, false);
 
             var expected =
 @"=$34                                                 FLAG         =   $34 " + Environment.NewLine;
@@ -132,7 +132,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Assert.AreEqual(expected, result);
 
-            Controller.Labels.Clear();
+            Controller.Symbols.Labels.Clear();
         }
 
         [Test]

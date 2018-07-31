@@ -59,8 +59,15 @@ namespace DotNetAsm
         /// Defines a symbol lookup for the evaluator to translate symbols (such as 
         /// variables) in expressions.
         /// </summary>
-        /// <param name="regex">A regex pattern for the symbol</param>
-        /// <param name="lookupfunc">The lookup function to define the symbol</param>
+        /// <param name="lookupFunc">The lookup function to define the symbol.</param>
+        void DefineSymbolLookup(Func<string, string> lookupFunc);
+
+        /// <summary>
+        /// Defines a symbol lookup for the evaluator to translate symbols (such as 
+        /// variables) in expressions.
+        /// </summary>
+        /// <param name="regex">A regex pattern for the symbol.</param>
+        /// <param name="lookupfunc">The lookup function to define the symbol.</param>
         void DefineSymbolLookup(string regex, Func<string, string> lookupfunc);
     }
 }

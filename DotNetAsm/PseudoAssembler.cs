@@ -1,23 +1,8 @@
 ﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// Licensed under the MIT license. See LICENSE for full license information.
 // 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 using System;
@@ -31,7 +16,7 @@ namespace DotNetAsm
     /// An implementation of the <see cref="T:DotNetAsm.ILineAssembler"/> interface that assembles
     /// pseudo operations such as byte and string assembly.
     /// </summary>
-    public class PseudoAssembler : StringAssemblerBase, ILineAssembler
+    public sealed class PseudoAssembler : StringAssemblerBase, ILineAssembler
     {
         #region Members
 
@@ -107,7 +92,7 @@ namespace DotNetAsm
         /// <param name="minval">The minimum value based on the type.</param>
         /// <param name="maxval">The maximum value based on the type.</param>
         /// <param name="size">The precise size in bytes of the assembled value.</param>
-        protected void AssembleValues(SourceLine line, long minval, long maxval, int size)
+        void AssembleValues(SourceLine line, long minval, long maxval, int size)
         {
             var tokens = line.Operand.CommaSeparate();
             foreach (var t in tokens)
@@ -311,7 +296,7 @@ namespace DotNetAsm
             }
         }
 
-        public virtual int GetInstructionSize(SourceLine line)
+        public int GetInstructionSize(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Operand))
             {
@@ -368,7 +353,7 @@ namespace DotNetAsm
             }
         }
 
-        public virtual bool AssemblesInstruction(string instruction)
+        public bool AssemblesInstruction(string instruction)
         {
             return Reserved.IsOneOf("PseudoOps", instruction) ||
                 base.IsReserved(instruction) ||

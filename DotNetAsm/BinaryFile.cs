@@ -15,7 +15,7 @@ namespace DotNetAsm
     /// <summary>
     /// Represents an in-memory load of a binary file.
     /// </summary>
-    public class BinaryFile : IEquatable<BinaryFile>
+    public sealed class BinaryFile : IEquatable<BinaryFile>
     {
         #region Constructor
 

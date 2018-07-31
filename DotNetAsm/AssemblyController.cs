@@ -49,7 +49,7 @@ namespace DotNetAsm
     /// Implements an assembly controller to process source input and convert 
     /// to assembled output.
     /// </summary>
-    public class AssemblyController : AssemblerBase, IAssemblyController
+    public sealed class AssemblyController : AssemblerBase, IAssemblyController
     {
         #region Members
 
@@ -59,14 +59,10 @@ namespace DotNetAsm
         List<SourceLine> _processedLines;
         SourceLine _currentLine;
 
-        LabelCollection _labelCollection;
-
         int _passes;
 
         Regex _specialLabels;
         string _localLabelScope;
-
-        HashSet<int> _anonPlus, _anonMinus;
 
         #endregion
 
@@ -93,53 +89,35 @@ namespace DotNetAsm
 
             Reserved.DefineType("UserDefined");
 
+            Controller = this;
+
             Log = new ErrorLog();
 
-            _anonPlus = new HashSet<int>();
-            _anonMinus = new HashSet<int>();
             _processedLines = new List<SourceLine>();
 
             Options = new AsmCommandLineOptions();
             Options.ProcessArgs(args);
 
-            Controller = this;
-
             Reserved.Comparer = Options.StringComparison;
+           
             Output = new Compilation(!Options.BigEndian);
 
             _specialLabels = new Regex(@"^\*|\+|-$", RegexOptions.Compiled);
 
             Encoding = new AsmEncoding(Options.CaseSensitive);
 
-            Evaluator = new Evaluator();
-            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
-            if (!Options.CaseSensitive)
-                Evaluator.DefineSymbolLookup(Patterns.SymbolBasic + @"\(", (fnc) => fnc.ToLower());
-            
-                                            // The gnarliest regex you have 
-                                            // seen in your life.           
-                                            //              ||              
-                                            //              ||              
-            Evaluator.DefineSymbolLookup(   //              \/
-                @"(?<=^|[^\p{Ll}\p{Lu}\p{Lt}0-9_.$])(?>(_+[\p{Ll}\p{Lu}\p{Lt}0-9]|[\p{Ll}\p{Lu}\p{Lt}])(\.[\p{Ll}\p{Lu}\p{Lt}_]|[\p{Ll}\p{Lu}\p{Lt}0-9_])*)(?=[^(.]|$)",
-                                         GetNamedSymbolValue);
-            Evaluator.DefineSymbolLookup(@"^\++$|^-+$|\(\++\)|\(-+\)", ConvertAnonymous);
-            Evaluator.DefineSymbolLookup(@"(?<![\p{Ll}\p{Lu}\p{Lt}0-9_.)])\*(?![\p{Ll}\p{Lu}\p{Lt}0-9_.(])", (str) => Output.LogicalPC.ToString());
+            Evaluator = new Evaluator(Options.CaseSensitive);
 
-            _labelCollection = new LabelCollection(Options.StringComparar);
-            Variables = new VariableCollection(Options.StringComparar, Evaluator);
+            Evaluator.DefineSymbolLookup(SymbolsToValues);
 
-            _labelCollection.AddCrossCheck(Variables);
-            Variables.AddCrossCheck(_labelCollection);
-
+            Symbols = new SymbolManager(this);
             _localLabelScope = string.Empty;
 
             _preprocessor = new Preprocessor(this, s => IsSymbolName(s.TrimEnd(':'), true, false));
             _assemblers = new Stack<ILineAssembler>();
             _assemblers.Push(new PseudoAssembler(this, arg =>
                 {
-                    return IsReserved(arg) ||
-                    _labelCollection.IsScopedSymbol(arg, _currentLine.Scope);
+                    return IsReserved(arg) || Symbols.Labels.IsScopedSymbol(arg, _currentLine.Scope);
                 }));
 
             _assemblers.Push(new MiscAssembler(this));
@@ -158,37 +136,6 @@ namespace DotNetAsm
         #endregion
 
         #region Methods
-
-        /// <remarks>
-        /// Get the encoded value of the character and return it as a string.
-        /// </remarks>
-        string GetCharValue(string chr)
-        {
-            var literal = chr.GetNextQuotedString();
-            var unescaped = Regex.Unescape(literal.Trim('\''));
-            var charval = Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
-            if (literal.Equals(chr))
-                return charval;
-        
-            var post = chr.Substring(literal.Length);
-            return Evaluator.Eval(charval + post).ToString();              
-        }
-
-        /// <remarks>
-        /// Used by the expression evaluator to convert an anonymous symbol
-        /// to an address.
-        /// </remarks>
-        string ConvertAnonymous(string symbol)
-        {
-            var trimmed = symbol.Trim(new char[] { '(', ')' });
-            var addr = GetAnonymousAddress(_currentLine, trimmed);
-            if (addr < 0 && _passes > 0)
-            {
-                Log.LogEntry(_currentLine, ErrorStrings.CannotResolveAnonymousLabel);
-                return "0";
-            }
-            return addr.ToString();
-        }
 
         /// <summary>
         /// Checks if a given token is actually an instruction or directive, either
@@ -228,8 +175,11 @@ namespace DotNetAsm
                 return false;
 
             // otherwise...
-            return _labelCollection.IsSymbolValid(token, true);
+            return Symbols.Labels.IsSymbolValid(token, true);
         }
+
+        string SymbolsToValues(string expression)
+            => Symbols.TranslateExpressionSymbols(_currentLine, expression, _localLabelScope, _passes > 0);
 
         /// <remarks>
         /// Define macros and segments, and add included source files.
@@ -308,7 +258,7 @@ namespace DotNetAsm
         void FirstPass(IEnumerable<SourceLine> source)
         {
             _passes = 0;
-            int id = 0;
+            int id = 1;
 
             var sourceList = source.ToList();
 
@@ -385,14 +335,15 @@ namespace DotNetAsm
                 }
                 if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
                 {
-                    var varname = Variables.GetVariableFromExpression(_currentLine.Operand, _currentLine.Scope);
+                    var varname = Symbols.Variables.GetVariableFromExpression(_currentLine.Operand, _currentLine.Scope);
                     try
                     {
-                        _currentLine.PC = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
+                        var varAssignment = Symbols.Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
+                        _currentLine.PC = Evaluator.Eval(varAssignment);
                     }
                     catch (SymbolNotDefinedException)
                     {
-                        Variables.SetSymbol(varname, 0, false);
+                        Symbols.Variables.SetSymbol(varname, 0, false);
                         _currentLine.PC = 0;
                     }
                 }
@@ -437,7 +388,6 @@ namespace DotNetAsm
             bool passNeeded = false;
 
             string label = string.Empty;
-
             if (!string.IsNullOrEmpty(_currentLine.Label))
             {
                 if (_currentLine.Label.First() == '_')
@@ -469,17 +419,17 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
                         return false;
                     }
-                    passNeeded = !(val.Equals(_labelCollection.GetScopedSymbolValue(label, _currentLine.Scope)));
-                    _labelCollection.SetLabel(_currentLine.Scope + label, val, false, false);
+                    passNeeded = val != Symbols.Labels.GetScopedSymbolValue(label, _currentLine.Scope);
+                    Symbols.Labels.SetLabel(_currentLine.Scope + label, val, false, false);
 
                 }
                 _currentLine.PC = val;
             }
             else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
             {
-                var varparts = Variables.SetVariable(_currentLine.Operand, _currentLine.Scope);
-                passNeeded = _currentLine.PC != varparts.Value;
-                _currentLine.PC = varparts.Value;
+                var varparts = Symbols.Variables.SetVariable(_currentLine.Operand, _currentLine.Scope);
+                passNeeded = _currentLine.PC != Evaluator.Eval(varparts.Value);
+                _currentLine.PC = Evaluator.Eval(varparts.Value);
             }
             else if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
             {
@@ -487,8 +437,8 @@ namespace DotNetAsm
             }
             else
             {
-                if (_labelCollection.IsScopedSymbol(label, _currentLine.Scope))
-                    _labelCollection.SetLabel(_currentLine.Scope + label, Output.LogicalPC, false, false);
+                if (Symbols.Labels.IsScopedSymbol(label, _currentLine.Scope))
+                    Symbols.Labels.SetLabel(_currentLine.Scope + label, Output.LogicalPC, false, false);
                 passNeeded = _currentLine.PC != Output.LogicalPC;
                 _currentLine.PC = Output.LogicalPC;
                 if (finalPass)
@@ -513,7 +463,7 @@ namespace DotNetAsm
                 passNeeded = false;
                 Output.Reset();
 
-                Variables.Clear();
+                Symbols.Variables.Clear();
 
                 _localLabelScope = string.Empty;
 
@@ -630,13 +580,7 @@ namespace DotNetAsm
                         _currentLine.PC = Output.LogicalPC;
                     }
 
-                    if (_currentLine.Label.Equals("+") || _currentLine.Label.Equals("-"))
-                    {
-                        if (_currentLine.Label == "+")
-                            _anonPlus.Add(_currentLine.Id);
-                        else
-                            _anonMinus.Add(_currentLine.Id);
-                    }
+                    Symbols.AddAnonymousLine(_currentLine);
                 }
                 else
                 {
@@ -675,7 +619,7 @@ namespace DotNetAsm
                             val = 0;
                         }
                     }
-                    _labelCollection.SetLabel(scopedLabel, val, false, true);
+                    Symbols.Labels.SetLabel(scopedLabel, val, false, true);
                 }
             }
         }
@@ -842,10 +786,10 @@ namespace DotNetAsm
         {
             var listing = new StringBuilder();
 
-            foreach (var label in _labelCollection)
+            foreach (var label in Symbols.Labels)
                 listing.Append(GetSymbolListing(label.Key, label.Value, false));
 
-            foreach (var variable in Variables)
+            foreach (var variable in Symbols.Variables)
                 listing.Append(GetSymbolListing(variable.Key, variable.Value, true));
 
             return listing.ToString();
@@ -919,74 +863,15 @@ namespace DotNetAsm
 
                     if (Log.HasErrors == false)
                     {
-                        SaveOutput();
+                       SaveOutput();
 
-                        ToListing();
+                       ToListing();
                     }
                 }
             }
             PrintStatus(asmTime);
         }
 
-        string GetNamedSymbolValue(string symbol)
-        {
-            if (symbol.First() == '_')
-                symbol = string.Concat(_localLabelScope, symbol);
-            if (Variables.IsScopedSymbol(symbol, _currentLine.Scope))
-                return Variables.GetScopedSymbolValue(symbol, _currentLine.Scope).ToString();
-
-            var value = _labelCollection.GetScopedSymbolValue(symbol, _currentLine.Scope);
-            if (value.Equals(long.MinValue))
-                throw new SymbolNotDefinedException(symbol);
-                
-            return value.ToString();
-
-        }
-
-        // Get the actual long address of the anonymous symbol.
-        long GetAnonymousAddress(SourceLine fromLine, string operand)
-        {
-            int count = operand.Length - 1;
-            IOrderedEnumerable<int> idList;
-            if (operand.First() == '-')
-            {
-                idList = _anonMinus.Where(i => i < fromLine.Id).OrderByDescending(i => i);
-            }
-            else
-            {
-                idList = _anonPlus.Where(i => i > fromLine.Id).OrderBy(i => i);
-            }
-            long id = 0;
-            string scope = fromLine.Scope;
-
-            while (id != -1)
-            {
-                id = idList.Count() > count ? idList.ElementAt(count) : -1;
-
-                var lines = from line in _processedLines
-                            where line.Id == id && line.Scope == scope
-                            select line;
-                if (!lines.Any())
-                {
-                    if (string.IsNullOrEmpty(scope) == false)
-                    {
-                        var splitscope = scope.Split('.').ToList();
-                        splitscope.RemoveAt(splitscope.Count - 1);
-                        scope = string.Join(".", splitscope);
-                    }
-                    else
-                    {
-                        scope = fromLine.Scope;
-                        count++;
-                    }
-                }
-                else
-                {
-                    return lines.First().PC;
-                }
-            }
-            return id;
-        }
         #endregion
 
         #region Properties
@@ -999,9 +884,7 @@ namespace DotNetAsm
 
         public ErrorLog Log { get; private set; }
 
-        public SymbolCollectionBase Labels { get { return _labelCollection; } }
-
-        public VariableCollection Variables { get; private set; }
+        public ISymbolManager Symbols { get; private set; }
 
         public IEvaluator Evaluator { get; private set; }
 

@@ -1,28 +1,15 @@
 ﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// Licensed under the MIT license. See LICENSE for full license information.
 // 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 using DotNetAsm;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Asm6502.Net
@@ -30,7 +17,7 @@ namespace Asm6502.Net
     /// <summary>
     /// A line assembler that will assemble into 6502 instructions.
     /// </summary>
-    public partial class Asm6502 : AssemblerBase, ILineAssembler
+    public sealed partial class Asm6502 : AssemblerBase, ILineAssembler
     {
         #region Constructors
 
@@ -42,48 +29,40 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller) :
             base(controller)
         {
-            Reserved.DefineType("Accumulator",
-                    "adc", "and", "cmp", "eor", "lda", "ora", "sbc", "sta"
-                );
-
             Reserved.DefineType("Branches",
-                    "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc", "bvs",
-                    "bra"
-                );
+                    "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc", 
+                    "bvs", "bra"
+                 );
 
             Reserved.DefineType("Branches16",
                     "brl", "per"
                 );
 
-            Reserved.DefineType("Implied",
-                    "brk", "clc", "cld", "cli", "clv", "dex", "dey", "inx", "iny", "nop", "pha", "php", "pla",
-                    "plp", "rti", "rts", "sec", "sed", "sei", "tax", "tay", "tsx", "txa", "txs", "tya",
-                    "tcs", "tsc", "tcd", "tdc", "txy", "tyx", "wai", "stp", "xba", "xce",
-                    "phd", "pld", "phk", "phy", "rtl", "ply", "phb", "plb", "phx", "plx"
-                );
-
             Reserved.DefineType("ImpliedAccumulator",
-                    "asl", "lsr", "rol", "ror",
-                    "inc", "dec"
-                );
-
-            Reserved.DefineType("ImpliedAC02",
-                    "inc", "dec"
-                );
-
-            Reserved.DefineType("Jumps",
-                    "jmp", "jsr",
-                    "jml", "jsl"
+                    "asl", "lsr", "rol", "ror"
                 );
 
             Reserved.DefineType("Mnemonics",
-                    "asl", "bit", "cpx", "cpy", "dec", "inc", "ldx",
-                    "ldy", "lsr", "rol", "ror", "stx", "sty", "cop",
-                    "tsb", "trb", "mvn", "mvp", "stz", "pea", "pei",
-                    "rep", "sep", "anc", "ane", "arr", "asr", "sha",
-                    "dcp", "dop", "isb", "jam", "las", "lax", "rla",
-                    "rra", "sax", "shy", "slo", "sre", "tas", "top",
-                    "shx"
+                    "adc", "anc", "and", "ane", "arr", "asl", "asr", "bit",
+                    "brk", "clc", "cld", "cli", "clv", "cmp", "cop", "cpx", 
+                    "cpy", "dcp", "dex", "dey", "dop", "eor", "inx", "iny", 
+                    "isb", "jam", "jml", "jmp", "jsl", "jsr", "las", "lax", 
+                    "lda", "ldx", "ldy", "lsr", "nop", "ora", "pea", "pei", 
+                    "pha", "phb", "phd", "phk", "php", "phx", "phy", "pla", 
+                    "plb", "pld", "plp", "plx", "ply", "rep", "rla", "rol", 
+                    "ror", "rra", "rti", "rtl", "rts", "sbc", "sax", "sec", 
+                    "sed", "sei", "sep", "shx", "shy", "slo", "sre", "sha", 
+                    "sta", "stp", "stx", "sty", "stz", "tas", "tax", "tay", 
+                    "tcd", "tcs", "tdc", "top", "trb", "tsb", "tsc", "tsx", 
+                    "txa", "txs", "txy", "tya", "tyx", "xba", "xce", "wai"
+                );
+
+            Reserved.DefineType("ImpliedAC02",
+                    "dec", "inc"
+                );
+
+            Reserved.DefineType("MoveMemory",
+                    "mvn", "mvp" 
                 );
 
             Reserved.DefineType("ReturnAddress",
@@ -93,21 +72,6 @@ namespace Asm6502.Net
             Reserved.DefineType("LongShort",
                     ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
                 );
-
-            _regWidth = new Regex(@"^(?>\[\s*(16|24)\s*\]\s*)(?!,|$)", RegexOptions.Compiled);
-
-            _builders = new FormatBuilder[]
-            {
-                new FormatBuilder(@"^\[\s*([^\]\s]+)\s*\]\s*,\s*y$()", "[{2}],y", "${0:x2}", string.Empty, 2, 2, 1, 2, controller.Options.RegexOption),
-                new FormatBuilder(@"^\[\s*([^\]\s]+)\s*\]$()", "[{2}]", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
-                new FormatBuilder(@"^#([^\s].*)$()", "#{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
-                new FormatBuilder(@"^\(\s*([^\s]+)\s*,\s*s\s*\)\s*,\s*y$()", "({2},s),y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption),
-                new FormatBuilder(@"^\(\s*([^\s]+)\s*,\s*(s|x)\s*\)$()", "({2},{0})", "${0:x2}", string.Empty, 2, 3, 1, 3, Controller.Options.RegexOption ),
-                new FormatBuilder(@"^([^\s]+)\s*,\s*(s|x)$()", "{2},{0}", "${0:x2}", string.Empty, 2, 3, 1, 3, Controller.Options.RegexOption),
-                new FormatBuilder(@"^([^\s]+)\s*,\s*y$()", "{2},y", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption, true ),
-                new FormatBuilder(@"^([^\s]+)\s*,\s*(?!(x|y)$)([^\s]+)$()", "{2},{3}", "${0:x2}", "${1:x2}", 4, 4, 1, 3, Controller.Options.RegexOption),
-                new FormatBuilder(@"^(.+)$()", "{2}", "${0:x2}", string.Empty, 2, 2, 1, 2, Controller.Options.RegexOption, true )
-            };
 
             Controller.AddSymbol("a");
             Controller.CpuChanged += SetCpu;
@@ -210,104 +174,15 @@ namespace Asm6502.Net
 
             Controller.Encoding.SelectDefaultEncoding();
 
-            _filteredOpcodes = _opcodes.Where(o => o.CPU.Equals("6502")).ToList();
+            ConstructOpcodeTable();
+
+            _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502")).ToDictionary(k => k.Key, k => k.Value, Controller.Options.StringComparar);
         }
 
         #endregion
 
         #region Methods
 
-        /// <summary>
-        /// Gets the format and opcode of the source.
-        /// </summary>
-        /// <returns>The format and opcode.</returns>
-        /// <param name="line">Line.</param>
-        Tuple<OperandFormat, Opcode> GetFormatAndOpcode(SourceLine line)
-        {
-            bool force16 = false, force24 = false;
-            OperandFormat fmt = null;
-            Opcode opc = null;
-
-            var instruction = line.Instruction.ToLower();
-
-            var operand = line.Operand;
-            if (Reserved.IsOneOf("ImpliedAccumulator", instruction) ||
-                (Reserved.IsOneOf("ImpliedAC02", instruction) && !_cpu.Equals("6502"))
-                && (!Controller.Variables.IsSymbol("a") && !Controller.Labels.IsSymbol("a")))
-                operand = Regex.Replace(operand, @"^a$", string.Empty, Controller.Options.RegexOption);
-
-            operand = ConvertFuncs(operand);
-
-            if (string.IsNullOrEmpty(operand))
-            {
-                fmt = new OperandFormat
-                {
-                    FormatString = instruction
-                };
-                opc = _filteredOpcodes.Find(o => instruction.Equals(o.DisasmFormat, Controller.Options.StringComparison));//Opcode.LookupOpcode(instruction, _filteredOpcodes, Controller.Options.StringComparison, false, _filteredOpcodes.Count);
-            }
-            else
-            {
-                if (_regWidth.IsMatch(operand))
-                {
-                    if (operand.Contains("16"))
-                        force16 = true;
-                    else
-                        force24 = true;
-                    operand = _regWidth.Replace(operand, string.Empty);
-                }
-                foreach (FormatBuilder builder in _builders)
-                {
-                    fmt = builder.GetFormat(operand);
-                    if (fmt == null)
-                        continue;
-
-                    var instrFmt = string.Format("{0} {1}", instruction, fmt.FormatString);
-
-                    if (force16 || force24)
-                    {
-                        if (force16)
-                        {
-                            instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                            instrFmt = instrFmt.Replace("${0:x6}", "${0:x4}");
-                        }
-                        else
-                        {
-                            instrFmt = instrFmt.Replace("${0:x2}", "${0:x6}");
-                            instrFmt = instrFmt.Replace("${0:x4}", "${0:x6}");
-                        }
-                    }
-                    else
-                    {
-                        // adjust the size of the format string to match the size of the operand expression
-                        var expVal = Controller.Evaluator.Eval(fmt.Expression1, short.MinValue, UInt24.MaxValue);
-                        var size = (expVal.Size() * 2).ToString();
-                        if (!instrFmt.Contains(size))
-                            instrFmt = Regex.Replace(instrFmt, @"2|4", size);
-                    }
-
-                    opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));
-                    if (opc == null)
-                    {
-                        instrFmt = instrFmt.Replace("${0:x2}", "${0:x4}");
-                        opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));
-
-                        if (opc == null)
-                        {
-                            instrFmt = instrFmt.Replace("${0:x4}", "${0:x6}");
-                            opc = _filteredOpcodes.Find(o => instrFmt.Equals(o.DisasmFormat, Controller.Options.StringComparison));
-                        }
-                    }
-                    break;
-                }
-            }
-            return new Tuple<OperandFormat, Opcode>(fmt, opc);
-        }
-
-        /// <summary>
-        /// Sets the cpu.
-        /// </summary>
-        /// <param name="args">Arguments.</param>
         void SetCpu(CpuChangedEventArgs args)
         {
             if (args.Line.Operand.EnclosedInQuotes() == false &&
@@ -328,17 +203,25 @@ namespace Asm6502.Net
             }
             _cpu = cpu;
 
-            var cpuOpcodes = _opcodes.Where(o => o.CPU.Equals(_cpu));
-
-            if (_cpu.Equals("65C02") || _cpu.Equals("65816") || _cpu.Equals("6502i"))
+            switch (_cpu)
             {
-                cpuOpcodes = cpuOpcodes.Concat(_opcodes.Where(o => o.CPU.Equals("6502")));
+                case "65816":
+                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502") || o.Value.CPU.Equals("65C02") || o.Value.CPU.Equals("65816")).ToDictionary(k => k.Key, k => k.Value, Controller.Options.StringComparar);
+                    _filteredOpcodes.Add("stp", new Instruction { CPU = "65816", Size = 1, Opcode = 0xdb });
+                    break;
+                case "65C02":
+                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502") || o.Value.CPU.Equals("65C02")).ToDictionary(k => k.Key, k => k.Value, Controller.Options.StringComparar);
+                    break;
+                case "6502i":
+                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502") || o.Value.CPU.Equals("6502i")).ToDictionary(k => k.Key, k => k.Value, Controller.Options.StringComparar);
+                    break;
+                case "6502":
+                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502")).ToDictionary(k => k.Key, k => k.Value, Controller.Options.StringComparar);
+                    break;
+                default:
+                    break;
 
-                if (_cpu.Equals("65816"))
-                    cpuOpcodes = cpuOpcodes.Concat(_opcodes.Where(o => o.CPU.Equals("65C02")));
             }
-
-            _filteredOpcodes = cpuOpcodes.ToList();
 
             if (_m16)
                 SetImmediateA(3);
@@ -347,56 +230,54 @@ namespace Asm6502.Net
 
         }
 
-        /// <summary>
-        /// Sets the immediate mode of the accumulator.
-        /// </summary>
-        /// <param name="size">The size of the immediate mode operation.</param>
         void SetImmediateA(int size)
         {
-            string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
+            if (size == 3 && _cpu.StartsWith("6502", StringComparison.Ordinal))
+            {
+                return;
+            }
+            string fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
+            string prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
 
-            _filteredOpcodes.RemoveAll(o => o.Index.Equals(0x09) ||
-                                            o.Index.Equals(0x29) ||
-                                            o.Index.Equals(0x49) ||
-                                            o.Index.Equals(0x69) ||
-                                            o.Index.Equals(0x89) ||
-                                            o.Index.Equals(0xa9) ||
-                                            o.Index.Equals(0xc9) ||
-                                            o.Index.Equals(0xe9));
+            _filteredOpcodes.Remove("ora" + prv);
+            _filteredOpcodes.Remove("and" + prv);
+            _filteredOpcodes.Remove("eor" + prv);
+            _filteredOpcodes.Remove("adc" + prv);
+            _filteredOpcodes.Remove("bit" + prv);
+            _filteredOpcodes.Remove("lda" + prv);
+            _filteredOpcodes.Remove("cmb" + prv);
+            _filteredOpcodes.Remove("sbc" + prv);
 
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "ora" + fmt, Size = size, Index = 0x09 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "and" + fmt, Size = size, Index = 0x29 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "eor" + fmt, Size = size, Index = 0x49 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "adc" + fmt, Size = size, Index = 0x69 });
-            _filteredOpcodes.Add(new Opcode { CPU = "65C02", DisasmFormat = "bit" + fmt, Size = size, Index = 0x89 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "lda" + fmt, Size = size, Index = 0xa9 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "cmp" + fmt, Size = size, Index = 0xc9 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502",  DisasmFormat = "sbc" + fmt, Size = size, Index = 0xe9 });
+            _filteredOpcodes["ora" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x09 };
+            _filteredOpcodes["and" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x29 };
+            _filteredOpcodes["eor" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x49 };
+            _filteredOpcodes["adc" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x69 };
+            _filteredOpcodes["bit" + fmt] = new Instruction { CPU = "65C02", Size = size, Opcode = 0x89 };
+            _filteredOpcodes["lda" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0xa9 };
+            _filteredOpcodes["cmp" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0xc9 };
+            _filteredOpcodes["sbc" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0xe9 };
         }
 
-        /// <summary>
-        /// Sets the immediate mode of the index registers.
-        /// </summary>
-        /// <param name="size">The size of the immediate mode operation.</param>
         void SetImmediateXY(int size)
         {
-            string fmt = size.Equals(3) ? " #${0:x4}" : " #${0:x2}";
+            if (size == 3 && _cpu.StartsWith("6502", StringComparison.Ordinal))
+            {
+                return;
+            }
+            string fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
+            string prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
 
-            _filteredOpcodes.RemoveAll(o => o.Index.Equals(0xa0) ||
-                                            o.Index.Equals(0xa2) ||
-                                            o.Index.Equals(0xc0) ||
-                                            o.Index.Equals(0xe0));
+            _filteredOpcodes.Remove("ldy" + prv);
+            _filteredOpcodes.Remove("ldx" + prv);
+            _filteredOpcodes.Remove("cpy" + prv);
+            _filteredOpcodes.Remove("cpx" + prv);
 
-            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "ldy" + fmt, Size = size, Index = 0xa0 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "ldx" + fmt, Size = size, Index = 0xa2 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "cpy" + fmt, Size = size, Index = 0xc0 });
-            _filteredOpcodes.Add(new Opcode { CPU = "6502", DisasmFormat = "cpx" + fmt, Size = size, Index = 0xe0 });
+            _filteredOpcodes["ldy" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xa0 };
+            _filteredOpcodes["ldx" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xa2 };
+            _filteredOpcodes["cpy" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xc0 };
+            _filteredOpcodes["cpx" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xe0 };
         }
 
-        /// <summary>
-        /// Sets the reg long short.
-        /// </summary>
-        /// <param name="instruction">Instruction.</param>
         void SetRegLongShort(string instruction)
         {
             if (instruction.StartsWith(".x", Controller.Options.StringComparison))
@@ -429,10 +310,6 @@ namespace Asm6502.Net
             }
         }
 
-        /// <summary>
-        /// Assembles the .rta directive
-        /// </summary>
-        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         void AssembleRta(SourceLine line)
         {
             var csv = line.Operand.CommaSeparate();
@@ -451,6 +328,181 @@ namespace Asm6502.Net
             }
         }
 
+
+        long ParseSubExpression(string subexpression, char open, char closure, StringBuilder formatBuilder, bool isAbsolute)
+        {
+            var commasep = subexpression.Substring(1, subexpression.Length - 2).CommaSeparate(open, closure);
+            if (commasep.Count() > 2)
+                throw new Exception(ErrorStrings.None);
+
+            string expression = commasep.First().Trim();
+
+            var val = Controller.Evaluator.Eval(expression);
+            var expSize = isAbsolute ? 2 : 1;
+            if (val.Size() > expSize)
+                throw new OverflowException(val.ToString());
+
+
+            formatBuilder.Append(open);
+            formatBuilder.Append("${0:x" + expSize * 2 + "}");
+
+            if (commasep.Count() > 1)
+                formatBuilder.AppendFormat(",{0}{1}", commasep.Last(), closure);
+            else
+                formatBuilder.Append(closure);
+            return val;
+        }
+
+
+        Tuple<OperandFormat, Instruction> GetFormatAndOpcode(SourceLine line)
+        {
+
+            var instruction = line.Instruction.ToLower();
+            string expression1 = string.Empty, expression2 = string.Empty;
+            long eval1 = long.MinValue, eval2 = long.MinValue;
+            StringBuilder formatBuilder = new StringBuilder();
+
+            formatBuilder.AppendFormat("{0}", instruction);
+
+            bool impliedA = line.Operand.Equals("a", Controller.Options.StringComparison);
+
+            if (impliedA &&
+                !(Reserved.IsOneOf("ImpliedAccumulator", instruction) ||
+                  (Reserved.IsOneOf("ImpliedAC02", instruction) && !_cpu.Equals("6502"))
+                 )
+                )
+                throw new Exception();
+
+            string finalFormat;
+            Instruction opcode;
+
+            if (string.IsNullOrEmpty(line.Operand) || impliedA)
+            {
+                finalFormat = formatBuilder.ToString();
+                if (!_filteredOpcodes.TryGetValue(finalFormat, out opcode))
+                {
+                    return new Tuple<OperandFormat, Instruction>(null, null);
+                }
+            }
+            else
+            {
+                formatBuilder.Append(' ');
+                int expSize = 1;
+
+                string operand = line.Operand;
+
+                if (operand[0] == '[')
+                {
+                    // differentiate between 'and [16]' and 'and [16] 16'
+                    var firstBracket = operand.FirstParenEnclosure(useBracket: true);
+                    var firstBracketLength = firstBracket.Length;
+                    if (operand.Length > firstBracketLength)
+                    {
+                        var delim = operand.Substring(firstBracketLength).First(c => !char.IsWhiteSpace(c));
+                        if (delim != ',')
+                        {
+                            if (!char.IsWhiteSpace(operand[firstBracketLength]))
+                                throw new Exception(ErrorStrings.None);
+                            expSize = Convert.ToInt32(Controller.Evaluator.Eval(firstBracket.Substring(1, firstBracketLength - 2)));
+                            if (expSize != 16 && expSize != 24)
+                                throw new Exception(ErrorStrings.None);
+                            expSize /= 8;
+                            operand = operand.Substring(firstBracketLength + 1);
+                        }
+                    }
+                }
+                if (operand[0] == '#')
+                {
+                    if (operand.Length < 2 || char.IsWhiteSpace(operand[1]))
+                        throw new ExpressionException(operand);
+                    expression1 = operand.Substring(1);
+                    eval1 = Controller.Evaluator.Eval(expression1);
+                    expSize = eval1.Size();
+                    formatBuilder.Append("#${0:x" + expSize * 2 + "}");
+                }
+                else
+                {
+                    IEnumerable<string> commasep;
+                    if (line.Operand[0] == '[')
+                        commasep = operand.CommaSeparate('[', ']');
+                    else
+                        commasep = operand.CommaSeparate();
+                    if (commasep.Count() > 2)
+                        throw new Exception(ErrorStrings.None);
+
+
+                    string outerexpression = string.Empty;
+                    if (commasep.Count() > 1)
+                    {
+                        if (Reserved.IsOneOf("MoveMemory", instruction))
+                        {
+                            outerexpression = "${1:x2}";
+                            expression2 = commasep.Last();
+                            eval2 = Controller.Evaluator.Eval(expression2.Trim());
+                        }
+                        else
+                        {
+                            outerexpression = commasep.Last();
+
+                        }
+                    }
+
+                    var param1 = commasep.First();
+                    if (param1[0] == '(' && param1.Last() == ')' && 
+                        param1.FirstParenEnclosure().Equals(param1) && 
+                        (commasep.Count() == 1 || commasep.Last().Equals("y", Controller.Options.StringComparison)))
+                    {
+                        eval1 = ParseSubExpression(param1, '(', ')', formatBuilder, instruction.Equals("jmp"));
+                        expression1 = eval1.ToString();
+                    }
+                    else if (param1[0] == '[')
+                    {
+
+                        eval1 = ParseSubExpression(param1, '[', ']', formatBuilder, instruction.Equals("jmp"));
+                        expression1 = eval1.ToString();
+                    }
+                    else
+                    {
+                        expression1 = param1.TrimEnd();
+                        eval1 = Controller.Evaluator.Eval(expression1);
+                        if (expSize == 1)
+                        {
+                            if (Reserved.IsOneOf("Branches16", instruction))
+                            {
+                                // we have to check this too in case the user does a brl $10ffff
+                                expSize++;
+                            }
+                            else
+                            {
+                                expSize = eval1.Size();
+                            }
+                        }
+                        formatBuilder.Append("${0:x" + expSize * 2 + "}");
+                    }
+
+                    if (commasep.Count() > 1)
+                        formatBuilder.AppendFormat(",{0}", outerexpression);
+                }
+                finalFormat = formatBuilder.ToString();
+
+                while (!_filteredOpcodes.TryGetValue(finalFormat, out opcode))
+                {
+                    // some instructions the size is bigger than the expression comes out to, so
+                    // make the expression size larger
+                    if (expSize > 3)
+                        return new Tuple<OperandFormat, Instruction>(null, null); // we didn't find it
+                    finalFormat = finalFormat.Replace("x" + (expSize++) * 2, "x" + expSize * 2);
+                }
+
+            }
+            var fmt = new OperandFormat
+            {
+                FormatString = finalFormat,
+                Eval1 = eval1,
+                Eval2 = eval2
+            };
+            return new Tuple<OperandFormat, Instruction>(fmt, opcode);
+        }
 
         #region ILineAssembler.Methods
 
@@ -497,19 +549,20 @@ namespace Asm6502.Net
                 Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
                 return;
             }
-            long eval1 = long.MinValue, eval2 = long.MinValue;
-            long eval1Abs = 0;
+            long eval1 = formatOpcode.Item1.Eval1, eval2 = formatOpcode.Item1.Eval2;
+
+            // how the (first) evaluated expression will display in disassembly
+            long eval1DisplayValue = 0;
 
             if (Reserved.IsOneOf("Branches", line.Instruction) || Reserved.IsOneOf("Branches16", line.Instruction))
             {
-                eval1 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression1, short.MinValue, ushort.MaxValue);
-                eval1Abs = eval1 & 0xFFFF;
+                eval1DisplayValue = eval1 & 0xFFFF;
                 try
                 {
                     if (Reserved.IsOneOf("Branches", line.Instruction))
-                        eval1 = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)eval1Abs, Controller.Output.LogicalPC + 2));
+                        eval1 = Convert.ToSByte(Controller.Output.GetRelativeOffset((ushort)eval1DisplayValue, Controller.Output.LogicalPC + 2));
                     else
-                        eval1 = Convert.ToInt16(Controller.Output.GetRelativeOffset((ushort)eval1Abs, Controller.Output.LogicalPC + 3));
+                        eval1 = Convert.ToInt16(Controller.Output.GetRelativeOffset((ushort)eval1DisplayValue, Controller.Output.LogicalPC + 3));
                 }
                 catch
                 {
@@ -521,74 +574,38 @@ namespace Asm6502.Net
             {
                 var operandsize = 0;
 
-                long minval = sbyte.MinValue, maxval = byte.MaxValue;
-
-                if (string.IsNullOrEmpty(formatOpcode.Item1.Expression2))
-                {
-                    if (formatOpcode.Item2.Size == 4)
-                    {
-                        minval = Int24.MinValue;
-                        maxval = UInt24.MaxValue;
-                    }
-                    else if (formatOpcode.Item2.Size == 3)
-                    {
-                        minval = short.MinValue;
-                        maxval = ushort.MaxValue;
-                    }
-                }
-                else
-                {
-                    eval2 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression2, minval, maxval);
-                }
-                if (!string.IsNullOrEmpty(formatOpcode.Item1.Expression1))
-                    eval1 = Controller.Evaluator.Eval(formatOpcode.Item1.Expression1, minval, maxval);
-
-
-                if (!eval1.Equals(long.MinValue))
+                if (eval1 != long.MinValue)
                 {
                     if (formatOpcode.Item2.Size == 4)
                     {
                         eval1 &= 0xFFFFFF;
                     }
-                    else if (formatOpcode.Item2.Size == 3 && eval2.Equals(long.MinValue))
+                    else if (formatOpcode.Item2.Size == 3 && eval2 == long.MinValue)
                     {
                         eval1 &= 0xFFFF;
                     }
                     else
                     {
                         eval1 &= 0xFF;
-                        if (!eval2.Equals(long.MinValue))
+                        if (eval2 != long.MinValue)
                             eval2 &= 0xFF;
                     }
-                    eval1Abs = eval1;
+                    eval1DisplayValue = eval1; 
                     operandsize = eval1.Size();
                 }
-                if (!eval2.Equals(long.MinValue))
+                if (eval2 != long.MinValue)
                     operandsize += eval2.Size();
 
                 if (operandsize >= formatOpcode.Item2.Size)
                     throw new OverflowException(line.Operand);
             }
             long operbytes = 0;
-            if (!eval1.Equals(long.MinValue))
-                operbytes = eval2.Equals(long.MinValue) ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
+            if (eval1 != long.MinValue)
+                operbytes = eval2 == long.MinValue ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
             
-            line.Disassembly = string.Format(formatOpcode.Item2.DisasmFormat, eval1Abs, eval2);
-            line.Assembly = Controller.Output.Add(Convert.ToInt32(operbytes) | formatOpcode.Item2.Index, 
+            line.Disassembly = string.Format(formatOpcode.Item1.FormatString, eval1DisplayValue, eval2);
+            line.Assembly = Controller.Output.Add(Convert.ToInt32(operbytes) | formatOpcode.Item2.Opcode, 
                                                   formatOpcode.Item2.Size);
-        }
-
-        string ConvertFuncs(string operand)
-        {
-            return Regex.Replace(operand, @"([a-zA-Z][a-zA-Z0-9]*)(\(.+\,.+\))", (match) =>
-            {
-                var fcncall = match.Groups[2].Value.FirstParenEnclosure();
-                var post = string.Empty;
-                if (!fcncall.Equals(match.Groups[2].Value))
-                    post = match.Groups[2].Value.Substring(fcncall.Length);
-                var evalfcn = Controller.Evaluator.Eval(match.Groups[1].Value + fcncall);
-                return evalfcn.ToString() + ConvertFuncs(post);
-            });
         }
 
         public int GetInstructionSize(SourceLine line)
@@ -603,9 +620,7 @@ namespace Asm6502.Net
         }
 
         public bool AssemblesInstruction(string instruction)
-        {
-            return Reserved.IsReserved(instruction);
-        }
+                    => Reserved.IsReserved(instruction);
 
         #endregion
 

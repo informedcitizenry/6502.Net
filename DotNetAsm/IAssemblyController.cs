@@ -79,15 +79,10 @@ namespace DotNetAsm
         ErrorLog Log { get; }
 
         /// <summary>
-        /// Gets the labels for the controller.
+        /// Gets the symbols for the controller.
         /// </summary>
-        SymbolCollectionBase Labels { get; }
-
-        /// <summary>
-        /// Gets the variables for the controller.
-        /// </summary>
-        /// <value>The variables.</value>
-        VariableCollection Variables { get; }
+        /// <value>The symbols.</value>
+        ISymbolManager Symbols { get; }
 
         /// <summary>
         /// Gets expression evaluator for the controller.

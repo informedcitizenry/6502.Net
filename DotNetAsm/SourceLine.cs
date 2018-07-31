@@ -14,7 +14,7 @@ namespace DotNetAsm
     /// <summary>
     /// Encapsulates a single line of assembly source.
     /// </summary>
-    public class SourceLine : IEquatable<SourceLine>, ICloneable
+    public sealed class SourceLine : IEquatable<SourceLine>, ICloneable
     {
         #region Members
 

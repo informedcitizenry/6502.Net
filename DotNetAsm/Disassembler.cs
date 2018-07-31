@@ -1,23 +1,8 @@
 ﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// Licensed under the MIT license. See LICENSE for full license information.
 // 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 using System;
@@ -26,7 +11,7 @@ using System.Text;
 
 namespace DotNetAsm
 {
-    public class Disassembler: AssemblerBase, ILineDisassembler
+    public sealed class Disassembler: AssemblerBase, ILineDisassembler
     {
         #region Constructors
 
@@ -94,12 +79,12 @@ namespace DotNetAsm
                 }
                 else if (line.Instruction.Equals(".let", Controller.Options.StringComparison))
                 {
-                    var variable = Controller.Variables.GetVariableFromExpression(line.Operand, line.Scope);
-                    value = Controller.Variables.GetSymbolValue(variable);
+                    var variable = Controller.Symbols.Variables.GetVariableFromExpression(line.Operand, line.Scope);
+                    value = Controller.Symbols.Variables.GetSymbolValue(variable);
                 }
                 else
                 {
-                    value = Controller.Labels.GetSymbolValue(line.Scope + line.Label);
+                    value = Controller.Symbols.Labels.GetSymbolValue(line.Scope + line.Label);
                 }
                 return string.Format("=${0:x" + value.Size() * 2 + "}", value);
             }

@@ -14,7 +14,7 @@ namespace DotNetAsm
     /// <summary>
     /// Handles all scoped blocks.
     /// </summary>
-    public class ScopeBlockHandler : AssemblerBase, IBlockHandler
+    public sealed class ScopeBlockHandler : AssemblerBase, IBlockHandler
     {
         #region Members
 

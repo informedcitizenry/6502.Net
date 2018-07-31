@@ -1,27 +1,13 @@
 ﻿//-----------------------------------------------------------------------------
 // Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to 
-// deal in the Software without restriction, including without limitation the 
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+// Licensed under the MIT license. See LICENSE for full license information.
 // 
-// The above copyright notice and this permission notice shall be included in 
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
-// IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace DotNetAsm
@@ -33,7 +19,6 @@ namespace DotNetAsm
     {
         #region Members
 
-        Regex _regExpression;
         IEvaluator _evaluator;
 
         #endregion
@@ -48,29 +33,30 @@ namespace DotNetAsm
         public VariableCollection(StringComparer comparer, IEvaluator evaluator)
             : base(comparer)
         {
-            RegexOptions option = RegexOptions.Compiled;
-            option |= comparer == StringComparer.CurrentCultureIgnoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
             _evaluator = evaluator;
-            _regExpression = new Regex("^(" + Patterns.SymbolUnicode + @")\s*=\s*(.+)$", option);
         }
 
         #endregion
 
         #region Methods
 
-        /// <summary>
-        /// Parses the assignment expression as a <see cref="T:System.Collections.Generic.KeyValuePair&lt;string, long&gt;"/> 
-        /// </summary>
-        /// <returns>The variable and its assigned value</returns>
-        /// <param name="expression">The assignment expression.</param>
-        /// <param name="inScope">The scope of the variable</param>
-        KeyValuePair<string, long> ParseExpression(string expression, string inScope)
+        KeyValuePair<string, string> ParseExpression(string expression)
         {
-            var m = _regExpression.Match(expression);
-            if (string.IsNullOrEmpty(m.Value) == false)
-                return new KeyValuePair<string, long>(inScope + m.Groups[1].Value,
-                                                      _evaluator.Eval(m.Groups[3].Value, int.MinValue, uint.MaxValue));
-            return new KeyValuePair<string, long>(string.Empty, long.MinValue);
+            var symbolBuilder = new StringBuilder();
+            var len = expression.Length;
+            int i;
+            for (i = 0; i < len; i++)
+            {
+                var c = expression[i];
+                if (char.IsWhiteSpace(c))
+                    continue;
+                if (c == '=')
+                    break;
+                symbolBuilder.Append(c);
+            }
+            if (symbolBuilder.Length > 0 && i < len - 1)
+                return new KeyValuePair<string, string>(symbolBuilder.ToString(), expression.Substring(i + 1));
+            return new KeyValuePair<string, string>(string.Empty, string.Empty);
         }
 
         /// <summary>
@@ -81,7 +67,7 @@ namespace DotNetAsm
         /// <param name="inScope">The current scope the expression is in.</param>
         public string GetVariableFromExpression(string expression, string inScope)
         {
-            return ParseExpression(expression, inScope).Key;
+            return string.Concat(inScope, ParseExpression(expression).Key);
         }
 
         /// <summary>
@@ -91,9 +77,9 @@ namespace DotNetAsm
         /// <param name="expression">Expression.</param>
         public string GetAssignmentFromExpression(string expression)
         {
-            var m = _regExpression.Match(expression);
-            if (string.IsNullOrEmpty(m.Value) == false)
-                return m.Groups[3].Value;
+            var kv = ParseExpression(expression);
+            if (string.IsNullOrEmpty(kv.Key) == false)
+                return kv.Value;
             return string.Empty;
         }
 
@@ -101,19 +87,22 @@ namespace DotNetAsm
         /// Sets the variable according to the assignment expression &lt;var&gt; = &lt;operand&gt;.
         /// </summary>
         /// <returns>The variable and its assignment as a 
-        /// <see cref="T:System.Collections.Generic.KeyValuePair&lt;string, long&gt;"/>.</returns>
+        /// <see cref="T:System.Collections.Generic.KeyValuePair&lt;string, string&gt;"/>.</returns>
         /// <param name="expression">The assignment expression.</param>
         /// <param name="inScope">The current scope the expression is in.</param>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         /// <exception cref="T:DotNetAsm.SymbolCollectionException">DotNetAsm.SymbolCollectionException</exception>
-        public KeyValuePair<string, long> SetVariable(string expression, string inScope)
+        public KeyValuePair<string, string> SetVariable(string expression, string inScope)
         {
-            var result = ParseExpression(expression, inScope);
+            var result = ParseExpression(expression);
             if (string.IsNullOrEmpty(result.Key))
                 throw new ExpressionException(expression);
-            if (IsSymbolValid(result.Key, true) == false)
-                throw new SymbolCollectionException(result.Key, SymbolCollectionException.ExceptionReason.SymbolNotValid);
-            SetSymbol(result.Key, result.Value, false);
+
+            var varname = string.Concat(inScope, result.Key);
+
+            if (IsSymbolValid(varname, true) == false)
+                throw new SymbolCollectionException(varname, SymbolCollectionException.ExceptionReason.SymbolNotValid);
+            SetSymbol(result.Key, _evaluator.Eval(result.Value, int.MinValue, uint.MaxValue), false);
             return result;
         }
 

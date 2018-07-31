@@ -25,7 +25,7 @@ using System.Linq;
 
 namespace DotNetAsm
 {
-    public class ForNextHandler : AssemblerBase, IBlockHandler
+    public sealed class ForNextHandler : AssemblerBase, IBlockHandler
     {
         #region Classes 
 
@@ -307,7 +307,7 @@ namespace DotNetAsm
                 {
                     if (!string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        var iteratorvar = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        var iteratorvar = Controller.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         if (string.IsNullOrEmpty(iteratorvar.Key))
                         {
                             Controller.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
@@ -400,7 +400,7 @@ namespace DotNetAsm
 
                     if (_breakBlock == null && !string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        var initval = Controller.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        var initval = Controller.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         _processedLines.Add(new SourceLine
                         {
                             SourceString = ConstStrings.SHADOW_SOURCE,
@@ -429,7 +429,7 @@ namespace DotNetAsm
                 // in output source (i.e., emit .let n = ... epxressions)
                 foreach (var iterexp in _currBlock.IterExpressions)
                 {
-                    var itervar = Controller.Variables.SetVariable(iterexp, _currBlock.Scope);
+                    var itervar = Controller.Symbols.Variables.SetVariable(iterexp, _currBlock.Scope);
                     _processedLines.Add(new SourceLine
                     {
                         SourceString = ConstStrings.SHADOW_SOURCE,

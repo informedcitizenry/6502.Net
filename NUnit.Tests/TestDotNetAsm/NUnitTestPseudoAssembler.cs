@@ -28,7 +28,7 @@ namespace NUnit.Tests.TestDotNetAsm
             return Evaluator.Eval(charval + post).ToString();
         }
 
-        public TestController(string[] args) 
+        public TestController(string[] args)
         {
             Output = new Compilation(true);
 
@@ -46,17 +46,15 @@ namespace NUnit.Tests.TestDotNetAsm
 
             if (args != null)
                 Options.ProcessArgs(args);
-
-            Labels = new LabelCollection(Options.StringComparar);
-            Variables = new VariableCollection(Options.StringComparar, Evaluator);
+            Symbols = new SymbolManager(this);
         }
 
         string GetSymbol(string arg)
         {
-            if (Labels.IsSymbol(arg))
-                return Labels.GetSymbolValue(arg).ToString();
-            if (Variables.IsSymbol(arg))
-                return Variables.GetSymbolValue(arg).ToString();
+            if (Symbols.Labels.IsSymbol(arg))
+                return Symbols.Labels.GetSymbolValue(arg).ToString();
+            if (Symbols.Variables.IsSymbol(arg))
+                return Symbols.Variables.GetSymbolValue(arg).ToString();
             return string.Empty;
         }
 
@@ -83,13 +81,7 @@ namespace NUnit.Tests.TestDotNetAsm
             private set;
         }
 
-        public SymbolCollectionBase Labels
-        {
-            get;
-            private set;
-        }
-
-        public VariableCollection Variables
+        public ISymbolManager Symbols
         {
             get;
             private set;
@@ -124,7 +116,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
         public void AssembleLine(SourceLine line)
         {
-            if (line.Instruction.Equals(".cpu", StringComparison.CurrentCulture))
+            if (line.Instruction.Equals(".cpu", StringComparison.Ordinal))
                 CpuChanged?.Invoke(new CpuChangedEventArgs { Line = new SourceLine { Operand = line.Operand } });
         }
 

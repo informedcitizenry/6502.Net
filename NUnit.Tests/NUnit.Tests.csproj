@@ -13,7 +13,7 @@
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
-    <ReleaseVersion>1.14</ReleaseVersion>
+    <ReleaseVersion>1.15</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -49,7 +49,6 @@
     <Compile Include="TestDotNetAsm\NUnitTestForNext.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestMacros.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestMisc.cs" />
-    <Compile Include="TestDotNetAsm\NUnitTestOpcode.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestPseudoAssembler.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestRepetitionHandler.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestEvaluation.cs" />

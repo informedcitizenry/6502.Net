@@ -44,43 +44,19 @@ namespace DotNetAsm
     /// Math expression evaluator class. Takes string input and parses and evaluates 
     /// to a <see cref="System.Int64"/> value.
     /// </summary>
-    public class Evaluator : IEvaluator
+    public sealed class Evaluator : IEvaluator
     {
         #region Members
 
-        readonly Dictionary<string, Tuple<Regex, Func<string, string>>> _symbolLookups;
+        readonly Dictionary<string, Tuple<Regex, Func<string, string>>> _regSymbolLookups;
+
+        readonly List<Func<string, string>> _symbolLookups;
         
         #region Static Members
         
         static Random _rng = new Random();
 
-        static Dictionary<string, OperationDef> _functions = new Dictionary<string, OperationDef>
-        {
-            { "abs",    new OperationDef(parms => Math.Abs(parms[0]),             1) },
-            { "acos",   new OperationDef(parms => Math.Acos(parms[0]),            1) },
-            { "atan",   new OperationDef(parms => Math.Atan(parms[0]),            1) },
-            { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),  1) },
-            { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),         1) },
-            { "cos",    new OperationDef(parms => Math.Cos(parms[0]),             1) },
-            { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),            1) },
-            { "deg",    new OperationDef(parms => (parms[0] * 180 / Math.PI),     1) },
-            { "exp",    new OperationDef(parms => Math.Exp(parms[0]),             1) },
-            { "floor",  new OperationDef(parms => Math.Floor(parms[0]),           1) },
-            { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
-            { "hypot",  new OperationDef(parms => Math.Sqrt(Math.Pow(parms[1], 2) + Math.Pow(parms[0], 2)), 2) },
-            { "ln",     new OperationDef(parms => Math.Log(parms[0]),             1) },
-            { "log10",  new OperationDef(parms => Math.Log10(parms[0]),           1) },
-            { "pow",    new OperationDef(parms => Math.Pow(parms[1], parms[0]),   2) },
-            { "rad",    new OperationDef(parms => (parms[0] * Math.PI / 180),     1) },
-            { "random", new OperationDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
-            { "round",  new OperationDef(parms => Math.Round(parms[0]),              1) },
-            { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),            1) },
-            { "sin",    new OperationDef(parms => Math.Sin(parms[0]),             1) },
-            { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),            1) },
-            { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),            1) },
-            { "tan",    new OperationDef(parms => Math.Tan(parms[0]),             1) },
-            { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),            1) }
-        };
+        static Dictionary<string, OperationDef> _functions;
 
         static Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
         {
@@ -116,18 +92,60 @@ namespace DotNetAsm
             { "\x11&",  new OperationDef(parms => (long)parms[0]  % 65536,                   14) },
             { "\x11^",  new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,          14) }
         };
-        
-        #endregion      
+
+        #endregion
 
         #endregion
 
         #region Constructors
 
+        public Evaluator() 
+            : this(false)
+        {
+            
+        }
+
         /// <summary>
         /// Constructs an instance of the <see cref="T:DotNetAsm.Evaluator"/> class, used to evaluate 
         /// strings as mathematical expressions.
         /// </summary>
-        public Evaluator() => _symbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
+        /// <param name="functionsCaseSensitive">Determines whether to treat case 
+        /// sensitivity to function names in expressions.</param>
+        public Evaluator(bool functionsCaseSensitive)
+        {
+            StringComparer comparer = functionsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
+            _functions = new Dictionary<string, OperationDef>(comparer)
+            {
+                { "abs",    new OperationDef(parms => Math.Abs(parms[0]),             1) },
+                { "acos",   new OperationDef(parms => Math.Acos(parms[0]),            1) },
+                { "atan",   new OperationDef(parms => Math.Atan(parms[0]),            1) },
+                { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),  1) },
+                { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),         1) },
+                { "cos",    new OperationDef(parms => Math.Cos(parms[0]),             1) },
+                { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),            1) },
+                { "deg",    new OperationDef(parms => (parms[0] * 180 / Math.PI),     1) },
+                { "exp",    new OperationDef(parms => Math.Exp(parms[0]),             1) },
+                { "floor",  new OperationDef(parms => Math.Floor(parms[0]),           1) },
+                { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
+                { "hypot",  new OperationDef(parms => Math.Sqrt(Math.Pow(parms[1], 2) + Math.Pow(parms[0], 2)), 2) },
+                { "ln",     new OperationDef(parms => Math.Log(parms[0]),             1) },
+                { "log10",  new OperationDef(parms => Math.Log10(parms[0]),           1) },
+                { "pow",    new OperationDef(parms => Math.Pow(parms[1], parms[0]),   2) },
+                { "rad",    new OperationDef(parms => (parms[0] * Math.PI / 180),     1) },
+                { "random", new OperationDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
+                { "round",  new OperationDef(parms => Math.Round(parms[0]),              1) },
+                { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),            1) },
+                { "sin",    new OperationDef(parms => Math.Sin(parms[0]),             1) },
+                { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),            1) },
+                { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),            1) },
+                { "tan",    new OperationDef(parms => Math.Tan(parms[0]),             1) },
+                { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),            1) }
+            };
+            _regSymbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
+
+            _symbolLookups = new List<Func<string, string>>();
+        }
 
         #endregion
 
@@ -367,12 +385,16 @@ namespace DotNetAsm
         }
 
         bool ContainsSymbols(string expression) =>
-                _symbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
+                _regSymbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
 
         // convert client-defined symbols into values
         string EvalDefinedSymbols(string expression)
         {
-            foreach (var lookup in _symbolLookups)
+            foreach (var look in _symbolLookups)
+            {
+                expression = look(expression);
+            }
+            foreach (var lookup in _regSymbolLookups)
             {
                 Regex r = lookup.Value.Item1;
                 var f = lookup.Value.Item2;
@@ -457,16 +479,27 @@ namespace DotNetAsm
         /// Defines a symbol lookup for the evaluator to translate symbols (such as 
         /// variables) in expressions.
         /// </summary>
-        /// <param name="pattern">A regex pattern for the symbol</param>
-        /// <param name="lookupfunc">The lookup function to define the symbol</param>
+        /// <param name="pattern">A regex pattern for the symbol.</param>
+        /// <param name="lookupfunc">The lookup function to define the symbol.</param>
         /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
         public void DefineSymbolLookup(string pattern, Func<string, string> lookupfunc)
         {
             var value = new Tuple<Regex, Func<string, string>>(new Regex(pattern, RegexOptions.Compiled), lookupfunc);
-            if (_symbolLookups.ContainsKey(pattern))
-                _symbolLookups[pattern] = value;
+            if (_regSymbolLookups.ContainsKey(pattern))
+                _regSymbolLookups[pattern] = value;
             else
-                _symbolLookups.Add(pattern, value);
+                _regSymbolLookups.Add(pattern, value);
+        }
+
+        /// <summary>
+        /// Defines the symbol lookup for the evaluator to translate symbols (such as
+        /// variables) in expressions.
+        /// </summary>
+        /// <param name="lookupfunc">The lookup function to define the symbol.</param>
+        /// <exception cref="T:System.ArgumentNullException"></exception>
+        public void DefineSymbolLookup(Func<string, string> lookupfunc)
+        {
+            _symbolLookups.Add(lookupfunc);
         }
         #endregion
     }
