@@ -312,7 +312,9 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
-                    var unescaped = Regex.Unescape(quoted.TrimOnce(quoted.First()));
+                    var unescaped = quoted.TrimOnce(quoted.First());
+                    if (unescaped.Contains("\\"))
+                        unescaped = Regex.Unescape(unescaped);
                     encoded = Controller.Output.Add(unescaped, Controller.Encoding);
                 }
                 if (format.Equals(".nstring"))

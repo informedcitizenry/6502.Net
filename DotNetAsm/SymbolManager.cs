@@ -141,7 +141,9 @@ namespace DotNetAsm
                 if (c == '\'' || c == '"')
                 {
                     var literal = expression.GetNextQuotedString(atIndex: i);
-                    var unescaped = Regex.Unescape(literal.Trim('\''));
+                    var unescaped = literal.TrimOnce('\'');
+                    if (unescaped.Contains("\\"))
+                        unescaped = Regex.Unescape(unescaped);
                     var charval = _controller.Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
 
                     expression = string.Concat(expression.Substring(0, i - foundSymbol.Length), charval, expression.Substring(i + literal.Length));

@@ -97,12 +97,7 @@ namespace DotNetAsm
             var result = ParseExpression(expression);
             if (string.IsNullOrEmpty(result.Key))
                 throw new ExpressionException(expression);
-
-            var varname = string.Concat(inScope, result.Key);
-
-            if (IsSymbolValid(varname, true) == false)
-                throw new SymbolCollectionException(varname, SymbolCollectionException.ExceptionReason.SymbolNotValid);
-            SetSymbol(result.Key, _evaluator.Eval(result.Value, int.MinValue, uint.MaxValue), false);
+            SetSymbol(result.Key, _evaluator.Eval(result.Value), false);
             return result;
         }
 

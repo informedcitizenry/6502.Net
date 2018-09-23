@@ -430,11 +430,12 @@ namespace DotNetAsm
                 foreach (var iterexp in _currBlock.IterExpressions)
                 {
                     var itervar = Controller.Symbols.Variables.SetVariable(iterexp, _currBlock.Scope);
+                    var iterval = Controller.Symbols.Variables.GetScopedSymbolValue(itervar.Key, _currBlock.Scope);
                     _processedLines.Add(new SourceLine
                     {
                         SourceString = ConstStrings.SHADOW_SOURCE,
                         Instruction = ConstStrings.VAR_DIRECTIVE,
-                        Operand = string.Format("{0}={1}", itervar.Key, itervar.Value)
+                        Operand = string.Format("{0}={1}", itervar.Key, itervar)
                     });
                 }
 

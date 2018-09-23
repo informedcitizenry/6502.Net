@@ -215,9 +215,6 @@ namespace DotNetAsm
         /// <exception cref="T:System.Exception"></exception>
         public static string GetNextQuotedString(this string str, int atIndex)
         {
-            if (!str.Contains("\"") && !str.Contains("'"))
-                return string.Empty;
-
             var quoted = new StringBuilder();
             var enclosestring = char.MinValue;
             int stringsize = 0;
@@ -307,7 +304,7 @@ namespace DotNetAsm
             for (int i = 0; i < str.Length; i++)
             {
                 char c = str[i];
-                if (c.Equals('\'') || c.Equals('\"'))
+                if (c == '\'' || c == '"')
                 {
                     var quoted = str.GetNextQuotedString(atIndex: i);
                     i += quoted.Length - 1;
