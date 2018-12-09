@@ -118,6 +118,91 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
+        public void TestParseCompound()
+        {
+            var line = new SourceLine();
+            line.SourceString = "lda #$41:jsr $ffd2";
+            var compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr"));
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$41", line.Operand);
+            Assert.AreEqual(1, compounds.Count());
+            var firstCompound = compounds.First();
+            Assert.AreEqual("jsr", firstCompound.Instruction);
+            Assert.AreEqual("$ffd2", firstCompound.Operand);
+
+            line.Instruction = line.Operand = string.Empty;
+
+            line.SourceString = "mylabel lda #$41 : jsr $ffd2";
+            compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr"));
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$41", line.Operand);
+            Assert.AreEqual(1, compounds.Count());
+            firstCompound = compounds.First();
+            Assert.AreEqual("jsr", firstCompound.Instruction);
+            Assert.AreEqual("$ffd2", firstCompound.Operand);
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.IsTrue(string.IsNullOrEmpty(firstCompound.Label));
+
+            line.Instruction = line.Operand = line.Label = string.Empty;
+            line.SourceString = "mylabel lda #$41; jsr $ffd2:rts";
+            compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr"));
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$41", line.Operand);
+            Assert.IsTrue(compounds.Count() == 0);
+
+            line.Instruction = line.Operand = line.Label = string.Empty;
+            line.SourceString = "mylabel lda #$41: jsr $ffd2: rts";
+            compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr") || instr.Equals("rts"));
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$41", line.Operand);
+            Assert.AreEqual(2, compounds.Count());
+            firstCompound = compounds.First();
+            Assert.AreEqual("jsr", firstCompound.Instruction);
+            Assert.AreEqual("$ffd2", firstCompound.Operand);
+            var lastCompound = compounds.Last();
+            Assert.AreEqual("rts", lastCompound.Instruction);
+            Assert.IsTrue(string.IsNullOrEmpty(lastCompound.Operand));
+
+            line.Instruction = line.Operand = line.Label = string.Empty;
+            line.SourceString = "  mylabel   lda   #':'  jsr   $ffd2:rts";
+            compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr") || instr.Equals("rts"));
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#':'  jsr   $ffd2", line.Operand);
+            Assert.AreEqual(1, compounds.Count());
+            firstCompound = compounds.First();
+            Assert.AreEqual("rts", firstCompound.Instruction);
+            Assert.IsTrue(string.IsNullOrEmpty(firstCompound.Operand));
+
+            line.Instruction = line.Operand = line.Label = string.Empty;
+            line.SourceString = "mylabel:    jsr $ffd2";
+            compounds = line.Parse(instr => instr.Equals("lda"));
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.IsTrue(string.IsNullOrEmpty(line.Instruction));
+            Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
+            Assert.AreEqual(1, compounds.Count());
+            firstCompound = compounds.First();
+            Assert.AreEqual("jsr", firstCompound.Instruction);
+            Assert.AreEqual("$ffd2", firstCompound.Operand);
+
+            line.Instruction = line.Operand = line.Label = string.Empty;
+            line.SourceString = "mylabel:    rts:jsr $ffd2";
+            compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr") || instr.Equals("rts"));
+            Assert.AreEqual("mylabel", line.Label);
+            Assert.IsTrue(string.IsNullOrEmpty(line.Instruction));
+            Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
+            Assert.AreEqual(2, compounds.Count());
+            firstCompound = compounds.First();
+            Assert.AreEqual("rts", firstCompound.Instruction);
+            Assert.IsTrue(string.IsNullOrEmpty(firstCompound.Operand));
+            lastCompound = compounds.Last();
+            Assert.AreEqual("jsr", lastCompound.Instruction);
+            Assert.AreEqual("$ffd2", lastCompound.Operand);
+        }
+
+        [Test]
         public void TestCsv()
         {
             var line = new SourceLine();

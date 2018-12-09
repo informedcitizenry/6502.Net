@@ -64,26 +64,45 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="isInstruction">A callback to determine which part of the source
         /// is the instruction.</param>
-        public void Parse(Func<string, bool> isInstruction)
+        /// <returns>A <see cref="System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>.
+        /// This collection will be empty if the line's SourceString does not contain a
+        /// compound instruction.</returns>
+        public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction)
+        {
+            return Parse(isInstruction, true);
+        }
+
+        /// <summary>
+        /// Parse the <see cref="DotNetAsm.SourceLine"/>'s SourceString property 
+        /// into its component line, instruction and operand.
+        /// </summary>
+        /// <param name="isInstruction">A callback to determine which part of the source
+        /// is the instruction.</param>
+        /// <param name="allowLabel">Allow a label to be defined</param>
+        /// <returns>A <see cref="System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>.
+        /// This collection will be empty if the line's SourceString does not contain a
+        /// compound instruction.</returns>
+        public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction, bool allowLabel)
         {
             var tokenBuilder = new StringBuilder();
             var trimmedSource = SourceString.TrimStart();
             var len = trimmedSource.Length;
+            var compounds = new List<SourceLine>();
             Label = Instruction = Operand = string.Empty;
-
-            for (var i = 0; i < len; i++)
+            int i;
+            for (i = 0; i < len; i++)
             {
                 var c = trimmedSource[i];
 
-                if (char.IsWhiteSpace(c) || c == ';' || i == len - 1)
+                if (char.IsWhiteSpace(c) || c == ';' || c == ':' || i == len - 1)
                 {
                     // stop at a white space or the last character in the string
-                    if (!char.IsWhiteSpace(c) && c != ';')
+                    if (!char.IsWhiteSpace(c) && c != ';' && c != ':')
                         tokenBuilder.Append(c);
                     var token = tokenBuilder.ToString();
                     if (string.IsNullOrEmpty(Instruction))
                     {
-                        if (string.IsNullOrEmpty(Label))
+                        if (string.IsNullOrEmpty(Label) && allowLabel)
                         {
                             if (isInstruction(token))
                                 Instruction = token;
@@ -101,8 +120,23 @@ namespace DotNetAsm
                         // operand can include white spaces, so capture...
                         tokenBuilder.Append(c);
                     }
-                    if (c == ';') // semicolon means hard break!
+                    if (c == ';' || c == ':')
+                    {
+                        if (c == ':' && i < len - 1)
+                        {
+                            var compoundLine = new SourceLine
+                            {
+                                Filename = this.Filename,
+                                LineNumber = this.LineNumber,
+                                SourceString = trimmedSource.Substring(i + 1)
+                            };
+                            // add first compound
+                            compounds.Add(compoundLine);
+                            // and all compounds thereafter
+                            compounds.AddRange(compoundLine.Parse(isInstruction, false));
+                        }
                         break;
+                    }
                 }
                 else if (c == '"' || c == '\'')
                 {
@@ -126,6 +160,7 @@ namespace DotNetAsm
                 }
             }
             Operand = tokenBuilder.ToString().TrimEnd();
+            return compounds;
         }
         /// <summary>
         /// A unique identifier combination of the source's filename and line number.

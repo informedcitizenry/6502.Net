@@ -114,7 +114,7 @@ namespace DotNetAsm
             Symbols = new SymbolManager(this);
             _localLabelScope = string.Empty;
 
-            _preprocessor = new Preprocessor(this, s => IsSymbolName(s.TrimEnd(':'), true, false));
+            _preprocessor = new Preprocessor(this, s => IsSymbolName(s, true, false));
             _assemblers = new Stack<ILineAssembler>();
             _assemblers.Push(new PseudoAssembler(this, arg =>
                 {

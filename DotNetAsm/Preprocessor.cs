@@ -167,7 +167,7 @@ namespace DotNetAsm
                         try
                         {
                             var line = new SourceLine(file, currentline, unprocessedline);
-                            line.Parse(
+                            var compounds = line.Parse(
                                 delegate(string token)
                                 {
                                     return Controller.IsInstruction(token) || Reserved.IsReserved(token) ||
@@ -175,6 +175,8 @@ namespace DotNetAsm
                                         token == "=";
                                 });
                             sourcelines.Add(line);
+                            if (compounds != null)
+                                sourcelines.AddRange(compounds);
                         }
                         catch (Exception ex)
                         {

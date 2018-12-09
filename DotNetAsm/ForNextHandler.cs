@@ -435,7 +435,7 @@ namespace DotNetAsm
                     {
                         SourceString = ConstStrings.SHADOW_SOURCE,
                         Instruction = ConstStrings.VAR_DIRECTIVE,
-                        Operand = string.Format("{0}={1}", itervar.Key, itervar)
+                        Operand = string.Format("{0}={1}", itervar.Key, iterval)
                     });
                 }
 

@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.15.2
+### Version 1.16
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -18,6 +18,12 @@ The 6502.Net assembler is simple to use. Invoke it from a command line with the 
 
 You can specify as many source files as assembly input as needed. For instance, `6502.Net.exe mylib.asm myprg.asm` will assemble both the `mylib.asm` and `myprgm.asm` files sequentially to output. Be aware that if both files define the same symbol an assembler error will result.
 ## General Features
+### Assembly Statements
+All assembly statements are composed of ASCII or Unicode bytes terminated either by a carriage return, a colon or semi-colon. Colons separate compound statements:
+```
+        lda #$'A':jsr CHROUT:rts
+```
+Semi-colons denote the beginning of line comments, and remaining line text will not be processed by the assembler. 
 ### Numeric constants
 Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal numbers are written as is, while hex numbers are prefixed with a `$` and binary numbers are prefixed with a `%`.
 ```
