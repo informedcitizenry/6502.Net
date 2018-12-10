@@ -167,16 +167,14 @@ namespace DotNetAsm
                         try
                         {
                             var line = new SourceLine(file, currentline, unprocessedline);
-                            var compounds = line.Parse(
+                            var lines = line.Parse(
                                 delegate(string token)
                                 {
                                     return Controller.IsInstruction(token) || Reserved.IsReserved(token) ||
                                         (token.StartsWith(".") && Macro.IsValidMacroName(token.Substring(1))) ||
                                         token == "=";
                                 });
-                            sourcelines.Add(line);
-                            if (compounds != null)
-                                sourcelines.AddRange(compounds);
+                            sourcelines.AddRange(lines);
                         }
                         catch (Exception ex)
                         {

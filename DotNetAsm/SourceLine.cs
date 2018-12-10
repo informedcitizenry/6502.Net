@@ -85,18 +85,22 @@ namespace DotNetAsm
         public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction, bool allowLabel)
         {
             var tokenBuilder = new StringBuilder();
-            var trimmedSource = SourceString.TrimStart();
-            var len = trimmedSource.Length;
-            var compounds = new List<SourceLine>();
+            var len = SourceString.Length;
+            List<SourceLine> compounds = new List<SourceLine> { this };
             Label = Instruction = Operand = string.Empty;
             int i;
             for (i = 0; i < len; i++)
             {
-                var c = trimmedSource[i];
+                var c = SourceString[i];
 
                 if (char.IsWhiteSpace(c) || c == ';' || c == ':' || i == len - 1)
                 {
                     // stop at a white space or the last character in the string
+
+                    // if token not not yet being built skip whitspace
+                    if (char.IsWhiteSpace(c) && tokenBuilder.Length == 0)
+                        continue;
+
                     if (!char.IsWhiteSpace(c) && c != ';' && c != ':')
                         tokenBuilder.Append(c);
                     var token = tokenBuilder.ToString();
@@ -115,7 +119,7 @@ namespace DotNetAsm
                         }
                         tokenBuilder.Clear();
                     }
-                    else if (char.IsWhiteSpace(c) && tokenBuilder.Length > 0)
+                    else if (char.IsWhiteSpace(c) && i < len - 1)
                     {
                         // operand can include white spaces, so capture...
                         tokenBuilder.Append(c);
@@ -128,11 +132,10 @@ namespace DotNetAsm
                             {
                                 Filename = this.Filename,
                                 LineNumber = this.LineNumber,
-                                SourceString = trimmedSource.Substring(i + 1)
+                                SourceString = this.SourceString.Substring(i + 1)
                             };
-                            // add first compound
-                            compounds.Add(compoundLine);
-                            // and all compounds thereafter
+                            SourceString = SourceString.Substring(0, i);
+                            // and parsed compound (and any others)
                             compounds.AddRange(compoundLine.Parse(isInstruction, false));
                         }
                         break;
@@ -141,7 +144,7 @@ namespace DotNetAsm
                 else if (c == '"' || c == '\'')
                 {
                     // process quotes separately
-                    var quoted = trimmedSource.GetNextQuotedString(atIndex: i);
+                    var quoted = SourceString.GetNextQuotedString(atIndex: i);
                     tokenBuilder.Append(quoted);
                     i += quoted.Length - 1;
                 }

@@ -125,8 +125,8 @@ namespace NUnit.Tests.TestDotNetAsm
             var compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr"));
             Assert.AreEqual("lda", line.Instruction);
             Assert.AreEqual("#$41", line.Operand);
-            Assert.AreEqual(1, compounds.Count());
-            var firstCompound = compounds.First();
+            Assert.AreEqual(2, compounds.Count());
+            var firstCompound = compounds.Last();
             Assert.AreEqual("jsr", firstCompound.Instruction);
             Assert.AreEqual("$ffd2", firstCompound.Operand);
 
@@ -136,8 +136,8 @@ namespace NUnit.Tests.TestDotNetAsm
             compounds = line.Parse(instr => instr.Equals("lda") || instr.Equals("jsr"));
             Assert.AreEqual("lda", line.Instruction);
             Assert.AreEqual("#$41", line.Operand);
-            Assert.AreEqual(1, compounds.Count());
-            firstCompound = compounds.First();
+            Assert.AreEqual(2, compounds.Count());
+            firstCompound = compounds.Last();
             Assert.AreEqual("jsr", firstCompound.Instruction);
             Assert.AreEqual("$ffd2", firstCompound.Operand);
             Assert.AreEqual("mylabel", line.Label);
@@ -149,7 +149,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("mylabel", line.Label);
             Assert.AreEqual("lda", line.Instruction);
             Assert.AreEqual("#$41", line.Operand);
-            Assert.IsTrue(compounds.Count() == 0);
+            Assert.IsTrue(compounds.Count() == 1);
 
             line.Instruction = line.Operand = line.Label = string.Empty;
             line.SourceString = "mylabel lda #$41: jsr $ffd2: rts";
@@ -157,8 +157,8 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("mylabel", line.Label);
             Assert.AreEqual("lda", line.Instruction);
             Assert.AreEqual("#$41", line.Operand);
-            Assert.AreEqual(2, compounds.Count());
-            firstCompound = compounds.First();
+            Assert.AreEqual(3, compounds.Count());
+            firstCompound = compounds.ToList().ElementAt(1);
             Assert.AreEqual("jsr", firstCompound.Instruction);
             Assert.AreEqual("$ffd2", firstCompound.Operand);
             var lastCompound = compounds.Last();
@@ -171,8 +171,8 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("mylabel", line.Label);
             Assert.AreEqual("lda", line.Instruction);
             Assert.AreEqual("#':'  jsr   $ffd2", line.Operand);
-            Assert.AreEqual(1, compounds.Count());
-            firstCompound = compounds.First();
+            Assert.AreEqual(2, compounds.Count());
+            firstCompound = compounds.Last();
             Assert.AreEqual("rts", firstCompound.Instruction);
             Assert.IsTrue(string.IsNullOrEmpty(firstCompound.Operand));
 
@@ -182,8 +182,8 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("mylabel", line.Label);
             Assert.IsTrue(string.IsNullOrEmpty(line.Instruction));
             Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
-            Assert.AreEqual(1, compounds.Count());
-            firstCompound = compounds.First();
+            Assert.AreEqual(2, compounds.Count());
+            firstCompound = compounds.Last();
             Assert.AreEqual("jsr", firstCompound.Instruction);
             Assert.AreEqual("$ffd2", firstCompound.Operand);
 
@@ -193,8 +193,8 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("mylabel", line.Label);
             Assert.IsTrue(string.IsNullOrEmpty(line.Instruction));
             Assert.IsTrue(string.IsNullOrEmpty(line.Operand));
-            Assert.AreEqual(2, compounds.Count());
-            firstCompound = compounds.First();
+            Assert.AreEqual(3, compounds.Count());
+            firstCompound = compounds.ToList().ElementAt(1);
             Assert.AreEqual("rts", firstCompound.Instruction);
             Assert.IsTrue(string.IsNullOrEmpty(firstCompound.Operand));
             lastCompound = compounds.Last();
