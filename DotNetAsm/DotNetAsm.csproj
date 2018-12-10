@@ -105,7 +105,6 @@
     </Compile>
     <Compile Include="ISymbolManager.cs" />
     <Compile Include="SymbolManager.cs" />
-    <Compile Include="ForerNexterHandlerer.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ErrorStrings.resx">
