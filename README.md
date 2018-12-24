@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.16.1
+### Version 1.17
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -10,9 +10,8 @@ The 65C02 is an enhancement to the 6502, offering some improvements, including u
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Legal
 * 6502.Net (c) 2017, 2018 informedcitizenry
-* System.CommandLine, a [command-line argument parser](https://github.com/dotnet/corefxlab/tree/master/archived_projects/src/System.CommandLine) (c) Microsoft Corporation
 
-See LICENSE and LICENSE_third_party for licensing information.
+See LICENSE for licensing information.
 ## Overview
 The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net.exe myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
 

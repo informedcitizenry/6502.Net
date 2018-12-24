@@ -64,7 +64,7 @@ namespace Asm6502.Net
                     else if (!arch.Equals("flat"))
                     {
                         var error = string.Format("Unknown architecture specified '{0}'", arch);
-                        throw new System.CommandLine.ArgumentSyntaxException(error);
+                        throw new ArgumentException(error);
                     }
                     return ms.ToArray();
                 }

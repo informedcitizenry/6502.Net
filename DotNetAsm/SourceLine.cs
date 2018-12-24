@@ -88,33 +88,42 @@ namespace DotNetAsm
             var len = SourceString.Length;
             List<SourceLine> compounds = new List<SourceLine> { this };
             Label = Instruction = Operand = string.Empty;
+            int instructionIndex = 0;
             int i;
             for (i = 0; i < len; i++)
             {
                 var c = SourceString[i];
-
                 if (char.IsWhiteSpace(c) || c == ';' || c == ':' || i == len - 1)
                 {
                     // stop at a white space or the last character in the string
 
                     // if token not not yet being built skip whitspace
                     if (char.IsWhiteSpace(c) && tokenBuilder.Length == 0)
+                    {
                         continue;
+                    }
 
                     if (!char.IsWhiteSpace(c) && c != ';' && c != ':')
                         tokenBuilder.Append(c);
-                    var token = tokenBuilder.ToString();
+
                     if (string.IsNullOrEmpty(Instruction))
                     {
+                        var token = tokenBuilder.ToString();
                         if (string.IsNullOrEmpty(Label) && allowLabel)
                         {
                             if (isInstruction(token))
+                            {
+                                instructionIndex = i - token.Length;
                                 Instruction = token;
+                            }
                             else
+                            {
                                 Label = token;
+                            }
                         }
                         else
                         {
+                            instructionIndex = i - token.Length;
                             Instruction = token;
                         }
                         tokenBuilder.Clear();
@@ -131,9 +140,11 @@ namespace DotNetAsm
                             var compoundLine = new SourceLine
                             {
                                 Filename = this.Filename,
-                                LineNumber = this.LineNumber,
-                                SourceString = this.SourceString.Substring(i + 1)
+                                LineNumber = this.LineNumber
                             };
+                            var newSource = this.SourceString.Substring(i + 1);
+                            compoundLine.SourceString = newSource.PadLeft(instructionIndex + newSource.Length);
+
                             SourceString = SourceString.Substring(0, i);
                             // and parsed compound (and any others)
                             compounds.AddRange(compoundLine.Parse(isInstruction, false));
@@ -155,6 +166,7 @@ namespace DotNetAsm
                     if (string.IsNullOrEmpty(Label))
                         Label = tokenBuilder.ToString();
                     Instruction = "=";
+                    instructionIndex = i - 1;
                     tokenBuilder.Clear();
                 }
                 else

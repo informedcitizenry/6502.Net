@@ -7,19 +7,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
+using System.Linq;
+using System.Reflection;
+using System.Text;
 
 namespace DotNetAsm
 {
     /// <summary>
-    /// A helper class to parse and present strongly-typed options from the command-line.
+    /// A helper class to parse and present strongly-typed options from the 
+    /// command-line.
     /// </summary>
     public class AsmCommandLineOptions
     {
         #region Members
 
-        IReadOnlyList<string> _source;
-        IReadOnlyList<string> _defines;
+        List<string> _source;
+        List<string> _defines;
         string _arch;
         string _cpu;
         string _listingFile;
@@ -38,6 +41,33 @@ namespace DotNetAsm
         bool _warnLeft;
 
         #endregion
+
+        static string _helpString =
+            "Usage: {0} [options] <inputs> [output]\r\n\r\n"+
+            "    -a, --no-assembly        Suppress assembled bytes from assembly\r\n"+
+            "    --arch <arg>             Specify architecture-specific options\r\n"+
+            "    -b, --big-endian         Set byte order of output to big-endian\r\n"+
+            "                             listing\r\n"+
+            "    -C, --case-sensitive     Treat all symbols as case-sensitive\r\n"+
+            "    --cpu <arg>              Specify the target CPU and instruction set\r\n"+
+            "    -D, --define <args>      Assign value to a global symbol/label in\r\n"+
+            "                             <args>\r\n"+
+            "    -d, --no-dissassembly    Suppress disassembly from assembly listing\r\n"+
+            "    -l, --labels <arg>       Output label definitions to <arg>\r\n"+
+            "    -L, --list <arg>         Output listing to <arg>\r\n"+
+            "    -o, --output <arg>       Output assembly to <arg>\r\n"+
+            "    -q, --quiet              Assemble in quiet mode (no console\r\n"+
+            "    -s, --no-source          Suppress original source from assembly\r\n"+
+            "                             listing\r\n"+
+            "    -V, --version            Print current version\r\n"+
+            "                             messages)\r\n"+
+            "    --verbose-asm            Expand listing to include all directives\r\n"+
+            "                             and comments\r\n"+
+            "    -w, --no-warn            Suppress all warnings\r\n"+
+            "    --werror                 Treat all warnings as error\r\n"+
+            "    --wleft                  Issue warnings about whitespaces before\r\n"+
+            "                             labels\r\n"+
+            "    <inputs>                 The source files to assemble";
 
         #region Constructors
 
@@ -70,41 +100,201 @@ namespace DotNetAsm
 
         #region Methods
 
+        string GetHelpText()
+        {
+            return string.Format(_helpString, Assembly.GetEntryAssembly().GetName().Name);
+        }
+
         /// <summary>
         /// Process the command-line arguments passed by the end-user.
         /// </summary>
-        /// <param name="args">The argument string.</param>
-        public void ProcessArgs(string[] args)
+        /// <param name="passedArgs">The argument array.</param>
+        public void ParseArgs(string[] passedArgs)
         {
-            if (args.Length == 0)
+            if (passedArgs.Length == 0)
             {
                 throw new Exception("One or more arguments expected. Try '-?|-h|help' for usage.");
             }
-            Arguments = new string[args.Length];
-
-            args.CopyTo(Arguments, 0);
-            var result = ArgumentSyntax.Parse(args, syntax =>
+            // primarily we're interested in clubbing assignment arguments together, so 
+            // { "<option>", "=", "<arg>" } => "<option>=<arg>"
+            var args = new List<string>();
+            for (int i = 0; i < passedArgs.Length; i++)
             {
-                syntax.DefineOption("o|output",         ref _outputFile,    "Output assembly to <arg>");
-                syntax.DefineOption("b|big-endian",     ref _bigEndian,     "Set byte order of output to big-endian");
-                syntax.DefineOption("arch",             ref _arch,          "Specify architecture-specific options");
-                syntax.DefineOption("cpu",              ref _cpu,           "Specify the target CPU and instruction set");
-                syntax.DefineOptionList("D|define",     ref _defines,       "Assign value to a global symbol/label in <arg>");
-                syntax.DefineOption("q|quiet",          ref _quiet,         "Assemble in quiet mode (no console messages)");
-                syntax.DefineOption("w|no-warn",        ref _noWarn,        "Suppress all warnings");
-                syntax.DefineOption("werror",           ref _werror,        "Treat all warnings as errors");
-                syntax.DefineOption("wleft",            ref _warnLeft,      "Issue warnings about whitespaces before labels");
-                syntax.DefineOption("l|labels",         ref _labelFile,     "Output label definitions to <arg>");
-                syntax.DefineOption("L|list",           ref _listingFile,   "Output listing to <arg>");
-                syntax.DefineOption("a|no-assembly",    ref _noAssembly,    "Suppress assembled bytes from assembly listing");
-                syntax.DefineOption("d|no-disassembly", ref _noDisassembly, "Suppress disassembly from assembly listing");
-                syntax.DefineOption("s|no-source",      ref _noSource,      "Suppress original source from assembly listing");
-                syntax.DefineOption("verbose-asm",      ref _verboseDasm,   "Expand listing to include all directives and comments");
-                syntax.DefineOption("C|case-sensitive", ref _caseSensitive, "Treat all symbols as case sensitive");
-                syntax.DefineOption("V|version",        ref _printVersion,  "Print current version");
-                syntax.DefineParameterList("source",    ref _source,        "The source files to assemble");
-            });
-            ArgsPassed = args.Length;
+                if (passedArgs[i] == "=")
+                {
+                    if (i == 0 || i == passedArgs.Length - 1)
+                        throw new Exception(GetHelpText());
+                    args[i - 1] += '=' + passedArgs[++i];
+                }
+                else
+                {
+                    args.Add(passedArgs[i]);
+                }
+            }
+            Arguments = args;
+            for (int i = 0; i < args.Count; i++)
+            {
+                var arg = args[i];
+                if (arg[0] == '-')
+                {
+                    var optionName = GetOptionName(args[i]);
+                    int eqix = arg.IndexOf('=');
+                    if (eqix > -1 && eqix == arg.Length - 1)
+                        throw new Exception();
+                    var nextArg = string.Empty;
+                    if (i < args.Count - 1 && args[i + 1][0] != '-')
+                        nextArg = args[i + 1];
+                    try
+                    {
+                        switch (optionName)
+                        {
+                            case "-a":
+                            case "--no-assembly":
+                                SetFlag(ref _noAssembly);
+                                break;
+                            case "--arch":
+                                SetOneOption(ref _arch);
+                                break;
+                            case "-b":
+                            case "--big-endian":
+                                SetFlag(ref _bigEndian);
+                                break;
+                            case "-C":
+                            case "case-sensitive":
+                                SetFlag(ref _caseSensitive);
+                                break;
+                            case "--cpu":
+                                SetOneOption(ref _cpu);
+                                break;
+                            case "-D":
+                            case "--define":
+                                if (eqix > -1)
+                                    _defines.Add(arg.Substring(eqix));
+                                i = ConsumeArgs(++i, _defines, eqix > -1);
+                                break;
+                            case "-d":
+                            case "--no-disassembly":
+                                SetFlag(ref _noDisassembly);
+                                break;
+                            case "-?":
+                            case "-h":
+                            case "--help":
+                                throw new Exception(GetHelpText());
+                            case "-l":
+                            case "--labels":
+                                SetOneOption(ref _labelFile);
+                                break;
+                            case "-L":
+                            case "--list":
+                                SetOneOption(ref _listingFile);
+                                break;
+                            case "-o":
+                            case "--output":
+                                SetOneOption(ref _outputFile);
+                                break;
+                            case "-q":
+                            case "--quiet":
+                                SetFlag(ref _quiet);
+                                break;
+                            case "-s":
+                            case "--no-source":
+                                SetFlag(ref _noSource);
+                                break;
+                            case "-V":
+                            case "--version":
+                                SetFlag(ref _printVersion);
+                                break;
+                            case "--verbose-asm":
+                                SetFlag(ref _verboseDasm);
+                                break;
+                            case "-w":
+                            case "--no-warn":
+                                SetFlag(ref _noWarn);
+                                break;
+                            case "--werror":
+                                SetFlag(ref _werror);
+                                break;
+                            case "--wleft":
+                                SetFlag(ref _warnLeft);
+                                break;
+                            default:
+                                throw new Exception(string.Format("Invalid option '{0}'", optionName));
+                        }
+                    }
+                    catch (ArgumentException)
+                    {
+                        throw new Exception(string.Format("Invalid argument or arguments for option '{0}'", optionName));
+                    }
+
+                    void SetFlag(ref bool opt)
+                    {
+                        if (!string.IsNullOrEmpty(nextArg))
+                            throw new ArgumentException();
+                        opt = true;
+                    }
+
+                    void SetOneOption(ref string opt)
+                    {
+                        if (eqix > -1)
+                        {
+                            if (!string.IsNullOrEmpty(nextArg))
+                                throw new ArgumentException();
+                            opt = arg.Substring(eqix + 1);
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(nextArg))
+                                throw new ArgumentException();
+                            opt = nextArg;
+                            i++;
+                        }
+                        if (i + 1 < args.Count - 1 && args[i + 1][0] != '-')
+                            throw new ArgumentException();
+                    }
+                }
+                else
+                {
+                    i = ConsumeArgs(i, _source, true);
+                }
+            }
+
+            int ConsumeArgs(int i, List<string> optionArgs, bool allowNone)
+            {
+                while (i < args.Count)
+                {
+                    if (args[i][0] == '-')
+                        break;
+                    optionArgs.Add(args[i++]);
+                    allowNone = true;
+                }
+                if (!allowNone)
+                    throw new ArgumentException();
+                return i - 1;
+            }
+
+            string GetOptionName(string argument)
+            {
+                int index = 0, length = 0;
+                foreach (char c in argument)
+                {
+                    if (c == '-' && length == 0)
+                    {
+                        index++;
+                        continue;
+                    }
+                    else if (char.IsLetterOrDigit(c))
+                    {
+                        length++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if (length > 0)
+                    return argument.Substring(0, index + length);
+                return string.Empty;
+            }
         }
 
         #endregion
@@ -114,7 +304,7 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the argument string array passed.
         /// </summary>
-        public string[] Arguments { get; set; }
+        public IEnumerable<string> Arguments { get; set; }
 
         /// <summary>
         /// Gets or sets the target architecture information.
@@ -180,7 +370,8 @@ namespace DotNetAsm
         public bool NoWarnings { get { return _noWarn; } }
 
         /// <summary>
-        /// Gets a value indicating whether to suppress warnings for whitespaces before labels.
+        /// Gets a value indicating whether to suppress warnings for whitespaces 
+        /// before labels.
         /// </summary>
         /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
         public bool WarnLeft { get { return _warnLeft; } }
@@ -203,7 +394,7 @@ namespace DotNetAsm
         /// <see cref="T:DotNetAsm.AsmCommandLineOptions.ProcessArgs"/>.
         /// </summary>
         /// <value>The arguments passed.</value>
-        public int ArgsPassed { get; private set; }
+        public int ArgsPassed { get { return Arguments.Count(); } }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 
@@ -224,7 +415,9 @@ namespace DotNetAsm
         {
             get
             {
-                return _caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                return _caseSensitive ? 
+                    StringComparison.Ordinal : 
+                    StringComparison.OrdinalIgnoreCase;
             }
         }
 
@@ -246,7 +439,9 @@ namespace DotNetAsm
         {
             get
             {
-                return _caseSensitive ? System.Text.RegularExpressions.RegexOptions.None : System.Text.RegularExpressions.RegexOptions.IgnoreCase;
+                return _caseSensitive ? 
+                    System.Text.RegularExpressions.RegexOptions.None : 
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase;
             }
         }
 

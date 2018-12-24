@@ -45,7 +45,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Evaluator.DefineSymbolLookup(@"(?<=^|[^a-zA-Z0-9_.$])(?>(_+[a-zA-Z0-9]|[a-zA-Z])(\.[a-zA-Z_]|[a-zA-Z0-9_])*)(?=[^(.]|$)", GetSymbol);
 
             if (args != null)
-                Options.ProcessArgs(args);
+                Options.ParseArgs(args);
             Symbols = new SymbolManager(this);
         }
 

@@ -78,7 +78,7 @@ namespace DotNetAsm
             Controller = this;
 
             Options = new AsmCommandLineOptions();
-            Options.ProcessArgs(args);
+            Options.ParseArgs(args);
 
             Reserved.Comparer = Options.StringComparar;
 
@@ -223,15 +223,13 @@ namespace DotNetAsm
             {
                 string name = label;
                 string definition = "1";
-
-                if (label.Contains("="))
+                var eqix = label.IndexOf('=');
+                if (eqix > -1)
                 {
-                    var def = label.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (def.Count() != 2)
-                        throw new Exception("Bad argument in label definition '" + label + "'");
-
-                    name = def.First(); definition = def.Last();
+                    if (eqix == label.Length - 1)
+                        throw new Exception(string.Format("Bad argument in label definition '{0}'", label));
+                    name = label.Substring(0, eqix);
+                    definition = label.Substring(eqix + 1);
                 }
 
                 if (IsSymbolName(name, false, false) == false)

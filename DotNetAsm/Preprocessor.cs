@@ -174,6 +174,9 @@ namespace DotNetAsm
                                         (token.StartsWith(".") && Macro.IsValidMacroName(token.Substring(1))) ||
                                         token == "=";
                                 });
+                            if (!string.IsNullOrEmpty(line.Label) && char.IsWhiteSpace(line.SourceString[0])
+                                    && Controller.Options.WarnLeft)
+                                    Controller.Log.LogEntry(line, ErrorStrings.LabelNotLeft, Controller.Options.WarningsAsErrors);
                             sourcelines.AddRange(lines);
                         }
                         catch (Exception ex)

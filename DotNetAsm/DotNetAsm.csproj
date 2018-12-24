@@ -11,7 +11,7 @@
     <AssemblyName>DotNetAsm</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <ReleaseVersion>1.16.1</ReleaseVersion>
+    <ReleaseVersion>1.17</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -79,20 +79,6 @@
     </Compile>
     <Compile Include="SourceLine.cs" />
     <Compile Include="StringAssemblerBase.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\Argument.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentParser.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\ArgumentToken.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\Argument_1.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\Enumerable.cs" />
-    <Compile Include="System.CommandLine\System\CommandLine\HelpTextGenerator.cs" />
-    <Compile Include="System.CommandLine\System\Strings.Designer.cs" />
     <Compile Include="ScopeBlockHandler.cs" />
     <Compile Include="SymbolCollectionBase.cs" />
     <Compile Include="LabelCollection.cs" />
@@ -119,7 +105,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ConstStrings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="System.CommandLine\System\Strings.resx" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
