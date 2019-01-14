@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.17
+### Version 1.17.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -8,10 +8,6 @@ The 6502 was a popular choice for video game system and microcomputer manufactur
 The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system.
 
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
-## Legal
-* 6502.Net (c) 2017, 2018 informedcitizenry
-
-See LICENSE for licensing information.
 ## Overview
 The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net.exe myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
 
@@ -166,7 +162,7 @@ Block comments span multiple lines, enclosed in `.comment` and `.endcomment` dir
             .endcomment
 ```
 ### Non-code (data) assembly
-In addition to 6502 assembly, data can also be assembled. Expressions evaluate internally as 64-bit signed integers, but **must** fit to match the expected operand size; if the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
+In addition to 6502 assembly, data can also be assembled. Expressions evaluate internally as double-precision floating point numbers and are cast as 64-bit integers, but **must** fit to match the expected operand size; if the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
 
 | Directive | Size                      |
 | --------- | ------------------------- |
@@ -228,15 +224,8 @@ Strings can be assembled in a few different ways, according to the needs of the 
 | `.pstring`    | A Pascal-style string, its size in the first byte                             |
 
 Since `.pstring` strings use a single byte to denote size, no string can be greater than 255 bytes. Since `.nstring` and `.lsstring` make use of the high and low bits, bytes must not be greater in value than 127, nor less than 0.
-#### String Functions
-There are two special string functions. The first, `str()`, will convert an integral value to its equivalent in bytes:
-```
-start       = $c000
-
-startstr    .string str(start) ; assembles as $34,$39,$31,$35,$32
-                               ; literally the digits "4","9","1","5","2"
-```      
-The `format()` function allows you to convert non-string data to string data using a .Net format string:
+#### String Format unction
+The special function `format()` function allows you to convert non-string data to string data using a .Net format string:
 ```
 stdout      = $ffd2
 stdstring   .string format("The stdout routine is at ${0:X4}", stdout)
@@ -421,12 +410,16 @@ All non-string operands are treated as math or conditional expressions. Compound
 routine     lda &long_address   ; load the absolute value of long_address
                                 ; (truncate bank byte) into accummulator
 ```
-
+#### Math functions
 Several built-in math functions that can also be called as part of the expressions.
 ```
             lda #sqrt(25)
 ```
-See the section below on functions for a full list of available functions.
+See the section below on functions for a full list of available functions. The math constants π and _e_ can be referenced in expressions as follows:
+```
+            .dword sin(MATH_PI/3) * 10  ; > 08
+            .dword pow(MATH_E,2)        ; > 07
+```
 
 ## Addressing model
 
@@ -1873,8 +1866,8 @@ glyph             ;12345678
 </td></tr>
 </table>
 <table>
-<tr><td><b>Option</b></td><td><code>--cpu</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Option</b></td><td><code>-c</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>--cpu</code></td></tr>
 <tr><td><b>Definition</b></td><td>Direct the assembler to the given cpu target By default, 6502.Net targets only legal 6502 instructions. The following options are available:
 <ul>
         <li><code>6502</code>        - Legal 6502 instructions only (default)</li>

@@ -13,7 +13,7 @@
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
-    <ReleaseVersion>1.17</ReleaseVersion>
+    <ReleaseVersion>1.17.1</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -51,7 +51,7 @@
     <Compile Include="TestDotNetAsm\NUnitTestMisc.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestPseudoAssembler.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestRepetitionHandler.cs" />
-    <Compile Include="TestDotNetAsm\NUnitTestEvaluation.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestEvaluator.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestSourceLine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Test6502.Net\NUnitTestAsm6502Illegal.cs" />

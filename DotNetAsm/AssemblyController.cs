@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2019 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -91,7 +91,7 @@ namespace DotNetAsm
                      "abs", "acos", "asin", "atan", "cbrt", "ceil", "cos", "cosh", "count", "deg",
                      "exp", "floor", "frac", "hypot", "ln", "log10", "pow", "rad", "random",
                      "round", "sgn", "sin", "sinh", "sizeof", "sqrt", "tan", "tanh", "trunc",
-                     "str", "format"
+                     "format"
                 );
 
             Reserved.DefineType("UserDefined");
@@ -155,7 +155,9 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="token">The token to test.</param>
         /// <returns>True, if the token is a reserved word, otherwise false.</returns>
-        public override bool IsReserved(string token) => IsInstruction(token) || Reserved.IsReserved(token);
+        public override bool IsReserved(string token) => IsInstruction(token) ||
+                                                         Reserved.IsReserved(token) ||
+                                                         Evaluator.IsConstant(token);
 
         bool IsSymbolName(string token, bool allowLeadUnderscore = true, bool allowDot = true)
         {

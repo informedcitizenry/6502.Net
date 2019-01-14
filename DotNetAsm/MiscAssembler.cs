@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2019 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -112,7 +112,9 @@ namespace DotNetAsm
         {
             if (!operand.EnclosedInQuotes())
             {
-                operand = StringAssemblerBase.GetFormattedString(line.Operand, Controller.Evaluator);
+                operand = StringAssemblerBase.GetFormattedString(line.Operand, 
+                                                                 Controller.Options.StringComparison, 
+                                                                 Controller.Evaluator);
                 if (string.IsNullOrEmpty(operand))
                     Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
             }

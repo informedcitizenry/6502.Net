@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    public class CompilationTest
+    public class NUnitTestCompilation
     {
         [Test]
         public void TestAddUninitialized()

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    public class NUnitTestEvaluation
+    public class NUnitTestEvaluator
     {
         [Test]
         public void TestEvaluatorSimple()
@@ -325,6 +325,41 @@ namespace NUnit.Tests.TestDotNetAsm
             string expression = "var1+var1*var2+pow(2,4)";
             result1 = eval.Eval(expression);
             Assert.AreEqual(1 + 1 * 2 + Math.Pow(2, 4), result1);
+        }
+
+        [Test]
+        public void TestConstants()
+        {
+            var eval = new Evaluator();
+            var result = eval.Eval("MATH_PI");
+            Assert.AreEqual((long)Math.PI, result);
+
+            result = eval.Eval("3+MATH_PI");
+            Assert.AreEqual((long)Math.PI + 3, result);
+
+            result = eval.Eval("16*MATH_PI-5");
+            Assert.AreEqual((long)(Math.PI * 16 - 5), result);
+
+            result = eval.Eval("15*MATH_PI-5*MATH_PI");
+            Assert.AreEqual((long)(15 * Math.PI - 5 * Math.PI), result);
+
+            eval.DefineSymbolLookup((string arg) =>
+            {
+                return arg.Replace("MATH_PILOT", "6")
+                          .Replace("BOMATH_PI", "8");
+            });
+
+            result = eval.Eval("5+MATH_PI - 10*MATH_PILOT / 6+BOMATH_PI");
+            Assert.AreEqual((long)(5 + Math.PI - 10 * 5 / 5 + 8), result);
+
+            result = eval.Eval("sin(MATH_PI/3)*10");
+            Assert.AreEqual(8, result);
+
+            result = eval.Eval("pow(MATH_E,2)");
+            Assert.AreEqual(7, result);
+
+            result = eval.Eval("MATH_PI + MATH_E");
+            Assert.AreEqual((long)(Math.PI + Math.E), result);
         }
     }
 }

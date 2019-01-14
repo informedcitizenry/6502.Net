@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2019 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -43,13 +43,13 @@ namespace DotNetAsm
         #endregion
 
         static string _helpString =
-            "Usage: {0} [options] <inputs> [output]\r\n\r\n"+
+            "Usage: {0} [options...] <inputs> [output]\r\n\r\n"+
             "    -a, --no-assembly        Suppress assembled bytes from assembly\r\n"+
             "    --arch <arg>             Specify architecture-specific options\r\n"+
             "    -b, --big-endian         Set byte order of output to big-endian\r\n"+
             "                             listing\r\n"+
             "    -C, --case-sensitive     Treat all symbols as case-sensitive\r\n"+
-            "    --cpu <arg>              Specify the target CPU and instruction set\r\n"+
+            "    -c, --cpu <arg>          Specify the target CPU and instruction set\r\n"+
             "    -D, --define <args>      Assign value to a global symbol/label in\r\n"+
             "                             <args>\r\n"+
             "    -d, --no-dissassembly    Suppress disassembly from assembly listing\r\n"+
@@ -163,6 +163,7 @@ namespace DotNetAsm
                             case "case-sensitive":
                                 SetFlag(ref _caseSensitive);
                                 break;
+                            case "-c":
                             case "--cpu":
                                 SetOneOption(ref _cpu);
                                 break;

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2019 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to 
@@ -69,5 +69,13 @@ namespace DotNetAsm
         /// <param name="regex">A regex pattern for the symbol.</param>
         /// <param name="lookupfunc">The lookup function to define the symbol.</param>
         void DefineSymbolLookup(string regex, Func<string, string> lookupfunc);
+
+        /// <summary>
+        /// Determines if the specifed symbol is a constant to the evaluator and would be
+        /// evaulated as such.
+        /// </summary>
+        /// <returns><c>true</c>, if the symbol is a constant, <c>false</c> otherwise.</returns>
+        /// <param name="symbol">Symbol.</param>
+        bool IsConstant(string symbol);
     }
 }

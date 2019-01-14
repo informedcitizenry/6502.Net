@@ -335,7 +335,9 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestFormatFunction()
         {
-            var testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", Controller.Evaluator);
+            var testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", 
+                                                                    Controller.Options.StringComparison, 
+                                                                    Controller.Evaluator);
             Assert.AreEqual("TEST=02", testformat);
 
         }

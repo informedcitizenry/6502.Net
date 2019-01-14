@@ -1,5 +1,5 @@
-//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2019 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -58,39 +58,45 @@ namespace DotNetAsm
 
         static Dictionary<string, OperationDef> _functions;
 
-        static Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
+        static readonly Dictionary<string, double> _constants = new Dictionary<string, double>(StringComparer.Ordinal)
+        {
+            { "MATH_PI", Math.PI },
+            { "MATH_E", Math.E }
+        };
+
+        static readonly Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
         {
 
-            { "||",     new OperationDef(parms => (int)parms[1]  | (int)parms[0],            0) },
-            { "&&",     new OperationDef(parms => (int)parms[1]  & (int)parms[0],            1) },
-            { "|",      new OperationDef(parms => (long)parms[1] | (long)parms[0],           2) },
-            { "^",      new OperationDef(parms => (long)parms[1] ^ (long)parms[0],           3) },
-            { "&",      new OperationDef(parms => (long)parms[1] & (long)parms[0],           4) },
-            { "!=",     new OperationDef(parms => (long)parms[1] != (long)parms[0] ? 1 : 0,  5) },
-            { "==",     new OperationDef(parms => (long)parms[1] == (long)parms[0] ? 1 : 0,  5) },
-            { "<",      new OperationDef(parms => (long)parms[1] <  (long)parms[0] ? 1 : 0,  6) },
-            { "<=",     new OperationDef(parms => (long)parms[1] <= (long)parms[0] ? 1 : 0,  6) },
-            { ">=",     new OperationDef(parms => (long)parms[1] >= (long)parms[0] ? 1 : 0,  6) },
-            { ">",      new OperationDef(parms => (long)parms[1] >  (long)parms[0] ? 1 : 0,  6) },
-            { "=",      new OperationDef(parms => Double.NaN,                                6) },
-            { "<<",     new OperationDef(parms => (int)parms[1]  << (int)parms[0],           7) },
-            { ">>",     new OperationDef(parms => (int)parms[1]  >> (int)parms[0],           7) },
-            { "-",      new OperationDef(parms => parms[1]       - parms[0],                 8) },
-            { "+",      new OperationDef(parms => parms[1]       + parms[0],                 8) },
-            { "/",      new OperationDef(parms => parms[1]       / parms[0],                 9) },
-            { "*",      new OperationDef(parms => parms[1]       * parms[0],                 9) },
-            { "%",      new OperationDef(parms => (long)parms[1] % (long)parms[0],           9) },
-            { "!",      new OperationDef(parms => Double.NaN,                                10) },
-            { "~",      new OperationDef(parms => Double.NaN,                                10) },
-            { "\x11-",  new OperationDef(parms => -parms[0],                                 11) },
-            { "\x11+",  new OperationDef(parms => parms[0],                                  11) },
-            { "\x11~",  new OperationDef(parms => ~((long)parms[0]),                         12) },
-            { "\x11!",  new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,               12) },
-            { "**",     new OperationDef(parms => Math.Pow(parms[1], parms[0]),              13) },
-            { "\x11>",  new OperationDef(parms => (long)(parms[0] / 0x100) % 256,            14) },
-            { "\x11<",  new OperationDef(parms => (long)parms[0]  % 256,                     14) },
-            { "\x11&",  new OperationDef(parms => (long)parms[0]  % 65536,                   14) },
-            { "\x11^",  new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,          14) }
+            { "||",     new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0?1:0),    0) },
+            { "&&",     new OperationDef(parms => ((int)parms[1]!=0?1:0) & ((int)parms[0]!=0?1:0),    1) },
+            { "|",      new OperationDef(parms => (long)parms[1]         | (long)parms[0],            2) },
+            { "^",      new OperationDef(parms => (long)parms[1]         ^ (long)parms[0],            3) },
+            { "&",      new OperationDef(parms => (long)parms[1]         & (long)parms[0],            4) },
+            { "!=",     new OperationDef(parms => (long)parms[1]         != (long)parms[0] ? 1 : 0,   5) },
+            { "==",     new OperationDef(parms => (long)parms[1]         == (long)parms[0] ? 1 : 0,   5) },
+            { "<",      new OperationDef(parms => (long)parms[1]         <  (long)parms[0] ? 1 : 0,   6) },
+            { "<=",     new OperationDef(parms => (long)parms[1]         <= (long)parms[0] ? 1 : 0,   6) },
+            { ">=",     new OperationDef(parms => (long)parms[1]         >= (long)parms[0] ? 1 : 0,   6) },
+            { ">",      new OperationDef(parms => (long)parms[1]         >  (long)parms[0] ? 1 : 0,   6) },
+            { "<<",     new OperationDef(parms => (int)parms[1]          << (int)parms[0],            7) },
+            { ">>",     new OperationDef(parms => (int)parms[1]          >> (int)parms[0],            7) },
+            { "-",      new OperationDef(parms => parms[1]               - parms[0],                  8) },
+            { "+",      new OperationDef(parms => parms[1]               + parms[0],                  8) },
+            { "/",      new OperationDef(parms => parms[1]               / parms[0],                  9) },
+            { "*",      new OperationDef(parms => parms[1]               * parms[0],                  9) },
+            { "%",      new OperationDef(parms => (long)parms[1]         % (long)parms[0],            9) },
+            { "\x11-",  new OperationDef(parms => -parms[0],                                         11) },
+            { "\x11+",  new OperationDef(parms => parms[0],                                          11) },
+            { "\x11~",  new OperationDef(parms => ~((long)parms[0]),                                 12) },
+            { "\x11!",  new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,                       12) },
+            { "**",     new OperationDef(parms => Math.Pow(parms[1], parms[0]),                      13) },
+            { "\x11>",  new OperationDef(parms => (long)(parms[0] / 0x100) % 256,                    14) },
+            { "\x11<",  new OperationDef(parms => (long)parms[0]  % 256,                             14) },
+            { "\x11&",  new OperationDef(parms => (long)parms[0]  % 65536,                           14) },
+            { "\x11^",  new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,                  14) },
+            { "!",      new OperationDef(parms => Double.NaN,                                        -1) },
+            { "~",      new OperationDef(parms => Double.NaN,                                        -1) },
+            { "=",      new OperationDef(parms => Double.NaN,                                        -1) },
         };
 
         #endregion
@@ -387,9 +393,45 @@ namespace DotNetAsm
         bool ContainsSymbols(string expression) =>
                 _regSymbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
 
+        string EvalConstant(string expression, KeyValuePair<string, double> kvp)
+        {
+            var cix = expression.IndexOf(kvp.Key, StringComparison.Ordinal);
+            if (cix >= 0)
+            {
+                int ixAfter = cix + kvp.Key.Length;
+                if (
+                    (cix != 0 && char.IsLetterOrDigit(expression[cix - 1])) ||
+                    (ixAfter < expression.Length - 1 && char.IsLetterOrDigit(expression[ixAfter]))
+                   )
+                {
+                    return expression;
+                }
+                string val = kvp.Value.ToString();
+                if (cix == 0)
+                {
+                    if (ixAfter == expression.Length)
+                        expression = val;
+                    else
+                        expression = val + EvalConstant(expression.Substring(ixAfter), kvp);
+                }
+                else
+                {
+                    if (ixAfter == expression.Length)
+                        expression = expression.Substring(0, cix) + val;
+                    else
+                        expression = expression.Substring(0, cix) + val + EvalConstant(expression.Substring(ixAfter), kvp);
+                }
+            }
+            return expression;
+        }
+
         // convert client-defined symbols into values
         string EvalDefinedSymbols(string expression)
         {
+            foreach (var kvp in _constants)
+            {
+                expression = EvalConstant(expression, kvp);
+            }
             foreach (var look in _symbolLookups)
             {
                 expression = look(expression);
@@ -501,6 +543,15 @@ namespace DotNetAsm
         {
             _symbolLookups.Add(lookupfunc);
         }
+
+        /// <summary>
+        /// Determines if the specifed symbol is a constant to the evaluator and would be
+        /// evaulated as such.
+        /// </summary>
+        /// <returns><c>true</c>, if the symbol is a constant, <c>false</c> otherwise.</returns>
+        /// <param name="symbol">Symbol.</param>
+        public bool IsConstant(string symbol) => _constants.ContainsKey(symbol);
+
         #endregion
     }
 }

@@ -1,5 +1,5 @@
-//-----------------------------------------------------------------------------
-// Copyright (c) 2017, 2018 informedcitizenry <informedcitizenry@gmail.com>
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2019 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -19,7 +19,7 @@ namespace Asm6502.Net
         {
             var sb = new StringBuilder();
 
-            sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017, 2018 informedcitizenry.");
+            sb.Append("6502.Net, A Simple .Net 6502 Cross Assembler\n(C) Copyright 2017-2019 informedcitizenry.");
             sb.AppendLine();
             sb.AppendFormat("Version {0}.{1} Build {2}",
                             Assembly.GetEntryAssembly().GetName().Version.Major,

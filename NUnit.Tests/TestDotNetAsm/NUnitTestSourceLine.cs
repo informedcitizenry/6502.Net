@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    public class SourceLineTest
+    public class NUnitTestSourceLine
     {
         
         [Test]
