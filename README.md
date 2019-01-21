@@ -1447,7 +1447,7 @@ print       .macro  value = 13, printsub = $ffd2
             ;; 10 SYS2061
 SYS         = $9e
             .word eob, 10
-            .cstring SYS, format("${0}", start)
+            .cstring SYS, format("{0}", start)
 eob         .word 0
 start       ldx #0
 -           lda highcode,x
