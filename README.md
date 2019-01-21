@@ -224,7 +224,7 @@ Strings can be assembled in a few different ways, according to the needs of the 
 | `.pstring`    | A Pascal-style string, its size in the first byte                             |
 
 Since `.pstring` strings use a single byte to denote size, no string can be greater than 255 bytes. Since `.nstring` and `.lsstring` make use of the high and low bits, bytes must not be greater in value than 127, nor less than 0.
-#### String Format unction
+#### String Format function
 The special function `format()` function allows you to convert non-string data to string data using a .Net format string:
 ```
 stdout      = $ffd2
@@ -415,11 +415,15 @@ Several built-in math functions that can also be called as part of the expressio
 ```
             lda #sqrt(25)
 ```
-See the section below on functions for a full list of available functions. The math constants π and _e_ can be referenced in expressions as follows:
+See the section below on functions for a full list of available functions. 
+
+#### Math constants
+The math constants π and _e_ are defined as `MATH_PI` and `MATH_E`, respectively, and can be referenced in expressions as follows:
 ```
             .dword sin(MATH_PI/3) * 10  ; > 08
             .dword pow(MATH_E,2)        ; > 07
 ```
+Not that no labels or variables can share these two names as they are reserved.
 
 ## Addressing model
 
