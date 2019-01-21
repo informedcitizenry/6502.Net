@@ -1447,7 +1447,7 @@ print       .macro  value = 13, printsub = $ffd2
             ;; 10 SYS2061
 SYS         = $9e
             .word eob, 10
-            .cstring SYS, str(start)
+            .cstring SYS, format("${0}", start)
 eob         .word 0
 start       ldx #0
 -           lda highcode,x
@@ -1796,12 +1796,6 @@ glyph             ;12345678
 <tr><td><b>Definition</b></td><td>The square root of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
 <tr><td><b>Example</b></td><td><code>.byte sqrt(65536) - 1  ; > ff</code></td></tr>
-</table>
-<table>
-<tr><td><b>Name</b></td><td><code>str</code></td></tr>
-<tr><td><b>Definition</b></td><td>The expression as a text string. Only available for use with the string pseudo-ops.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.string str($c000)     ; > 34 39 31 35 32</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>tan</code></td></tr>
