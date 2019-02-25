@@ -13,7 +13,7 @@
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
-    <ReleaseVersion>1.17.1</ReleaseVersion>
+    <ReleaseVersion>1.17.2</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -57,6 +57,7 @@
     <Compile Include="Test6502.Net\NUnitTestAsm6502Illegal.cs" />
     <Compile Include="Test6502.Net\NUnitTestAsm65816.cs" />
     <Compile Include="TestDotNetAsm\NUnitTestCmdLine.cs" />
+    <Compile Include="TestDotNetAsm\NUnitTestSymbolManager.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

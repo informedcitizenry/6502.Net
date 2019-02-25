@@ -358,7 +358,12 @@ namespace DotNetAsm
         /// <param name="c">The Unicode character.</param>
         public static bool IsOperator(this char c)
         {
-            return (char.IsSymbol(c) && c != '$') || c == '/' || c == '*' || c == '-' || c == '&' || c == '%' || c == '!';
+            return (char.IsSymbol(c) && !c.IsRadixOperator()) || c == '/' || c == '*' || c == '-' || c == '&' || c == '%' || c == '!';
+        }
+
+        public static bool IsRadixOperator(this char c)
+        {
+            return c == '$' || c == '%';
         }
     }
 

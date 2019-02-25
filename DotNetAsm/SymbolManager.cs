@@ -130,6 +130,16 @@ namespace DotNetAsm
             return -1;
         }
 
+        bool ExpressionIsAnonymous(string expression)
+        {
+            var first = expression[0];
+            if (first == '-' || first == '+')
+            {
+                return expression.All(c => c == first);
+            }
+            return false;
+        }
+
         public string TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound)
         {
             StringBuilder tokenBuilder = new StringBuilder();
@@ -163,7 +173,7 @@ namespace DotNetAsm
                             if (c == '-' || c == '+')
                             {
                                 var nextChar = expression.Substring(i + 1).FirstOrDefault(chr => !char.IsWhiteSpace(chr));
-                                if ((lastChar == '(' && nextChar == ')') || (!char.IsLetterOrDigit(nextChar) && nextChar != '('))
+                                if ((lastChar == '(' && nextChar == ')') || (!char.IsLetterOrDigit(nextChar) && !nextChar.IsRadixOperator() && nextChar != '('))
                                     tokenBuilder.Append(c);
                             }
                             else
