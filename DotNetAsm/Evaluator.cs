@@ -48,55 +48,133 @@ namespace DotNetAsm
     {
         #region Members
 
-        readonly Dictionary<string, Tuple<Regex, Func<string, string>>> _regSymbolLookups;
+        Func<string, IEnumerable<ExpressionElement>> _parsingFunc;
 
-        readonly List<Func<string, string>> _symbolLookups;
-        
         #region Static Members
         
         static Random _rng = new Random();
 
         static Dictionary<string, OperationDef> _functions;
 
-        static readonly Dictionary<string, double> _constants = new Dictionary<string, double>(StringComparer.Ordinal)
+        static readonly HashSet<string> _compounds = new HashSet<string>
         {
-            { "MATH_PI", Math.PI },
-            { "MATH_E", Math.E }
+            "||", "&&", "<<", ">>", "<=", "==", ">=", "!=", "**"
         };
 
-        static readonly Dictionary<string, OperationDef> _operators = new Dictionary<string, OperationDef>
+        static readonly Dictionary<ExpressionElement, OperationDef> _operators = new Dictionary<ExpressionElement, OperationDef>
         {
-
-            { "||",     new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0?1:0),    0) },
-            { "&&",     new OperationDef(parms => ((int)parms[1]!=0?1:0) & ((int)parms[0]!=0?1:0),    1) },
-            { "|",      new OperationDef(parms => (long)parms[1]         | (long)parms[0],            2) },
-            { "^",      new OperationDef(parms => (long)parms[1]         ^ (long)parms[0],            3) },
-            { "&",      new OperationDef(parms => (long)parms[1]         & (long)parms[0],            4) },
-            { "!=",     new OperationDef(parms => (long)parms[1]         != (long)parms[0] ? 1 : 0,   5) },
-            { "==",     new OperationDef(parms => (long)parms[1]         == (long)parms[0] ? 1 : 0,   5) },
-            { "<",      new OperationDef(parms => (long)parms[1]         <  (long)parms[0] ? 1 : 0,   6) },
-            { "<=",     new OperationDef(parms => (long)parms[1]         <= (long)parms[0] ? 1 : 0,   6) },
-            { ">=",     new OperationDef(parms => (long)parms[1]         >= (long)parms[0] ? 1 : 0,   6) },
-            { ">",      new OperationDef(parms => (long)parms[1]         >  (long)parms[0] ? 1 : 0,   6) },
-            { "<<",     new OperationDef(parms => (int)parms[1]          << (int)parms[0],            7) },
-            { ">>",     new OperationDef(parms => (int)parms[1]          >> (int)parms[0],            7) },
-            { "-",      new OperationDef(parms => parms[1]               - parms[0],                  8) },
-            { "+",      new OperationDef(parms => parms[1]               + parms[0],                  8) },
-            { "/",      new OperationDef(parms => parms[1]               / parms[0],                  9) },
-            { "*",      new OperationDef(parms => parms[1]               * parms[0],                  9) },
-            { "%",      new OperationDef(parms => (long)parms[1]         % (long)parms[0],            9) },
-            { "\x11-",  new OperationDef(parms => -parms[0],                                         11) },
-            { "\x11+",  new OperationDef(parms => parms[0],                                          11) },
-            { "\x11~",  new OperationDef(parms => ~((long)parms[0]),                                 12) },
-            { "\x11!",  new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,                       12) },
-            { "**",     new OperationDef(parms => Math.Pow(parms[1], parms[0]),                      13) },
-            { "\x11>",  new OperationDef(parms => (long)(parms[0] / 0x100) % 256,                    14) },
-            { "\x11<",  new OperationDef(parms => (long)parms[0]  % 256,                             14) },
-            { "\x11&",  new OperationDef(parms => (long)parms[0]  % 65536,                           14) },
-            { "\x11^",  new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,                  14) },
-            { "!",      new OperationDef(parms => Double.NaN,                                        -1) },
-            { "~",      new OperationDef(parms => Double.NaN,                                        -1) },
-            { "=",      new OperationDef(parms => Double.NaN,                                        -1) },
+            {
+                new ExpressionElement{ integral = false, word = ",",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(null,                                              int.MinValue)
+            },
+            { 
+                new ExpressionElement{ integral = true,  word = "||", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0? 1 : 0),  0) 
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "&&", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => ((int)parms[1]!=0?1:0) & ((int)parms[0]!=0? 1 : 0),  1)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "|",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => (long)parms[1]                | (long)parms[0],      2)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => (long)parms[1]                ^ (long)parms[0],      3)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => (long)parms[1]                & (long)parms[0],      4)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "!=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => !parms[1].AlmostEquals(parms[0])          ? 1 : 0,   5)
+            }, 
+            {
+                new ExpressionElement{ integral = false, word = "==", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1].AlmostEquals(parms[0])           ? 1 : 0,   5)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      <  parms[0] ? 1 : 0,   6)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "<=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      <= parms[0] ? 1 : 0,   6)
+            },
+            {
+                new ExpressionElement{ integral = false, word = ">=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      >= parms[0] ? 1 : 0,   6)
+            },
+            {
+                new ExpressionElement{ integral = false, word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      >  parms[0] ? 1 : 0,   6)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "<<", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => (int)parms[1]                 << (int)parms[0],      7)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = ">>", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => (int)parms[1]                 >> (int)parms[0],      7)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      -  parms[0],           8)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      +  parms[0],           8)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "/",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      /  parms[0],           9)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "*",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => parms[1]                      *  parms[0],           9)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "%",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => (long)parms[1]                %  (long)parms[0],     9)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => -parms[0],                                          10)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => +parms[0],                                          10)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "~",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => ~((long)parms[0]),                                  11)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "!",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,                        11)
+            },
+            {
+                new ExpressionElement{ integral = false, word = "**", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new OperationDef(parms => Math.Pow(parms[1], parms[0]),                       12)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => (long)(parms[0] / 0x100) % 256,                     13)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => (long)parms[0]  % 256,                              13)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => (long)parms[0]  % 65536,                            13)
+            },
+            {
+                new ExpressionElement{ integral = true,  word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,                   13)
+            }
         };
 
         #endregion
@@ -140,7 +218,7 @@ namespace DotNetAsm
                 { "pow",    new OperationDef(parms => Math.Pow(parms[1], parms[0]),   2) },
                 { "rad",    new OperationDef(parms => (parms[0] * Math.PI / 180),     1) },
                 { "random", new OperationDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
-                { "round",  new OperationDef(parms => Math.Round(parms[0]),              1) },
+                { "round",  new OperationDef(parms => Math.Round(parms[0]),           1) },
                 { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),            1) },
                 { "sin",    new OperationDef(parms => Math.Sin(parms[0]),             1) },
                 { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),            1) },
@@ -148,308 +226,258 @@ namespace DotNetAsm
                 { "tan",    new OperationDef(parms => Math.Tan(parms[0]),             1) },
                 { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),            1) }
             };
-            _regSymbolLookups = new Dictionary<string, Tuple<Regex, Func<string, string>>>();
 
-            _symbolLookups = new List<Func<string, string>>();
+            _parsingFunc = ParseElements;
         }
 
         #endregion
 
         #region Methods
 
-        bool AddToken(StringBuilder token, List<string> toList)
+        /// <summary>
+        /// Extracts the individual expression elements, or tokens, from a string
+        /// representation of a mathematical expression before they are sent to
+        /// the calculation unit for final processing.
+        /// </summary>
+        /// <returns> A <see cref="System.Collections.Generic.IEnumerable{DotNetAsm.ExpressionElement}"/>
+        /// </returns>
+        /// <param name="expression">The mathematical expression.</param>
+        public IEnumerable<ExpressionElement> ParseElements(string expression)
         {
-            if (token.Length > 0)
-            {
-                toList.Add(token.ToString());
-                token.Clear();
-                return true;
-            }
-            return false;
-        }
+            var elements = new List<ExpressionElement>();
+            StringBuilder elementBuilder = new StringBuilder();
+            ExpressionElement currentElement = new ExpressionElement();
 
-        // Take a string expression and tokenize it.
-        List<string> Tokenize(string expression)
-        {
-            StringBuilder operandString = new StringBuilder(),
-                          operatorString = new StringBuilder();
-
-            List<string> tokens = new List<string>();
             for (int i = 0; i < expression.Length; i++)
             {
                 var c = expression[i];
-
-                if ((c == '%' && operandString.Length == 0 && (i == 0 || (!_operators.ContainsKey(expression[i - 1].ToString()) && expression[i - 1] != ')'))) ||
-                     c == '$' || char.IsLetterOrDigit(c) || c == '.' || c == '#')
+                if (char.IsWhiteSpace(c))
                 {
-                    AddToken(token: operatorString, toList: tokens);
-                    operandString.Append(c);
+                    AddElement();
                 }
-                else if (_operators.ContainsKey(c.ToString()) || c == '(' || c == ')' || c == ',')
+                else if (c.IsOperator() || c == ',')
                 {
-                    AddToken(token: operandString, toList: tokens);
-                    if (c == '(' || c == ')')
+                    char next = i < expression.Length - 1 ? expression[i + 1] : char.MinValue;
+                    bool nextIsOperand = char.IsLetterOrDigit(next) || next == '_' || next == '.' || next == '#';
+                    if (currentElement.type != ExpressionElement.Type.Operator)
                     {
-                        AddToken(token: operatorString, toList: tokens);
-                        tokens.Add(c.ToString());
-                    }
-                    else
-                    {
-                        // Is the compound operator valid? If not, tokenize the existing operator string.
-                        if (!_operators.ContainsKey(string.Concat(operatorString.ToString(), c)))
-                            AddToken(token: operatorString, toList: tokens);
-                        operatorString.Append(c);
-                    }
-                }
-                else
-                {
-                    if (!char.IsWhiteSpace(c))
-                        throw new ExpressionException(expression);
-
-                    if (!AddToken(token: operandString, toList: tokens))
-                        AddToken(token: operatorString, toList: tokens);
-                }
-            }
-            if (!AddToken(token: operandString, toList: tokens))
-                AddToken(token: operatorString, toList: tokens);
-
-            return tokens;
-        }
-
-        // Tokenize expression and then re-order according to RPN notation.
-        List<string> ToRpn(string expression)
-        {
-            var tokens = Tokenize(expression);
-            var output = new List<string>();
-            var operators = new Stack<string>();
-            var lastToken = string.Empty;
-            var functionstack = new Stack<Tuple<int, int>>();
-            var parens = 0;
-
-            foreach (var t in tokens)
-            {
-                if (_functions.ContainsKey(t))
-                {
-                    // if the token is a function name push onto the stack
-                    lastToken = t;
-                    operators.Push(t);
-
-                    // keep track of param count if necessary
-                    functionstack.Push(new Tuple<int, int>(_functions[t].Item2, parens + 1));
-                }
-                else if (_operators.ContainsKey(t))
-                {
-                    // check for unary
-                    string op;
-                    if (string.IsNullOrEmpty(lastToken) || 
-                        _functions.ContainsKey(lastToken) ||
-                        _operators.ContainsKey(lastToken))
-                        op = string.Concat("\x11", t);
-                    else
-                        op = t;
-
-                    // or else if the token is an operator, send higher order
-                    // operators or functions at the top of the stack to the output
-                    while (operators.Count > 0)
-                    {
-                        var topofstack = operators.Peek();
-                        if (_functions.ContainsKey(topofstack))
+                        AddElement();
+                        currentElement.type = ExpressionElement.Type.Operator;
+                        if (c == ',')
                         {
-                            output.Add(operators.Pop());
-                        }
-                        else if (topofstack != "(")
-                        {
-                            var toporder = _operators[topofstack].Item2;
-                            var tokenorder = _operators[op].Item2;
-                            if (toporder >= tokenorder)
-                                output.Add(operators.Pop());
-                            else
-                                break;
+                            currentElement.subtype = ExpressionElement.Subtype.Binary;
                         }
                         else
                         {
-                            // don't pop off open parens (just yet)
-                            break;
+                            if (currentElement.subtype == ExpressionElement.Subtype.Open)
+                            {
+                                if (c.IsRadixOperator() && nextIsOperand)
+                                {
+                                    currentElement.type = ExpressionElement.Type.Operand;
+                                    currentElement.subtype = ExpressionElement.Subtype.None;
+                                }
+                                else
+                                {
+                                    currentElement.subtype = ExpressionElement.Subtype.Unary;
+                                }
+                            }
+                            else
+                            {
+                                currentElement.subtype = ExpressionElement.Subtype.Binary;
+                            }
                         }
                     }
-                    // finally push the operator onto the stack
-                    operators.Push(op);
-                    lastToken = op;
-                }
-                else if (t.Equals("("))
-                {
-                    // else open paren push onto the stack
-                    if (!string.IsNullOrEmpty(lastToken) && !_operators.ContainsKey(lastToken) && !_functions.ContainsKey(lastToken))
-                        throw new ExpressionException(expression);
-                    parens++;
-                    operators.Push(t);
-
-                    // new clause (unaries are acceptable)
-                    lastToken = string.Empty;
-                }
-                else if (t.Equals(")") || t.Equals(","))
-                {
-                    if (string.IsNullOrEmpty(lastToken) || _operators.ContainsKey(lastToken))
-                        throw new ExpressionException(expression);
-
-                    // closed paren or param closure (comma) move all operators into output
-                    // until an open paren is reached
-                    while (operators.Peek() != "(")
-                        output.Add(operators.Pop());
-
-                    // only pop the open paren off the stack if it is a closed paren
-                    if (t.Equals(")"))
-                    {
-                        operators.Pop();
-                        if (functionstack.Count > 0 && functionstack.Peek().Item2 == parens)
-                            functionstack.Pop();
-                        parens--;
-                    }
                     else
                     {
-                        // track params against function definition
-                        var fcntop = functionstack.Pop();
-                        var parmnum = fcntop.Item1 - 1;
-                        if (parmnum < 1)
-                            throw new ExpressionException(expression);
-                        functionstack.Push(new Tuple<int, int>(parmnum, fcntop.Item2));
+                        if (elementBuilder.Length == 0)
+                        {
+                            if (c.IsRadixOperator() && nextIsOperand)
+                            {
+                                currentElement.type = ExpressionElement.Type.Operand;
+                                currentElement.subtype = ExpressionElement.Subtype.None;
+                            }
+                            else
+                            {
+                                currentElement.subtype = ExpressionElement.Subtype.Unary;
+                            }
+                        }
+                        else if (!_compounds.Contains(elementBuilder.ToString() + c))
+                        {
+                            currentElement.subtype = ExpressionElement.Subtype.Binary;
+                            AddElement();
+                            if (c.IsRadixOperator())
+                            {
+                                currentElement.type = ExpressionElement.Type.Operand;
+                                currentElement.subtype = ExpressionElement.Subtype.None;
+                            }
+                            else
+                            {
+                                currentElement.subtype = ExpressionElement.Subtype.Unary;
+                            }
+                        }
                     }
-                    // A comma, like open paren, marks new clause. Closed paren does not.
-                    lastToken = t.Equals(")") ? t : string.Empty;
+                    elementBuilder.Append(c);
+                }
+                else if (c == '(' || c == ')')
+                {
+                    AddElement();
+                    if (c == '(' && elements.Count > 0 && (currentElement.type == ExpressionElement.Type.Operand && char.IsLetter(currentElement.word[0])))
+                    {
+                        // Convert operand expressions to functions where appropriate
+                        elementBuilder.Append(elements.Last().word);
+                        currentElement.type = ExpressionElement.Type.Function;
+                        elements.RemoveAt(elements.Count - 1);
+                        AddElement();
+                    }
+                    currentElement.type = ExpressionElement.Type.Group;
+                    if (c == '(')
+                        currentElement.subtype = ExpressionElement.Subtype.Open;
+                    else
+                        currentElement.subtype = ExpressionElement.Subtype.Close;
+                    elementBuilder.Append(c);
                 }
                 else
                 {
-                    // else this is not a function or an operator nor a paren, so send the token
-                    // onto the output.
+                    if (currentElement.type != ExpressionElement.Type.Operand)
+                    {
+                        AddElement();
+                        currentElement.type = ExpressionElement.Type.Operand;
+                        currentElement.subtype = ExpressionElement.Subtype.None;
+                    }
+                    elementBuilder.Append(c);
+                }
+                if (i == expression.Length - 1)
+                    AddElement();
+            }
+            return elements;
 
-                    // non-operator tokens cannot be preceded by functions nor by other non-operator tokens 
-                    if (!string.IsNullOrEmpty(lastToken) && !_operators.ContainsKey(lastToken))
-                        throw new ExpressionException(expression);
-
-                    lastToken = t;
-                    output.Add(t);
+            void AddElement()
+            {
+                if (elementBuilder.Length > 0)
+                {
+                    currentElement.word = elementBuilder.ToString();
+                    elementBuilder.Clear();
+                    elements.Add(currentElement);
                 }
             }
-            // pop all remaining operators off of stack and send to the output.
-            while (operators.Count > 0)
-                output.Add(operators.Pop());
-            return output;
         }
 
-        double Calculate(IEnumerable<string> output)
+        double Calculate(IEnumerable<ExpressionElement> parsedElements)
         {
-            var result = new Stack<double>();
-
-            foreach (var s in output)
+            var output = new List<ExpressionElement>();
+            var operators = new Stack<ExpressionElement>();
+            try
             {
-                if (s.Equals(")"))
-                    continue;
-
-                if (double.TryParse(s, out double num))
+                foreach (var element in parsedElements)
                 {
-                    result.Push(num);
-                }
-                else if ((s.StartsWith("%", StringComparison.Ordinal) && s.Length > 1) ||
-                         s.StartsWith("$", StringComparison.Ordinal))
-                {
-                    var hexbin = s.Substring(1);
-                    int radix;
-                    if (s.First().Equals('%'))
+                    if (element.type == ExpressionElement.Type.Operand)
+                        output.Add(element);
+                    else if (element.type == ExpressionElement.Type.Function || element.subtype == ExpressionElement.Subtype.Open)
+                        operators.Push(element);
+                    else if (element.type == ExpressionElement.Type.Operator)
                     {
-                        radix = 2;
-                        hexbin = Regex.Replace(hexbin, @"^([#.]+)$",
-                                               m => m.Groups[1].Value.Replace("#", "1").Replace(".", "0"));
+                        if (operators.Count > 0)
+                        {
+                            ExpressionElement topElement = new ExpressionElement();
+                            var elemOrder = _operators[element].Item2;
+                            topElement = operators.Peek();
+                            while (topElement.type == ExpressionElement.Type.Function || topElement.type == ExpressionElement.Type.Operator || topElement.subtype == ExpressionElement.Subtype.Open)
+                            {
+                                var topOrder = topElement.type == ExpressionElement.Type.Operator ? _operators[topElement].Item2 : int.MaxValue;
+                                if (topElement.subtype != ExpressionElement.Subtype.Open && topOrder >= elemOrder)
+                                {
+                                    operators.Pop();
+                                    output.Add(topElement);
+                                    if (operators.Count > 0)
+                                        topElement = operators.Peek();
+                                    else
+                                        break;
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        operators.Push(element);
+                    }
+                    else if (element.subtype == ExpressionElement.Subtype.Close)
+                    {
+                        if (operators.Count > 0)
+                        {
+                            var topElement = operators.Peek();
+                            while (topElement.subtype != ExpressionElement.Subtype.Open)
+                            {
+                                operators.Pop();
+                                if (!topElement.word.Equals(","))
+                                    output.Add(topElement);
+                                if (operators.Count == 0)
+                                    throw new Exception();
+                                topElement = operators.Peek();
+                            }
+                            if (topElement.subtype == ExpressionElement.Subtype.Open)
+                                operators.Pop();
+                        }
+                    }
+                }
+                while (operators.Count > 0)
+                    output.Add(operators.Pop());
+
+                Stack<double> result = new Stack<double>();
+                foreach (var element in output)
+                {
+                    if (element.type == ExpressionElement.Type.Operand)
+                    {
+                        if (element.word[0].IsRadixOperator())
+                        {
+                            var hexbin = element.word.Substring(1);
+                            int radix;
+                            if (element.word[0] == '%')
+                            {
+                                radix = 2;
+                                hexbin = Regex.Replace(hexbin, @"^([#.]+)$", m => m.Groups[1].Value.Replace("#", "1").Replace(".", "0"));
+                            }
+                            else
+                            {
+                                radix = 16;
+                            }
+                            result.Push(Convert.ToInt64(hexbin, radix));
+                        }
+                        else
+                        {
+                            result.Push(double.Parse(element.word));
+                        }
                     }
                     else
                     {
-                        radix = 16;
+                        OperationDef operation = null;
+                        List<double> parms = new List<double> { result.Pop() };
+                        if (element.type == ExpressionElement.Type.Function)
+                        {
+                            operation = _functions[element.word];
+                            var parmcount = operation.Item2 - 1;
+                            while (parmcount-- > 0)
+                                parms.Add(result.Pop());
+                        }
+                        else
+                        {
+                            operation = _operators[element];
+                            if (element.subtype == ExpressionElement.Subtype.Binary)
+                                parms.Add(result.Pop());
+                            if (element.integral && parms.Any(p => Math.Abs(p) - Math.Abs(Math.Round(p)) > Double.Epsilon))
+                                throw new Exception();
+                        }
+                        result.Push(operation.Item1(parms));
                     }
-                    result.Push(Convert.ToInt64(hexbin, radix));
                 }
-                else
-                {
-                    OperationDef operation;
-                    List<double> parms = new List<double> { result.Pop() };
-
-                    if (_functions.ContainsKey(s))
-                    {
-                        operation = _functions[s];
-                        var parmcount = _functions[s].Item2 - 1;
-                        while (parmcount-- > 0)
-                            parms.Add(result.Pop());
-                    }
-                    else
-                    {
-                        operation = _operators[s];
-                        if (!s.StartsWith("\x11", StringComparison.Ordinal))
-                            parms.Add(result.Pop());
-                    }
-                    result.Push(operation.Item1(parms));
-                }
+                if (result.Count > 1)
+                    throw new Exception();
+                return result.Pop();
             }
-            return result.Pop();
-        }
-
-        bool ContainsSymbols(string expression) =>
-                _regSymbolLookups.Values.Any(l => l.Item1.IsMatch(expression));
-
-        string EvalConstant(string expression, KeyValuePair<string, double> kvp)
-        {
-            var cix = expression.IndexOf(kvp.Key, StringComparison.Ordinal);
-            if (cix >= 0)
+            catch
             {
-                int ixAfter = cix + kvp.Key.Length;
-                if (
-                    (cix != 0 && char.IsLetterOrDigit(expression[cix - 1])) ||
-                    (ixAfter < expression.Length - 1 && char.IsLetterOrDigit(expression[ixAfter]))
-                   )
-                {
-                    return expression;
-                }
-                string val = kvp.Value.ToString();
-                if (cix == 0)
-                {
-                    if (ixAfter == expression.Length)
-                        expression = val;
-                    else
-                        expression = val + EvalConstant(expression.Substring(ixAfter), kvp);
-                }
-                else
-                {
-                    if (ixAfter == expression.Length)
-                        expression = expression.Substring(0, cix) + val;
-                    else
-                        expression = expression.Substring(0, cix) + val + EvalConstant(expression.Substring(ixAfter), kvp);
-                }
+                throw new Exception();
             }
-            return expression;
-        }
-
-        // convert client-defined symbols into values
-        string EvalDefinedSymbols(string expression)
-        {
-            foreach (var kvp in _constants)
-            {
-                expression = EvalConstant(expression, kvp);
-            }
-            foreach (var look in _symbolLookups)
-            {
-                expression = look(expression);
-            }
-            foreach (var lookup in _regSymbolLookups)
-            {
-                Regex r = lookup.Value.Item1;
-                var f = lookup.Value.Item2;
-
-                expression = r.Replace(expression, m =>
-                {
-                    string match = m.Value;
-                    if (f != null && !string.IsNullOrEmpty(match))
-                        return f(match);
-                    return match;
-                });
-            }
-            return expression;
         }
 
         // Evaluate internally the expression to a double.
@@ -458,13 +486,11 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(expression))
                 throw new ExpressionException(expression);
 
-            var output = ToRpn(EvalDefinedSymbols(expression));
-            if (output.Count == 0)
-                throw new ExpressionException(expression);
-            
+            IEnumerable<ExpressionElement> elements = _parsingFunc(expression);
+
             try
             {
-                var result = Calculate(output);
+                var result = Calculate(elements);
 
                 if (double.IsInfinity(result))
                     throw new DivideByZeroException(expression);
@@ -518,39 +544,16 @@ namespace DotNetAsm
         public bool EvalCondition(string condition) => Eval(condition) == 1;
 
         /// <summary>
-        /// Defines a symbol lookup for the evaluator to translate symbols (such as 
+        /// Defines a parser for the evaluator. Typically used to translate symbols (such as 
         /// variables) in expressions.
         /// </summary>
-        /// <param name="pattern">A regex pattern for the symbol.</param>
-        /// <param name="lookupfunc">The lookup function to define the symbol.</param>
-        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
-        public void DefineSymbolLookup(string pattern, Func<string, string> lookupfunc)
+        /// <param name="parsingFunc">The parsing function to return the expression elements..</param>
+        public void DefineParser(Func<string, IEnumerable<ExpressionElement>> parsingFunc)
         {
-            var value = new Tuple<Regex, Func<string, string>>(new Regex(pattern, RegexOptions.Compiled), lookupfunc);
-            if (_regSymbolLookups.ContainsKey(pattern))
-                _regSymbolLookups[pattern] = value;
-            else
-                _regSymbolLookups.Add(pattern, value);
+            if (parsingFunc == null)
+                throw new ArgumentNullException();
+            _parsingFunc = parsingFunc;
         }
-
-        /// <summary>
-        /// Defines the symbol lookup for the evaluator to translate symbols (such as
-        /// variables) in expressions.
-        /// </summary>
-        /// <param name="lookupfunc">The lookup function to define the symbol.</param>
-        /// <exception cref="T:System.ArgumentNullException"></exception>
-        public void DefineSymbolLookup(Func<string, string> lookupfunc)
-        {
-            _symbolLookups.Add(lookupfunc);
-        }
-
-        /// <summary>
-        /// Determines if the specifed symbol is a constant to the evaluator and would be
-        /// evaulated as such.
-        /// </summary>
-        /// <returns><c>true</c>, if the symbol is a constant, <c>false</c> otherwise.</returns>
-        /// <param name="symbol">Symbol.</param>
-        public bool IsConstant(string symbol) => _constants.ContainsKey(symbol);
 
         #endregion
     }

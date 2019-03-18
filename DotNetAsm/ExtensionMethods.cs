@@ -385,4 +385,21 @@ namespace DotNetAsm
             return 4;
         }
     }
+
+    public static class Double_Extension
+    {
+        /// <summary>
+        /// Returns a value indicating whether this double is almost equal to
+        /// a specified <see cref="System.Double"/>. 
+        /// </summary>
+        /// <returns><c>true</c>, if the two values are almost equal, 
+        /// <c>false</c> otherwise.</returns>
+        /// <param name="d1">This double.</param>
+        /// <param name="obj">A double-precision floating point object.</param>
+        public static bool AlmostEquals(this double d1, double obj)
+        {
+            double epsilon = Math.Max(Math.Abs(d1), Math.Abs(obj)) * 1E-15;
+            return Math.Abs(d1 - obj) <= epsilon;
+        }
+    }
 }

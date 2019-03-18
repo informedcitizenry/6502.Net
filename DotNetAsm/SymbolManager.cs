@@ -23,6 +23,17 @@ namespace DotNetAsm
 
         Dictionary<int, SourceLine> _anonPlusLines, _anonMinusLines, _orderedMinusLines;
 
+        #region Static Members
+
+        static readonly Dictionary<string, double> _constants = new Dictionary<string, double>(StringComparer.Ordinal)
+        {
+            { "MATH_PI", Math.PI },
+            { "MATH_E", Math.E }
+        };
+
+
+        #endregion
+
         #endregion
 
         #region Constructors
@@ -43,9 +54,11 @@ namespace DotNetAsm
             Labels.AddCrossCheck(Variables);
             Variables.AddCrossCheck(Labels);
 
+            Labels.SetSymbol("MATH_PI", 3, true);
+            Labels.SetSymbol("MATH_E", 2, true);
+
             _anonPlusLines = new Dictionary<int, SourceLine>();
             _anonMinusLines = new Dictionary<int, SourceLine>();
-
         }
 
         #endregion
@@ -130,126 +143,101 @@ namespace DotNetAsm
             return -1;
         }
 
-        bool ExpressionIsAnonymous(string expression)
+        public IEnumerable<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound)
         {
-            var first = expression[0];
-            if (first == '-' || first == '+')
-            {
-                return expression.All(c => c == first);
-            }
-            return false;
-        }
-
-        public string TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound)
-        {
-            StringBuilder tokenBuilder = new StringBuilder();
-            string foundSymbol = string.Empty;
-            char lastChar = char.MinValue;
+            char lastTokenChar = char.MinValue;
+            StringBuilder translated = new StringBuilder(), symbolBuilder = new StringBuilder();
             for (int i = 0; i < expression.Length; i++)
             {
-                var c = expression[i];
+                char c = expression[i];
                 if (c == '\'' || c == '"')
                 {
-                    var literal = expression.GetNextQuotedString(atIndex: i);
+                    var literal = expression.GetNextQuotedString(i);
                     var unescaped = literal.TrimOnce('\'');
                     if (unescaped.Contains("\\"))
+                    {
                         unescaped = Regex.Unescape(unescaped);
+                    }
                     var charval = _controller.Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
-
-                    expression = string.Concat(expression.Substring(0, i - foundSymbol.Length), charval, expression.Substring(i + literal.Length));
-
-                    i += charval.Length - 1;
-                    // we need to make sure we have the updated string
-                    lastChar = charval.Last();
+                    translated.Append(charval);
+                    i += literal.Length - 1;
+                    lastTokenChar = charval.Last();
                 }
-                else if (tokenBuilder.Length == 0 && (char.IsLetter(c) || c == '_' || c == '*' || c == '+' || c == '-') &&
-                    (lastChar == char.MinValue || lastChar == '(' || lastChar.IsOperator() || lastChar == ','))
+                else if ((c == '*' || c == '-' || c == '+') &&
+                         (lastTokenChar.IsOperator() || lastTokenChar == '(' || lastTokenChar == char.MinValue))
                 {
-                    // this could the be the first character of a special symbol
-                    if (c == '*' || c == '+' || c == '-')
+                    bool isSpecial = false;
+                    if (c == '*' && (lastTokenChar == '(' || i == 0 || expression[i - 1] != '*'))
                     {
-                        if (!char.IsLetterOrDigit(lastChar) && lastChar != ')')
+                        isSpecial = true;
+                        translated.Append(_controller.Output.LogicalPC.ToString());
+                    }
+                    else if (lastTokenChar == '(' ||
+                             lastTokenChar == char.MinValue || (lastTokenChar.IsOperator()) && char.IsWhiteSpace(expression[i - 1]))
+                    {
+                        int j = i, k;
+                        for (; j < expression.Length && expression[j] == c; j++)
+                            symbolBuilder.Append(c);
+                        for (k = j; k < expression.Length && char.IsWhiteSpace(expression[k]); k++) { }
+                        if (j >= expression.Length ||
+                            (lastTokenChar == '(' && expression[k] == ')') ||
+                            ((lastTokenChar == char.MinValue || lastTokenChar.IsOperator()) &&
+                            char.IsWhiteSpace(expression[k - 1]) && expression[k].IsOperator()))
                         {
-                            if (c == '-' || c == '+')
-                            {
-                                var nextChar = expression.Substring(i + 1).FirstOrDefault(chr => !char.IsWhiteSpace(chr));
-                                if ((lastChar == '(' && nextChar == ')') || (!char.IsLetterOrDigit(nextChar) && !nextChar.IsRadixOperator() && nextChar != '('))
-                                    tokenBuilder.Append(c);
-                            }
-                            else
-                            {
-                                // Program counter *
-                                tokenBuilder.Append(c);
-                            }
+                            isSpecial = true;
+                            translated.Append(ConvertAnonymous(symbolBuilder.ToString(), line, errorOnAnonymousNotFound));
+                            i = j - 1;
                         }
+                        symbolBuilder.Clear();
+                    }
+                    if (isSpecial)
+                    {
+                        lastTokenChar = translated[translated.Length - 1];
                     }
                     else
                     {
-                        // letter or underscore, start to build the token
-                        tokenBuilder.Append(c);
+                        lastTokenChar = c;
+                        translated.Append(c);
                     }
                 }
-                else if (tokenBuilder.Length > 0)
+                else
                 {
-                    if (char.IsWhiteSpace(c) || c.IsOperator() || c == ')')
-                    {
-                        var last = tokenBuilder[tokenBuilder.Length - 1];
-                        if ((c == '-' || c == '+') && (last == '-' || last == '+') && last == c)
-                        {
-                            // anonymous symbol, i.e. bne -- or bcs ++
-                            tokenBuilder.Append(c);
-                        }
-                        else
-                        {
-                            foundSymbol = tokenBuilder.ToString();
-                            tokenBuilder.Clear();
-                        }
-                    }
-                    else if (char.IsLetterOrDigit(c) || c == '.' || c == '_')
-                    {
-                        tokenBuilder.Append(c);
-                    }
-                    else if (c == '(')
-                    {
-                        // this is a function call (probably), therefore it's not a symbol
-                        // so clear the tokenbuilder
-                        tokenBuilder.Clear();
-                    }
+                    if (!char.IsWhiteSpace(c))
+                        lastTokenChar = c;
+                    translated.Append(c);
                 }
-                if (tokenBuilder.Length > 0 && i == expression.Length - 1)
-                {
-                    foundSymbol = tokenBuilder.ToString();
-                    i++;
-                }
-
-                if (!string.IsNullOrEmpty(foundSymbol))
-                {
-                    // oops can't do this!
-                    if (foundSymbol.Last() == '.')
-                        throw new ExpressionException(expression);
-
-                    string replacement = string.Empty;
-                    if (foundSymbol[0] == '-' || foundSymbol[0] == '+')
-                        replacement = ConvertAnonymous(foundSymbol, line, errorOnAnonymousNotFound);
-                    else if (foundSymbol.Equals("*"))
-                        replacement = _controller.Output.LogicalPC.ToString();
-                    else
-                        replacement = GetNamedSymbolValue(foundSymbol, line, scope);// lookup symbol
-
-                    expression = string.Concat(expression.Substring(0, i - foundSymbol.Length), replacement, expression.Substring(i));
-                    // move the cursor forward
-                    i += replacement.Length - foundSymbol.Length - 1;
-
-                    // we need to make sure we have the updated string
-                    lastChar = replacement.Last();
-
-                    // reset the found symbol
-                    foundSymbol = string.Empty;
-                }
-                else if (!char.IsWhiteSpace(c))
-                    lastChar = c;
             }
-            return expression;
+            var elements = _controller.Evaluator.ParseElements(translated.ToString()).ToList();
+
+            for(int i = 0; i < elements.Count; i++)
+            {
+                if (elements[i].type == ExpressionElement.Type.Operand && (elements[i].word[0] == '_' || char.IsLetter(elements[i].word[0])))
+                {
+                    var symbol = elements[i].word;
+                    if (_constants.ContainsKey(symbol))
+                        symbol = _constants[symbol].ToString();
+                    else
+                        symbol = GetNamedSymbolValue(symbol, line, scope);
+                    if (symbol[0] == '-')
+                    {
+                        elements.Insert(i, new ExpressionElement
+                        {
+                            word = "-",
+                            type = ExpressionElement.Type.Operator,
+                            subtype = ExpressionElement.Subtype.Unary
+                        });
+                        i++;
+                        symbol = symbol.Substring(1);
+                    }
+                    elements[i] = new ExpressionElement
+                    {
+                        word = symbol,
+                        type = ExpressionElement.Type.Operand,
+                        subtype = ExpressionElement.Subtype.None
+                    };
+                }
+            }
+            return elements;
         }
 
         #endregion

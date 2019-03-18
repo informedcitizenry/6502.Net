@@ -85,7 +85,7 @@ namespace Asm6502.Net
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-            }           
+            }
         }
     }
 }

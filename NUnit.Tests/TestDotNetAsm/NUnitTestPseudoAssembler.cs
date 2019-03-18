@@ -40,13 +40,15 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Encoding = new AsmEncoding();
 
-            Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
+            //Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
 
-            Evaluator.DefineSymbolLookup(@"(?<=^|[^a-zA-Z0-9_.$])(?>(_+[a-zA-Z0-9]|[a-zA-Z])(\.[a-zA-Z_]|[a-zA-Z0-9_])*)(?=[^(.]|$)", GetSymbol);
+            //Evaluator.DefineSymbolLookup(@"(?<=^|[^a-zA-Z0-9_.$])(?>(_+[a-zA-Z0-9]|[a-zA-Z])(\.[a-zA-Z_]|[a-zA-Z0-9_])*)(?=[^(.]|$)", GetSymbol);
 
             if (args != null)
                 Options.ParseArgs(args);
             Symbols = new SymbolManager(this);
+
+            Evaluator.DefineParser(str => Symbols.TranslateExpressionSymbols(new SourceLine(), str, string.Empty, false));
         }
 
         string GetSymbol(string arg)
@@ -538,7 +540,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0001, 1, new byte[] { 0x05 });
 
             line.Operand = "'";
-            TestForFailure<ExpressionException>(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "-?";
             TestForFailure<ExpressionException>(line);

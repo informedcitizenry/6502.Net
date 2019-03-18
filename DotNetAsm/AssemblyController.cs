@@ -109,7 +109,7 @@ namespace DotNetAsm
 
             Evaluator = new Evaluator(Options.CaseSensitive);
 
-            Evaluator.DefineSymbolLookup(SymbolsToValues);
+            Evaluator.DefineParser(SymsToVals);
 
             Symbols = new SymbolManager(this);
             _localLabelScope = string.Empty;
@@ -156,8 +156,7 @@ namespace DotNetAsm
         /// <param name="token">The token to test.</param>
         /// <returns>True, if the token is a reserved word, otherwise false.</returns>
         public override bool IsReserved(string token) => IsInstruction(token) ||
-                                                         Reserved.IsReserved(token) ||
-                                                         Evaluator.IsConstant(token);
+                                                         Reserved.IsReserved(token);
 
         bool IsSymbolName(string token, bool allowLeadUnderscore = true, bool allowDot = true)
         {
@@ -181,8 +180,9 @@ namespace DotNetAsm
             return Symbols.Labels.IsSymbolValid(token, true);
         }
 
-        string SymbolsToValues(string expression)
+        IEnumerable<ExpressionElement> SymsToVals(string expression)
             => Symbols.TranslateExpressionSymbols(_currentLine, expression, _localLabelScope, _passes > 0);
+
 
         /// <remarks>
         /// Define macros and segments, and add included source files.

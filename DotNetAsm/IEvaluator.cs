@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 
 namespace DotNetAsm
 {
@@ -56,26 +57,20 @@ namespace DotNetAsm
         bool EvalCondition(string expression);
 
         /// <summary>
-        /// Defines a symbol lookup for the evaluator to translate symbols (such as 
+        /// Defines a parser for the evaluator. Typically used to translate symbols (such as 
         /// variables) in expressions.
         /// </summary>
-        /// <param name="lookupFunc">The lookup function to define the symbol.</param>
-        void DefineSymbolLookup(Func<string, string> lookupFunc);
+        /// <param name="parsingFunc">The parsing function to return the expression elements..</param>
+        void DefineParser(Func<string, IEnumerable<ExpressionElement>> parsingFunc);
 
         /// <summary>
-        /// Defines a symbol lookup for the evaluator to translate symbols (such as 
-        /// variables) in expressions.
+        /// Extracts the individual expression elements, or tokens, from a string
+        /// representation of a mathematical expression before they are sent to
+        /// the calculation unit for final processing.
         /// </summary>
-        /// <param name="regex">A regex pattern for the symbol.</param>
-        /// <param name="lookupfunc">The lookup function to define the symbol.</param>
-        void DefineSymbolLookup(string regex, Func<string, string> lookupfunc);
-
-        /// <summary>
-        /// Determines if the specifed symbol is a constant to the evaluator and would be
-        /// evaulated as such.
-        /// </summary>
-        /// <returns><c>true</c>, if the symbol is a constant, <c>false</c> otherwise.</returns>
-        /// <param name="symbol">Symbol.</param>
-        bool IsConstant(string symbol);
+        /// <returns> A <see cref="System.Collections.Generic.IEnumerable{DotNetAsm.ExpressionElement}"/>
+        /// </returns>
+        /// <param name="expression">The mathematical expression.</param>
+        IEnumerable<ExpressionElement> ParseElements(string expression);
     }
 }

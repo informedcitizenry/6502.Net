@@ -5,6 +5,9 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+
 namespace DotNetAsm
 {
     /// <summary>
@@ -41,6 +44,6 @@ namespace DotNetAsm
         /// <param name="scope">Scope information about the current expression.</param>
         /// <param name="errorOnAnonymousNotFound">Raise an error if the anonymous symbol could
         /// not be translated.</param>
-        string TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound);
+        IEnumerable<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound);
     }
 }
