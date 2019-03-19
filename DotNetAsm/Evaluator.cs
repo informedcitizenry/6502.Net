@@ -287,33 +287,18 @@ namespace DotNetAsm
                             }
                         }
                     }
-                    else
+                    else if (!_compounds.Contains(elementBuilder.ToString() + c))
                     {
-                        if (elementBuilder.Length == 0)
+                        currentElement.subtype = ExpressionElement.Subtype.Binary;
+                        AddElement();
+                        if (c.IsRadixOperator())
                         {
-                            if (c.IsRadixOperator() && nextIsOperand)
-                            {
-                                currentElement.type = ExpressionElement.Type.Operand;
-                                currentElement.subtype = ExpressionElement.Subtype.None;
-                            }
-                            else
-                            {
-                                currentElement.subtype = ExpressionElement.Subtype.Unary;
-                            }
+                            currentElement.type = ExpressionElement.Type.Operand;
+                            currentElement.subtype = ExpressionElement.Subtype.None;
                         }
-                        else if (!_compounds.Contains(elementBuilder.ToString() + c))
+                        else
                         {
-                            currentElement.subtype = ExpressionElement.Subtype.Binary;
-                            AddElement();
-                            if (c.IsRadixOperator())
-                            {
-                                currentElement.type = ExpressionElement.Type.Operand;
-                                currentElement.subtype = ExpressionElement.Subtype.None;
-                            }
-                            else
-                            {
-                                currentElement.subtype = ExpressionElement.Subtype.Unary;
-                            }
+                            currentElement.subtype = ExpressionElement.Subtype.Unary;
                         }
                     }
                     elementBuilder.Append(c);
@@ -364,16 +349,38 @@ namespace DotNetAsm
 
         double Calculate(IEnumerable<ExpressionElement> parsedElements)
         {
-            var output = new List<ExpressionElement>();
+            var output = new Stack<double>();
             var operators = new Stack<ExpressionElement>();
             try
             {
                 foreach (var element in parsedElements)
                 {
                     if (element.type == ExpressionElement.Type.Operand)
-                        output.Add(element);
+                    {
+                        if (element.word[0].IsRadixOperator())
+                        {
+                            var hexbin = element.word.Substring(1);
+                            int radix;
+                            if (element.word[0] == '%')
+                            {
+                                radix = 2;
+                                hexbin = Regex.Replace(hexbin, @"^([#.]+)$", m => m.Groups[1].Value.Replace("#", "1").Replace(".", "0"));
+                            }
+                            else
+                            {
+                                radix = 16;
+                            }
+                            output.Push(Convert.ToInt64(hexbin, radix));
+                        }
+                        else
+                        {
+                            output.Push(double.Parse(element.word));
+                        }
+                    }
                     else if (element.type == ExpressionElement.Type.Function || element.subtype == ExpressionElement.Subtype.Open)
+                    {
                         operators.Push(element);
+                    }
                     else if (element.type == ExpressionElement.Type.Operator)
                     {
                         if (operators.Count > 0)
@@ -387,7 +394,7 @@ namespace DotNetAsm
                                 if (topElement.subtype != ExpressionElement.Subtype.Open && topOrder >= elemOrder)
                                 {
                                     operators.Pop();
-                                    output.Add(topElement);
+                                    DoOperation(topElement);
                                     if (operators.Count > 0)
                                         topElement = operators.Peek();
                                     else
@@ -410,7 +417,7 @@ namespace DotNetAsm
                             {
                                 operators.Pop();
                                 if (!topElement.word.Equals(","))
-                                    output.Add(topElement);
+                                    DoOperation(topElement);
                                 if (operators.Count == 0)
                                     throw new Exception();
                                 topElement = operators.Peek();
@@ -421,58 +428,32 @@ namespace DotNetAsm
                     }
                 }
                 while (operators.Count > 0)
-                    output.Add(operators.Pop());
+                    DoOperation(operators.Pop());
 
-                Stack<double> result = new Stack<double>();
-                foreach (var element in output)
+                void DoOperation(ExpressionElement op)
                 {
-                    if (element.type == ExpressionElement.Type.Operand)
+                    OperationDef operation = null;
+                    List<double> parms = new List<double> { output.Pop() };
+                    if (op.type == ExpressionElement.Type.Function)
                     {
-                        if (element.word[0].IsRadixOperator())
-                        {
-                            var hexbin = element.word.Substring(1);
-                            int radix;
-                            if (element.word[0] == '%')
-                            {
-                                radix = 2;
-                                hexbin = Regex.Replace(hexbin, @"^([#.]+)$", m => m.Groups[1].Value.Replace("#", "1").Replace(".", "0"));
-                            }
-                            else
-                            {
-                                radix = 16;
-                            }
-                            result.Push(Convert.ToInt64(hexbin, radix));
-                        }
-                        else
-                        {
-                            result.Push(double.Parse(element.word));
-                        }
+                        operation = _functions[op.word];
+                        var parmcount = operation.Item2 - 1;
+                        while (parmcount-- > 0)
+                            parms.Add(output.Pop());
                     }
                     else
                     {
-                        OperationDef operation = null;
-                        List<double> parms = new List<double> { result.Pop() };
-                        if (element.type == ExpressionElement.Type.Function)
-                        {
-                            operation = _functions[element.word];
-                            var parmcount = operation.Item2 - 1;
-                            while (parmcount-- > 0)
-                                parms.Add(result.Pop());
-                        }
-                        else
-                        {
-                            operation = _operators[element];
-                            if (element.subtype == ExpressionElement.Subtype.Binary)
-                                parms.Add(result.Pop());
-                            if (element.integral && parms.Any(p => Math.Abs(p) - Math.Abs(Math.Round(p)) > Double.Epsilon))
-                                throw new Exception();
-                        }
-                        result.Push(operation.Item1(parms));
+                        operation = _operators[op];
+                        if (op.subtype == ExpressionElement.Subtype.Binary)
+                            parms.Add(output.Pop());
+                        if (op.integral && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
+                            throw new Exception();
                     }
+                    output.Push(operation.Item1(parms));
                 }
-                if (result.Count > 1)
+                if (output.Count > 1)
                     throw new Exception();
-                return result.Pop();
+                return output.Pop();
             }
             catch
             {
