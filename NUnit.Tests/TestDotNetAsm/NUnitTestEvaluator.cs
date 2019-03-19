@@ -76,7 +76,13 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestExpressionErrors()
         {
             var eval = new Evaluator();
-
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(,4)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,)4"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(2 3)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,3,4)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("sin(2)3"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("sin(2,3)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,4,)3"));
             Assert.Throws<ExpressionException>(() => eval.Eval("56(34)"));
             Assert.Throws<ExpressionException>(() => eval.Eval("*56"));
             Assert.Throws<ExpressionException>(() => eval.Eval("56 (24)"));
@@ -84,6 +90,8 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.Throws<ExpressionException>(() => eval.Eval("56*(24+)"));
             Assert.Throws<ExpressionException>(() => eval.Eval("(4+1"));
             Assert.Throws<ExpressionException>(() => eval.Eval("8+2)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,pow(3,))"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(pow(2,1),pow(3,))"));
         }
 
         [Test]

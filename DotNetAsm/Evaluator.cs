@@ -351,9 +351,13 @@ namespace DotNetAsm
         {
             var output = new Stack<double>();
             var operators = new Stack<ExpressionElement>();
+            var parmStateStack = new Stack<bool>();
+
+            int parmsPassed = 1;
+            bool parmNeeded = false;
             try
             {
-                foreach (var element in parsedElements)
+                foreach(var element in parsedElements)
                 {
                     if (element.type == ExpressionElement.Type.Operand)
                     {
@@ -376,13 +380,21 @@ namespace DotNetAsm
                         {
                             output.Push(double.Parse(element.word));
                         }
+                        parmNeeded = false;
                     }
                     else if (element.type == ExpressionElement.Type.Function || element.subtype == ExpressionElement.Subtype.Open)
                     {
+                        if (element.type == ExpressionElement.Type.Function)
+                        {
+                            parmStateStack.Push(parmNeeded);
+                            parmNeeded = false;
+                        }
                         operators.Push(element);
                     }
                     else if (element.type == ExpressionElement.Type.Operator)
                     {
+                        if (element.word.Equals(","))
+                            parmNeeded = true;
                         if (operators.Count > 0)
                         {
                             ExpressionElement topElement = new ExpressionElement();
@@ -394,7 +406,8 @@ namespace DotNetAsm
                                 if (topElement.subtype != ExpressionElement.Subtype.Open && topOrder >= elemOrder)
                                 {
                                     operators.Pop();
-                                    DoOperation(topElement);
+                                    if (!topElement.word.Equals(","))
+                                        DoOperation(topElement);
                                     if (operators.Count > 0)
                                         topElement = operators.Peek();
                                     else
@@ -410,6 +423,8 @@ namespace DotNetAsm
                     }
                     else if (element.subtype == ExpressionElement.Subtype.Close)
                     {
+                        if (parmNeeded)
+                            throw new Exception();
                         if (operators.Count > 0)
                         {
                             var topElement = operators.Peek();
@@ -418,6 +433,7 @@ namespace DotNetAsm
                                 operators.Pop();
                                 if (!topElement.word.Equals(","))
                                     DoOperation(topElement);
+                                else parmsPassed++;
                                 if (operators.Count == 0)
                                     throw new Exception();
                                 topElement = operators.Peek();
@@ -437,12 +453,20 @@ namespace DotNetAsm
                     if (op.type == ExpressionElement.Type.Function)
                     {
                         operation = _functions[op.word];
-                        var parmcount = operation.Item2 - 1;
-                        while (parmcount-- > 0)
+                        if (parmsPassed != operation.Item2)
+                            throw new Exception();
+                        while (parmsPassed > 1)
+                        {
                             parms.Add(output.Pop());
+                            parmsPassed--;
+                        }
+                        parmNeeded = parmStateStack.Pop();
                     }
                     else
                     {
+                        if (parmsPassed > 1)
+                            throw new Exception();
+                        parmNeeded = false;
                         operation = _operators[op];
                         if (op.subtype == ExpressionElement.Subtype.Binary)
                             parms.Add(output.Pop());
