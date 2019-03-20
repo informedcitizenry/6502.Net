@@ -80,7 +80,7 @@ namespace DotNetAsm
         /// <see cref="T:System.Int32" /> value.
         /// </summary>
         /// <param name="s">The string element to encode.</param>
-        /// <returns>An unsigned 32-bit integer representing the 
+        /// <returns>A signed 32-bit integer representing the 
         /// encoding of the character.</returns>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         /// <exception cref="T:System.ArgumentNullException"></exception>

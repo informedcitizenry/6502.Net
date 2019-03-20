@@ -60,17 +60,21 @@ namespace DotNetAsm
 
         public override string ToString() => string.Format("{0} [{1}.{2}]", word, type, subtype);
 
-        public override bool Equals(object obj) => Equals(obj);
+        public override bool Equals(object obj) => obj is ExpressionElement && this == (ExpressionElement)obj;
 
         public override int GetHashCode() => word.GetHashCode() | 
                                              type.GetHashCode() | 
                                              subtype.GetHashCode();
 
         public static bool operator ==(ExpressionElement lhs, ExpressionElement rhs) 
-                                        => lhs.Equals(rhs);
+                                        => lhs.word.Equals(rhs.word) &&
+                                           lhs.type == rhs.type &&
+                                           lhs.subtype == rhs.subtype;
 
         public static bool operator !=(ExpressionElement lhs, ExpressionElement rhs) 
-                                        => !lhs.Equals(rhs);
+                                        => !lhs.word.Equals(rhs.word) ||
+                                            lhs.type != rhs.type ||
+                                            lhs.subtype != rhs.subtype;
 
         /// <summary>
         /// Determines whether the specified <see cref="DotNetAsm.ExpressionElement"/> is 

@@ -51,7 +51,7 @@ namespace DotNetAsm
         public SourceLine() :
             this(string.Empty, 0, string.Empty)
         {
-            
+
         }
 
         #endregion
@@ -97,7 +97,7 @@ namespace DotNetAsm
                 {
                     // stop at a white space or the last character in the string
 
-                    // if token not not yet being built skip whitspace
+                    // if token not yet being built skip whitspace
                     if (char.IsWhiteSpace(c) && tokenBuilder.Length == 0)
                     {
                         continue;
@@ -205,18 +205,23 @@ namespace DotNetAsm
                                                       , Operand);
         }
 
-        public override int GetHashCode() => LineNumber.GetHashCode() + 
-                                             Filename.GetHashCode() + 
+        public override int GetHashCode() => LineNumber.GetHashCode() | 
+                                             Filename.GetHashCode() |
                                              SourceString.GetHashCode();
+
+        public override bool Equals(object obj)
+                => obj != null && 
+                   (ReferenceEquals(this, obj) ||
+                    (obj is SourceLine && this.Equals((SourceLine)obj)));
 
         #endregion
 
         #region IEquatable
 
         public bool Equals(SourceLine other) => 
-                   (other.LineNumber == this.LineNumber &&
-                    other.Filename == this.Filename &&
-                    other.SourceString == this.SourceString);
+                    other.LineNumber == LineNumber &&
+                    other.Filename.Equals(Filename) &&
+                    other.SourceString.Equals(SourceString);
 
         #endregion
 

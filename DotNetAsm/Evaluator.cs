@@ -349,7 +349,6 @@ namespace DotNetAsm
 
         double Calculate(List<ExpressionElement> parsedElements)
         {
-            var output = new List<ExpressionElement>();
             var operators = new Stack<ExpressionElement>();
             Stack<double> result = new Stack<double>();
             int openParens = 0;
