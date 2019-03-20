@@ -109,7 +109,7 @@ namespace DotNetAsm
 
             Evaluator = new Evaluator(Options.CaseSensitive);
 
-            Evaluator.DefineParser(SymsToVals);
+            Evaluator.DefineParser(SymbolsToValues);
 
             Symbols = new SymbolManager(this);
             _localLabelScope = string.Empty;
@@ -180,7 +180,7 @@ namespace DotNetAsm
             return Symbols.Labels.IsSymbolValid(token, true);
         }
 
-        IEnumerable<ExpressionElement> SymsToVals(string expression)
+        List<ExpressionElement> SymbolsToValues(string expression)
             => Symbols.TranslateExpressionSymbols(_currentLine, expression, _localLabelScope, _passes > 0);
 
 

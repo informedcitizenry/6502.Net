@@ -143,7 +143,7 @@ namespace DotNetAsm
             return -1;
         }
 
-        public IEnumerable<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound)
+        public List<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound)
         {
             char lastTokenChar = char.MinValue;
             StringBuilder translated = new StringBuilder(), symbolBuilder = new StringBuilder();

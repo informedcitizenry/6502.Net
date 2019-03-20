@@ -44,6 +44,6 @@ namespace DotNetAsm
         /// <param name="scope">Scope information about the current expression.</param>
         /// <param name="errorOnAnonymousNotFound">Raise an error if the anonymous symbol could
         /// not be translated.</param>
-        IEnumerable<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound);
+        List<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound);
     }
 }

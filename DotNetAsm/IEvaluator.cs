@@ -61,16 +61,16 @@ namespace DotNetAsm
         /// variables) in expressions.
         /// </summary>
         /// <param name="parsingFunc">The parsing function to return the expression elements..</param>
-        void DefineParser(Func<string, IEnumerable<ExpressionElement>> parsingFunc);
+        void DefineParser(Func<string, List<ExpressionElement>> parsingFunc);
 
         /// <summary>
         /// Extracts the individual expression elements, or tokens, from a string
         /// representation of a mathematical expression before they are sent to
         /// the calculation unit for final processing.
         /// </summary>
-        /// <returns> A <see cref="System.Collections.Generic.IEnumerable{DotNetAsm.ExpressionElement}"/>
+        /// <returns> A <see cref="System.Collections.Generic.List{DotNetAsm.ExpressionElement}"/>
         /// </returns>
         /// <param name="expression">The mathematical expression.</param>
-        IEnumerable<ExpressionElement> ParseElements(string expression);
+        List<ExpressionElement> ParseElements(string expression);
     }
 }

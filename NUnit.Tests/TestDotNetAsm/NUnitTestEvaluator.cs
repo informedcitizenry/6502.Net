@@ -67,8 +67,8 @@ namespace NUnit.Tests.TestDotNetAsm
             result = eval.Eval("pow(2,4)+pow(2,6)");
             Assert.AreEqual((long)(Math.Pow(2, 4) + Math.Pow(2, 6)), result);
 
-            result = eval.Eval("pow(pow(2,1),pow(2,2))+pow(3,abs(-3))");
-            var result2 = Math.Pow(Math.Pow(2, 1), Math.Pow(2, 2)) + Math.Pow(3, Math.Abs(-3));
+            result = eval.Eval("pow(pow(2,1),pow(2,2))+pow((3+1)*2,abs(-3)-1)");
+            var result2 = Math.Pow(Math.Pow(2, 1), Math.Pow(2, 2)) + Math.Pow((3+1)*2, Math.Abs(-3)-1);
             Assert.AreEqual((long)result2, result);
         }
 
@@ -77,8 +77,11 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             var eval = new Evaluator();
             Assert.Throws<ExpressionException>(() => eval.Eval("pow(,4)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(4,)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(4)"));
             Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,)4"));
             Assert.Throws<ExpressionException>(() => eval.Eval("pow(2 3)"));
+            Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,3"));
             Assert.Throws<ExpressionException>(() => eval.Eval("pow(2,3,4)"));
             Assert.Throws<ExpressionException>(() => eval.Eval("sin(2)3"));
             Assert.Throws<ExpressionException>(() => eval.Eval("sin(2,3)"));
@@ -234,11 +237,6 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestEvaluatorConditionals()
         {
-            double d1 = 12.0;
-            double d2 = 7.0;
-            double d3 = 7.0;
-            Assert.IsTrue(Math.Abs(d1 - d2) > double.Epsilon);
-            Assert.IsTrue(Math.Abs(d2 - d3) <= double.Epsilon);
             IEvaluator eval = new Evaluator();
             var simple = eval.EvalCondition("1 < 3");
             var compound = eval.EvalCondition("5+2 > 6 && 4+3 != 12");
