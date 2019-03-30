@@ -1164,11 +1164,10 @@ done    rts
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Declare a segment to be used in code. The segment declaration can precede its definition in the <code>.segment</code>/<code>.endsegment</code> block.
 </td></tr>
-<tr><td><b>Arguments</b></td><td><code>The segment name</code></td></tr>
+<tr><td><b>Arguments</b></td><td>Segment name</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
       .dsegment code    ; >> a2 0f
-      
       .segment code
             ldx #$0f
       .endsegment
