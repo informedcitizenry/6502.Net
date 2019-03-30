@@ -623,9 +623,12 @@ namespace Asm6502.Net
         {
             if (Reserved.IsOneOf("LongShort", line.Instruction))
                 return 0;
-
-            if (Reserved.IsOneOf("OneBytes", line.Instruction))
+                
+            if (string.IsNullOrEmpty(line.Operand))
                 return 1;
+
+            if (line.Operand[0] == '#')
+                return 2;
 
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
                 return 2 * line.Operand.CommaSeparate().Count;
@@ -645,10 +648,24 @@ namespace Asm6502.Net
             if (Reserved.IsOneOf("MoveMemory", line.Instruction))
                 return 3;
 
-            var formatOpcode = GetFormatAndOpcode(line);
-            if (formatOpcode.Item2 != null)
-                return formatOpcode.Item2.Size;
-            return 0;
+            // not perfect, buta gain we are just getting most approximate...
+            if (line.Operand[0] == '(' && 
+                (line.Operand.EndsWith("),y", Controller.Options.StringComparison) ||
+                line.Operand.EndsWith(",x)", Controller.Options.StringComparison)))
+                return 2;
+
+            try
+            {
+                // oh well, now we have to try to parse
+                var formatOpcode = GetFormatAndOpcode(line);
+                if (formatOpcode.Item2 != null)
+                    return formatOpcode.Item2.Size;
+                return 0;
+            }
+            catch
+            {
+                return 3;
+            }
         }
 
         public bool AssemblesInstruction(string instruction)

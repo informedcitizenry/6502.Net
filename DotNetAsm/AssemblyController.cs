@@ -258,7 +258,7 @@ namespace DotNetAsm
                 Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
         }
 
-        public void DoPass(IEnumerable<SourceLine> source)
+        public void DoPasses(IEnumerable<SourceLine> source)
         {
             int id = 1;
             var sourceList = source.ToList();
@@ -273,7 +273,6 @@ namespace DotNetAsm
                     _currentLine = sourceList[i];
                     try
                     {
-                        // on first pass, parse the line
                         if (_passes == 0)
                         {
                             _currentLine.Id = id++;
@@ -283,6 +282,11 @@ namespace DotNetAsm
                                     _processedLines.Add(_currentLine);
                                 continue;
                             }
+                            //--------------------------------------------------
+                            //
+                            // Parse the source into labels, instructions, etc.
+                            //
+                            //--------------------------------------------------
                             if (!_currentLine.IsParsed)
                             {
                                 if (string.IsNullOrWhiteSpace(_currentLine.SourceString))
@@ -372,6 +376,11 @@ namespace DotNetAsm
                                     }
                                 }
                             }
+                            //--------------------------------------------------
+                            //
+                            // Process blocks.
+                            //
+                            //--------------------------------------------------
                             if (_currentLine.Instruction.Equals(".end", Options.StringComparison))
                                 break;
                             var currentHandler = _blockHandlers.FirstOrDefault(h => h.IsProcessing());
@@ -395,7 +404,12 @@ namespace DotNetAsm
                         {
                             continue;
                         }
-                        // check to see if program counter changed since the last pass through 
+                        //------------------------------------------------------
+                        //
+                        // Update the program counter, then check to see if it
+                        // changed since the last pass.
+                        //
+                        //------------------------------------------------------
                         UpdatePC();
                         long value = Output.LogicalPC;
                         if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
@@ -427,7 +441,11 @@ namespace DotNetAsm
                             needPass = _currentLine.PC != value;
                         _currentLine.PC = value;
 
-                        // now assemble the instruction
+                        //------------------------------------------------------
+                        //
+                        // Attempt to do assembly.
+                        //
+                        //------------------------------------------------------
                         if (string.IsNullOrEmpty(_currentLine.Instruction))
                             continue;
                         if (!IsAssignmentDirective())
@@ -681,7 +699,11 @@ namespace DotNetAsm
             long val = 0;
             if (_currentLine.Label.Equals("*"))
             {
-                if (IsAssignmentDirective())
+                if (string.IsNullOrEmpty(_currentLine.Instruction))
+                {
+                    // do nothing
+                }
+                else if (IsAssignmentDirective())
                 {
                     val = Evaluator.Eval(_currentLine.Operand, UInt16.MinValue, UInt16.MaxValue);
                     Output.SetPC(Convert.ToUInt16(val));
@@ -895,19 +917,13 @@ namespace DotNetAsm
 
             if (Log.HasErrors == false)
             {
-                DoPass(source);
-               //FirstPass(source);
-
+                DoPasses(source);
+              
                 if (Log.HasErrors == false)
                 {
-                    //SecondPass();
+                    SaveOutput();
 
-                    if (Log.HasErrors == false)
-                    {
-                        SaveOutput();
-
-                        ToListing();
-                    }
+                    ToListing();
                 }
             }
             PrintStatus(asmTime);

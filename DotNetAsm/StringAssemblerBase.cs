@@ -240,7 +240,8 @@ namespace DotNetAsm
                 Controller.Output.Transforms.Push(b => Convert.ToByte(b << 1));
             }
             var args = line.Operand.CommaSeparate();
-
+            if (line.Assembly.Count > 0)
+                line.Assembly.Clear();
             foreach (var arg in args)
             {
                 List<byte> encoded;

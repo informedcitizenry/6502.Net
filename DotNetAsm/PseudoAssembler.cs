@@ -84,6 +84,8 @@ namespace DotNetAsm
         void AssembleValues(SourceLine line, long minval, long maxval, int size)
         {
             var tokens = line.Operand.CommaSeparate();
+            if (line.Assembly.Count > 0)
+                line.Assembly.Clear();
             foreach (var t in tokens)
             {
                 if (t == "?")
