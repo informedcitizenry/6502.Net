@@ -1540,7 +1540,7 @@ message     .cstring "HELLO, HIGH CODE!"
 <table>
 <tr><td><b>Name</b></td><td><code>.segment</code>/<code>.endsegment</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Defines a block of code as a segment, to be invoked and expanded elsewhere. Similar to macros but takes no parameters and symbols are not local. Useful for building large mix of source code and data without needing to relocate code manually. Segments can be defined within other segment block definitions, but are not considered "nested." Segment closures require the segment name after the directive.</td></tr>
+<tr><td><b>Definition</b></td><td>Defines a block of code as a segment, to be declared into source with the <code>.dsegment</code> directive. Similar to macros but takes no parameters and symbols are not local. Useful for building large mix of source code and data without needing to relocate code manually. Segments can be defined within other segment block definitions, but are not considered "nested." Segment closures require the segment name after the directive.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>segmentname</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1570,13 +1570,13 @@ glyph             ;12345678
             jsr init
             .endsegment code
             * = $80
-            .zp
+            .dsegment zp
             * = $0100
-            .bss
+            .dsegment bss
             * = $0801
-            .code
+            .dsegment code
             * = $0900
-            .data
+            .dsegment data
 </pre>
 </td></tr>
 </table>
