@@ -1607,6 +1607,7 @@ glyph             ;12345678
 </pre>
 </td></tr>
 </table>
+<table>
 <tr><td><b>Name</b></td><td><code>.unmap</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Unmaps a custom code for a character or range of characters in the selected encoding and reverts to UTF-8. Note: <code>none</code> is not affected by <code>.map</code> and <code>.unmap</code> directives. It is recommended to represent individual char literals as strings.
