@@ -268,6 +268,7 @@ namespace DotNetAsm
             {
                 needPass = false;
                 Output.Reset();
+                Symbols.Variables.Clear();
                 for (int i = 0; i < sourceList.Count; i++)
                 {
                     _currentLine = sourceList[i];
