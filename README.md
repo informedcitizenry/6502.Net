@@ -524,7 +524,8 @@ This macro expands to:
             inc myvariable+1
 +           ...
 ```
-Segments are conceptually identical to macros, except they do not accept parameters and are usually used as larger segments of relocatable code. Segments are defined between `.segment`/`.endsegment` blocks with the segment name after each closure directive.
+Segments are conceptually identical to macros, except they do not accept parameters and are usually used as larger segments of relocatable code. Segments are defined between `.segment`/`.endsegment` blocks with the segment name after each closure directive, then
+are declared into the source using the `.dsegment` directive, followed by the segment name. Unlike macros, segments can be declared before they are defined.
 ```
             .segment zp
 
@@ -546,11 +547,11 @@ zpvar2      .word ?
 Then you would assemble defined segments as follows:
 ```
             * = $02
-            .zp
+            .dsegment zp
             .errorif * > $ff, ".zp segment outside of zero-page!"
 
             * = $c000
-            .code
+            .dsegment code
 ```        
 You can also define segments within other segment definitions. Note that doing this does not make them "nested." The above example would be re-written as:
 ```
@@ -571,13 +572,12 @@ variables   .byte ?
             .endsegment program
 
             * = $02
-            .zp
+            .dsegment zp
             * = $033c
-            .bss
+            .dsegment bss
             * = $c000
-            .code
+            .dsegment code
 ```
-Macros and segments must be defined before they can be invoked.
 ## Flow Control
 In cases where you want to control the flow of assembly, either based on certain conditions (environmental or target architecture) or in certain iterations, 6502.Net provides certain directives to handle this.
 ### Conditional Assembly
@@ -1160,6 +1160,24 @@ done    rts
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.dsegment</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Declare a segment to be used in code. The segment declaration can precede its definition in the <pre>.segment</pre>/<pre>.endsegment</pre> block.
+</td></tr>
+<tr><td><b>Arguments</b></td><td><code>The segment name</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      * = $2000
+      .dsegment code    ; >> a2 0f
+      
+      .segment code
+            ldx #$0f
+      .endsegment
+</pre>
+</td></tr>
+</table>
+<table>
+<table>
 <tr><td><b>Name</b></td><td><code>.echo</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Send a message to the console output. Note if the assembler
@@ -1359,36 +1377,6 @@ start       ; same as start .equ *
 </td></tr>
 </table>
 <table>
-<tr><td><b>Name</b></td><td><code>.mx8</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Directs the assembler to treat all immediate mode operations as 8-bit (one byte). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
-<tr><td><b>Arguments</b></td><td>None</td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-      sep #$30
-      .mx8
-      lda #$13
-      ldx #$14
-      ldy #$15
-</pre>
-</td></tr>
-</table>
-<table>
-<tr><td><b>Name</b></td><td><code>.mx16</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Directs the assembler to treat all immediate mode operations as 16-bit (two bytes). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
-<tr><td><b>Arguments</b></td><td>None</td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-      rep #$30
-      .mx16
-      lda #$1234
-      ldx #$5678
-      ldy #$9abc
-</pre>
-</td></tr>
-</table>
-<table>
 <tr><td><b>Name</b></td><td><code>.macro</code>/<code>.endmacro</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading backslash <code>\</code> and either the macro name or the number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are called by name with a leading "." All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
@@ -1442,6 +1430,37 @@ print       .macro  value = 13, printsub = $ffd2
 </pre>
 </td></tr>
 </table>
+<table>
+<tr><td><b>Name</b></td><td><code>.mx8</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat all immediate mode operations as 8-bit (one byte). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      sep #$30
+      .mx8
+      lda #$13
+      ldx #$14
+      ldy #$15
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.mx16</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Directs the assembler to treat all immediate mode operations as 16-bit (two bytes). Useful for when the assembler is in <code>65816</code> mode.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      rep #$30
+      .mx16
+      lda #$1234
+      ldx #$5678
+      ldy #$9abc
+</pre>
+</td></tr>
+</table>
+<table>
 <table>
 <tr><td><b>Name</b></td><td><code>.relocate</code>/<code>.endrelocate</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>.pseudopc</code>/<code>.realpc</code></td></tr>
