@@ -295,7 +295,7 @@ A further note about encodings and source files. As mentioned, source files are 
 
 #### Escape sequences
 
-All [.Net escape sequences](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/#string-escape-sequences) will also output, including Unicode.
+Most [.Net escape sequences](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/#string-escape-sequences) will also output, including Unicode.
 
 ```
             .string "He said, \"How are you?\""
@@ -364,7 +364,7 @@ You can also control how the binary will be included by specifying the offset (n
 
 ### Mathematical and Conditional Expressions
 
-All non-string operands are treated as math or conditional expressions. Compound expressions are nested in paranetheses. There are several available operators for both binary and unary expressions.
+All non-string operands are treated as math or conditional expressions. Compound expressions are nested in paranetheses. There are several available operators for both binary and unary expressions. The order of operation generally follows that the .Net languages for matching operators, with the byte extractors taking highest precedence.
 
 #### Binary Operations
 
@@ -398,14 +398,14 @@ All non-string operands are treated as math or conditional expressions. Compound
             .assert START_ADDR >= MIN && START_ADDR <= MAX
 ```
 #### Unary Operations
-| Operator      | Meaning                        |
-| :-----------: | ------------------------------ |
-| ~             | Bitwise complementary          |
-| <             | Least significant byte         |
-| >             | Most significant (second) byte |
-| &             | Word (first two bytes) value   |
-| ^             | Bank (third) byte              |
-| !             | Logical NOT                    |
+| Operator      | Meaning                                |
+| :-----------: | -------------------------------------- |
+| ~             | Bitwise complementary                  |
+| <             | Extract significant byte               |
+| >             | Extract Most significant (second) byte |
+| &             | Extract Word (first two bytes) value   |
+| ^             | Extract Bank (third) byte              |
+| !             | Logical NOT                            |
 ```
 
             lda #>routine-1     ; routine MSB
