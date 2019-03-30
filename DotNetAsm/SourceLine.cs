@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,7 +15,7 @@ namespace DotNetAsm
     /// <summary>
     /// Encapsulates a single line of assembly source.
     /// </summary>
-    public sealed class SourceLine : IEquatable<SourceLine>, ICloneable
+    public sealed class SourceLine : ICloneable, IEquatable<SourceLine>
     {
         #region Members
 
@@ -59,125 +60,6 @@ namespace DotNetAsm
         #region Methods
 
         /// <summary>
-        /// Parse the <see cref="DotNetAsm.SourceLine"/>'s SourceString property 
-        /// into its component line, instruction and operand.
-        /// </summary>
-        /// <param name="isInstruction">A callback to determine which part of the source
-        /// is the instruction.</param>
-        /// <returns>A <see cref="System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>.
-        /// This collection will be empty if the line's SourceString does not contain a
-        /// compound instruction.</returns>
-        public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction)
-        {
-            return Parse(isInstruction, true);
-        }
-
-        /// <summary>
-        /// Parse the <see cref="DotNetAsm.SourceLine"/>'s SourceString property 
-        /// into its component line, instruction and operand.
-        /// </summary>
-        /// <param name="isInstruction">A callback to determine which part of the source
-        /// is the instruction.</param>
-        /// <param name="allowLabel">Allow a label to be defined</param>
-        /// <returns>A <see cref="System.Collections.Generic.IEnumerable&lt;DotNetAsm.SourceLine&gt;"/>.
-        /// This collection will be empty if the line's SourceString does not contain a
-        /// compound instruction.</returns>
-        public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction, bool allowLabel)
-        {
-            var tokenBuilder = new StringBuilder();
-            var len = SourceString.Length;
-            List<SourceLine> compounds = new List<SourceLine> { this };
-            Label = Instruction = Operand = string.Empty;
-            int instructionIndex = 0;
-            int i;
-            for (i = 0; i < len; i++)
-            {
-                var c = SourceString[i];
-                if (char.IsWhiteSpace(c) || c == ';' || c == ':' || i == len - 1)
-                {
-                    // stop at a white space or the last character in the string
-
-                    // if token not yet being built skip whitspace
-                    if (char.IsWhiteSpace(c) && tokenBuilder.Length == 0)
-                    {
-                        continue;
-                    }
-
-                    if (!char.IsWhiteSpace(c) && c != ';' && c != ':')
-                        tokenBuilder.Append(c);
-
-                    if (string.IsNullOrEmpty(Instruction))
-                    {
-                        var token = tokenBuilder.ToString();
-                        if (string.IsNullOrEmpty(Label) && allowLabel)
-                        {
-                            if (isInstruction(token))
-                            {
-                                instructionIndex = i - token.Length;
-                                Instruction = token;
-                            }
-                            else
-                            {
-                                Label = token;
-                            }
-                        }
-                        else
-                        {
-                            instructionIndex = i - token.Length;
-                            Instruction = token;
-                        }
-                        tokenBuilder.Clear();
-                    }
-                    else if (char.IsWhiteSpace(c) && i < len - 1)
-                    {
-                        // operand can include white spaces, so capture...
-                        tokenBuilder.Append(c);
-                    }
-                    if (c == ';' || c == ':')
-                    {
-                        if (c == ':' && i < len - 1)
-                        {
-                            var compoundLine = new SourceLine
-                            {
-                                Filename = this.Filename,
-                                LineNumber = this.LineNumber
-                            };
-                            var newSource = this.SourceString.Substring(i + 1);
-                            compoundLine.SourceString = newSource.PadLeft(instructionIndex + newSource.Length);
-
-                            SourceString = SourceString.Substring(0, i);
-                            // and parsed compound (and any others)
-                            compounds.AddRange(compoundLine.Parse(isInstruction, false));
-                        }
-                        break;
-                    }
-                }
-                else if (c == '"' || c == '\'')
-                {
-                    // process quotes separately
-                    var quoted = SourceString.GetNextQuotedString(atIndex: i);
-                    tokenBuilder.Append(quoted);
-                    i += quoted.Length - 1;
-                }
-                else if (c == '=' && string.IsNullOrEmpty(Instruction))
-                {
-                    // constructions such as label=value must be picked up 
-                    // so the instruction is the assignment operator
-                    if (string.IsNullOrEmpty(Label))
-                        Label = tokenBuilder.ToString();
-                    Instruction = "=";
-                    instructionIndex = i - 1;
-                    tokenBuilder.Clear();
-                }
-                else
-                {
-                    tokenBuilder.Append(c);
-                }
-            }
-            Operand = tokenBuilder.ToString().TrimEnd();
-            return compounds;
-        }
-        /// <summary>
         /// A unique identifier combination of the source's filename and line number.
         /// </summary>
         /// <returns>The identifier string.</returns>
@@ -197,9 +79,10 @@ namespace DotNetAsm
         {
             if (DoNotAssemble)
                 return string.Format("Do Not Assemble {0}", SourceString);
-            return string.Format("Line {0} ${1:X4} L:{2} I:{3} O:{4}",
+            return string.Format("Line {0} ${1:X4} [ID={2}] L:{3} I:{4} O:{5}",
                                                         LineNumber
                                                       , PC
+                                                      , Id
                                                       , Label
                                                       , Instruction
                                                       , Operand);
@@ -324,6 +207,15 @@ namespace DotNetAsm
         /// The <see cref="T:DotNetAsm.SourceLine"/>'s operand. This can be determined using the Parse method.
         /// </summary>
         public string Operand { get; set; }
+
+        /// <summary>
+        /// Gets a flag indicating whether this <see cref="T:DotNetAsm.SourceLine"/> has been parsed.
+        /// </summary>
+        /// <value><c>true</c> if the line has been parsed; otherwise, <c>false</c>.</value>
+        public bool IsParsed
+        {
+            get => !string.IsNullOrEmpty(Label) || !string.IsNullOrEmpty(Instruction);
+        }
 
         #endregion
     }

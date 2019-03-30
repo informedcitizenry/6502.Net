@@ -29,10 +29,19 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller) :
             base(controller)
         {
+            Reserved.DefineType("OneBytes",
+                    "brk", "clc", "cld", "cli", "clv", "dex", "dey", "inx",
+                    "iny", "jam", "nop", "pha", "phb", "phd", "phk", "php",
+                    "phx", "phy", "pla", "plb", "pld", "plp", "plx", "ply",
+                    "rts", "rti", "rtl", "sec", "sed", "sei", "stp", "tax",
+                    "tay", "tcd", "tcs", "tdc", "tsc", "tsx", "txa", "txs",
+                    "txy", "tya", "tyx", "wai", "wdm", "xba", "xce"
+                );
+
             Reserved.DefineType("Branches",
                     "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc", 
                     "bvs", "bra"
-                 );
+                );
 
             Reserved.DefineType("Branches16",
                     "brl", "per"
@@ -42,19 +51,12 @@ namespace Asm6502.Net
                     "asl", "lsr", "rol", "ror"
                 );
 
-            Reserved.DefineType("Mnemonics",
-                    "adc", "anc", "and", "ane", "arr", "asl", "asr", "bit",
-                    "brk", "clc", "cld", "cli", "clv", "cmp", "cop", "cpx", 
-                    "cpy", "dcp", "dex", "dey", "dop", "eor", "inx", "iny", 
-                    "isb", "jam", "jml", "jmp", "jsl", "jsr", "las", "lax", 
-                    "lda", "ldx", "ldy", "lsr", "nop", "ora", "pea", "pei", 
-                    "pha", "phb", "phd", "phk", "php", "phx", "phy", "pla", 
-                    "plb", "pld", "plp", "plx", "ply", "rep", "rla", "rol", 
-                    "ror", "rra", "rti", "rtl", "rts", "sbc", "sax", "sec", 
-                    "sed", "sei", "sep", "shx", "shy", "slo", "sre", "sha", 
-                    "sta", "stp", "stx", "sty", "stz", "tas", "tax", "tay", 
-                    "tcd", "tcs", "tdc", "top", "trb", "tsb", "tsc", "tsx", 
-                    "txa", "txs", "txy", "tya", "tyx", "xba", "xce", "wai"
+            Reserved.DefineType("Jumps",
+                    "jmp", "jsr"
+                );
+
+            Reserved.DefineType("JumpsLong",
+                    "jml", "jsl"
                 );
 
             Reserved.DefineType("ImpliedAC02",
@@ -71,6 +73,16 @@ namespace Asm6502.Net
 
             Reserved.DefineType("LongShort",
                     ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
+                );
+
+            Reserved.DefineType("Mnemonics",
+                    "adc", "anc", "and", "ane", "arr", "asl", "asr", "bit",
+                    "cmp", "cop", "cpx", "cpy", "dcp", "dop", "eor", "isb",
+                    "jml", "jmp", "jsl", "jsr", "las", "lax", "lda", "ldx",
+                    "ldy", "lsr", "ora", "pea", "pei", "rep", "rla", "rol",
+                    "ror", "rra", "sbc", "sax", "sep", "shx", "shy", "slo",
+                    "sre", "sha", "sta", "stx", "sty", "stz", "tas", "top",
+                    "trb", "tsb"
                 );
 
             Controller.AddSymbol("a");
@@ -177,6 +189,8 @@ namespace Asm6502.Net
             ConstructOpcodeTable();
 
             _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502")).ToDictionary(k => k.Key, k => k.Value, Controller.Options.StringComparar);
+
+            _cpu = "6502";
         }
 
         #endregion
@@ -468,14 +482,10 @@ namespace Asm6502.Net
                         if (expSize == 1)
                         {
                             if (Reserved.IsOneOf("Branches16", instruction))
-                            {
-                                // we have to check this too in case the user does a brl $10ffff
-                                expSize++;
-                            }
+
+                                expSize++; // we have to check this too in case the user does a brl $10ffff
                             else
-                            {
                                 expSize = eval1.Size();
-                            }
                         }
                         formatBuilder.Append("${0:x" + expSize * 2 + "}");
                     }
@@ -568,7 +578,6 @@ namespace Asm6502.Net
                 {
                     throw new OverflowException(eval1.ToString());
                 }
-
             }
             else
             {
@@ -597,7 +606,9 @@ namespace Asm6502.Net
                     operandsize += eval2.Size();
 
                 if (operandsize >= formatOpcode.Item2.Size)
+                {
                     throw new OverflowException(line.Operand);
+                }
             }
             long operbytes = 0;
             if (eval1 != long.MinValue)
@@ -610,8 +621,29 @@ namespace Asm6502.Net
 
         public int GetInstructionSize(SourceLine line)
         {
+            if (Reserved.IsOneOf("LongShort", line.Instruction))
+                return 0;
+
+            if (Reserved.IsOneOf("OneBytes", line.Instruction))
+                return 1;
+
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
                 return 2 * line.Operand.CommaSeparate().Count;
+
+            if (Reserved.IsOneOf("Branches", line.Instruction))
+                return 2;
+
+            if (Reserved.IsOneOf("Branches16", line.Instruction))
+                return 3;
+
+            if (Reserved.IsOneOf("Jumps", line.Instruction))
+                return _cpu.Equals("65816") ? 4 : 3;
+
+            if (Reserved.IsOneOf("JumpsLong", line.Instruction))
+                return 4;
+
+            if (Reserved.IsOneOf("MoveMemory", line.Instruction))
+                return 3;
 
             var formatOpcode = GetFormatAndOpcode(line);
             if (formatOpcode.Item2 != null)

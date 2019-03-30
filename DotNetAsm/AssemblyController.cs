@@ -53,11 +53,11 @@ namespace DotNetAsm
     {
         #region Members
 
-        Preprocessor _preprocessor;
         Stack<ILineAssembler> _assemblers;
         List<IBlockHandler> _blockHandlers;
         List<SourceLine> _processedLines;
         SourceLine _currentLine;
+        SourceHandler _sourceHandler;
 
         int _passes;
 
@@ -100,6 +100,7 @@ namespace DotNetAsm
             Log = new ErrorLog();
 
             _processedLines = new List<SourceLine>();
+            _sourceHandler = new SourceHandler(this);
 
             Output = new Compilation(!Options.BigEndian);
 
@@ -114,7 +115,6 @@ namespace DotNetAsm
             Symbols = new SymbolManager(this);
             _localLabelScope = string.Empty;
 
-            _preprocessor = new Preprocessor(this, s => IsSymbolName(s, true, false));
             _assemblers = new Stack<ILineAssembler>();
             _assemblers.Push(new PseudoAssembler(this, arg =>
                 {
@@ -125,6 +125,7 @@ namespace DotNetAsm
 
             _blockHandlers = new List<IBlockHandler>
             {
+                _sourceHandler,
                 new ConditionHandler(this),
                 new MacroHandler(this, IsInstruction),
                 new ForNextHandler(this),
@@ -145,7 +146,6 @@ namespace DotNetAsm
         /// <param name="token">The token to check</param>
         /// <returns><c>True</c> if the token is an instruction or directive, otherwise <c>false</c>.</returns>
         public bool IsInstruction(string token) => Reserved.IsOneOf("Directives", token) ||
-                                                    _preprocessor.IsReserved(token) ||
                                                     _blockHandlers.Any(handler => handler.Processes(token)) ||
                                                     _assemblers.Any(assembler => assembler.AssemblesInstruction(token));
 
@@ -194,17 +194,19 @@ namespace DotNetAsm
             source.AddRange(ProcessDefinedLabels());
             foreach (var file in Options.InputFiles)
             {
-                source.AddRange(_preprocessor.ConvertToSource(file));
-
+                _sourceHandler.Process(new SourceLine
+                {
+                    Instruction = ".include",
+                    Operand = "\"" + file + "\""
+                });
                 if (Log.HasErrors)
                     break;
             }
 
             if (Log.HasErrors == false)
             {
-                source.ForEach(line =>
-                    line.Operand = Regex.Replace(line.Operand, @"\s?\*\s?", "*"));
-
+                source.AddRange(_sourceHandler.GetProcessedLines());
+                _sourceHandler.Reset();
                 return source;
             }
             if (!string.IsNullOrEmpty(Options.CPU))
@@ -256,261 +258,309 @@ namespace DotNetAsm
                 Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
         }
 
-        void FirstPass(IEnumerable<SourceLine> source)
+        public void DoPass(IEnumerable<SourceLine> source)
         {
-            _passes = 0;
             int id = 1;
-
             var sourceList = source.ToList();
-
-            for (int i = 0; i < sourceList.Count; i++)
+            bool needPass = true;
+            _passes = 0;
+            while (needPass && !Log.HasErrors)
             {
-                _currentLine = sourceList[i];
-                try
+                needPass = false;
+                Output.Reset();
+                for (int i = 0; i < sourceList.Count; i++)
                 {
-                    if (_currentLine.DoNotAssemble)
+                    _currentLine = sourceList[i];
+                    try
                     {
-                        if (_currentLine.IsComment)
-                            _processedLines.Add(_currentLine);
-                        continue;
-                    }
-                    if (_currentLine.Instruction.Equals(".end", Options.StringComparison))
-                        break;
-
-                    var currentHandler = _blockHandlers.FirstOrDefault(h => h.IsProcessing());
-                    if (currentHandler == null)
-                        currentHandler = _blockHandlers.FirstOrDefault(h => h.Processes(_currentLine.Instruction));
-                    if (currentHandler != null)
-                    {
-                        sourceList.RemoveAt(i--);
-
-                        currentHandler.Process(_currentLine);
-                        if (currentHandler.IsProcessing() == false)
+                        // on first pass, parse the line
+                        if (_passes == 0)
                         {
-                            sourceList.InsertRange(i + 1, currentHandler.GetProcessedLines());
-                            currentHandler.Reset();
+                            _currentLine.Id = id++;
+                            if (_currentLine.DoNotAssemble)
+                            {
+                                if (_currentLine.IsComment)
+                                    _processedLines.Add(_currentLine);
+                                continue;
+                            }
+                            if (!_currentLine.IsParsed)
+                            {
+                                if (string.IsNullOrWhiteSpace(_currentLine.SourceString))
+                                    continue;
+                                StringBuilder tokenBuilder = new StringBuilder();
+                                for (int j = 0; j < _currentLine.SourceString.Length; j++)
+                                {
+                                    var c = _currentLine.SourceString[j];
+                                    if (string.IsNullOrEmpty(_currentLine.Instruction))
+                                    {
+                                        string token = string.Empty;
+                                        if (char.IsWhiteSpace(c) || j == _currentLine.SourceString.Length - 1 || c == '=' || c == '*' || c == ':' || c == ';')
+                                        {
+                                            if (!char.IsWhiteSpace(c) && c != ':' && c != ';')
+                                                tokenBuilder.Append(c);
+                                            token = tokenBuilder.ToString();
+                                            tokenBuilder.Clear();
+                                        }
+                                        else
+                                        {
+                                            tokenBuilder.Append(c);
+                                        }
+                                        if (!string.IsNullOrEmpty(token))
+                                        {
+                                            if (IsInstruction(token) || token == "=" || token[0] == '.')
+                                            {
+                                                _currentLine.Instruction = token;
+                                                if (c == ':')
+                                                {
+                                                    if (j < _currentLine.SourceString.Length - 1)
+                                                        sourceList.Insert(i + 1, new SourceLine
+                                                        {
+                                                            SourceString = _currentLine.SourceString.Substring(j + 1)
+                                                        });
+                                                    break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (!string.IsNullOrEmpty(_currentLine.Label))
+                                                {
+                                                    Log.LogEntry(_currentLine, ErrorStrings.UnknownInstruction, token);
+                                                    break;
+                                                }
+                                                _currentLine.Label = token;
+                                            }
+                                        }
+                                        if (c == ';')
+                                            break;
+                                    }
+                                    else
+                                    {
+                                        if (tokenBuilder.Length > 0 || !char.IsWhiteSpace(c))
+                                        {
+                                            if (c == '"' || c == '\'')
+                                            {
+                                                // process quotes separately
+                                                var quoted = _currentLine.SourceString.GetNextQuotedString(atIndex: j);
+                                                tokenBuilder.Append(quoted);
+                                                j += quoted.Length - 1;
+                                            }
+                                            else if (c == ';')
+                                            {
+                                                j = _currentLine.SourceString.Length - 1;
+                                            }
+                                            else if (c == ':')
+                                            {
+                                                _currentLine.Operand = tokenBuilder.ToString().TrimEnd();
+                                                tokenBuilder.Clear();
+                                                if (j < _currentLine.SourceString.Length - 1)
+                                                    sourceList.Insert(i + 1, new SourceLine
+                                                    {
+                                                        SourceString = _currentLine.SourceString.Substring(j + 1)
+                                                    });
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                tokenBuilder.Append(c);
+                                            }
+                                        }
+                                        if (j == _currentLine.SourceString.Length - 1)
+                                        {
+                                            _currentLine.Operand = tokenBuilder.ToString().TrimEnd();
+                                            tokenBuilder.Clear();
+                                        }
+                                    }
+                                }
+                            }
+                            if (_currentLine.Instruction.Equals(".end", Options.StringComparison))
+                                break;
+                            var currentHandler = _blockHandlers.FirstOrDefault(h => h.IsProcessing());
+                            if (currentHandler == null)
+                                currentHandler = _blockHandlers.FirstOrDefault(h => h.Processes(_currentLine.Instruction));
+                            if (currentHandler != null)
+                            {
+                                sourceList.RemoveAt(i--);
+                                currentHandler.Process(_currentLine);
+                                if (currentHandler.IsProcessing() == false)
+                                {
+                                    sourceList.InsertRange(i + 1, currentHandler.GetProcessedLines());
+                                    currentHandler.Reset();
+                                }
+                                continue;
+                            }
+                            if (!_currentLine.DoNotAssemble)
+                                _processedLines.Add(_currentLine);
+                        }
+                        else if (_currentLine.DoNotAssemble || !_currentLine.IsParsed)
+                        {
+                            continue;
+                        }
+                        // check to see if program counter changed since the last pass through 
+                        UpdatePC();
+                        long value = Output.LogicalPC;
+                        if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
+                        {
+                            var varparts = Symbols.Variables.SetVariable(_currentLine.Operand, _currentLine.Scope);
+                            value = Evaluator.Eval(varparts.Value);
+                        }
+                        else if (!string.IsNullOrEmpty(_currentLine.Label) && !_currentLine.Label.Equals("*"))
+                        {
+                            if (IsAssignmentDirective())
+                            {
+                                if (_currentLine.Label.Equals("-") || _currentLine.Label.Equals("+"))
+                                    Controller.Log.LogEntry(_currentLine, ErrorStrings.LabelNotValid, _currentLine.Label);
+                                else
+                                    value = Evaluator.Eval(_currentLine.Operand);
+                            }
+                            if (_passes == 0 && (_currentLine.Label.Equals("-") || _currentLine.Label.Equals("+")))
+                            {
+                                if (!needPass)
+                                    needPass = _currentLine.Label.Equals("+");
+                                Symbols.AddAnonymousLine(_currentLine);
+                            }
+                            else
+                            {
+                                SetLabel(_currentLine.Label, value);
+                            }
+                        }
+                        if (_passes > 0 && !needPass)
+                            needPass = _currentLine.PC != value;
+                        _currentLine.PC = value;
+
+                        // now assemble the instruction
+                        if (string.IsNullOrEmpty(_currentLine.Instruction))
+                            continue;
+                        if (!IsAssignmentDirective())
+                        {
+                            if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
+                            {
+                                if (!_currentLine.Operand.EnclosedInQuotes())
+                                    Controller.Log.LogEntry(_currentLine, ErrorStrings.QuoteStringNotEnclosed);
+                                else
+                                    OnCpuChanged(_currentLine);
+                            }
+                            else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
+                            {
+                                var varname = Symbols.Variables.GetVariableFromExpression(_currentLine.Operand, _currentLine.Scope);
+                                try
+                                {
+                                    var varAssignment = Symbols.Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
+                                    _currentLine.PC = Evaluator.Eval(varAssignment);
+                                }
+                                catch (SymbolNotDefinedException)
+                                {
+                                    Symbols.Variables.SetSymbol(varname, 0, false);
+                                    _currentLine.PC = 0;
+                                }
+                            }
+                            else if (!needPass)
+                            {
+                                // try to assemble as far as we can before we run
+                                // into an issue related to an undefined label
+                                // (overflow error, not defined, etc.)
+                                try
+                                {
+                                    AssembleLine();
+                                }
+                                catch
+                                {
+                                    Output.AddUninitialized(GetInstructionSize());
+                                    throw;
+                                }
+                            }
+                            else
+                            {
+                                Output.AddUninitialized(GetInstructionSize());
+                            }
                         }
                     }
-                    else
+                    catch (SymbolCollectionException symExc)
                     {
-                        _currentLine.Id = id++;
-                        FirstPassLine();
+                        if (symExc.Reason == SymbolCollectionException.ExceptionReason.SymbolExists)
+                            Log.LogEntry(_currentLine, ErrorStrings.LabelRedefinition, _currentLine.Label);
+                        else
+                            Log.LogEntry(_currentLine, ErrorStrings.LabelNotValid, _currentLine.Label);
                     }
-                }
-                catch (SymbolCollectionException symExc)
-                {
-                    if (symExc.Reason == SymbolCollectionException.ExceptionReason.SymbolExists)
-                        Log.LogEntry(_currentLine, ErrorStrings.LabelRedefinition, _currentLine.Label);
-                    else
-                        Log.LogEntry(_currentLine, ErrorStrings.LabelNotValid, _currentLine.Label);
-                }
-                catch (SymbolNotDefinedException symNotFound)
-                {
-                    Log.LogEntry(_currentLine, ErrorStrings.LabelNotDefined, symNotFound.Symbol);
-                }
-                catch (ExpressionException exprEx)
-                {
-                    Log.LogEntry(_currentLine, exprEx.Message);
-                }
-                catch (Exception)
-                {
-                    Log.LogEntry(_currentLine, ErrorStrings.None);
-                }
-            }
-
-            if (_blockHandlers.Any(h => h.IsProcessing()))
-                Log.LogEntry(_processedLines.Last(), ErrorStrings.MissingClosure);
-        }
-
-        void FirstPassLine()
-        {
-            try
-            {
-                if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
-                {
-                    if (!_currentLine.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(_currentLine, ErrorStrings.QuoteStringNotEnclosed);
-                    else
-                        OnCpuChanged(_currentLine);
-                    return;
-                }
-                if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
-                {
-                    var varname = Symbols.Variables.GetVariableFromExpression(_currentLine.Operand, _currentLine.Scope);
-                    try
+                    catch (SymbolNotDefinedException symNoDefExc)
                     {
-                        var varAssignment = Symbols.Variables.SetVariable(_currentLine.Operand, _currentLine.Scope).Value;
-                        _currentLine.PC = Evaluator.Eval(varAssignment);
+                        if (_passes > 0)
+                            Log.LogEntry(_currentLine, ErrorStrings.LabelNotDefined, symNoDefExc.Symbol);
+                        else
+                            needPass = true;
                     }
-                    catch (SymbolNotDefinedException)
+                    catch (OverflowException overFlEx)
                     {
-                        Symbols.Variables.SetSymbol(varname, 0, false);
-                        _currentLine.PC = 0;
+                        if (_passes > 0)
+                            Log.LogEntry(_currentLine, ErrorStrings.IllegalQuantity, overFlEx.Message);
+                        else
+                            needPass = true;
                     }
-                }
-
-                UpdatePC();
-
-                _currentLine.PC = Output.LogicalPC;
-
-                DefineLabel();
-
-                if (!string.IsNullOrEmpty(_currentLine.Label) &&
-                    !_currentLine.Label.Equals("*") &&
-                    _currentLine.SourceString.StartsWith(" ", Options.StringComparison) &&
-                    Options.WarnLeft)
-                    Log.LogEntry(_currentLine, ErrorStrings.LabelNotLeft, Options.WarningsAsErrors);
-
-                if (!IsAssignmentDirective())
-                    Output.AddUninitialized(GetInstructionSize());
-            }
-            catch (Exception ex)
-            {
-                // most exceptions resulting from calculations we don't care
-                // about until final pass, since they are subject to correction
-                if (ex is DivideByZeroException ||
-                    ex is Compilation.InvalidPCAssignmentException ||
-                    ex is OverflowException)
-                { } // do nothing
-                else
-                    throw;
-            }
-            finally
-            {
-                // always add
-                _processedLines.Add(_currentLine);
-            }
-
-        }
-
-        bool SecondPassLine(bool finalPass)
-        {
-            UpdatePC();
-            bool passNeeded = false;
-
-            string label = string.Empty;
-            if (!string.IsNullOrEmpty(_currentLine.Label))
-            {
-                if (_currentLine.Label.First() == '_')
-                    label = string.Concat(_localLabelScope, _currentLine.Label);
-                else if (!_currentLine.Label.Equals("*") && 
-                         !_currentLine.Label.Equals("-") && 
-                         !_currentLine.Label.Equals("+"))
-                    label = _localLabelScope = _currentLine.Label;
-            }
-
-            if (IsAssignmentDirective())
-            {
-                if (_currentLine.Label.Equals("*")) return false;
-
-                long val = long.MinValue;
-
-                // for .vars initialization is optional
-                if (string.IsNullOrEmpty(_currentLine.Operand) == false)
-                    val = Evaluator.Eval(_currentLine.Operand, int.MinValue, uint.MaxValue);
-
-                if (_currentLine.Label.Equals("-") || _currentLine.Label.Equals("+"))
-                {
-                    passNeeded = val != _currentLine.PC;
-                }
-                else
-                {
-                    if (val.Equals(long.MinValue))
+                    catch (Compilation.InvalidPCAssignmentException pcExc)
                     {
-                        Controller.Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
-                        return false;
-                    }
-                    passNeeded = val != Symbols.Labels.GetScopedSymbolValue(label, _currentLine.Scope);
-                    Symbols.Labels.SetLabel(_currentLine.Scope + label, val, false, false);
-
-                }
-                _currentLine.PC = val;
-            }
-            else if (_currentLine.Instruction.Equals(ConstStrings.VAR_DIRECTIVE, Options.StringComparison))
-            {
-                var varparts = Symbols.Variables.SetVariable(_currentLine.Operand, _currentLine.Scope);
-                passNeeded = _currentLine.PC != Evaluator.Eval(varparts.Value);
-                _currentLine.PC = Evaluator.Eval(varparts.Value);
-            }
-            else if (_currentLine.Instruction.Equals(".cpu", Options.StringComparison))
-            {
-                OnCpuChanged(_currentLine);
-            }
-            else
-            {
-                if (Symbols.Labels.IsScopedSymbol(label, _currentLine.Scope))
-                    Symbols.Labels.SetLabel(_currentLine.Scope + label, Output.LogicalPC, false, false);
-                passNeeded = _currentLine.PC != Output.LogicalPC;
-                _currentLine.PC = Output.LogicalPC;
-                if (finalPass)
-                    AssembleLine();
-                else
-                    Output.AddUninitialized(GetInstructionSize());
-            }
-            return passNeeded;
-        }
-
-        void SecondPass()
-        {
-            const int MAX_PASSES = 4;
-            bool passNeeded = true;
-            bool finalPass = false;
-            _passes++;
-
-            var assembleLines = _processedLines.Where(l => l.DoNotAssemble == false);
-
-            while (_passes <= MAX_PASSES && Log.HasErrors == false)
-            {
-                passNeeded = false;
-                Output.Reset();
-
-                Symbols.Variables.Clear();
-
-                _localLabelScope = string.Empty;
-
-                foreach (SourceLine line in assembleLines)
-                {
-                    try
-                    {
-                        if (line.Instruction.Equals(".end", Options.StringComparison))
-                            break;
-
-                        _currentLine = line;
-
-                        var needpass = SecondPassLine(finalPass);
-                        if (!passNeeded)
-                            passNeeded = needpass;
-                    }
-                    catch (SymbolNotDefinedException symEx)
-                    {
-                        Log.LogEntry(line, ErrorStrings.LabelNotDefined, symEx.Symbol);
+                        if (_passes > 0)
+                            Log.LogEntry(_currentLine, ErrorStrings.InvalidPCAssignment, pcExc.Message);
+                        else
+                            needPass = true;
                     }
                     catch (ExpressionException exprEx)
                     {
-                        Log.LogEntry(line, ErrorStrings.BadExpression, exprEx.Message);
+                        Log.LogEntry(_currentLine, exprEx.Message);
                     }
-                    catch (OverflowException overflowEx)
+                    catch (DivideByZeroException)
                     {
-                        if (finalPass)
-                            Log.LogEntry(line, ErrorStrings.IllegalQuantity, overflowEx.Message);
+                        if (_passes == 0)
+                            needPass = true;
+                        else
+                            throw;
                     }
-                    catch (Compilation.InvalidPCAssignmentException ex)
+                    catch (Exception)
                     {
-                        if (finalPass)
-                            Log.LogEntry(line, ErrorStrings.InvalidPCAssignment, ex.Message);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.LogEntry(line, ex.Message);
+                        Log.LogEntry(_currentLine, ErrorStrings.None);
+                        throw;
                     }
                 }
-                if (finalPass)
+                if (_blockHandlers.Any(h => h.IsProcessing()))
+                {
+                    Log.LogEntry(_processedLines.Last(), ErrorStrings.MissingClosure);
                     break;
+                }
                 _passes++;
-                finalPass = !passNeeded;
+                if (_passes > 4)
+                    throw new Exception("Too many passes attempted.");
+
             }
-            if (_passes > MAX_PASSES)
-                throw new Exception("Too many passes attempted.");
+        }
+
+        long GetLabel(string symbol)
+        {
+            if (symbol != "+" && symbol != "-")
+            {
+                string label = string.Empty;
+                if (symbol[0] == '_')
+                    label = _currentLine.Scope + _localLabelScope + symbol;
+                else
+                    label = _currentLine.Scope + symbol;
+                return Symbols.Labels.GetSymbolValue(label);
+            }
+            return int.MinValue;
+        }
+
+        void SetLabel(string symbol, long value)
+        {
+            if (symbol != "+" && symbol != "-")
+            {
+                string label = string.Empty;
+                if (symbol[0] == '_')
+                {
+                    label = _currentLine.Scope + _localLabelScope + symbol;
+                }
+                else
+                {
+                    _localLabelScope = symbol;
+                    label = _currentLine.Scope + symbol;
+                }
+                Symbols.Labels.SetLabel(label, value, false, _passes == 0);
+            }
         }
 
         public void AddAssembler(ILineAssembler lineAssembler) => _assemblers.Push(lineAssembler);
@@ -601,7 +651,7 @@ namespace DotNetAsm
                     {
                         scopedLabel = _currentLine.Scope + _localLabelScope + _currentLine.Label;
                     }
-                    else 
+                    else
                     {
                         _localLabelScope = _currentLine.Label;
                         scopedLabel = _currentLine.Scope + _currentLine.Label;
@@ -633,20 +683,14 @@ namespace DotNetAsm
             {
                 if (IsAssignmentDirective())
                 {
-                    try
-                    {
-                        val = Evaluator.Eval(_currentLine.Operand, UInt16.MinValue, UInt16.MaxValue);
-                    }
-                    catch (SymbolNotDefinedException)
-                    {
-                    }
+                    val = Evaluator.Eval(_currentLine.Operand, UInt16.MinValue, UInt16.MaxValue);
                     Output.SetPC(Convert.ToUInt16(val));
                 }
                 else
                 {
                     Log.LogEntry(_currentLine, ErrorStrings.None);
+                    return;
                 }
-                return;
             }
             string instruction = Options.CaseSensitive ? _currentLine.Instruction :
                 _currentLine.Instruction.ToLower();
@@ -656,25 +700,20 @@ namespace DotNetAsm
                 if (string.IsNullOrEmpty(_currentLine.Operand))
                 {
                     Log.LogEntry(_currentLine, ErrorStrings.TooFewArguments, _currentLine.Instruction);
-                    return;
+
                 }
-                try
+                else
                 {
                     val = Evaluator.Eval(_currentLine.Operand, uint.MinValue, uint.MaxValue);
+                    Output.SetLogicalPC(Convert.ToUInt16(val));
                 }
-                catch (SymbolNotDefinedException)
-                {
-                }
-                Output.SetLogicalPC(Convert.ToUInt16(val));
             }
             else if (instruction.Equals(".endrelocate") || instruction.Equals(".realpc"))
             {
                 if (string.IsNullOrEmpty(_currentLine.Operand) == false)
-                {
                     Log.LogEntry(_currentLine, ErrorStrings.TooManyArguments, _currentLine.Instruction);
-                    return;
-                }
-                Output.SynchPC();
+                else
+                    Output.SynchPC();
             }
         }
 
@@ -745,7 +784,7 @@ namespace DotNetAsm
                     writer.WriteLine(";; {0:f}\n", DateTime.Now);
                     writer.WriteLine(";; Input files:\n");
 
-                    _preprocessor.FileRegistry.ToList().ForEach(f => writer.WriteLine(";; {0}", f));
+                    _sourceHandler.FileRegistry.ToList().ForEach(f => writer.WriteLine(";; {0}", f));
 
                     writer.WriteLine();
                     writer.Write(listing);
@@ -757,7 +796,7 @@ namespace DotNetAsm
                 using (StreamWriter writer = new StreamWriter(Options.LabelFile, false))
                 {
                     writer.WriteLine(";; Input files:\n");
-                    _preprocessor.FileRegistry.ToList().ForEach(f => writer.WriteLine(";; {0}", f));
+                    _sourceHandler.FileRegistry.ToList().ForEach(f => writer.WriteLine(";; {0}", f));
                     writer.WriteLine();
                     writer.WriteLine(listing);
                 }
@@ -836,7 +875,7 @@ namespace DotNetAsm
             if (Options.InputFiles.Count == 0)
                 return;
 
-            if (Options.PrintVersion && DisplayingBanner != null) 
+            if (Options.PrintVersion && DisplayingBanner != null)
             {
                 Console.WriteLine(DisplayingBanner.Invoke(this, true));
                 if (Options.ArgsPassed > 1)
@@ -856,17 +895,18 @@ namespace DotNetAsm
 
             if (Log.HasErrors == false)
             {
-                FirstPass(source);
+                DoPass(source);
+               //FirstPass(source);
 
                 if (Log.HasErrors == false)
                 {
-                    SecondPass();
+                    //SecondPass();
 
                     if (Log.HasErrors == false)
                     {
-                       SaveOutput();
+                        SaveOutput();
 
-                       ToListing();
+                        ToListing();
                     }
                 }
             }

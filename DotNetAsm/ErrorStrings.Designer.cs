@@ -221,6 +221,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string SegmentNotDefined {
+            get {
+                return ResourceManager.GetString("SegmentNotDefined", resourceCulture);
+            }
+        }
+        
         public static string TooFewArguments {
             get {
                 return ResourceManager.GetString("TooFewArguments", resourceCulture);

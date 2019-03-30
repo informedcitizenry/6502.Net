@@ -518,9 +518,11 @@ namespace DotNetAsm
                 
                 return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new ExpressionException(expression);
+                if (!(ex is DivideByZeroException))
+                    throw new ExpressionException(expression);
+                throw ex;
             }
         }
 

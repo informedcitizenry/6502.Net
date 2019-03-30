@@ -21,7 +21,8 @@ namespace DotNetAsm
         #region Members
 
         HashSet<BinaryFile> _includedBinaries;
-        Func<string, bool> _reservedSymbol;
+        readonly Dictionary<string, string> _typeDefs;
+        readonly Func<string, bool> _reservedSymbol;
 
         #endregion
 
@@ -41,8 +42,9 @@ namespace DotNetAsm
             Reserved.DefineType("PseudoOps",
                     ".addr", ".align", ".binary", ".byte", ".sbyte",
                     ".dint", ".dword", ".fill", ".lint", ".long",
-                    ".sint", ".word"
+                    ".sint", ".typedef", ".word"
                 );
+            _typeDefs = new Dictionary<string, string>(Controller.Options.StringComparar);
             _reservedSymbol = reservedSymbolFunc;
         }
 
@@ -50,10 +52,6 @@ namespace DotNetAsm
 
         #region Methods
 
-        /// <summary>
-        /// Assemble multiple values to the output.
-        /// </summary>
-        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         void AssembleFills(SourceLine line)
         {
             var csv = line.Operand.CommaSeparate();
@@ -83,13 +81,6 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Assemble scalar values to the output.
-        /// </summary>
-        /// <param name="line">The SourceLine to assemble.</param>
-        /// <param name="minval">The minimum value based on the type.</param>
-        /// <param name="maxval">The maximum value based on the type.</param>
-        /// <param name="size">The precise size in bytes of the assembled value.</param>
         void AssembleValues(SourceLine line, long minval, long maxval, int size)
         {
             var tokens = line.Operand.CommaSeparate();
@@ -107,13 +98,6 @@ namespace DotNetAsm
             }
         }
 
-        /// <summary>
-        /// Get the offset and size of the operand of a .binary file
-        /// </summary>
-        /// <param name="args">The <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> arguments</param>
-        /// <param name="binarysize">The size of the binary file</param>
-        /// <param name="offs">The offset</param>
-        /// <param name="size">The size</param>
         void GetBinaryOffsetSize(List<string> args, int binarysize, ref int offs, ref int size)
         {
             if (args.Count >= 2)
@@ -128,10 +112,6 @@ namespace DotNetAsm
                 size = binarysize - offs;
         }
 
-        /// <summary>
-        /// Assemble an included binary file's bytes.
-        /// </summary>
-        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
         void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.Operand.CommaSeparate();
@@ -148,12 +128,6 @@ namespace DotNetAsm
                 line.Assembly = Controller.Output.AddBytes(binary.Data.Skip(offs), size);
         }
 
-        /// <summary>
-        /// Process the .binary directive and cache the binary file's contents
-        /// for later use.
-        /// </summary>
-        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to assemble.</param>
-        /// <returns>A <see cref="T:DotNetAsm.BinaryFile"/>.</returns>
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
             if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
@@ -189,6 +163,47 @@ namespace DotNetAsm
             return binary;
         }
 
+        void DefineType(SourceLine line)
+        {
+            if (string.IsNullOrEmpty(line.Label) == false)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.None);
+                return;
+            }
+            var csvs = line.Operand.CommaSeparate();
+            if (csvs.Count != 2)
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.None);
+                return;
+            }
+            string currtype = csvs.First();
+            if (!Reserved.IsOneOf("PseudoOps", currtype) &&
+                !base.IsReserved(currtype))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.DefininingUnknownType, currtype);
+                return;
+            }
+
+            string newtype = csvs.Last();
+            if (!Regex.IsMatch(newtype, @"^\.?" + Patterns.SymbolUnicode + "$"))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.None);
+            }
+            else if (Controller.IsInstruction(newtype))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TypeDefinitionError, newtype);
+            }
+            else if (_reservedSymbol(newtype))
+            {
+                Controller.Log.LogEntry(line, ErrorStrings.TypeNameReserved, newtype);
+            }
+            else
+            {
+                _typeDefs.Add(newtype, currtype);
+                line.DoNotAssemble = true;
+            }
+        }
+
         public void AssembleLine(SourceLine line)
         {
             if (Controller.Output.PCOverflow)
@@ -199,6 +214,8 @@ namespace DotNetAsm
                 return;
             }
             var instruction = line.Instruction.ToLower();
+            if (_typeDefs.ContainsKey(instruction))
+                instruction = _typeDefs[instruction].ToLower();
 
             switch (instruction)
             {
@@ -234,6 +251,9 @@ namespace DotNetAsm
                 case ".sint":
                     AssembleValues(line, short.MinValue, short.MaxValue, 2);
                     break;
+                case ".typedef":
+                    DefineType(line);
+                    break;
                 default:
                     AssembleStrings(line);
                     break;
@@ -255,6 +275,8 @@ namespace DotNetAsm
                 return 0;
             }
             var instruction = line.Instruction.ToLower();
+            if (_typeDefs.ContainsKey(instruction))
+                instruction = _typeDefs[instruction].ToLower();
 
             switch (instruction)
             {
@@ -300,7 +322,8 @@ namespace DotNetAsm
         public bool AssemblesInstruction(string instruction)
         {
             return Reserved.IsOneOf("PseudoOps", instruction) ||
-                base.IsReserved(instruction);
+                base.IsReserved(instruction) ||
+                _typeDefs.ContainsKey(instruction);
         }
         #endregion
     }

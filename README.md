@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.18.1
+### Version 1.19
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -209,6 +209,13 @@ Note that if uninitialized data is defined, but thereafter initialized data is d
 highscore   .dword ?    ; uninitialized highscore variables
             lda #0      ; The output is now 6 bytes in size
 ```
+Use the `.typedef` directive to redefine a type name. This is useful for cross- and backward-compatibility with other assemblers. Each type can have more than one definition.
+```
+            .typedef    .byte,   db
+            .typedef    .byte,   defb    ; multiple okay
+            .typedef    .string, asc
+```
+Only pseudo operations can have their types redefined. For mnemonics or other assembler directives consider using macros instead.
 ### Text processing and encoding
 #### Psuedo Ops
 In addition to integral values, 6502.Net can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes.
@@ -1572,9 +1579,18 @@ glyph             ;12345678
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.typedef</code></td></tr>
-<tr><td><b>Note</b></td><td>This feature is currently disabled for now due to a technical issue that caused it not to work correctly in all cases.</td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Define an existing Pseudo-Op to a user-defined type. The type name adheres to the same rules as labels and variables and cannot be an existing symbol or instruction.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>type, typename</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+            .typedef   .byte, defb
+
+            * = $c000
+            defb 0,1,2,3 ; >c000 00 01 02 03
+</pre>
+</td></tr>
 </table>
-<table>
 <tr><td><b>Name</b></td><td><code>.unmap</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Unmaps a custom code for a character or range of characters in the selected encoding and reverts to UTF-8. Note: <code>none</code> is not affected by <code>.map</code> and <code>.unmap</code> directives. It is recommended to represent individual char literals as strings.

@@ -25,6 +25,8 @@ namespace DotNetAsm
 
         Stack<SourceLine> _definitions;
 
+        Stack<SourceLine> _declarations;
+
         #endregion
 
         /// <summary>
@@ -35,12 +37,13 @@ namespace DotNetAsm
         public MacroHandler(IAssemblyController controller, Func<string, bool> instructionFcn)
             : base(controller)
         {
-            Reserved.DefineType("Directives", ".macro", ".endmacro", ".segment", ".endsegment");
+            Reserved.DefineType("Directives", ".macro", ".endmacro", ".dsegment", ".segment", ".endsegment");
             _macros = new Dictionary<string, Macro>(controller.Options.StringComparar);
             _expandedSource = new List<SourceLine>();
             _macroDefinitions = new Stack<List<SourceLine>>();
             _instructionFcn = instructionFcn;
             _definitions = new Stack<SourceLine>();
+            _declarations = new Stack<SourceLine>();
         }
 
         public bool Processes(string token)
@@ -53,9 +56,20 @@ namespace DotNetAsm
             var instruction = line.Instruction.ToLower();
             if (!Processes(line.Instruction))
             {
-                if (instruction.Equals(_macros.Last().Key))
-                    Controller.Log.LogEntry(line, ErrorStrings.RecursiveMacro, line.Instruction);
-                _macroDefinitions.Peek().Add(line);
+                if (_macroDefinitions.Count > 0)
+                {
+                    // We are in a macro definition
+                    if (instruction.Equals(_macros.Last().Key))
+                        Controller.Log.LogEntry(line, ErrorStrings.RecursiveMacro, line.Instruction);
+
+                    _macroDefinitions.Peek().Add(line);
+                }
+                else
+                {
+                    // We are consuming source after an undefined .dsegment
+                    _expandedSource.Add(line); 
+
+                }
                 return;
             }
 
@@ -75,19 +89,19 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    name = line.Label;
+                    name = "." + line.Label;
                 }
                 if (!Macro.IsValidMacroName(name) || _instructionFcn(name))
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
                     return;
                 }
-                if (_macros.ContainsKey("." + name))
+                if (_macros.ContainsKey(name))
                 {
                     Controller.Log.LogEntry(line, ErrorStrings.MacroRedefinition, line.Label);
                     return;
                 }
-                _macros.Add("." + name, null);
+                _macros.Add(name, null);
             }
             else if (instruction.Equals(".endmacro") || instruction.Equals(".endsegment"))
             {
@@ -106,7 +120,7 @@ namespace DotNetAsm
                         Controller.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
-                    name = "." + name;
+                    //name = "." + name;
                 }
                 _macros[name] = Macro.Create(_definitions.Pop(),
                                              line,
@@ -114,6 +128,35 @@ namespace DotNetAsm
                                              Controller.Options.StringComparison,
                                              ConstStrings.OPEN_SCOPE,
                                              ConstStrings.CLOSE_SCOPE);
+                if (def.Equals(".segment"))
+                {
+                    while(_declarations.Any(l => l.Operand.Equals(name, Controller.Options.StringComparison)))
+                    {
+                        var dsegment = _declarations.Pop();
+                        var segname = dsegment.Operand;
+                        var ix = _expandedSource.IndexOf(dsegment);
+                        _expandedSource.RemoveAt(ix);
+                        _expandedSource.InsertRange(ix, _macros[segname].Expand(dsegment));
+                    }
+                }
+            }
+            else if (instruction.Equals(".dsegment"))
+            {
+                if (string.IsNullOrEmpty(line.Operand))
+                {
+                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                    return;
+                }
+                if (_macros.ContainsKey(line.Operand))
+                {
+                    var seg = _macros[line.Operand];
+                    _expandedSource = seg.Expand(line).ToList();
+                }
+                else
+                {
+                    _expandedSource.Add(line);
+                    _declarations.Push(line);
+                }
             }
             else
             {
@@ -142,7 +185,7 @@ namespace DotNetAsm
             _definitions.Clear();
         }
 
-        public bool IsProcessing() => _definitions.Count > 0 || _macroDefinitions.Count > 0;
+        public bool IsProcessing() => _definitions.Count > 0 || _macroDefinitions.Count > 0 || _declarations.Count > 0;
 
         public IEnumerable<SourceLine> GetProcessedLines() => _expandedSource;
     }

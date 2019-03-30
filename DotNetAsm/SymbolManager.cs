@@ -65,7 +65,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        string GetNamedSymbolValue(string symbol, SourceLine line, string scope)
+        string GetNamedSymbolValue(string symbol, SourceLine line, string scope, bool error)
         {
             if (symbol.First() == '_')
                 symbol = string.Concat(scope, symbol);
@@ -74,8 +74,11 @@ namespace DotNetAsm
 
             var value = Labels.GetScopedSymbolValue(symbol, line.Scope);
             if (value.Equals(long.MinValue))
-                throw new SymbolNotDefinedException(symbol);
-
+            {
+                if (error)
+                    throw new SymbolNotDefinedException(symbol);
+                return "0";
+            }
             return value.ToString();
 
         }
@@ -143,7 +146,18 @@ namespace DotNetAsm
             return -1;
         }
 
-        public List<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnAnonymousNotFound)
+        /// <summary>
+        /// Translates all special symbols in the expression into a 
+        /// <see cref="System.Collections.Generic.List{DotNetAsm.ExpressionElement}"/>
+        /// for use by the evualator.
+        /// </summary>
+        /// <returns>The expression symbols.</returns>
+        /// <param name="line">The current source line.</param>
+        /// <param name="expression">The expression to evaluate.</param>
+        /// <param name="scope">The current scope.</param>
+        /// <param name="errorOnNotFound">If set to <c>true</c> raise an error 
+        /// if a symbol encountered in the expression was not found.</param>
+        public List<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnNotFound)
         {
             char lastTokenChar = char.MinValue;
             StringBuilder translated = new StringBuilder(), symbolBuilder = new StringBuilder();
@@ -185,7 +199,7 @@ namespace DotNetAsm
                             char.IsWhiteSpace(expression[k - 1]) && expression[k].IsOperator()))
                         {
                             isSpecial = true;
-                            translated.Append(ConvertAnonymous(symbolBuilder.ToString(), line, errorOnAnonymousNotFound));
+                            translated.Append(ConvertAnonymous(symbolBuilder.ToString(), line, errorOnNotFound));
                             i = j - 1;
                         }
                         symbolBuilder.Clear();
@@ -217,7 +231,7 @@ namespace DotNetAsm
                     if (_constants.ContainsKey(symbol))
                         symbol = _constants[symbol].ToString();
                     else
-                        symbol = GetNamedSymbolValue(symbol, line, scope);
+                        symbol = GetNamedSymbolValue(symbol, line, scope, errorOnNotFound);
                     if (symbol[0] == '-')
                     {
                         elements.Insert(i, new ExpressionElement

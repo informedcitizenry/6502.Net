@@ -204,6 +204,9 @@
   <data name="RecursiveMacro" xml:space="preserve">
     <value>Macro or segment '{0}' is being called recursively</value>
   </data>
+  <data name="SegmentNotDefined" xml:space="preserve">
+    <value>Segment '{0}' is not defined</value>
+  </data>
   <data name="TooFewArguments" xml:space="preserve">
     <value>Too few arguments for directive '{0}'</value>
   </data>

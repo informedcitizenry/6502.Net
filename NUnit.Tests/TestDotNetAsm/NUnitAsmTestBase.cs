@@ -47,7 +47,7 @@ namespace NUnit.Tests.TestDotNetAsm
                 Assert.AreEqual(pc, Controller.Output.LogicalPC);
                 Assert.IsTrue(Controller.Output.GetCompilation().SequenceEqual(expected));
                 Assert.AreEqual(disasm, line.Disassembly);
-                Assert.AreEqual(expected.Count(), LineAssembler.GetInstructionSize(line));
+                Assert.AreEqual(expected.Count(), line.Assembly.Count);//LineAssembler.GetInstructionSize(line));
             }
             else
             {
