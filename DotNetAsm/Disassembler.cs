@@ -18,9 +18,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of the <see cref="T:DotNetAsm.Disassembler"/> class.
         /// </summary>
-        /// <param name="controller">The assembly controller.</param>
-        public Disassembler(IAssemblyController controller)
-            : base(controller)
+        public Disassembler()
         {
             PrintingOn = true;
             Reserved.DefineType("Blocks", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE );
@@ -67,28 +65,28 @@ namespace DotNetAsm
                 return string.Empty;
                       
             if (line.Instruction == "=" || 
-                line.Instruction.Equals(".let", Controller.Options.StringComparison) ||
-                line.Instruction.Equals(".equ", Controller.Options.StringComparison))
+                line.Instruction.Equals(".let", Assembler.Options.StringComparison) ||
+                line.Instruction.Equals(".equ", Assembler.Options.StringComparison))
             {
                 Int64 value = 0;
-                if (line.Label == "*" || Controller.Options.NoSource)
+                if (line.Label == "*" || Assembler.Options.NoSource)
                     return string.Empty;
                 if (line.Label == "-" || line.Label == "+")
                 {
                     value = line.PC;
                 }
-                else if (line.Instruction.Equals(".let", Controller.Options.StringComparison))
+                else if (line.Instruction.Equals(".let", Assembler.Options.StringComparison))
                 {
-                    var variable = Controller.Symbols.Variables.GetVariableFromExpression(line.Operand, line.Scope);
-                    value = Controller.Symbols.Variables.GetSymbolValue(variable);
+                    var variable = Assembler.Symbols.Variables.GetVariableFromExpression(line.Operand, line.Scope);
+                    value = Assembler.Symbols.Variables.GetSymbolValue(variable);
                 }
                 else
                 {
-                    value = Controller.Symbols.Labels.GetSymbolValue(line.Scope + line.Label);
+                    value = Assembler.Symbols.Labels.GetSymbolValue(line.Scope + line.Label);
                 }
                 return string.Format("=${0:x" + value.Size() * 2 + "}", value);
             }
-            if (line.Instruction.StartsWith(".", Controller.Options.StringComparison) &&
+            if (line.Instruction.StartsWith(".", Assembler.Options.StringComparison) &&
                     !Reserved.IsReserved(line.Instruction))
                 return string.Format(">{0:x4}", line.PC);
             
@@ -103,7 +101,7 @@ namespace DotNetAsm
         /// the source assembly.</returns>
         string DisassembleAsm(SourceLine line, string source)
         {
-            if (line.Assembly.Count == 0 || Controller.Options.NoAssembly)
+            if (line.Assembly.Count == 0 || Assembler.Options.NoAssembly)
                 return string.Empty;
 
             var sb = new StringBuilder();
@@ -126,7 +124,7 @@ namespace DotNetAsm
                     if (i < subdisasms.Count - 1)
                     {
                         string format = ">{0:x4}    ";
-                        if (Controller.Options.VerboseList)
+                        if (Assembler.Options.VerboseList)
                             format = "                    :" + format;
                         sb.AppendFormat(format, pc);
                     }
@@ -154,7 +152,7 @@ namespace DotNetAsm
                 return;
 
             string sourcestr = line.SourceString;
-            if (!Controller.Options.VerboseList)
+            if (!Assembler.Options.VerboseList)
             {
                 if (line.DoNotAssemble || Reserved.IsReserved(line.Instruction))
                 {
@@ -164,7 +162,7 @@ namespace DotNetAsm
                         return;
                     sourcestr = line.Label;
                 }
-                else if (Controller.Options.NoSource)
+                else if (Assembler.Options.NoSource)
                 {
                     sourcestr = string.Empty;
                 }
@@ -177,13 +175,13 @@ namespace DotNetAsm
             {
                 if (string.IsNullOrEmpty(sourcestr))
                     return;
-                if (Controller.Options.NoSource)
+                if (Assembler.Options.NoSource)
                     sourcestr = string.Empty;
                 sb.Append(DisassembleFileLine(line));
             }
             sb.AppendFormat("{0,-9}", DisassembleAddress(line));
 
-            if (Controller.Options.NoAssembly == false)
+            if (Assembler.Options.NoAssembly == false)
             {
                 var asm = DisassembleAsm(line, sourcestr);
                 if (asm.Length > 24)
@@ -192,21 +190,21 @@ namespace DotNetAsm
                     return;
                 }
 
-                if (string.IsNullOrEmpty(line.Disassembly) && Controller.Options.NoDissasembly == false)
+                if (string.IsNullOrEmpty(line.Disassembly) && Assembler.Options.NoDissasembly == false)
                     sb.AppendFormat("{0,-29}", asm);
                 else
                     sb.AppendFormat("{0,-13}", asm);
             }
             
-            if (Controller.Options.NoDissasembly == false)
+            if (Assembler.Options.NoDissasembly == false)
             {
                 if (string.IsNullOrEmpty(line.Disassembly) == false)
                     sb.AppendFormat("{0,-16}", line.Disassembly);
-                else if (Controller.Options.NoAssembly)
+                else if (Assembler.Options.NoAssembly)
                     sb.AppendFormat("{0,-28}", line.Disassembly);
             }
 
-            if (Controller.Options.NoSource == false)
+            if (Assembler.Options.NoSource == false)
                 sb.AppendFormat("{0,-10}", sourcestr);
             else if (string.IsNullOrEmpty(line.Disassembly) && line.Assembly.Count == 0)
                 sb.TrimEnd();

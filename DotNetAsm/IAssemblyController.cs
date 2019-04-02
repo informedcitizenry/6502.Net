@@ -50,12 +50,6 @@ namespace DotNetAsm
         void Assemble();
 
         /// <summary>
-        /// Gets the command-line arguments passed by the end-user and parses into 
-        /// strongly-typed options.
-        /// </summary>
-        AsmCommandLineOptions Options { get; }
-
-        /// <summary>
         /// Checks if a given token is actually an instruction or directive, either
         /// for the <see cref="T:DotNetAsm.IAssemblyController"/> or any line assemblers.
         /// </summary>
@@ -67,32 +61,6 @@ namespace DotNetAsm
         /// Gets or sets the disassembler. 
         /// </summary>
         ILineDisassembler Disassembler { get; set; }
-
-        /// <summary>
-        /// The Compilation object to handle binary output.
-        /// </summary>
-        Compilation Output { get; }
-
-        /// <summary>
-        /// The controller's error log to track errors and warnings.
-        /// </summary>
-        ErrorLog Log { get; }
-
-        /// <summary>
-        /// Gets the symbols for the controller.
-        /// </summary>
-        /// <value>The symbols.</value>
-        ISymbolManager Symbols { get; }
-
-        /// <summary>
-        /// Gets expression evaluator for the controller.
-        /// </summary>
-        IEvaluator Evaluator { get; }
-
-        /// <summary>
-        /// Gets the custom DotNetAsm.AsmEncoding for encoding text strings.
-        /// </summary>
-        AsmEncoding Encoding { get; }
 
         /// <summary>
         /// Occurs when the CPU has changed.

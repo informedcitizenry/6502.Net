@@ -8,6 +8,8 @@ namespace NUnit.Tests.Test6502.Net
 {
     public class NUnitTestAsm6502Illegal : TestDotNetAsm.NUnitAsmTestBase
     {
+        IAssemblyController Controller;
+
         public NUnitTestAsm6502Illegal()
         {
             Controller = new TestDotNetAsm.TestController();

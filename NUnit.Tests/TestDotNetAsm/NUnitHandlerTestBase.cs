@@ -8,9 +8,8 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    public class NUnitHandlerTestBase
+    public class NUnitHandlerTestBase : NUnitAsmTestBase
     {
-        protected IAssemblyController Controller { get; set; }
         protected IBlockHandler Handler { get; set; }
 
         protected IEnumerable<SourceLine> ProcessBlock(IEnumerable<SourceLine> testSource)

@@ -209,6 +209,18 @@ namespace DotNetAsm
             /// </summary>
             public string Scope { get; set; }
 
+            /// <summary>
+            /// Gets or sets the filename of the original source.
+            /// </summary>
+            /// <value>The filename.</value>
+            public string Filename { get; set; }
+
+            /// <summary>
+            /// Gets or sets the line number of the original source.
+            /// </summary>
+            /// <value>The line number.</value>
+            public int LineNumber { get; set; }
+
             #endregion
         }
 
@@ -225,10 +237,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of the <see cref="T:DotNetAsm.ForNextHandler"/>.
         /// </summary>
-        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> for this
-        /// handler.</param>
-        public ForNextHandler(IAssemblyController controller)
-            : base(controller)
+        public ForNextHandler()
         {
             Reserved.DefineType("Directives",
                 ".for", ".next", ".break",
@@ -265,7 +274,7 @@ namespace DotNetAsm
             {
                 if (string.IsNullOrEmpty(line.Operand))
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
                 if (string.IsNullOrEmpty(line.Label) == false)
@@ -283,7 +292,7 @@ namespace DotNetAsm
                 var csvs = line.Operand.CommaSeparate();
                 if (csvs.Count < 2)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
 
@@ -302,19 +311,23 @@ namespace DotNetAsm
                 _currBlock.Scope = line.Scope;
                 _currBlock.InitExpression = csvs.First();
                 _currBlock.Condition = csvs[1];
+                _currBlock.Filename = line.Filename;
+                _currBlock.LineNumber = line.LineNumber;
 
                 if (_currBlock == _rootBlock)
                 {
                     if (!string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        var iteratorvar = Controller.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        var iteratorvar = Assembler.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         if (string.IsNullOrEmpty(iteratorvar.Key))
                         {
-                            Controller.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
+                            Assembler.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
                             return;
                         }
                         _processedLines.Add(new SourceLine
                         {
+                            Filename = line.Filename,
+                            LineNumber = line.LineNumber,
                             SourceString = ConstStrings.SHADOW_SOURCE,
                             Instruction = ConstStrings.VAR_DIRECTIVE,
                             Operand = string.Format("{0}={1}", iteratorvar.Key, iteratorvar.Value)
@@ -323,6 +336,8 @@ namespace DotNetAsm
                 }
                 _currBlock.AddEntry(new SourceLine
                 {
+                    LineNumber = line.LineNumber,
+                    Filename = line.Filename,
                     SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = "@@ for @@"
                 }, null);
@@ -338,21 +353,23 @@ namespace DotNetAsm
             {
                 if (_levels == 0)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                     return;
                 }
                 if (string.IsNullOrEmpty(line.Operand) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
                 if (string.IsNullOrEmpty(line.Label) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.None);
+                    Assembler.Log.LogEntry(line, ErrorStrings.None);
                     return;
                 }
                 var loopLine = new SourceLine
                 {
+                    LineNumber = _currBlock.LineNumber,
+                    Filename = _currBlock.Filename,
                     SourceString = ConstStrings.SHADOW_SOURCE,
                     Instruction = "@@ next @@"
                 };
@@ -371,7 +388,7 @@ namespace DotNetAsm
             {
                 if (_levels == 0)
                 {
-                    Controller.Log.LogEntry(line, "Illegal use of .break");
+                    Assembler.Log.LogEntry(line, "Illegal use of .break");
                     return;
                 }
                 string procinst = "@@ break @@";
@@ -400,7 +417,7 @@ namespace DotNetAsm
 
                     if (_breakBlock == null && !string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        var initval = Controller.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        var initval = Assembler.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         _processedLines.Add(new SourceLine
                         {
                             SourceString = ConstStrings.SHADOW_SOURCE,
@@ -429,8 +446,8 @@ namespace DotNetAsm
                 // in output source (i.e., emit .let n = ... epxressions)
                 foreach (var iterexp in _currBlock.IterExpressions)
                 {
-                    var itervar = Controller.Symbols.Variables.SetVariable(iterexp, _currBlock.Scope);
-                    var iterval = Controller.Symbols.Variables.GetScopedSymbolValue(itervar.Key, _currBlock.Scope);
+                    var itervar = Assembler.Symbols.Variables.SetVariable(iterexp, _currBlock.Scope);
+                    var iterval = Assembler.Symbols.Variables.GetScopedSymbolValue(itervar.Key, _currBlock.Scope);
                     _processedLines.Add(new SourceLine
                     {
                         SourceString = ConstStrings.SHADOW_SOURCE,
@@ -441,7 +458,7 @@ namespace DotNetAsm
 
                 _currBlock.Begin();
 
-                if (Controller.Evaluator.EvalCondition(_currBlock.Condition))
+                if (Assembler.Evaluator.EvalCondition(_currBlock.Condition))
                 {
                     _processedLines.AddRange(_currBlock.GetProcessedLines());
                 }

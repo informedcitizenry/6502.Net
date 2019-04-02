@@ -38,6 +38,16 @@ namespace DotNetAsm
         };
 
         /// <summary>
+        /// The Arithmetic type for the operation.
+        /// </summary>
+        public enum ArithmeticType
+        {
+            Float = 0,
+            Integral,
+            Boolean
+        };
+
+        /// <summary>
         /// The symbol or value of the element.
         /// </summary>
         public string word;
@@ -53,10 +63,9 @@ namespace DotNetAsm
         public Subtype subtype;
 
         /// <summary>
-        /// The integral flag. Set to true if the element's value should
-        /// only be an integer.
+        /// The type of the arithmetic operation.
         /// </summary>
-        public bool integral;
+        public ArithmeticType arithmeticType;
 
         public override string ToString() => string.Format("{0} [{1}.{2}]", word, type, subtype);
 

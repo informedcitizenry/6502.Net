@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    public class NUnitTestRepetitionHandler
+    public class NUnitTestRepetitionHandler : NUnitHandlerTestBase
     {
         [Test]
         public void TestSimple()
@@ -19,7 +19,7 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine());
             source.Last().Instruction = ".endrepeat";
 
-            var handler = new RepetitionHandler(new TestController());
+            var handler = new RepetitionHandler();
 
             foreach(SourceLine line in source)
             {
@@ -46,7 +46,7 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine { Instruction = "rts" });
 
             var processed = new List<SourceLine>();
-            var handler = new RepetitionHandler(new TestController());
+            var handler = new RepetitionHandler();
             
             foreach(SourceLine line in source)
             {
@@ -84,7 +84,7 @@ namespace NUnit.Tests.TestDotNetAsm
             source.Add(new SourceLine { Instruction = "rts" });
 
             var processed = new List<SourceLine>();
-            var handler = new RepetitionHandler(new TestController());
+            var handler = new RepetitionHandler();
 
             foreach (SourceLine line in source)
             {
@@ -165,12 +165,11 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestErrors()
         {
-            var controller = new TestController();
             var line = new SourceLine { Instruction = ".repeat" };
-            var handler = new RepetitionHandler(controller);
+            var handler = new RepetitionHandler();
             handler.Process(line);
 
-            Assert.IsTrue(controller.Log.HasErrors);
+            Assert.IsTrue(Assembler.Log.HasErrors);
         }
     }
 }

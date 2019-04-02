@@ -52,7 +52,7 @@ namespace DotNetAsm
                 line.IsComment = inComment;
                 if (line.IsComment)
                 {
-                    var endBlockIx = line.SourceString.IndexOf(".endcomment", Controller.Options.StringComparison);
+                    var endBlockIx = line.SourceString.IndexOf(".endcomment", Assembler.Options.StringComparison);
                     if (endBlockIx > -1)
                     {
                         var afterIx = endBlockIx + ENDCOMMENT_SIZE;
@@ -61,14 +61,14 @@ namespace DotNetAsm
                         {
                             if (line.SourceString.Length > afterIx && line.SourceString.Substring(afterIx).Any(c => !char.IsWhiteSpace(c)))
                             {
-                                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, ".endcomment");
+                                Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, ".endcomment");
                                 break;
                             }
                             continue;
                         }
                         if (!inComment)
                         {
-                            Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.SourceString.Substring(endBlockIx, afterIx));
+                            Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.SourceString.Substring(endBlockIx, afterIx));
                         }
                         else
                         {
@@ -78,7 +78,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    var commBlockIx = line.SourceString.IndexOf(".comment", Controller.Options.StringComparison);
+                    var commBlockIx = line.SourceString.IndexOf(".comment", Assembler.Options.StringComparison);
                     if (commBlockIx > -1)
                     {
                         var afterIx = commBlockIx + COMMENT_SIZE;
@@ -87,7 +87,7 @@ namespace DotNetAsm
                         {
                             if (commBlockIx != 0 && line.SourceString.Substring(0, commBlockIx).Any(c => !char.IsWhiteSpace(c)))
                             {
-                                Controller.Log.LogEntry(line, ErrorStrings.None);
+                                Assembler.Log.LogEntry(line, ErrorStrings.None);
                                 break;
                             }
                             continue;
@@ -102,13 +102,13 @@ namespace DotNetAsm
 
 
         public bool Processes(string token) =>
-                    token.Equals(".include", Controller.Options.StringComparison) ||
-                    token.Equals(".binclude", Controller.Options.StringComparison);
+                    token.Equals(".include", Assembler.Options.StringComparison) ||
+                    token.Equals(".binclude", Assembler.Options.StringComparison);
 
         public void Process(SourceLine line)
         {
             var openblock = new SourceLine();
-            if (line.Instruction.Equals(".binclude", Controller.Options.StringComparison))
+            if (line.Instruction.Equals(".binclude", Assembler.Options.StringComparison))
             {
                 var args = line.Operand.CommaSeparate();
 
@@ -116,7 +116,7 @@ namespace DotNetAsm
                 {
                     if (string.IsNullOrEmpty(line.Label) == false)
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
+                        Assembler.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
                         Reset();
                         return;
                     }
@@ -127,14 +127,14 @@ namespace DotNetAsm
                 }
                 else if (line.Operand.EnclosedInQuotes() == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
+                    Assembler.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                 }
                 openblock.Instruction = ConstStrings.OPEN_SCOPE;
                 _includedLines.Add(openblock);
             }
             if (line.Operand.EnclosedInQuotes() == false)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.None);
+                Assembler.Log.LogEntry(line, ErrorStrings.None);
             }
             else
             {

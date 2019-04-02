@@ -19,8 +19,6 @@ namespace DotNetAsm
     {
         #region Members
 
-        IAssemblyController _controller;
-
         Dictionary<int, SourceLine> _anonPlusLines, _anonMinusLines, _orderedMinusLines;
 
         #region Static Members
@@ -41,15 +39,11 @@ namespace DotNetAsm
         /// <summary>
         /// Initializes a new instance of the <see cref="T:DotNetAsm.SymbolManager"/> class.
         /// </summary>
-        /// <param name="controller">The <see cref="DotNetAsm.IAssemblyController"/> for
-        /// this symbol manager.</param>
-        public SymbolManager(IAssemblyController controller)
+        public SymbolManager()
         {
-            _controller = controller;
+            Variables = new VariableCollection(Assembler.Options.StringComparar, Assembler.Evaluator);
 
-            Variables = new VariableCollection(controller.Options.StringComparar, controller.Evaluator);
-
-            Labels = new LabelCollection(controller.Options.StringComparar);
+            Labels = new LabelCollection(Assembler.Options.StringComparar);
 
             Labels.AddCrossCheck(Variables);
             Variables.AddCrossCheck(Labels);
@@ -65,7 +59,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        string GetNamedSymbolValue(string symbol, SourceLine line, string scope, bool error)
+        string GetNamedSymbolValue(string symbol, SourceLine line, string scope)
         {
             if (symbol.First() == '_')
                 symbol = string.Concat(scope, symbol);
@@ -74,11 +68,7 @@ namespace DotNetAsm
 
             var value = Labels.GetScopedSymbolValue(symbol, line.Scope);
             if (value.Equals(long.MinValue))
-            {
-                if (error)
-                    throw new SymbolNotDefinedException(symbol);
-                return "0";
-            }
+                throw new SymbolNotDefinedException(symbol);
             return value.ToString();
 
         }
@@ -89,7 +79,7 @@ namespace DotNetAsm
             var addr = GetFirstAnonymousLabelFrom(line, trimmed);//GetAnonymousAddress(_currentLine, trimmed);
             if (addr < 0 && errorOnNotFound)
             {
-                _controller.Log.LogEntry(line, ErrorStrings.CannotResolveAnonymousLabel);
+                Assembler.Log.LogEntry(line, ErrorStrings.CannotResolveAnonymousLabel);
                 return "0";
             }
             return addr.ToString();
@@ -134,9 +124,9 @@ namespace DotNetAsm
                 if (found == null)
                     break;
                 
-                if (string.IsNullOrEmpty(found.Scope) || found.Scope.Equals(fromLine.Scope, _controller.Options.StringComparison) || 
+                if (string.IsNullOrEmpty(found.Scope) || found.Scope.Equals(fromLine.Scope, Assembler.Options.StringComparison) || 
                     (fromLine.Scope.Length > found.Scope.Length && 
-                     found.Scope.Equals(fromLine.Scope.Substring(0, found.Scope.Length), _controller.Options.StringComparison)))
+                     found.Scope.Equals(fromLine.Scope.Substring(0, found.Scope.Length), Assembler.Options.StringComparison)))
                     count--;
 
                 id = found.Id;
@@ -172,7 +162,7 @@ namespace DotNetAsm
                     {
                         unescaped = Regex.Unescape(unescaped);
                     }
-                    var charval = _controller.Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
+                    var charval = Assembler.Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
                     translated.Append(charval);
                     i += literal.Length - 1;
                     lastTokenChar = charval.Last();
@@ -184,7 +174,7 @@ namespace DotNetAsm
                     if (c == '*' && (lastTokenChar == '(' || i == 0 || expression[i - 1] != '*'))
                     {
                         isSpecial = true;
-                        translated.Append(_controller.Output.LogicalPC.ToString());
+                        translated.Append(Assembler.Output.LogicalPC.ToString());
                     }
                     else if (lastTokenChar == '(' ||
                              lastTokenChar == char.MinValue || (lastTokenChar.IsOperator()) && char.IsWhiteSpace(expression[i - 1]))
@@ -221,7 +211,7 @@ namespace DotNetAsm
                     translated.Append(c);
                 }
             }
-            var elements = _controller.Evaluator.ParseElements(translated.ToString()).ToList();
+            var elements = Assembler.Evaluator.ParseElements(translated.ToString()).ToList();
 
             for(int i = 0; i < elements.Count; i++)
             {
@@ -231,7 +221,7 @@ namespace DotNetAsm
                     if (_constants.ContainsKey(symbol))
                         symbol = _constants[symbol].ToString();
                     else
-                        symbol = GetNamedSymbolValue(symbol, line, scope, errorOnNotFound);
+                        symbol = GetNamedSymbolValue(symbol, line, scope);
                     if (symbol[0] == '-')
                     {
                         elements.Insert(i, new ExpressionElement

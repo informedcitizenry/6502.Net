@@ -34,7 +34,7 @@ namespace Asm6502.Net
 
         void ConstructOpcodeTable()
         {
-             _opcodes = new OpcodeTable(Controller.Options.StringComparar)
+             _opcodes = new OpcodeTable(Assembler.Options.StringComparar)
             {
                 { "brk",                new Instruction  { CPU = "6502",  Size = 1,  Opcode = 0x00 } },
                 { "ora (${0:x2},x)",    new Instruction  { CPU = "6502",  Size = 2,  Opcode = 0x01 } },

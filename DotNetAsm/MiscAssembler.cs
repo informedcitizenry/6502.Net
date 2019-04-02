@@ -20,9 +20,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs a DotNetAsm.MiscAssembler class.
         /// </summary>
-        /// <param name="controller">The DotNetAsm.IAssemblyController to associate</param>
-        public MiscAssembler(IAssemblyController controller) :
-            base(controller)
+        public MiscAssembler()
         {
             Reserved.DefineType("Directives", 
                     "assert", ".eor", ".echo", ".target",
@@ -43,10 +41,10 @@ namespace DotNetAsm
         {
             var csv = line.Operand.CommaSeparate();
             if (csv.Count < 2)
-                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
             else if (csv.Count > 2)
-                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-            else if (Controller.Evaluator.EvalCondition(csv.First()))
+                Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+            else if (Assembler.Evaluator.EvalCondition(csv.First()))
                 Output(line, csv.Last());
         }
 
@@ -59,12 +57,12 @@ namespace DotNetAsm
         {
             if (string.IsNullOrEmpty(line.Operand))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return;
             }
-            var eor = Controller.Evaluator.Eval(line.Operand, sbyte.MinValue, byte.MaxValue);
+            var eor = Assembler.Evaluator.Eval(line.Operand, sbyte.MinValue, byte.MaxValue);
             var eor_b = Convert.ToByte(eor);
-            Controller.Output.Transforms.Push(delegate(byte b)
+            Assembler.Output.Transforms.Push(delegate(byte b)
             {
                 b ^= eor_b;
                 return b;
@@ -73,7 +71,7 @@ namespace DotNetAsm
 
         public void AssembleLine(SourceLine line)
         {
-            string instruction = Controller.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
+            string instruction = Assembler.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
             switch (instruction)
             {
                 case ".assert":
@@ -93,12 +91,12 @@ namespace DotNetAsm
                     break;
                 case ".target":
                     if (!line.Operand.EnclosedInQuotes())
-                        Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                        Assembler.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                     else
-                        Controller.Options.Architecture = line.Operand.TrimOnce('"');
+                        Assembler.Options.Architecture = line.Operand.TrimOnce('"');
                     break;
                 default:
-                    Controller.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
                     break;
             }
         }
@@ -113,10 +111,10 @@ namespace DotNetAsm
             if (!operand.EnclosedInQuotes())
             {
                 operand = StringAssemblerBase.GetFormattedString(line.Operand, 
-                                                                 Controller.Options.StringComparison, 
-                                                                 Controller.Evaluator);
+                                                                 Assembler.Options.StringComparison, 
+                                                                 Assembler.Evaluator);
                 if (string.IsNullOrEmpty(operand))
-                    Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                    Assembler.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
             }
             else
             {
@@ -129,10 +127,10 @@ namespace DotNetAsm
                     Console.WriteLine(operand);
                     break;
                 case ".warn":
-                    Controller.Log.LogEntry(line, operand, Controller.Options.WarningsAsErrors);
+                    Assembler.Log.LogEntry(line, operand, Assembler.Options.WarningsAsErrors);
                     break;
                 default:
-                    Controller.Log.LogEntry(line, operand);
+                    Assembler.Log.LogEntry(line, operand);
                     break;
             }
         }
@@ -146,18 +144,18 @@ namespace DotNetAsm
             var parms = line.Operand.CommaSeparate();
             if (parms.Count == 0)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
             }
             else if (parms.Count > 2)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
             }
-            else if (!Controller.Evaluator.EvalCondition(parms.First()))
+            else if (!Assembler.Evaluator.EvalCondition(parms.First()))
             {
                 if (parms.Count > 1)
                     Output(line, parms.Last());
                 else
-                    Controller.Log.LogEntry(line, ErrorStrings.AssertionFailure, line.Operand);
+                    Assembler.Log.LogEntry(line, ErrorStrings.AssertionFailure, line.Operand);
             }
         }
 

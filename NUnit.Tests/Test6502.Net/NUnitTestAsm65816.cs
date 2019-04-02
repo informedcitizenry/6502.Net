@@ -5,6 +5,8 @@ namespace NUnit.Tests.Test6502.Net
 {
     public class NUnitTestAsm65816 : TestDotNetAsm.NUnitAsmTestBase
     {
+        IAssemblyController Controller;
+
         public NUnitTestAsm65816()
         {
             Controller = new TestDotNetAsm.TestController();
@@ -26,7 +28,7 @@ namespace NUnit.Tests.Test6502.Net
         public void TestSetCpu()
         {
             SetCpu("65816");
-            Assert.IsFalse(Controller.Log.HasErrors);
+            Assert.IsFalse(Assembler.Log.HasErrors);
 
             var line = new SourceLine
             {
@@ -37,14 +39,14 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0xe2, 0x80 }, "sep #$80");
 
             SetCpu("6502");
-            Assert.IsFalse(Controller.Log.HasErrors);
+            Assert.IsFalse(Assembler.Log.HasErrors);
 
             TestForFailure(line);
-            Controller.Log.ClearAll();
+            Assembler.Log.ClearAll();
 
             SetCpu("GenuineIntel");
-            Assert.IsTrue(Controller.Log.HasErrors);
-            Controller.Log.ClearAll();
+            Assert.IsTrue(Assembler.Log.HasErrors);
+            Assembler.Log.ClearAll();
         }
 
         [Test]

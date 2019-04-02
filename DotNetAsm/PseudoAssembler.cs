@@ -23,6 +23,7 @@ namespace DotNetAsm
         HashSet<BinaryFile> _includedBinaries;
         readonly Dictionary<string, string> _typeDefs;
         readonly Func<string, bool> _reservedSymbol;
+        readonly Func<string, bool> _instruction;
 
         #endregion
 
@@ -31,11 +32,11 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of a <see cref="T:DotNetAsm.PseudoAssembler"/> line assembler.
         /// </summary>
-        /// <param name="controller">The assembly controller</param>
+        /// <param name="isInstructionFunc">A function callback to determine if the given token is 
+        /// an instruction.</param>
         /// <param name="reservedSymbolFunc">A function callback to determine if the given token 
         /// is a symbol name.</param>
-        public PseudoAssembler(IAssemblyController controller, Func<string, bool> reservedSymbolFunc) :
-            base(controller)
+        public PseudoAssembler(Func<string, bool> isInstructionFunc, Func<string, bool> reservedSymbolFunc) 
         {
             _includedBinaries = new HashSet<BinaryFile>();
 
@@ -44,7 +45,8 @@ namespace DotNetAsm
                     ".dint", ".dword", ".fill", ".lint", ".long",
                     ".sint", ".typedef", ".word"
                 );
-            _typeDefs = new Dictionary<string, string>(Controller.Options.StringComparar);
+            _typeDefs = new Dictionary<string, string>(Assembler.Options.StringComparar);
+            _instruction = isInstructionFunc;
             _reservedSymbol = reservedSymbolFunc;
         }
 
@@ -56,28 +58,28 @@ namespace DotNetAsm
         {
             var csv = line.Operand.CommaSeparate();
 
-            var alignval = (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
+            var alignval = (int)Assembler.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
 
             if (csv.Count > 1 && csv.Last().Equals("?") == false)
             {
                 if (csv.Count > 2)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
-                var fillval = Controller.Evaluator.Eval(csv.Last(), int.MinValue, uint.MaxValue);
+                var fillval = Assembler.Evaluator.Eval(csv.Last(), int.MinValue, uint.MaxValue);
 
-                if (line.Instruction.Equals(".align", Controller.Options.StringComparison))
-                    line.Assembly = Controller.Output.Align(alignval, fillval);
+                if (line.Instruction.Equals(".align", Assembler.Options.StringComparison))
+                    line.Assembly = Assembler.Output.Align(alignval, fillval);
                 else
-                    line.Assembly = Controller.Output.Fill(alignval, fillval);
+                    line.Assembly = Assembler.Output.Fill(alignval, fillval);
             }
             else
             {
                 if (line.Instruction.ToLower().Equals(".align"))
-                    Controller.Output.Align(alignval);
+                    Assembler.Output.Align(alignval);
                 else
-                    Controller.Output.Fill(alignval);
+                    Assembler.Output.Fill(alignval);
             }
         }
 
@@ -90,12 +92,12 @@ namespace DotNetAsm
             {
                 if (t == "?")
                 {
-                    Controller.Output.AddUninitialized(size);
+                    Assembler.Output.AddUninitialized(size);
                 }
                 else
                 {
-                    var val = Controller.Evaluator.Eval(t, minval, maxval);
-                    line.Assembly.AddRange(Controller.Output.Add(val, size));
+                    var val = Assembler.Evaluator.Eval(t, minval, maxval);
+                    line.Assembly.AddRange(Assembler.Output.Add(val, size));
                 }
             }
         }
@@ -104,9 +106,9 @@ namespace DotNetAsm
         {
             if (args.Count >= 2)
             {
-                offs = (int)Controller.Evaluator.Eval(args[1], ushort.MinValue, ushort.MaxValue);
+                offs = (int)Assembler.Evaluator.Eval(args[1], ushort.MinValue, ushort.MaxValue);
                 if (args.Count == 3)
-                    size = (int)Controller.Evaluator.Eval(args[2], ushort.MinValue, ushort.MaxValue);
+                    size = (int)Assembler.Evaluator.Eval(args[2], ushort.MinValue, ushort.MaxValue);
             }
             if (offs > binarysize - 1)
                 offs = binarysize - 1;
@@ -125,9 +127,9 @@ namespace DotNetAsm
             GetBinaryOffsetSize(args, size, ref offs, ref size);
 
             if (size > ushort.MaxValue)
-                Controller.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size);
+                Assembler.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size);
             else
-                line.Assembly = Controller.Output.AddBytes(binary.Data.Skip(offs), size);
+                line.Assembly = Assembler.Output.AddBytes(binary.Data.Skip(offs), size);
         }
 
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
@@ -135,19 +137,19 @@ namespace DotNetAsm
             if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
             {
                 if (args.Count == 0)
-                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 else
-                    Controller.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
+                    Assembler.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                 return new BinaryFile(string.Empty);
             }
             if (args.Count > 3)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                 return new BinaryFile(string.Empty);
             }
             if (!args.First().EnclosedInQuotes())
             {
-                Controller.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
+                Assembler.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                 return new BinaryFile(string.Empty);
             }
             var filename = args.First().TrimOnce('"');
@@ -160,7 +162,7 @@ namespace DotNetAsm
                 if (binary.Open())
                     _includedBinaries.Add(binary);
                 else
-                    Controller.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
+                    Assembler.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
             }
             return binary;
         }
@@ -169,35 +171,35 @@ namespace DotNetAsm
         {
             if (string.IsNullOrEmpty(line.Label) == false)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.None);
+                Assembler.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
             var csvs = line.Operand.CommaSeparate();
             if (csvs.Count != 2)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.None);
+                Assembler.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
             string currtype = csvs.First();
             if (!Reserved.IsOneOf("PseudoOps", currtype) &&
                 !base.IsReserved(currtype))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.DefininingUnknownType, currtype);
+                Assembler.Log.LogEntry(line, ErrorStrings.DefininingUnknownType, currtype);
                 return;
             }
 
             string newtype = csvs.Last();
             if (!Regex.IsMatch(newtype, @"^\.?" + Patterns.SymbolUnicode + "$"))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.None);
+                Assembler.Log.LogEntry(line, ErrorStrings.None);
             }
-            else if (Controller.IsInstruction(newtype))
+            else if (_instruction(newtype))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TypeDefinitionError, newtype);
+                Assembler.Log.LogEntry(line, ErrorStrings.TypeDefinitionError, newtype);
             }
             else if (_reservedSymbol(newtype))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TypeNameReserved, newtype);
+                Assembler.Log.LogEntry(line, ErrorStrings.TypeNameReserved, newtype);
             }
             else
             {
@@ -208,11 +210,11 @@ namespace DotNetAsm
 
         public void AssembleLine(SourceLine line)
         {
-            if (Controller.Output.PCOverflow)
+            if (Assembler.Output.PCOverflow)
             {
-                Controller.Log.LogEntry(line,
+                Assembler.Log.LogEntry(line,
                                         ErrorStrings.PCOverflow,
-                                        Controller.Output.LogicalPC);
+                                        Assembler.Output.LogicalPC);
                 return;
             }
             var instruction = line.Instruction.ToLower();
@@ -266,14 +268,14 @@ namespace DotNetAsm
         {
             if (string.IsNullOrEmpty(line.Operand))
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return 0;
             }
 
             var csv = line.Operand.CommaSeparate();
             if (csv.Count == 0)
             {
-                Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 return 0;
             }
             var instruction = line.Instruction.ToLower();
@@ -284,7 +286,7 @@ namespace DotNetAsm
             {
                 case ".align":
                     {
-                        var alignval = Controller.Evaluator.Eval(csv.First());
+                        var alignval = Assembler.Evaluator.Eval(csv.First());
                         return Compilation.GetAlignmentSize(Convert.ToUInt16(line.PC), Convert.ToUInt16(alignval));
                     }
                 case ".binary":
@@ -302,7 +304,7 @@ namespace DotNetAsm
                 case ".dint":
                     return csv.Count * 4;
                 case ".fill":
-                    return (int)Controller.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
+                    return (int)Assembler.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
                 case ".long":
                 case ".lint":
                     return csv.Count * 3;

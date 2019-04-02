@@ -8,6 +8,8 @@ namespace NUnit.Tests.Test6502.Net
 {
     public class NUnitTestAsm6502 : TestDotNetAsm.NUnitAsmTestBase
     {
+        readonly IAssemblyController Controller;
+
         public NUnitTestAsm6502()
         {
             Controller = new TestDotNetAsm.TestController();
@@ -30,7 +32,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             var line = new SourceLine();
 
-            Controller.Output.SetPC(0xfffe);
+            Assembler.Output.SetPC(0xfffe);
             line.PC = 0xfffe;
             line.Instruction = mnemonic;
             line.Operand = "$0002";
@@ -38,12 +40,12 @@ namespace NUnit.Tests.Test6502.Net
             
             line.Operand = "$fffe";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0xfc }, mnemonic + " " + line.Operand);
-            Controller.Output.Reset();
+            Assembler.Output.Reset();
 
-            Controller.Output.SetPC(0x0002);
+            Assembler.Output.SetPC(0x0002);
             line.Operand = "$0000";
             TestInstruction(line, 0x0004, new byte[] { opcode, 0xfc }, mnemonic + " " + line.Operand);
-            Controller.Output.Reset();
+            Assembler.Output.Reset();
 
             line.Operand = "$ff82";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0x80 }, mnemonic + " " + line.Operand);
@@ -1233,7 +1235,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestEncodings()
         {
-            var stringAsm = new PseudoAssembler(this.Controller, s => false);
+            var stringAsm = new PseudoAssembler(s => false, s => false);
             var line = new SourceLine();
             var teststring = "\"hello, world\"";
 

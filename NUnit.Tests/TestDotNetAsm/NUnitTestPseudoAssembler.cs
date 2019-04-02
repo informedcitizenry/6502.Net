@@ -10,95 +10,28 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     class TestController : IAssemblyController
     {
-        public TestController() :
-            this(null)
+        public TestController() 
         {
 
-        }
-
-        string GetCharValue(string chr)
-        {
-            var literal = chr.GetNextQuotedString();
-            var unescaped = Regex.Unescape(literal.Trim('\''));
-            var charval = Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
-            if (literal.Equals(chr))
-                return charval;
-
-            var post = chr.Substring(literal.Length);
-            return Evaluator.Eval(charval + post).ToString();
         }
 
         public TestController(string[] args)
         {
-            Output = new Compilation(true);
-
-            Options = new AsmCommandLineOptions();
-
-            Log = new ErrorLog();
-
-            Evaluator = new Evaluator();
-
-            Encoding = new AsmEncoding();
-
-            //Evaluator.DefineSymbolLookup(@"(?<=\B)'(.+)'(?=\B)", GetCharValue);
-
-            //Evaluator.DefineSymbolLookup(@"(?<=^|[^a-zA-Z0-9_.$])(?>(_+[a-zA-Z0-9]|[a-zA-Z])(\.[a-zA-Z_]|[a-zA-Z0-9_])*)(?=[^(.]|$)", GetSymbol);
-
-            if (args != null)
-                Options.ParseArgs(args);
-            Symbols = new SymbolManager(this);
-
-            Evaluator.DefineParser(str => Symbols.TranslateExpressionSymbols(new SourceLine(), str, string.Empty, false));
+            Assembler.Evaluator.DefineParser(str => Assembler.Symbols.TranslateExpressionSymbols(new SourceLine(), str, string.Empty, false));
         }
 
         string GetSymbol(string arg)
         {
-            if (Symbols.Labels.IsSymbol(arg))
-                return Symbols.Labels.GetSymbolValue(arg).ToString();
-            if (Symbols.Variables.IsSymbol(arg))
-                return Symbols.Variables.GetSymbolValue(arg).ToString();
+            if (Assembler.Symbols.Labels.IsSymbol(arg))
+                return Assembler.Symbols.Labels.GetSymbolValue(arg).ToString();
+            if (Assembler.Symbols.Variables.IsSymbol(arg))
+                return Assembler.Symbols.Variables.GetSymbolValue(arg).ToString();
             return string.Empty;
         }
 
         public void Assemble()
         {
 
-        }
-
-        public AsmCommandLineOptions Options
-        {
-            get;
-            private set;
-        }
-
-        public Compilation Output
-        {
-            get;
-            private set;
-        }
-
-        public ErrorLog Log
-        {
-            get;
-            private set;
-        }
-
-        public ISymbolManager Symbols
-        {
-            get;
-            private set;
-        }
-
-        public AsmEncoding Encoding
-        {
-            get;
-            private set;
-        }
-
-        public IEvaluator Evaluator
-        {
-            get;
-            private set;
         }
 
         public void AddAssembler(ILineAssembler asm)
@@ -137,15 +70,16 @@ namespace NUnit.Tests.TestDotNetAsm
     {
         public NUnitTestPseudoAssembler()
         {
-            Controller = new TestController();
-            LineAssembler = new PseudoAssembler(Controller, s => false);
+            LineAssembler = new PseudoAssembler(s => false, s => false);
         }
         [Test]
         public void TestMultiByte()
         {
-            var line = new SourceLine();
-            line.Instruction = ".byte";
-            line.Operand = "$01,$02 , $03, $04, $05";
+            var line = new SourceLine
+            {
+                Instruction = ".byte",
+                Operand = "$01,$02 , $03, $04, $05"
+            };
             TestInstruction(line, 0x0005, 5, new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 });
 
             line.Instruction = ".word";
@@ -324,7 +258,7 @@ namespace NUnit.Tests.TestDotNetAsm
             test = test.Select(b => { b <<= 1; return b; }).ToList();
             test[test.Count - 1] += 1;
 
-            Assert.IsTrue(Controller.Output.GetCompilation().Count == 0);
+            Assert.IsTrue(Assembler.Output.GetCompilation().Count == 0);
 
             line.Instruction = ".lsstring";
             line.Operand = string.Format("$0d0d, \"{0}\"", teststring);
@@ -338,8 +272,8 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestFormatFunction()
         {
             var testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", 
-                                                                    Controller.Options.StringComparison, 
-                                                                    Controller.Evaluator);
+                                                                    Assembler.Options.StringComparison, 
+                                                                    Assembler.Evaluator);
             Assert.AreEqual("TEST=02", testformat);
 
         }
@@ -357,7 +291,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "\"A\", \"a\"";
             LineAssembler.AssembleLine(line);
 
-            var translated = (char)Controller.Encoding.GetEncodedValue("A");
+            var translated = (char)Assembler.Encoding.GetEncodedValue("A");
             Assert.AreEqual('a', translated);
 
             line.Instruction = ".byte";
@@ -376,7 +310,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "none";
             LineAssembler.AssembleLine(line);
 
-            translated = (char)Controller.Encoding.GetEncodedValue("A");
+            translated = (char)Assembler.Encoding.GetEncodedValue("A");
             Assert.AreEqual('A', translated);
 
             line.Instruction = ".byte";
@@ -408,7 +342,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "$80, $ff, '\\0'";
             LineAssembler.AssembleLine(line);
 
-            translated = (char)Controller.Encoding.GetEncodedValue("\xc1");
+            translated = (char)Assembler.Encoding.GetEncodedValue("\xc1");
             Assert.AreEqual('A', translated);
 
             line.Instruction = ".map";
@@ -444,9 +378,9 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Instruction = ".byte";
             line.Operand = "0";
             LineAssembler.AssembleLine(line);
-            Assert.IsFalse(Controller.Log.HasErrors);
-            Assert.AreEqual(0x0001, Controller.Output.LogicalPC);
-            Assert.IsTrue(Controller.Output.GetCompilation().Count == 1);
+            Assert.IsFalse(Assembler.Log.HasErrors);
+            Assert.AreEqual(0x0001, Assembler.Output.LogicalPC);
+            Assert.IsTrue(Assembler.Output.GetCompilation().Count == 1);
 
             // test uninitialized
             line.Instruction = ".fill";
@@ -486,9 +420,9 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "0";
             line.PC = 1;
             LineAssembler.AssembleLine(line);
-            Assert.IsFalse(Controller.Log.HasErrors);
-            Assert.AreEqual(0x0001, Controller.Output.LogicalPC);
-            Assert.IsTrue(Controller.Output.GetCompilation().Count == 1);
+            Assert.IsFalse(Assembler.Log.HasErrors);
+            Assert.AreEqual(0x0001, Assembler.Output.LogicalPC);
+            Assert.IsTrue(Assembler.Output.GetCompilation().Count == 1);
 
             // align to nearest page, uninitialized
             line.Instruction = ".align";
@@ -496,13 +430,13 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, 0x0100, 255, new byte[] { 0x00 });
 
             // align to nearest page, uninitialized
-            Controller.Output.SetPC(1);
+            Assembler.Output.SetPC(1);
             line.PC = 1;
             line.Operand = "$100, ?";
             TestInstruction(line, 0x0100, 255, null);
 
             // align to nearest 0x10, filled
-            Controller.Output.SetPC(0x0006);
+            Assembler.Output.SetPC(0x0006);
             line.PC = 0x0006;
             line.Operand = "$10, $ea";
             TestInstruction(line, 0x0010, 10, new byte[] { 0xea, 0xea, 0xea, 0xea, 0xea,

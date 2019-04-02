@@ -12,8 +12,7 @@ namespace NUnit.Tests.TestDotNetAsm
     {
         public NUnitTestMisc()
         {
-            Controller = new TestController();
-            LineAssembler = new MiscAssembler(Controller);
+            LineAssembler = new MiscAssembler();
         }
 
         [Test]
@@ -39,38 +38,38 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "5 == 6";
             LineAssembler.AssembleLine(line);
 
-            Assert.IsTrue(Controller.Log.HasErrors);
+            Assert.IsTrue(Assembler.Log.HasErrors);
             
-            var error = Controller.Log.Entries.Last();
+            var error = Assembler.Log.Entries.Last();
             Assert.AreEqual("Error in file 'test' at line 1: Assertion Failed: '5 == 6'", error);
 
-            Controller.Log.ClearAll();
+            Assembler.Log.ClearAll();
 
             line.Operand = "5 == 6, \"My custom error!\"";
             LineAssembler.AssembleLine(line);
 
-            Assert.IsTrue(Controller.Log.HasErrors);
-            error = Controller.Log.Entries.Last();
+            Assert.IsTrue(Assembler.Log.HasErrors);
+            error = Assembler.Log.Entries.Last();
             Assert.AreEqual("Error in file 'test' at line 1: My custom error!", error);
 
-            Controller.Log.ClearAll();
+            Assembler.Log.ClearAll();
 
             line.Operand = "5 == 5";
             LineAssembler.AssembleLine(line);
-            Assert.IsFalse(Controller.Log.HasErrors);
+            Assert.IsFalse(Assembler.Log.HasErrors);
         }
 
         [Test]
         public void TestEor()
         {
-            var pseudoAsm = new PseudoAssembler(Controller, m => false);
+            var pseudoAsm = new PseudoAssembler(m => m.Equals(".eor") || m.Equals(".byte"), m => false);
             var line = new SourceLine
             {
                 Instruction = ".eor",
                 Operand = "$ff"
             };
             LineAssembler.AssembleLine(line);
-            Assert.IsFalse(Controller.Log.HasErrors);
+            Assert.IsFalse(Assembler.Log.HasErrors);
 
             line.Instruction = ".byte";
             line.Operand = "$00";
@@ -94,16 +93,16 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "5 != 6, \"5 doesn't equal 6!\"";
             LineAssembler.AssembleLine(line);
 
-            Assert.IsTrue(Controller.Log.HasErrors);
-            var error = Controller.Log.Entries.Last();
+            Assert.IsTrue(Assembler.Log.HasErrors);
+            var error = Assembler.Log.Entries.Last();
 
             Assert.AreEqual("Error in file 'test' at line 1: 5 doesn't equal 6!", error);
-            Controller.Log.ClearAll();
+            Assembler.Log.ClearAll();
 
             line.Operand = "5 == 6, \"5 equals 6!\"";
             LineAssembler.AssembleLine(line);
 
-            Assert.IsFalse(Controller.Log.HasErrors);
+            Assert.IsFalse(Assembler.Log.HasErrors);
         }
     }
 }

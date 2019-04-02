@@ -64,115 +64,115 @@ namespace DotNetAsm
         static readonly Dictionary<ExpressionElement, OperationDef> _operators = new Dictionary<ExpressionElement, OperationDef>
         {
             {
-                new ExpressionElement{ integral = false, word = ",",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ",",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(null,                                              int.MinValue)
             },
-            { 
-                new ExpressionElement{ integral = true,  word = "||", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
-                new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0? 1 : 0),  0) 
+            {
+                new ExpressionElement{ word = "||", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
+                new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0? 1 : 0),  0)
             },
             {
-                new ExpressionElement{ integral = true,  word = "&&", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "&&", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => ((int)parms[1]!=0?1:0) & ((int)parms[0]!=0? 1 : 0),  1)
             },
             {
-                new ExpressionElement{ integral = true,  word = "|",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "|",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                | (long)parms[0],      2)
             },
             {
-                new ExpressionElement{ integral = true,  word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                ^ (long)parms[0],      3)
             },
             {
-                new ExpressionElement{ integral = true,  word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                & (long)parms[0],      4)
             },
             {
-                new ExpressionElement{ integral = false, word = "!=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "!=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => !parms[1].AlmostEquals(parms[0])          ? 1 : 0,   5)
-            }, 
+            },
             {
-                new ExpressionElement{ integral = false, word = "==", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "==", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1].AlmostEquals(parms[0])           ? 1 : 0,   5)
             },
             {
-                new ExpressionElement{ integral = false, word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      <  parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ integral = false, word = "<=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "<=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      <= parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ integral = false, word = ">=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ">=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      >= parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ integral = false, word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      >  parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ integral = true,  word = "<<", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "<<", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (int)parms[1]                 << (int)parms[0],      7)
             },
             {
-                new ExpressionElement{ integral = true,  word = ">>", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ">>", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (int)parms[1]                 >> (int)parms[0],      7)
             },
             {
-                new ExpressionElement{ integral = false, word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      -  parms[0],           8)
             },
             {
-                new ExpressionElement{ integral = false, word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      +  parms[0],           8)
             },
             {
-                new ExpressionElement{ integral = false, word = "/",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "/",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      /  parms[0],           9)
             },
             {
-                new ExpressionElement{ integral = false, word = "*",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "*",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      *  parms[0],           9)
             },
             {
-                new ExpressionElement{ integral = true,  word = "%",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "%",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                %  (long)parms[0],     9)
             },
             {
-                new ExpressionElement{ integral = false, word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
                 new OperationDef(parms => -parms[0],                                          10)
             },
             {
-                new ExpressionElement{ integral = false, word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
                 new OperationDef(parms => +parms[0],                                          10)
             },
             {
-                new ExpressionElement{ integral = true,  word = "~",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "~",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => ~((long)parms[0]),                                  11)
             },
             {
-                new ExpressionElement{ integral = true,  word = "!",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "!",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,                        11)
             },
             {
-                new ExpressionElement{ integral = false, word = "**", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "**", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => Math.Pow(parms[1], parms[0]),                       12)
             },
             {
-                new ExpressionElement{ integral = true,  word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)(parms[0] / 0x100) % 256,                     13)
             },
             {
-                new ExpressionElement{ integral = true,  word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[0]  % 256,                              13)
             },
             {
-                new ExpressionElement{ integral = true,  word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[0]  % 65536,                            13)
             },
             {
-                new ExpressionElement{ integral = true,  word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,                   13)
             }
         };
@@ -488,7 +488,9 @@ namespace DotNetAsm
                     operation = _operators[op];
                     if (op.subtype == ExpressionElement.Subtype.Binary)
                         parms.Add(result.Pop());
-                    if (op.integral && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
+                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Boolean && parms.Any(p => !((int)p == 1 || (int)p == 0)))
+                        throw new Exception();
+                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Integral && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
                         throw new Exception();
                 }
                 result.Push(operation.Item1(parms));

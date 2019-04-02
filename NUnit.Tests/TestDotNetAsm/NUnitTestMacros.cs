@@ -12,8 +12,7 @@ namespace NUnit.Tests.TestDotNetAsm
     {
         public NUnitTestMacros()
         {
-            Controller = new TestController();
-            Handler = new MacroHandler(Controller, s =>
+            Handler = new MacroHandler(s =>
             {
                 return s.Equals("lda") || s.Equals("ldy") || s.Equals("ldx") ||
                        s.Equals("inc") || s.Equals("jsr");

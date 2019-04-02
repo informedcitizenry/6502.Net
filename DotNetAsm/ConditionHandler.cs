@@ -29,10 +29,7 @@ namespace DotNetAsm
         /// <summary>
         /// Initialize a new instance of a <see cref="T:DotNetAsm.ConditionHandler"/> class.
         /// </summary>
-        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> associated to this
-        /// class.</param>
-        public ConditionHandler(IAssemblyController controller)
-            : base(controller)
+        public ConditionHandler()
         {
             Reserved.DefineType("Conditions",
                 ".if", ".ifdef", ".ifndef",
@@ -62,27 +59,27 @@ namespace DotNetAsm
             }
             string lastcond = _condStack.Count > 0 ? _condStack.Peek() : string.Empty;
 
-            if (line.Instruction.StartsWith(".if", Controller.Options.StringComparison))
+            if (line.Instruction.StartsWith(".if", Assembler.Options.StringComparison))
             {
                 _resultStack.Push(!_doNotAsm);
                 _condStack.Push(line.Instruction);
             }
-            else if (line.Instruction.Equals(".else", Controller.Options.StringComparison))
+            else if (line.Instruction.Equals(".else", Assembler.Options.StringComparison))
             {
                 if (string.IsNullOrEmpty(line.Operand) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                     return;
                 }
                 _condStack.Pop();
                 _condStack.Push(line.Instruction);
             }
-            else if (line.Instruction.Equals(".endif", Controller.Options.StringComparison))
+            else if (line.Instruction.Equals(".endif", Assembler.Options.StringComparison))
             {
                 // .endif
                 if (_condStack.Count == 0)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                     return;
                 }
                 _condStack.Pop();
@@ -90,7 +87,7 @@ namespace DotNetAsm
             if (_condStack.Count > _condLevel && _doNotAsm)
                 return;
 
-            if (line.Instruction.Equals(".endif", Controller.Options.StringComparison))
+            if (line.Instruction.Equals(".endif", Assembler.Options.StringComparison))
             {
                 _resultStack.Pop();
                 _condLevel = _condStack.Count;
@@ -98,7 +95,7 @@ namespace DotNetAsm
             }
             else
             {
-                if (line.Instruction.StartsWith(".if", Controller.Options.StringComparison))
+                if (line.Instruction.StartsWith(".if", Assembler.Options.StringComparison))
                 {
                     _condLevel = _condStack.Count;
 
@@ -107,10 +104,10 @@ namespace DotNetAsm
                 else
                 {
                     if (string.IsNullOrEmpty(lastcond) ||
-                        (!line.Instruction.Equals(".endif", Controller.Options.StringComparison) &&
-                        lastcond.Equals(".else", Controller.Options.StringComparison)))
+                        (!line.Instruction.Equals(".endif", Assembler.Options.StringComparison) &&
+                        lastcond.Equals(".else", Assembler.Options.StringComparison)))
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.None);
+                        Assembler.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
 
@@ -132,12 +129,12 @@ namespace DotNetAsm
         /// directive.</param>
         void UpdateDoNotAsm(SourceLine line)
         {
-            if (line.Instruction.EndsWith("if", Controller.Options.StringComparison))
-                _doNotAsm = !Controller.Evaluator.EvalCondition(line.Operand);
-            else if (line.Instruction.EndsWith("ifdef", Controller.Options.StringComparison))
-                _doNotAsm = !(Controller.Symbols.Labels.IsSymbol(line.Operand) || Controller.Symbols.Variables.IsSymbol(line.Operand));
-            else if (line.Instruction.EndsWith("ifndef", Controller.Options.StringComparison))
-                _doNotAsm = Controller.Symbols.Labels.IsSymbol(line.Operand) || Controller.Symbols.Variables.IsSymbol(line.Operand);
+            if (line.Instruction.EndsWith("if", Assembler.Options.StringComparison))
+                _doNotAsm = !Assembler.Evaluator.EvalCondition(line.Operand);
+            else if (line.Instruction.EndsWith("ifdef", Assembler.Options.StringComparison))
+                _doNotAsm = !(Assembler.Symbols.Labels.IsSymbol(line.Operand) || Assembler.Symbols.Variables.IsSymbol(line.Operand));
+            else if (line.Instruction.EndsWith("ifndef", Assembler.Options.StringComparison))
+                _doNotAsm = Assembler.Symbols.Labels.IsSymbol(line.Operand) || Assembler.Symbols.Variables.IsSymbol(line.Operand);
         }
 
         public void Reset()

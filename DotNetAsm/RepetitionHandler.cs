@@ -96,10 +96,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of a <see cref="T:DotNetAsm.RepetitionHandler"/> object.
         /// </summary>
-        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> for this
-        /// handler.</param>
-        public RepetitionHandler(IAssemblyController controller) :
-            base(controller)
+        public RepetitionHandler() 
         {
             Reserved.DefineType("Directives", ".repeat", ".endrepeat");
 
@@ -119,16 +116,16 @@ namespace DotNetAsm
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> to process</param>
         public void Process(SourceLine line)
         {
-            if (line.Instruction.Equals(".repeat", Controller.Options.StringComparison))
+            if (line.Instruction.Equals(".repeat", Assembler.Options.StringComparison))
             {
                 if (string.IsNullOrEmpty(line.Operand))
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
                 if (string.IsNullOrEmpty(line.Label) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.None);
+                    Assembler.Log.LogEntry(line, ErrorStrings.None);
                     return;
                 }
 
@@ -143,21 +140,21 @@ namespace DotNetAsm
                     _currBlock = block;
                 }
                 _levels++;
-                _currBlock.RepeatAmounts = Controller.Evaluator.Eval(line.Operand, int.MinValue, uint.MaxValue);
+                _currBlock.RepeatAmounts = Assembler.Evaluator.Eval(line.Operand, int.MinValue, uint.MaxValue);
             }
-            else if (line.Instruction.Equals(".endrepeat", Controller.Options.StringComparison))
+            else if (line.Instruction.Equals(".endrepeat", Assembler.Options.StringComparison))
             {
                 if (_levels == 0)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                 }
                 else if (string.IsNullOrEmpty(line.Operand) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                 }
                 else if (string.IsNullOrEmpty(line.Label) == false)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.None);
+                    Assembler.Log.LogEntry(line, ErrorStrings.None);
                 }
                 else
                 {

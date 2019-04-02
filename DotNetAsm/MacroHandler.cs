@@ -32,13 +32,11 @@ namespace DotNetAsm
         /// <summary>
         /// Initializes a new instance of the <see cref="T:DotNetAsm.MacroHandler"/> class.
         /// </summary>
-        /// <param name="controller">A <see cref="T:DotNetAsm.IAssemblyController"/>.</param>
         /// <param name="instructionFcn">The lookup function to validate whether the name is an instruction or directive.</param>
-        public MacroHandler(IAssemblyController controller, Func<string, bool> instructionFcn)
-            : base(controller)
+        public MacroHandler(Func<string, bool> instructionFcn)
         {
             Reserved.DefineType("Directives", ".macro", ".endmacro", ".dsegment", ".segment", ".endsegment");
-            _macros = new Dictionary<string, Macro>(controller.Options.StringComparar);
+            _macros = new Dictionary<string, Macro>(Assembler.Options.StringComparar);
             _expandedSource = new List<SourceLine>();
             _macroDefinitions = new Stack<List<SourceLine>>();
             _instructionFcn = instructionFcn;
@@ -60,7 +58,7 @@ namespace DotNetAsm
                 {
                     // We are in a macro definition
                     if (instruction.Equals(_macros.Last().Key))
-                        Controller.Log.LogEntry(line, ErrorStrings.RecursiveMacro, line.Instruction);
+                        Assembler.Log.LogEntry(line, ErrorStrings.RecursiveMacro, line.Instruction);
 
                     _macroDefinitions.Peek().Add(line);
                 }
@@ -82,7 +80,7 @@ namespace DotNetAsm
                 {
                     if (!string.IsNullOrEmpty(line.Label))
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.None);
+                        Assembler.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
                     name = line.Operand;
@@ -93,12 +91,12 @@ namespace DotNetAsm
                 }
                 if (!Macro.IsValidMacroName(name) || _instructionFcn(name))
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
+                    Assembler.Log.LogEntry(line, ErrorStrings.LabelNotValid, line.Label);
                     return;
                 }
                 if (_macros.ContainsKey(name))
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.MacroRedefinition, line.Label);
+                    Assembler.Log.LogEntry(line, ErrorStrings.MacroRedefinition, line.Label);
                     return;
                 }
                 _macros.Add(name, null);
@@ -107,17 +105,17 @@ namespace DotNetAsm
             {
                 var def = instruction.Replace("end",string.Empty);
                 var name = "." + _definitions.Peek().Label;
-                if (!_definitions.Peek().Instruction.Equals(def, Controller.Options.StringComparison))
+                if (!_definitions.Peek().Instruction.Equals(def, Assembler.Options.StringComparison))
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseMacro, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseMacro, line.Instruction);
                     return;
                 }
                 if (def.Equals(".segment"))
                 {
                     name = _definitions.Peek().Operand;
-                    if (!name.Equals(line.Operand, Controller.Options.StringComparison))
+                    if (!name.Equals(line.Operand, Assembler.Options.StringComparison))
                     {
-                        Controller.Log.LogEntry(line, ErrorStrings.None);
+                        Assembler.Log.LogEntry(line, ErrorStrings.None);
                         return;
                     }
                     //name = "." + name;
@@ -125,12 +123,12 @@ namespace DotNetAsm
                 _macros[name] = Macro.Create(_definitions.Pop(),
                                              line,
                                              _macroDefinitions.Pop(),
-                                             Controller.Options.StringComparison,
+                                             Assembler.Options.StringComparison,
                                              ConstStrings.OPEN_SCOPE,
                                              ConstStrings.CLOSE_SCOPE);
                 if (def.Equals(".segment"))
                 {
-                    while(_declarations.Any(l => l.Operand.Equals(name, Controller.Options.StringComparison)))
+                    while(_declarations.Any(l => l.Operand.Equals(name, Assembler.Options.StringComparison)))
                     {
                         var dsegment = _declarations.Pop();
                         var segname = dsegment.Operand;
@@ -144,7 +142,7 @@ namespace DotNetAsm
             {
                 if (string.IsNullOrEmpty(line.Operand))
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                     return;
                 }
                 if (_macros.ContainsKey(line.Operand))
@@ -163,7 +161,7 @@ namespace DotNetAsm
                 var macro = _macros[line.Instruction];
                 if (macro == null)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.MissingClosureMacro, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.MissingClosureMacro, line.Instruction);
                     return;
                 }
                 if (IsProcessing())

@@ -10,18 +10,24 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     public class NUnitTestDisassembler : NUnitAsmTestBase
     {
+        IAssemblyController Controller;
+
         public NUnitTestDisassembler()
         {
-            Controller = new TestController();
-            Controller.Disassembler = new Disassembler(Controller);
+            Controller = new TestController
+            {
+                Disassembler = new Disassembler()
+            };
         }
 
         [Test]
         public void TestDisasmMultiByteFill()
         {
-            var line = new SourceLine();
-            line.SourceString = "                            .fill 9*3,%........";
-            line.PC = 0x093e;
+            var line = new SourceLine
+            {
+                SourceString = "                            .fill 9*3,%........",
+                PC = 0x093e
+            };
             line.Assembly.AddRange(Enumerable.Repeat(Convert.ToByte(0), 9 * 3));
             line.Disassembly = string.Empty;
             line.Instruction = ".fill";
@@ -124,7 +130,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Disassembly = string.Empty;
             line.PC = 0x080b;
             line.Label = "FLAG";
-            Controller.Symbols.Labels.SetSymbol("FLAG", 52, false);
+            Assembler.Symbols.Labels.SetSymbol("FLAG", 52, false);
 
             var expected =
 @"=$34                                                 FLAG         =   $34 " + Environment.NewLine;
@@ -132,7 +138,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Assert.AreEqual(expected, result);
 
-            Controller.Symbols.Labels.Clear();
+            Assembler.Symbols.Labels.Clear();
         }
 
         [Test]

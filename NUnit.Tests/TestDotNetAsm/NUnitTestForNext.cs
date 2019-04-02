@@ -12,8 +12,7 @@ namespace NUnit.Tests.TestDotNetAsm
     {
         public NUnitTestForNext()
         {
-            Controller = new TestController();
-            Handler = new ForNextHandler(Controller);
+            Handler = new ForNextHandler();
         }
 
         IEnumerable<SourceLine> HandleLines(List<SourceLine> unprocessed)
@@ -38,10 +37,12 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestForNextSimple()
         {
-            var unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine { Instruction = ".for", Operand = "i = 0, i < 3, i = i + 1" });
-            unprocessed.Add(new SourceLine { Instruction = "nop" });
-            unprocessed.Add(new SourceLine { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>
+            {
+                new SourceLine { Instruction = ".for", Operand = "i = 0, i < 3, i = i + 1" },
+                new SourceLine { Instruction = "nop" },
+                new SourceLine { Instruction = ".next" }
+            };
 
             unprocessed = HandleLines(unprocessed).ToList();
 
@@ -51,11 +52,13 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestForNextNested()
         {
-            var unprocessed = new List<SourceLine>();
-            unprocessed.Add(new SourceLine { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" });
-            unprocessed.Add(new SourceLine { Instruction = "lda", Operand = "#$41+i" });
-            unprocessed.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2" });
-            unprocessed.Add(new SourceLine { Instruction = ".next" });
+            var unprocessed = new List<SourceLine>
+            {
+                new SourceLine { Instruction = ".for", Operand = "i = 1, i < 6, i = i + 1" },
+                new SourceLine { Instruction = "lda", Operand = "#$41+i" },
+                new SourceLine { Instruction = "jsr", Operand = "$ffd2" },
+                new SourceLine { Instruction = ".next" }
+            };
 
             unprocessed = HandleLines(unprocessed).ToList();
 

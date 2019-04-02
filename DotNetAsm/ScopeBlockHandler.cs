@@ -27,9 +27,7 @@ namespace DotNetAsm
         /// <summary>
         /// Initializes a new instance of the <see cref="T:DotNetAsm.ScopeBlockHandler"/> class.
         /// </summary>
-        /// <param name="controller">The <see cref="T:DotNetAsm.IAssemblyController"/> of the handler.</param>
-        public ScopeBlockHandler(IAssemblyController controller)
-            : base(controller)
+        public ScopeBlockHandler()
         {
             Reserved.DefineType("Scoped", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE);
             _scope = new Stack<string>();
@@ -50,18 +48,18 @@ namespace DotNetAsm
 
             line.Scope = scopeBuilder.ToString();
 
-            if (line.Instruction.Equals(ConstStrings.OPEN_SCOPE, Controller.Options.StringComparison))
+            if (line.Instruction.Equals(ConstStrings.OPEN_SCOPE, Assembler.Options.StringComparison))
             {
                 if (string.IsNullOrEmpty(line.Label))
                     _scope.Push((_anon++).ToString());
                 else
                     _scope.Push(line.Label);
             }
-            else if (line.Instruction.Equals(ConstStrings.CLOSE_SCOPE, Controller.Options.StringComparison))
+            else if (line.Instruction.Equals(ConstStrings.CLOSE_SCOPE, Assembler.Options.StringComparison))
             {
                 if (_scope.Count == 0)
                 {
-                    Controller.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
+                    Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                     return;
                 }
                 _scope.Pop();

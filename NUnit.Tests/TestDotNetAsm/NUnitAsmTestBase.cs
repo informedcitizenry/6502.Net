@@ -11,7 +11,13 @@ namespace NUnit.Tests.TestDotNetAsm
     [TestFixture]
     public abstract class NUnitAsmTestBase
     {
-        protected IAssemblyController Controller { get; set; }
+        protected NUnitAsmTestBase()
+        {
+            Assembler.Initialize();
+
+            Assembler.Evaluator.DefineParser((arg) =>
+                Assembler.Symbols.TranslateExpressionSymbols(new SourceLine(), arg, string.Empty, false));
+        }
 
         protected ILineAssembler LineAssembler { get; set; }
 
@@ -21,21 +27,21 @@ namespace NUnit.Tests.TestDotNetAsm
             asm.AssembleLine(line);
             if (positive)
             {
-                Assert.IsFalse(Controller.Log.HasErrors);
-                Assert.AreEqual(pc, Controller.Output.LogicalPC);
+                Assert.IsFalse(Assembler.Log.HasErrors);
+                Assert.AreEqual(pc, Assembler.Output.LogicalPC);
 
                 if (expected != null)
-                    Assert.IsTrue(Controller.Output.GetCompilation().SequenceEqual(expected));
+                    Assert.IsTrue(Assembler.Output.GetCompilation().SequenceEqual(expected));
                 else
-                    Assert.IsTrue(Controller.Output.GetCompilation().Count == 0);
+                    Assert.IsTrue(Assembler.Output.GetCompilation().Count == 0);
                 Assert.AreEqual(expectedsize, size);
             }
             else
             {
-                Assert.IsTrue(Controller.Log.HasErrors);
+                Assert.IsTrue(Assembler.Log.HasErrors);
 
             }
-            ResetController();
+            ResetAssembler();
         }
 
         protected void TestInstruction(SourceLine line, ILineAssembler asm, int pc, byte[] expected, string disasm, bool positive)
@@ -43,18 +49,18 @@ namespace NUnit.Tests.TestDotNetAsm
             asm.AssembleLine(line);
             if (positive)
             {
-                Assert.IsFalse(Controller.Log.HasErrors);
-                Assert.AreEqual(pc, Controller.Output.LogicalPC);
-                Assert.IsTrue(Controller.Output.GetCompilation().SequenceEqual(expected));
+                Assert.IsFalse(Assembler.Log.HasErrors);
+                Assert.AreEqual(pc, Assembler.Output.LogicalPC);
+                Assert.IsTrue(Assembler.Output.GetCompilation().SequenceEqual(expected));
                 Assert.AreEqual(disasm, line.Disassembly);
-                Assert.AreEqual(expected.Count(), line.Assembly.Count);//LineAssembler.GetInstructionSize(line));
+                Assert.AreEqual(expected.Count(), line.Assembly.Count);
             }
             else
             {
-                Assert.IsTrue(Controller.Log.HasErrors);
+                Assert.IsTrue(Assembler.Log.HasErrors);
             }
-            Controller.Output.Reset();
-            Controller.Log.ClearErrors();
+            Assembler.Output.Reset();
+            Assembler.Log.ClearErrors();
         }
 
         protected void TestInstruction(SourceLine line, int pc, byte[] expected, string disasm, bool positive)
@@ -87,12 +93,12 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, LineAssembler, pc, expectedsize, expected, true);
         }
 
-        void ResetController()
+        void ResetAssembler()
         {
-            if (Controller.Output.Transforms.Count > 0)
-                Controller.Output.Transforms.Pop();
-            Controller.Output.Reset();
-            Controller.Log.ClearErrors();
+            if (Assembler.Output.Transforms.Count > 0)
+                Assembler.Output.Transforms.Pop();
+            Assembler.Output.Reset();
+            Assembler.Log.ClearErrors();
         }
 
         protected void TestForFailure(SourceLine line)
@@ -103,7 +109,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestForFailure<Texc>(SourceLine line) where Texc : System.Exception
         {
             Assert.Throws<Texc>(() => TestForFailure(line));
-            ResetController();
+            ResetAssembler();
         }
     }
 }

@@ -37,10 +37,10 @@ namespace Asm6502.Net
         {
             var controller = sender as IAssemblyController;
 
-            var arch = controller.Options.Architecture.ToLower();
-            var progstart = Convert.ToUInt16(controller.Output.ProgramStart);
-            var progend = Convert.ToUInt16(controller.Output.ProgramCounter);
-            var progsize = Convert.ToUInt16(controller.Output.GetCompilation().Count);
+            var arch = Assembler.Options.Architecture.ToLower();
+            var progstart = Convert.ToUInt16(Assembler.Output.ProgramStart);
+            var progend = Convert.ToUInt16(Assembler.Output.ProgramCounter);
+            var progsize = Convert.ToUInt16(Assembler.Output.GetCompilation().Count);
 
             using (MemoryStream ms = new MemoryStream())
             {
