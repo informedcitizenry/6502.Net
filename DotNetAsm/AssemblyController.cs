@@ -92,7 +92,7 @@ namespace DotNetAsm
 
 
             _processedLines = new List<SourceLine>();
-            _sourceHandler = new SourceHandler(this);
+            _sourceHandler = new SourceHandler();
 
             _specialLabels = new Regex(@"^\*|\+|-$", RegexOptions.Compiled);
 

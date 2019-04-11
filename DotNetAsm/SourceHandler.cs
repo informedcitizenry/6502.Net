@@ -15,11 +15,9 @@ namespace DotNetAsm
     /// <summary>
     /// Handles all source file inclusions, and parses comment blocks.
     /// </summary>
-    public class SourceHandler : IBlockHandler
+    public class SourceHandler : AssemblerBase, IBlockHandler
     {
         #region members
-
-        IAssemblyController Controller;
 
         List<SourceLine> _includedLines;
 
@@ -30,10 +28,9 @@ namespace DotNetAsm
         /// <summary>
         /// Initializes a new instance of the <see cref="T:DotNetAsm.SourceHandler"/> class.
         /// </summary>
-        /// <param name="controller">The <see cref="DotNetAsm.IAssemblyController"/> of the handler.</param>
-        public SourceHandler(IAssemblyController controller)
+        public SourceHandler()
         {
-            Controller = controller;
+            Reserved.DefineType("Directives", ".comment", ".endcomment", ".include", ".binclude");
             _includedLines = new List<SourceLine>();
             FileRegistry = new HashSet<string>();
         }
@@ -42,36 +39,44 @@ namespace DotNetAsm
 
         #region IBlockHandler
 
-        void ProcessCommentBlocks(IEnumerable<SourceLine> source)
+        void ProcessCommentBlocks(List<SourceLine> source)
         {
-            const int COMMENT_SIZE = 8;
             const int ENDCOMMENT_SIZE = 11;
             bool inComment = false;
-            foreach (var line in source)
+            for(int i = 0; i < source.Count; i++)
             {
+                var line = source[i];
                 line.IsComment = inComment;
                 if (line.IsComment)
                 {
                     var endBlockIx = line.SourceString.IndexOf(".endcomment", Assembler.Options.StringComparison);
                     if (endBlockIx > -1)
                     {
-                        var afterIx = endBlockIx + ENDCOMMENT_SIZE;
-                        if ((endBlockIx != 0 && !char.IsWhiteSpace(line.SourceString[endBlockIx - 1])) ||
-                            (line.SourceString.Length > afterIx && !char.IsWhiteSpace(line.SourceString[afterIx])))
-                        {
-                            if (line.SourceString.Length > afterIx && line.SourceString.Substring(afterIx).Any(c => !char.IsWhiteSpace(c)))
-                            {
-                                Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, ".endcomment");
-                                break;
-                            }
-                            continue;
-                        }
                         if (!inComment)
                         {
-                            Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.SourceString.Substring(endBlockIx, afterIx));
+                            Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
                         }
                         else
                         {
+                            var afterIx = endBlockIx + ENDCOMMENT_SIZE;
+                            if (line.SourceString.Length > afterIx)
+                            {
+                                if (char.IsWhiteSpace(line.SourceString[afterIx]))
+                                {
+                                    source.Insert(i + 1, new SourceLine
+                                    {
+                                        Filename = line.Filename,
+                                        LineNumber = line.LineNumber,
+                                        SourceString = line.SourceString.Substring(afterIx)
+                                    });
+                                }
+                                else
+                                {
+                                    Assembler.Log.LogEntry(line, ErrorStrings.None);
+                                    break;
+                                }
+                                continue;
+                            }
                             line.IsComment = inComment = false;
                         }
                     }
@@ -81,11 +86,18 @@ namespace DotNetAsm
                     var commBlockIx = line.SourceString.IndexOf(".comment", Assembler.Options.StringComparison);
                     if (commBlockIx > -1)
                     {
-                        var afterIx = commBlockIx + COMMENT_SIZE;
-                        if ((commBlockIx != 0 && !char.IsWhiteSpace(line.SourceString[commBlockIx - 1])) ||
-                            (line.SourceString.Length > afterIx && !char.IsWhiteSpace(line.SourceString[afterIx])))
+                        if (commBlockIx > 0)
                         {
-                            if (commBlockIx != 0 && line.SourceString.Substring(0, commBlockIx).Any(c => !char.IsWhiteSpace(c)))
+                            if (char.IsWhiteSpace(line.SourceString[commBlockIx - 1]))
+                            {
+                                source.Insert(i, new SourceLine
+                                {
+                                    Filename = line.Filename,
+                                    LineNumber = line.LineNumber,
+                                    SourceString = line.SourceString.Substring(0, commBlockIx)
+                                });
+                            }
+                            else
                             {
                                 Assembler.Log.LogEntry(line, ErrorStrings.None);
                                 break;
