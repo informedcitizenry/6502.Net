@@ -6,9 +6,6 @@
 //-----------------------------------------------------------------------------
 
 using DotNetAsm;
-using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using OpcodeTable = System.Collections.Generic.Dictionary<string, DotNetAsm.Instruction>;
 
 namespace Asm6502.Net
