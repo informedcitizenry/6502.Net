@@ -1,5 +1,4 @@
 ﻿using NUnit.Framework;
-using System;
 using DotNetAsm;
 
 namespace NUnit.Tests.TestDotNetAsm

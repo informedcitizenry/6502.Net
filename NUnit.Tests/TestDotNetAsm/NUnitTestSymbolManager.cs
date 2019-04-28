@@ -1,7 +1,7 @@
 ﻿using DotNetAsm;
 using NUnit.Framework;
 using System;
-using System.Linq;
+
 namespace NUnit.Tests.TestDotNetAsm
 {
     [TestFixture()]
