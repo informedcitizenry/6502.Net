@@ -320,56 +320,59 @@ namespace DotNetAsm
                 {
                     throw new MacroException(line, string.Format(ErrorStrings.RecursiveMacro, line.Label));
                 }
-                var param_ix = line.Operand.IndexOf('\\');
-                if (param_ix >= 0 && isSegment == false)
+                if (!isSegment)
                 {
-                    if (line.Operand.EndsWith("\\"))
-                        throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
+                    var param_ix = line.Operand.IndexOf('\\');
+                    if (param_ix >= 0)
+                    {
+                        if (line.Operand.EndsWith("\\"))
+                            throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
 
-                    string param = String.Empty;
-                    if (char.IsLetterOrDigit(line.Operand.ElementAt(param_ix + 1)) == false)
-                    {
-                        throw new MacroException(line, ErrorStrings.MacroParamIncorrect);
-                    }
-                    foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
-                    {
-                        if (Regex.IsMatch(c.ToString(), Patterns.SymbolUnicodeChar))
-                            param += c;
+                        string param = String.Empty;
+                        if (char.IsLetterOrDigit(line.Operand.ElementAt(param_ix + 1)) == false)
+                        {
+                            throw new MacroException(line, ErrorStrings.MacroParamIncorrect);
+                        }
+                        foreach (var c in line.Operand.Substring(param_ix + 1, line.Operand.Length - param_ix - 1))
+                        {
+                            if (Regex.IsMatch(c.ToString(), Patterns.SymbolUnicodeChar))
+                                param += c;
+                            else
+                                break;
+                        }
+                        if (string.IsNullOrEmpty(param))
+                        {
+                            throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
+                        }
+
+
+                        // is the parameter in the operand a number or named
+                        if (int.TryParse(param, out int paramref))
+                        {
+                            // if it is a number and higher than the number of explicitly
+                            // defined params, just add it as a param
+                            int paramcount = macro.Params.Count;
+                            if (paramref > paramcount)
+                            {
+                                while (paramref > paramcount)
+                                    macro.Params.Add(new Macro.Param { Number = ++paramcount });
+                            }
+                            else if (paramref < 1)
+                            {
+                                throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
+                            }
+                            paramref--;
+                            macro.Params[paramref].SourceLines.Add(line.SourceInfo());
+                        }
                         else
-                            break;
-                    }
-                    if (string.IsNullOrEmpty(param))
-                    {
-                        throw new MacroException(line, ErrorStrings.MacroParamNotSpecified);
-                    }
-
-
-                    // is the parameter in the operand a number or named
-                    if (int.TryParse(param, out int paramref))
-                    {
-                        // if it is a number and higher than the number of explicitly
-                        // defined params, just add it as a param
-                        int paramcount = macro.Params.Count;
-                        if (paramref > paramcount)
                         {
-                            while (paramref > paramcount)
-                                macro.Params.Add(new Macro.Param { Number = ++paramcount });
+                            if (macro.Params.Any(p => p.Name == param) == false)
+                            {
+                                throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
+                            }
+                            var macparm = macro.Params.First(p => p.Name == param);
+                            macparm.SourceLines.Add(line.SourceInfo());
                         }
-                        else if (paramref < 1)
-                        {
-                            throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
-                        }
-                        paramref--;
-                        macro.Params[paramref].SourceLines.Add(line.SourceInfo());
-                    }
-                    else
-                    {
-                        if (macro.Params.Any(p => p.Name == param) == false)
-                        {
-                            throw new MacroException(line, string.Format(ErrorStrings.InvalidParamRef, param));
-                        }
-                        var macparm = macro.Params.First(p => p.Name == param);
-                        macparm.SourceLines.Add(line.SourceInfo());
                     }
                 }
                 macro.Source.Add(line);

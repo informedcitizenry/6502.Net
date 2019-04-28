@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -53,15 +54,14 @@ namespace DotNetAsm
     {
         #region Members
 
-        Stack<ILineAssembler> _assemblers;
-        List<IBlockHandler> _blockHandlers;
-        List<SourceLine> _processedLines;
+        readonly Stack<ILineAssembler> _assemblers;
+        readonly List<IBlockHandler> _blockHandlers;
+        readonly List<SourceLine> _processedLines;
         SourceLine _currentLine;
-        SourceHandler _sourceHandler;
+        readonly SourceHandler _sourceHandler;
 
         int _passes;
 
-        Regex _specialLabels;
         string _localLabelScope;
 
         #endregion
@@ -93,8 +93,6 @@ namespace DotNetAsm
 
             _processedLines = new List<SourceLine>();
             _sourceHandler = new SourceHandler();
-
-            _specialLabels = new Regex(@"^\*|\+|-$", RegexOptions.Compiled);
 
             Assembler.Evaluator.DefineParser(SymbolsToValues);
 
@@ -523,20 +521,6 @@ namespace DotNetAsm
             }
         }
 
-        long GetLabel(string symbol)
-        {
-            if (symbol != "+" && symbol != "-")
-            {
-                string label = string.Empty;
-                if (symbol[0] == '_')
-                    label = _currentLine.Scope + _localLabelScope + symbol;
-                else
-                    label = _currentLine.Scope + symbol;
-                return Assembler.Symbols.Labels.GetSymbolValue(label);
-            }
-            return int.MinValue;
-        }
-
         void SetLabel(string symbol, long value)
         {
             if (symbol != "+" && symbol != "-")
@@ -656,7 +640,7 @@ namespace DotNetAsm
             return false;
         }
 
-        void PrintStatus(DateTime asmTime)
+        void PrintStatus(Stopwatch stopwatch)
         {
             if (Assembler.Log.HasWarnings && !Assembler.Options.NoWarnings)
             {
@@ -680,11 +664,11 @@ namespace DotNetAsm
 
             if (Assembler.Log.HasErrors == false)
             {
-                var ts = DateTime.Now.Subtract(asmTime);
+                var ts = stopwatch.Elapsed.TotalSeconds;
 
                 Console.WriteLine("{0} bytes, {1} sec.",
                                     Assembler.Output.GetCompilation().Count,
-                                    ts.TotalSeconds);
+                                    ts);
                 Console.WriteLine("*********************************");
                 Console.WriteLine("Assembly completed successfully.");
             }
@@ -817,10 +801,10 @@ namespace DotNetAsm
             if (DisplayingBanner != null)
                 Console.WriteLine(DisplayingBanner.Invoke(this, false));
 
-            DateTime asmTime = DateTime.Now;
+            Stopwatch stopwatch = new Stopwatch();
 
+            stopwatch.Start();
             var source = Preprocess();
-
             if (Assembler.Log.HasErrors == false)
             {
                 DoPasses(source);
@@ -831,7 +815,9 @@ namespace DotNetAsm
                     ToListing();
                 }
             }
-            PrintStatus(asmTime);
+            stopwatch.Stop();
+
+            PrintStatus(stopwatch);
         }
 
         #endregion

@@ -8,7 +8,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace DotNetAsm
 {
@@ -47,37 +46,29 @@ namespace DotNetAsm
             {
                 var line = source[i];
                 line.IsComment = inComment;
-                if (line.IsComment)
+                if (inComment)
                 {
                     var endBlockIx = line.SourceString.IndexOf(".endcomment", Assembler.Options.StringComparison);
                     if (endBlockIx > -1)
                     {
-                        if (!inComment)
+                        var afterIx = endBlockIx + ENDCOMMENT_SIZE;
+                        line.IsComment = inComment = false;
+                        if (line.SourceString.Length > afterIx)
                         {
-                            Assembler.Log.LogEntry(line, ErrorStrings.ClosureDoesNotCloseBlock, line.Instruction);
-                        }
-                        else
-                        {
-                            var afterIx = endBlockIx + ENDCOMMENT_SIZE;
-                            if (line.SourceString.Length > afterIx)
+                            if (char.IsWhiteSpace(line.SourceString[afterIx]))
                             {
-                                if (char.IsWhiteSpace(line.SourceString[afterIx]))
+                                source.Insert(i + 1, new SourceLine
                                 {
-                                    source.Insert(i + 1, new SourceLine
-                                    {
-                                        Filename = line.Filename,
-                                        LineNumber = line.LineNumber,
-                                        SourceString = line.SourceString.Substring(afterIx)
-                                    });
-                                }
-                                else
-                                {
-                                    Assembler.Log.LogEntry(line, ErrorStrings.None);
-                                    break;
-                                }
-                                continue;
+                                    Filename = line.Filename,
+                                    LineNumber = line.LineNumber,
+                                    SourceString = line.SourceString.Substring(afterIx)
+                                });
                             }
-                            line.IsComment = inComment = false;
+                            else
+                            {
+                                Assembler.Log.LogEntry(line, ErrorStrings.None);
+                                break;
+                            }
                         }
                     }
                 }
@@ -86,6 +77,7 @@ namespace DotNetAsm
                     var commBlockIx = line.SourceString.IndexOf(".comment", Assembler.Options.StringComparison);
                     if (commBlockIx > -1)
                     {
+                        line.IsComment = inComment = true;
                         if (commBlockIx > 0)
                         {
                             if (char.IsWhiteSpace(line.SourceString[commBlockIx - 1]))
@@ -102,9 +94,7 @@ namespace DotNetAsm
                                 Assembler.Log.LogEntry(line, ErrorStrings.None);
                                 break;
                             }
-                            continue;
                         }
-                        line.IsComment = inComment = true;
                     }
                 }
             }
@@ -112,10 +102,7 @@ namespace DotNetAsm
                 throw new Exception(ErrorStrings.MissingClosure);
         }
 
-
-        public bool Processes(string token) =>
-                    token.Equals(".include", Assembler.Options.StringComparison) ||
-                    token.Equals(".binclude", Assembler.Options.StringComparison);
+        public bool Processes(string token) => IsReserved(token);
 
         public void Process(SourceLine line)
         {

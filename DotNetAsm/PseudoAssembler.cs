@@ -122,7 +122,7 @@ namespace DotNetAsm
             var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].TrimOnce('"')));
             if (binary == null)
                 throw new Exception("Unable to find binary file " + args[0]);
-            int offs = 0, size = binary.Data.Count;
+            int offs = 0, size = binary.Data.Length;
 
             GetBinaryOffsetSize(args, size, ref offs, ref size);
 
@@ -293,7 +293,7 @@ namespace DotNetAsm
                     {
                         int boffset = 0;
                         var binary = IncludeBinary(line, csv);
-                        int bsize = binary.Data.Count;
+                        int bsize = binary.Data.Length;
                         GetBinaryOffsetSize(csv, bsize, ref boffset, ref bsize);
                         return bsize;
                     }

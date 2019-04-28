@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    public class NUnitHandlerTestBase : NUnitAsmTestBase
+    [TestFixture]
+    public class NUnitHandlerTestBase
     {
         protected IBlockHandler Handler { get; set; }
 

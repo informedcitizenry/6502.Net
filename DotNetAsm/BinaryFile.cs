@@ -41,7 +41,7 @@ namespace DotNetAsm
             try
             {
                 var filename = Filename.TrimOnce('"');
-                Data = File.ReadAllBytes(filename).ToList();
+                Data = File.ReadAllBytes(filename);
                 Filename = filename;
                 return true;
             }
@@ -99,7 +99,7 @@ namespace DotNetAsm
         /// Gets the binary file data.
         /// </summary>
         /// <value>The data.</value>
-        public List<byte> Data { get; private set; }
+        public byte[] Data { get; private set; }
 
         #endregion
     }

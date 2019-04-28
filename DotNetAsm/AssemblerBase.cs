@@ -133,7 +133,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="token">The token to check if reserved</param>
         /// <returns><c>True</c> if reserved, otherwise <c>false</c>.</returns>
-        public virtual bool IsReserved(string token) { return false; }
+        public virtual bool IsReserved(string token) => Reserved.IsReserved(token);
 
         #endregion
 
