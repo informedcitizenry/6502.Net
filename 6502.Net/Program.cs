@@ -76,7 +76,6 @@ namespace Asm6502.Net
             try
             {
                 IAssemblyController controller = new AssemblyController(args);
-
                 controller.AddAssembler(new Asm6502(controller));
                 controller.DisplayingBanner += DisplayBannerEventHandler;
                 controller.WritingHeader += WriteHeaderEventHandler;

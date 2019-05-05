@@ -493,20 +493,15 @@ namespace DotNetAsm
                         else
                             needPass = true;
                     }
-                    catch (ExpressionException exprEx)
-                    {
-                        Assembler.Log.LogEntry(_currentLine, exprEx.Message);
-                    }
                     catch (DivideByZeroException)
                     {
                         if (_passes > 0 || _blockHandlers.Any(h => h.Processes(_currentLine.Instruction)))
                             throw;
                         needPass = true;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        Assembler.Log.LogEntry(_currentLine, ErrorStrings.None);
-                        throw;
+                        Assembler.Log.LogEntry(_currentLine, ex.Message);
                     }
                 }
                 if (_blockHandlers.Any(h => h.IsProcessing()))

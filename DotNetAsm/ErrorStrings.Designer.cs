@@ -47,6 +47,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string AddressingModeNotSupported {
+            get {
+                return ResourceManager.GetString("AddressingModeNotSupported", resourceCulture);
+            }
+        }
+        
         public static string AssertionFailure {
             get {
                 return ResourceManager.GetString("AssertionFailure", resourceCulture);

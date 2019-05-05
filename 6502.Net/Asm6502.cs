@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using OpcodeTable = System.Collections.Generic.Dictionary<string, DotNetAsm.Instruction>;
 
 namespace Asm6502.Net
 {
@@ -39,7 +40,9 @@ namespace Asm6502.Net
                     "phx", "phy", "pla", "plb", "pld", "plp", "plx", "ply",
                     "rts", "rti", "rtl", "sec", "sed", "sei", "stp", "tax",
                     "tay", "tcd", "tcs", "tdc", "tsc", "tsx", "txa", "txs",
-                    "txy", "tya", "tyx", "wai", "wdm", "xba", "xce"
+                    "txy", "tya", "tyx", "wai", "wdm", "xba", "xce", "dez",
+                    "inz", "taz", "tza", "see", "cle", "rtn", "map", "tsy",
+                    "tys", "phz", "plz"
                 );
 
             Reserved.DefineType("Branches",
@@ -48,11 +51,26 @@ namespace Asm6502.Net
                 );
 
             Reserved.DefineType("Branches16",
-                    "brl", "per"
+                    "brl", "per", "blt", "bge"
+                );
+
+            Reserved.DefineType("Rockwell",
+                    "bbr", "bbs", "rmb", "smb"
+                );
+
+            Reserved.DefineType("RockwellBranches",
+                    "bbr", "bbs"
                 );
 
             Reserved.DefineType("ImpliedAccumulator",
-                    "asl", "lsr", "rol", "ror"
+                    "asl", "lsr", "rol", "ror", "asr", "neg"
+                );
+
+            Reserved.DefineType("Indirects",
+                    "adc", "and", "cmp", "dcp", "eor", "isb", 
+                    "lax", "lda", "ora", "pei", "rla", "rra",
+                    "sax", "sbc", "sha", "slo", "sre", "sta",
+                    "top"
                 );
 
             Reserved.DefineType("Jumps",
@@ -86,7 +104,8 @@ namespace Asm6502.Net
                     "ldy", "lsr", "ora", "pea", "pei", "rep", "rla", "rol",
                     "ror", "rra", "sbc", "sax", "sep", "shx", "shy", "slo",
                     "sre", "sha", "sta", "stx", "sty", "stz", "tas", "top",
-                    "trb", "tsb"
+                    "trb", "tsb", "asr", "asw", "bsr", "cpz", "dew", "dew",
+                    "inw", "neg", "phw", "plw", "row", "ldz"
                 );
 
             _controller = controller;
@@ -194,7 +213,7 @@ namespace Asm6502.Net
 
             ConstructOpcodeTable();
 
-            _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502")).ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+            _filteredOpcodes = new Dictionary<string, Instruction>(_opcodes6502, Assembler.Options.StringComparar);
 
             _cpu = "6502";
         }
@@ -212,12 +231,12 @@ namespace Asm6502.Net
                 return;
             }
             var cpu = args.Line.Operand.Trim('"');
-            if (!cpu.Equals("6502") && !cpu.Equals("65C02") && !cpu.Equals("65816") && !cpu.Equals("6502i"))
+            if (!SupportedCPUs.Contains(cpu))
             {
                 var error = string.Format("Invalid CPU '{0}' specified", cpu);
                 if (args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
                     throw new Exception(string.Format(error));
-                
+
                 Assembler.Log.LogEntry(args.Line, error);
                 return;
             }
@@ -226,19 +245,32 @@ namespace Asm6502.Net
             switch (_cpu)
             {
                 case "65816":
-                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502") || o.Value.CPU.Equals("65C02") || o.Value.CPU.Equals("65816")).ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
-                    _filteredOpcodes.Add("stp", new Instruction { CPU = "65816", Size = 1, Opcode = 0xdb });
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
+                                                   .Concat(_opcodes65816)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    break;
+                case "65CE02":
+                    _filteredOpcodes = _opcodes6502.Where(o => (o.Value.Opcode & 0x1f) != 0x10) // exclude 6502 branch instructions
+                                                   .Concat(_opcodes65C02.Where(o => o.Value.Opcode != 0x80 && (o.Value.Opcode & 0x0f) != 0x02))
+                                                   .Concat(_opcodesR65C02)
+                                                   .Concat(_opcodes65CE02)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    break;
+                case "R65C02":
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
+                                                   .Concat(_opcodesR65C02)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
                 case "65C02":
-                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502") || o.Value.CPU.Equals("65C02")).ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
                 case "6502i":
-                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502") || o.Value.CPU.Equals("6502i")).ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
-                    break;
-                case "6502":
-                    _filteredOpcodes = _opcodes.Where(o => o.Value.CPU.Equals("6502")).ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes6502i)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
                 default:
+                    _filteredOpcodes = new OpcodeTable(_opcodes6502, Assembler.Options.StringComparar);
                     break;
 
             }
@@ -348,28 +380,42 @@ namespace Asm6502.Net
             }
         }
 
-
-        long ParseSubExpression(string subexpression, char open, char closure, StringBuilder formatBuilder, bool isAbsolute)
+        long ParseSubExpression(string subexpression, char open, char closure, StringBuilder formatBuilder, string instruction, bool yzIndexed)
         {
             var commasep = subexpression.Substring(1, subexpression.Length - 2).CommaSeparate(open, closure);
             if (commasep.Count() > 2)
-                throw new Exception(ErrorStrings.None);
+                throw new Exception(string.Format(ErrorStrings.AddressingModeNotSupported, instruction));
 
             string expression = commasep.First().Trim();
 
             var val = Assembler.Evaluator.Eval(expression);
-            var expSize = isAbsolute ? 2 : 1;
-            if (val.Size() > expSize)
-                throw new OverflowException(val.ToString());
-
-
-            formatBuilder.Append(open);
-            formatBuilder.Append("${0:x" + expSize * 2 + "}");
-
-            if (commasep.Count() > 1)
-                formatBuilder.AppendFormat(",{0}{1}", commasep.Last(), closure);
+            var valSize = val.Size();
+            var expFormat = "${0:x" + valSize * 2 + "}";
+            if ((Reserved.IsOneOf("Indirects", instruction) && 
+                valSize == 1 && 
+                (yzIndexed || commasep.Count() == 2 || CpuIs65C02)) ||
+                instruction.Equals("jmp") || 
+                (instruction.Equals("jsr") && _cpu.Equals("65CE02")))
+            {
+                if (valSize > 2)
+                    throw new OverflowException(val.ToString());
+                formatBuilder.Append(open);
+                formatBuilder.Append(expFormat);
+                if (commasep.Count() > 1)
+                    formatBuilder.AppendFormat(",{0}{1}", commasep.Last(), closure);
+                else
+                    formatBuilder.Append(closure);
+            }
             else
-                formatBuilder.Append(closure);
+            {
+                if (commasep.Count() > 1 || yzIndexed)
+                {
+                    if (Reserved.IsOneOf("Indirects", instruction))
+                        throw new OverflowException(val.ToString());
+                    throw new Exception(string.Format(ErrorStrings.AddressingModeNotSupported, instruction));
+                }
+                formatBuilder.Append(expFormat);
+            }
             return val;
         }
 
@@ -377,29 +423,29 @@ namespace Asm6502.Net
         Tuple<OperandFormat, Instruction> GetFormatAndOpcode(SourceLine line)
         {
 
-            var instruction = line.Instruction.ToLower();
+            var mnemonic = line.Instruction.ToLower();
             string expression1 = string.Empty, expression2 = string.Empty;
             long eval1 = long.MinValue, eval2 = long.MinValue;
             StringBuilder formatBuilder = new StringBuilder();
 
-            formatBuilder.AppendFormat("{0}", instruction);
+            formatBuilder.AppendFormat("{0}", mnemonic);
 
             bool impliedA = line.Operand.Equals("a", Assembler.Options.StringComparison);
 
             if (impliedA &&
-                !(Reserved.IsOneOf("ImpliedAccumulator", instruction) ||
-                  (Reserved.IsOneOf("ImpliedAC02", instruction) && !_cpu.Equals("6502"))
+                !(Reserved.IsOneOf("ImpliedAccumulator", mnemonic) ||
+                  (Reserved.IsOneOf("ImpliedAC02", mnemonic) && !_cpu.StartsWith("6502", StringComparison.Ordinal))
                  )
                 )
                 throw new Exception();
 
             string finalFormat;
-            Instruction opcode;
+            Instruction instruction;
 
             if (string.IsNullOrEmpty(line.Operand) || impliedA)
             {
                 finalFormat = formatBuilder.ToString();
-                if (!_filteredOpcodes.TryGetValue(finalFormat, out opcode))
+                if (!_filteredOpcodes.TryGetValue(finalFormat, out instruction))
                 {
                     return new Tuple<OperandFormat, Instruction>(null, null);
                 }
@@ -447,61 +493,89 @@ namespace Asm6502.Net
                         commasep = operand.CommaSeparate('[', ']');
                     else
                         commasep = operand.CommaSeparate();
-                    if (commasep.Count() > 2)
-                        throw new Exception(ErrorStrings.None);
-
-
-                    string outerexpression = string.Empty;
-                    if (commasep.Count() > 1)
+                    if (Reserved.IsOneOf("RockwellBranches", mnemonic))
                     {
-                        if (Reserved.IsOneOf("MoveMemory", instruction))
-                        {
-                            outerexpression = "${1:x2}";
-                            expression2 = commasep.Last();
-                            eval2 = Assembler.Evaluator.Eval(expression2.Trim());
-                        }
-                        else
-                        {
-                            outerexpression = commasep.Last();
+                        expSize = 3;
+                        var commasepArr = commasep.ToArray();
+                        if (commasepArr.Length != 3)
+                            throw new Exception(ErrorStrings.None);
 
-                        }
-                    }
-
-                    var param1 = commasep.First();
-                    if (param1[0] == '(' && param1.Last() == ')' && 
-                        param1.FirstParenEnclosure().Equals(param1) && 
-                        (commasep.Count() == 1 || commasep.Last().Equals("y", Assembler.Options.StringComparison)))
-                    {
-                        eval1 = ParseSubExpression(param1, '(', ')', formatBuilder, instruction.Equals("jmp"));
-                        expression1 = eval1.ToString();
-                    }
-                    else if (param1[0] == '[')
-                    {
-
-                        eval1 = ParseSubExpression(param1, '[', ']', formatBuilder, instruction.Equals("jmp"));
-                        expression1 = eval1.ToString();
+                        formatBuilder.Append(Assembler.Evaluator.Eval(commasepArr[0], 0, 7));
+                        formatBuilder.Append(",${0:x2},${1:x2}");
+                        eval1 = Assembler.Evaluator.Eval(commasepArr[1], sbyte.MinValue, byte.MaxValue);
+                        eval2 = Assembler.Evaluator.Eval(commasepArr[2], sbyte.MinValue, byte.MaxValue);
                     }
                     else
                     {
-                        expression1 = param1.TrimEnd();
-                        eval1 = Assembler.Evaluator.Eval(expression1);
-                        if (expSize == 1)
+                        if (commasep.Count() > 2)
+                            throw new Exception(ErrorStrings.None);
+
+                        string outerexpression = string.Empty;
+                        if (commasep.Count() > 1)
                         {
-                            if (Reserved.IsOneOf("Branches16", instruction))
-
-                                expSize++; // we have to check this too in case the user does a brl $10ffff
+                            if (Reserved.IsOneOf("MoveMemory", mnemonic) ||
+                                Reserved.IsOneOf("Rockwell", mnemonic))
+                            {
+                                expression2 = commasep.Last();
+                                eval2 = Assembler.Evaluator.Eval(expression2.Trim());
+                                if (Reserved.IsOneOf("MoveMemory", mnemonic))
+                                    outerexpression = "${1:x2}";
+                                else
+                                    outerexpression = "${0:x2}";
+                            }
                             else
-                                expSize = eval1.Size();
-                        }
-                        formatBuilder.Append("${0:x" + expSize * 2 + "}");
-                    }
+                            {
+                                outerexpression = commasep.Last();
 
-                    if (commasep.Count() > 1)
-                        formatBuilder.AppendFormat(",{0}", outerexpression);
+                            }
+                        }
+                        var param1 = commasep.First();
+                        bool yzIndexed = commasep.Last().Equals("y", Assembler.Options.StringComparison) ||
+                                         commasep.Last().Equals("z", Assembler.Options.StringComparison);
+                        if (param1[0] == '(' && param1.Last() == ')' &&
+                            param1.FirstParenEnclosure().Equals(param1) &&
+                            (commasep.Count() == 1 || yzIndexed))
+                        {
+                            eval1 = ParseSubExpression(param1, '(', ')', formatBuilder, mnemonic, yzIndexed);
+                            expression1 = eval1.ToString();
+                        }
+                        else if (param1[0] == '[')
+                        {
+
+                            eval1 = ParseSubExpression(param1, '[', ']', formatBuilder, mnemonic, yzIndexed);
+                            expression1 = eval1.ToString();
+                        }
+                        else
+                        {
+                            expression1 = param1.TrimEnd();
+                            eval1 = Assembler.Evaluator.Eval(expression1);
+                            if (expSize == 1)
+                            {
+                                if (Reserved.IsOneOf("Branches16", mnemonic) ||
+                                    (Reserved.IsOneOf("Branches", mnemonic) && _cpu.Equals("65CE02")))
+                                    expSize++; // we have to check this too in case the user does a brl $10ffff
+                                else
+                                    expSize = eval1.Size();
+                            }
+                            if (Reserved.IsOneOf("Rockwell", mnemonic))
+                            {
+                                if (eval1 < 0 || eval1 > 7)
+                                    throw new OverflowException(eval1.ToString());
+                                formatBuilder.Append(eval1);
+
+                            }
+                            else
+                            {
+                                formatBuilder.Append("${0:x" + expSize * 2 + "}");
+                            }
+                        }
+                        if (commasep.Count() > 1)
+                            formatBuilder.AppendFormat(",{0}", outerexpression);
+                    }
                 }
                 finalFormat = formatBuilder.ToString();
 
-                while (!_filteredOpcodes.TryGetValue(finalFormat, out opcode))
+                while (!_filteredOpcodes.TryGetValue(finalFormat, out instruction))
                 {
                     // some instructions the size is bigger than the expression comes out to, so
                     // make the expression size larger
@@ -517,7 +591,7 @@ namespace Asm6502.Net
                 Eval1 = eval1,
                 Eval2 = eval2
             };
-            return new Tuple<OperandFormat, Instruction>(fmt, opcode);
+            return new Tuple<OperandFormat, Instruction>(fmt, instruction);
         }
 
         #region ILineAssembler.Methods
@@ -553,36 +627,49 @@ namespace Asm6502.Net
                 }
                 return;
             }
-
             var formatOpcode = GetFormatAndOpcode(line);
             if (formatOpcode.Item1 == null)
             {
-                Assembler.Log.LogEntry(line, ErrorStrings.BadExpression, line.Operand);
-                return;
-            }
-            if (formatOpcode.Item2 == null)
-            {
-                Assembler.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
+                Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
                 return;
             }
             long eval1 = formatOpcode.Item1.Eval1, eval2 = formatOpcode.Item1.Eval2;
+            int instructionSize = formatOpcode.Item2.Size, opcode = formatOpcode.Item2.Opcode;
 
-            // how the (first) evaluated expression will display in disassembly
-            long eval1DisplayValue = 0;
+            // how the evaluated expressions will display in disassembly
+            long eval1DisplayValue = eval1, eval2DisplayValue = eval2;
 
-            if (Reserved.IsOneOf("Branches", line.Instruction) || Reserved.IsOneOf("Branches16", line.Instruction))
+            if (Reserved.IsOneOf("Branches", line.Instruction) || 
+                Reserved.IsOneOf("RockwellBranches", line.Instruction) || 
+                Reserved.IsOneOf("Branches16", line.Instruction))
             {
+                long displ = Reserved.IsOneOf("RockwellBranches", line.Instruction) ? eval2 : eval1;
+                if (displ > 0xFFFF)
+                    throw new OverflowException(displ.ToString());
+
+                long rel8 = Assembler.Output.GetRelativeOffset((int)displ, Assembler.Output.LogicalPC + 2);
                 eval1DisplayValue = eval1 & 0xFFFF;
-                try
+                if (Reserved.IsOneOf("Branches16", line.Instruction) ||
+                        (_cpu.Equals("65CE02") && Reserved.IsOneOf("Branches", line.Instruction)
+                            && (rel8 < sbyte.MinValue || rel8 > sbyte.MaxValue)))
                 {
-                    if (Reserved.IsOneOf("Branches", line.Instruction))
-                        eval1 = Convert.ToSByte(Assembler.Output.GetRelativeOffset((ushort)eval1DisplayValue, Assembler.Output.LogicalPC + 2));
-                    else
-                        eval1 = Convert.ToInt16(Assembler.Output.GetRelativeOffset((ushort)eval1DisplayValue, Assembler.Output.LogicalPC + 3));
+                    eval1 = Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)displ, Assembler.Output.LogicalPC + 3));
                 }
-                catch
+                else
                 {
-                    throw new OverflowException(eval1.ToString());
+                    eval1 = Convert.ToSByte(rel8);
+                    if (Reserved.IsOneOf("RockwellBranches", line.Instruction))
+                    {
+                        eval1DisplayValue = formatOpcode.Item1.Eval1 & 0xFF;
+                        eval2DisplayValue = eval2 & 0xFFFF;
+                        eval2 = formatOpcode.Item1.Eval1;
+                    }
+                    else if (_cpu.Equals("65CE02"))
+                    {
+                        // change 16-bit relative to 8-bit version
+                        instructionSize--;
+                        opcode -= 3;
+                    }
                 }
             }
             else
@@ -591,11 +678,18 @@ namespace Asm6502.Net
 
                 if (eval1 != long.MinValue)
                 {
-                    if (formatOpcode.Item2.Size == 4)
+                    if (Reserved.IsOneOf("Rockwell", line.Instruction))
+                    {
+                        if (eval2.Size() > 1)
+                            throw new OverflowException(line.Operand);
+                        eval1DisplayValue = eval1 = eval2 & 0xFF;
+                        eval2DisplayValue = eval2 = long.MinValue;
+                    }
+                    else if(instructionSize == 4)
                     {
                         eval1 &= 0xFFFFFF;
                     }
-                    else if (formatOpcode.Item2.Size == 3 && eval2 == long.MinValue)
+                    else if (instructionSize == 3 && eval2 == long.MinValue)
                     {
                         eval1 &= 0xFFFF;
                     }
@@ -605,13 +699,12 @@ namespace Asm6502.Net
                         if (eval2 != long.MinValue)
                             eval2 &= 0xFF;
                     }
-                    eval1DisplayValue = eval1; 
                     operandsize = eval1.Size();
                 }
                 if (eval2 != long.MinValue)
                     operandsize += eval2.Size();
 
-                if (operandsize >= formatOpcode.Item2.Size)
+                if (operandsize >= instructionSize)
                 {
                     throw new OverflowException(line.Operand);
                 }
@@ -620,9 +713,8 @@ namespace Asm6502.Net
             if (eval1 != long.MinValue)
                 operbytes = eval2 == long.MinValue ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
             
-            line.Disassembly = string.Format(formatOpcode.Item1.FormatString, eval1DisplayValue, eval2);
-            line.Assembly = Assembler.Output.Add(Convert.ToInt32(operbytes) | formatOpcode.Item2.Opcode, 
-                                                  formatOpcode.Item2.Size);
+            line.Disassembly = string.Format(formatOpcode.Item1.FormatString, eval1DisplayValue, eval2DisplayValue);
+            line.Assembly = Assembler.Output.Add(Convert.ToInt32(operbytes) | opcode, instructionSize);
         }
 
         public int GetInstructionSize(SourceLine line)
@@ -640,8 +732,17 @@ namespace Asm6502.Net
                 return 2 * line.Operand.CommaSeparate().Count;
 
             if (Reserved.IsOneOf("Branches", line.Instruction))
+            {
+                if (_cpu.Equals("65CE02")) return 3;
                 return 2;
+            }
 
+            if (Reserved.IsOneOf("Rockwell", line.Instruction))
+            {
+                if (Reserved.IsOneOf("RockwellBranches", line.Instruction))
+                    return 3;
+                return 2;
+            }
             if (Reserved.IsOneOf("Branches16", line.Instruction))
                 return 3;
 
@@ -654,7 +755,7 @@ namespace Asm6502.Net
             if (Reserved.IsOneOf("MoveMemory", line.Instruction))
                 return 3;
 
-            // not perfect, buta gain we are just getting most approximate...
+            // not perfect, but again we are just getting most approximate...
             if (line.Operand[0] == '(' && 
                 (line.Operand.EndsWith("),y", Assembler.Options.StringComparison) ||
                 line.Operand.EndsWith(",x)", Assembler.Options.StringComparison)))
@@ -678,6 +779,12 @@ namespace Asm6502.Net
                     => Reserved.IsReserved(instruction);
 
         #endregion
+
+        #endregion
+
+        #region Properties
+
+        bool CpuIs65C02 => _cpu.Equals("65816") || _cpu.Equals("65CE02") || _cpu.Equals("R65C02") || _cpu.Equals("65C02");
 
         #endregion
     }

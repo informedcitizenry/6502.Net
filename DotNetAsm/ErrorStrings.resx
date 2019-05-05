@@ -117,8 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AddressingModeNotSupported" xml:space="preserve">
+    <value>Addressing mode not supported for instruction '{0}'</value>
+  </data>
   <data name="AssertionFailure" xml:space="preserve">
-    <value>Assertion Failed: '{0}'</value>
+    <value>Assertion failed: '{0}'</value>
   </data>
   <data name="BadExpression" xml:space="preserve">
     <value>Unknown or invalid expression: '{0}'</value>

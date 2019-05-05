@@ -3,27 +3,8 @@ using NUnit.Framework;
 
 namespace NUnit.Tests.Test6502.Net
 {
-    public class NUnitTestAsm65816 : TestDotNetAsm.NUnitAsmTestBase
+    public class NUnitTestAsm65816 : NUnitTestAsm6502Base
     {
-        IAssemblyController Controller;
-
-        public NUnitTestAsm65816()
-        {
-            Controller = new TestDotNetAsm.TestController();
-            LineAssembler = new Asm6502.Net.Asm6502(Controller);
-        }
-
-        void SetCpu(string cpu)
-        {
-            var line = new SourceLine
-            {
-                Instruction = ".cpu",
-                Operand = "\"" + cpu + "\""
-            };
-            var test = Controller as TestDotNetAsm.TestController;
-            test.AssembleLine(line);
-        }
-
         [Test]
         public void TestSetCpu()
         {
@@ -472,6 +453,8 @@ namespace NUnit.Tests.Test6502.Net
                 Operand = "$ffd2"
             };
             TestInstruction(line, 0x0003, new byte[] { 0x62, 0xcf, 0xff }, "per $ffd2");
+            line.Operand = "$8000";
+            TestInstruction(line, 0x0003, new byte[] { 0x62, 0xfd, 0x7f }, "per $8000");
         }
 
         [Test]

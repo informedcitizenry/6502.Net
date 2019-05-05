@@ -38,7 +38,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.IsTrue(Assembler.Log.HasErrors);
             
             var error = Assembler.Log.Entries.Last();
-            Assert.AreEqual("Error in file 'test' at line 1: Assertion Failed: '5 == 6'", error);
+            Assert.AreEqual("Error in file 'test' at line 1: Assertion failed: '5 == 6'", error);
 
             Assembler.Log.ClearAll();
 

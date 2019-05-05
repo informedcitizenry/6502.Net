@@ -1,11 +1,13 @@
-# 6502.Net, A Simple .Net-Based 6502/65C02/W65C816S Cross-Assembler
-### Version 1.19.2
+# 6502.Net, A Simple .Net-Based 6502/65C02/65CE02/W65C816S Cross-Assembler
+### Version 1.20
 ## Introduction
-The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
+The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, CSG 65CE02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
 The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
 
 The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system.
+
+The Rockwell variant of the 65C02 adds extra branching instructions whose conditions are memory bits, as well as instructions that set or reset individual bits. The 65CE02 is in turn based on that CPU family, and so is an enhancement of the 65C02, and its most notable appliance was for the unreleased Commodore 65. This CPU adds better support for relocatable code.
 
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Overview
@@ -664,16 +666,16 @@ All expressions, including the condition, are only evaluated on the first pass.
 
 **Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable inside its own or nested loops.
 
-## Illegal operations, 65C02 and W65C816S support
+## Illegal operations and support for 6502-variants
 
-By default, 6502.Net "thinks" like a 6502 assembler, compiling only the published 56 mnemonics and 151 instructions of that microprocessor. As of Version 1.7, 6502.Net can also compile illegal instructions as well as those of the successor WDC 65C02 and W65C816S processors. The `.cpu` directive tells the assembler the type of source and instruction set it is to assemble.
+By default, 6502.Net "thinks" like a 6502 assembler, compiling only the published 56 mnemonics and 151 instructions of that microprocessor. 6502.Net can also compile illegal instructions as well as those of the successor WDC 65C02, CSG 65CE02, and W65C816S processors. The `.cpu` directive tells the assembler the type of source and instruction set it is to assemble.
 ```
             .cpu "6502i"    ; enable illegal instructions
 
             ldx #0
             slo (zpvar,x)
 ```
-There are four options for the `.cpu` directive: `6502`, `6502i`, `65C02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though in the case of the `65816` selection this also includes 65C02 and 6502 (legal) instructions, since it is a superset of both.
+There are four options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `R65C02`, `65CE02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are  in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
 
 Immediate mode on the 65816 differs based on register size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers.
 ```
@@ -711,6 +713,15 @@ rts,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
 65C02 support adds the following additional mnemonics:
 ```
 bra,phx,phy,plx,ply,trb,tsb
+```
+The R65C02 (Rockwell) extensions come with bit-condition branching and bit flipping for zero-page variables:
+```
+bbr,bbs,rmb,smb
+```
+The 65CE02 is an enhanced R65C02. Its most notable difference from the other 65xx is all branch instructions have 16-bit relative counterparts, thereby allowing the writing of fully relocatable code. The mnemonics unique to this CPU are:
+```
+asr,asw,bge,blt,bsr,cle,cpz,dew,dez,inw,inz,ldz,neg,phw,
+phz,plw,plz,row,rtn,see,tab,taz,tba,tsy,tys,tza
 ```
 For 65816 compatibility the following mnemonics are recognized:
 ```
@@ -1904,6 +1915,8 @@ glyph             ;12345678
         <li><code>6502</code>        - Legal 6502 instructions only (default)</li>
         <li><code>6502i</code>       - Legal and illegal 6502 instructions</li>
         <li><code>65C02</code>       - Legal 6502 and 65C02 instructions</li>
+        <li><code>R65C02</code>      - Legal 6502, 65C02 and RC6502 instructions</li>
+        <li><code>65CE02</code>      - Legal 6502, 65C02, RC6502 and 65CE02 instructions</li>
         <li><code>65816</code>       - Legal 6502, 65C02 and W65C816 instructions</li>
 </ul>
 </td></tr>
@@ -2065,7 +2078,9 @@ glyph             ;12345678
 
 ### Error messages
 
-`Assertion Failed` - An assertion failed due to the condition evaluating as false.
+`Addressing mode is not supported for instruction` - The instruction does not support the addressing mode of the operand expression.
+
+`Assertion failed` - An assertion failed due to the condition evaluating as false.
 
 `Attempted to divide by zero.` - The expression attempted a division by zero.
 

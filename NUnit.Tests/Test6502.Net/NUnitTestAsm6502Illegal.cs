@@ -146,10 +146,10 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0002, new byte[] { 0x14, 0x2a }, "dop $2a,x");
 
             line.Operand = "(42,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "(42),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$ffd2";
             TestForFailure(line);

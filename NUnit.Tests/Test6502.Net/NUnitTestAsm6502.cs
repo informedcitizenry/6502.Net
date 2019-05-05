@@ -6,29 +6,29 @@ using System.Text;
 
 namespace NUnit.Tests.Test6502.Net
 {
-    public class NUnitTestAsm6502 : TestDotNetAsm.NUnitAsmTestBase
+    [TestFixture]
+    public abstract class NUnitTestAsm6502Base : TestDotNetAsm.NUnitAsmTestBase
     {
-        readonly IAssemblyController Controller;
+        protected readonly IAssemblyController Controller;
 
-        public NUnitTestAsm6502()
+        protected NUnitTestAsm6502Base()
         {
             Controller = new TestDotNetAsm.TestController();
             LineAssembler = new Asm6502.Net.Asm6502(Controller);
         }
 
-        [Test]
-        public void TestGetInstructionSize()
+        protected void SetCpu(string cpu)
         {
             var line = new SourceLine
             {
-                Instruction = "jsr",
-                Operand = "$ffd2"
+                Instruction = ".cpu",
+                Operand = "\"" + cpu + "\""
             };
-
-            TestInstruction(line, 0x0003, new byte[] { 0x20, 0xd2, 0xff }, "jsr $ffd2");
+            var test = Controller as TestDotNetAsm.TestController;
+            test.AssembleLine(line);
         }
 
-        void TestRelativeBranch(string mnemonic, byte opcode)
+        protected virtual void TestRelativeBranch(string mnemonic, byte opcode, bool testOverflow = true)
         {
             var line = new SourceLine();
 
@@ -37,7 +37,7 @@ namespace NUnit.Tests.Test6502.Net
             line.Instruction = mnemonic;
             line.Operand = "$0002";
             TestInstruction(line, 0x0000, new byte[] { opcode, 0x02 }, mnemonic + " " + line.Operand);
-            
+
             line.Operand = "$fffe";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0xfc }, mnemonic + " " + line.Operand);
             Assembler.Output.Reset();
@@ -49,18 +49,37 @@ namespace NUnit.Tests.Test6502.Net
 
             line.Operand = "$ff82";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0x80 }, mnemonic + " " + line.Operand);
-            
+
             line.Operand = "$0081";
             TestInstruction(line, 0x0002, new byte[] { opcode, 0x7f }, mnemonic + " " + line.Operand);
-            
-            line.Operand = "$ff81";
-            TestForFailure<OverflowException>(line);
 
-            line.Operand = "$0082";
-            TestForFailure<OverflowException>(line);
+            if (testOverflow)
+            {
+                line.Operand = "$ff81";
+                TestForFailure<OverflowException>(line);
 
-            line.Operand = "$1000";
-            TestForFailure<OverflowException>(line);
+                line.Operand = "$0082";
+                TestForFailure<OverflowException>(line);
+
+                line.Operand = "$1000";
+                TestForFailure<OverflowException>(line);
+            }
+        }
+    }
+
+    public class NUnitTestAsm6502 : NUnitTestAsm6502Base
+    {
+
+        [Test]
+        public void TestGetInstructionSize()
+        {
+            var line = new SourceLine
+            {
+                Instruction = "jsr",
+                Operand = "$ffd2"
+            };
+
+            TestInstruction(line, 0x0003, new byte[] { 0x20, 0xd2, 0xff }, "jsr $ffd2");
         }
 
         protected void TestImplied(string mnemonic, byte opcode)
@@ -85,10 +104,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$1234,x";
             TestForFailure(line);
@@ -216,10 +235,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -264,13 +283,13 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$34,y";
             TestForFailure(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -406,10 +425,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -442,10 +461,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -477,10 +496,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -564,10 +583,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -634,10 +653,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$34,y";
             TestForFailure(line);
@@ -716,10 +735,10 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xbe, 0x34, 0x12 }, "ldx $1234,y");
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$1234,x";
             TestForFailure(line);
@@ -754,10 +773,10 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { 0xbc, 0x34, 0x12 }, "ldy $1234,x");
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$1234,y";
             TestForFailure(line);
@@ -802,10 +821,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -912,10 +931,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -956,10 +975,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
         }
 
         [Test]
@@ -1077,10 +1096,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$1234,x";
             TestForFailure(line);
@@ -1113,10 +1132,10 @@ namespace NUnit.Tests.Test6502.Net
             TestForFailure(line);
 
             line.Operand = "($34,x)";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "($34),y";
-            TestForFailure(line);
+            TestForFailure<Exception>(line);
 
             line.Operand = "$1234,x";
             TestForFailure(line);

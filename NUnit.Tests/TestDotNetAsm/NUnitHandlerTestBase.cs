@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace NUnit.Tests.TestDotNetAsm
 {
     [TestFixture]
-    public class NUnitHandlerTestBase
+    public abstract class NUnitHandlerTestBase
     {
         protected IBlockHandler Handler { get; set; }
 
