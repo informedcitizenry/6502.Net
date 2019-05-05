@@ -630,7 +630,10 @@ namespace Asm6502.Net
             var formatOpcode = GetFormatAndOpcode(line);
             if (formatOpcode.Item1 == null)
             {
-                Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
+                if (!_filteredOpcodes.Any(kvp => kvp.Key.StartsWith(line.Instruction, Assembler.Options.StringComparison)))
+                    Assembler.Log.LogEntry(line, ErrorStrings.InstructionNotSupported, line.Instruction);
+                else
+                    Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
                 return;
             }
             long eval1 = formatOpcode.Item1.Eval1, eval2 = formatOpcode.Item1.Eval2;

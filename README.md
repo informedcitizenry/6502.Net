@@ -2156,6 +2156,8 @@ glyph             ;12345678
 
 `The current CPU supports only 8-bit immediate mode instructions. The directive will not affect assembly` - Attempted use of the 65816-specific directives (this is a warning by default).
 
+`The instruction is not supported for the selected CPU`- A mnemonic was used that the currently selected CPU does not support.
+
 `Too few arguments for directive` - The assembler directive expected more arguments than were provided.
 
 `Too many arguments for directive` - More arguments were provided to the directive than expected.

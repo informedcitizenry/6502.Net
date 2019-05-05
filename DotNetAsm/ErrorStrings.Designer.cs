@@ -131,6 +131,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string InstructionNotSupported {
+            get {
+                return ResourceManager.GetString("InstructionNotSupported", resourceCulture);
+            }
+        }
+        
         public static string InvalidParamRef {
             get {
                 return ResourceManager.GetString("InvalidParamRef", resourceCulture);

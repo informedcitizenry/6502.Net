@@ -159,6 +159,9 @@
   <data name="IllegalQuantity" xml:space="preserve">
     <value>Illegal quantity '{0}'</value>
   </data>
+  <data name="InstructionNotSupported" xml:space="preserve">
+    <value>The instruction '{0}' is not supported for the selected CPU</value>
+  </data>
   <data name="InvalidParamRef" xml:space="preserve">
     <value>Invalid parameter reference '{0}'</value>
   </data>
