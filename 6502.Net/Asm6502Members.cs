@@ -276,6 +276,7 @@ namespace Asm6502.Net
                 { "bvc ${0:x4}",             new Instruction  { CPU = "65CE02",  Size = 3,  Opcode = 0x53 } },
                 { "asr ${0:x2},x",           new Instruction  { CPU = "65CE02",  Size = 2,  Opcode = 0x54 } },
                 { "tab",                     new Instruction  { CPU = "65CE02",  Size = 1,  Opcode = 0x5b } },
+                { "map",                     new Instruction  { CPU = "65CE02",  Size = 1,  Opcode = 0x5c } },
                 { "rtn",                     new Instruction  { CPU = "65CE02",  Size = 1,  Opcode = 0x62 } },
                 { "bsr ${0:x4}",             new Instruction  { CPU = "65CE02",  Size = 3,  Opcode = 0x63 } },
                 { "tza",                     new Instruction  { CPU = "65CE02",  Size = 1,  Opcode = 0x6b } },

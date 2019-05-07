@@ -232,6 +232,9 @@ namespace NUnit.Tests.Test6502.Net
             line.Operand = string.Empty;
             TestInstruction(line, 0x0001, new byte[] { 0x5b }, "tab");
 
+            line.Instruction = "map";
+            TestInstruction(line, 0x0001, new byte[] { 0x5c }, "map");
+
             line.Instruction = "rtn";
             TestInstruction(line, 0x0001, new byte[] { 0x62 }, "rtn");
 
