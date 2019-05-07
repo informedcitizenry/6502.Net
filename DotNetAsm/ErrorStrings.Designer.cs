@@ -137,6 +137,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string InvalidParameters {
+            get {
+                return ResourceManager.GetString("InvalidParameters", resourceCulture);
+            }
+        }
+        
         public static string InvalidParamRef {
             get {
                 return ResourceManager.GetString("InvalidParamRef", resourceCulture);
@@ -176,6 +182,12 @@ namespace DotNetAsm {
         public static string MacroParamIncorrect {
             get {
                 return ResourceManager.GetString("MacroParamIncorrect", resourceCulture);
+            }
+        }
+        
+        public static string MacroParamNoDefault {
+            get {
+                return ResourceManager.GetString("MacroParamNoDefault", resourceCulture);
             }
         }
         

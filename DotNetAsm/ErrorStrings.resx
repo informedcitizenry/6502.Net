@@ -162,6 +162,9 @@
   <data name="InstructionNotSupported" xml:space="preserve">
     <value>The instruction '{0}' is not supported for the selected CPU</value>
   </data>
+  <data name="InvalidParameters" xml:space="preserve">
+    <value>Invalid parameter(s) ({0})</value>
+  </data>
   <data name="InvalidParamRef" xml:space="preserve">
     <value>Invalid parameter reference '{0}'</value>
   </data>
@@ -182,6 +185,9 @@
   </data>
   <data name="MacroParamIncorrect" xml:space="preserve">
     <value>Macro parameter reference must be a letter or digit</value>
+  </data>
+  <data name="MacroParamNoDefault" xml:space="preserve">
+    <value>Macro '{0}' expects a value for parameter {1}; no default value defined</value>
   </data>
   <data name="MacroParamNotSpecified" xml:space="preserve">
     <value>Macro parameter not specified</value>

@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/65CE02/W65C816S Cross-Assembler
-### Version 1.20
+### Version 1.20.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, CSG 65CE02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -525,6 +525,21 @@ This macro expands to:
             bne +
             inc myvariable+1
 +           ...
+```
+Parameter insertions also work in string literals, but the parameter formatting is more like a .Net string format with a `@` symbol in front:
+```
+hello       .macro name
+            .string "Hello, @{name}."
+            .endmacro
+```
+Parameters can be referenced by number in this way:
+```         
+today       .macro
+            .string "Today is @{1}"
+            .endmacro
+            
+        ;; Expansion of ".today Tuesday""
+            .string "Today is Tuesday"
 ```
 Segments are conceptually identical to macros, except they do not accept parameters and are usually used as larger segments of relocatable code. Segments are defined between `.segment`/`.endsegment` blocks with the segment name after each closure directive, then
 are declared into the source using the `.dsegment` directive, followed by the segment name. Unlike macros, segments can be declared before they are defined.
