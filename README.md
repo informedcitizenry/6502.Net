@@ -1,5 +1,5 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/65CE02/W65C816S Cross-Assembler
-### Version 1.20.1
+### Version 1.20.1.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, CSG 65CE02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
@@ -2111,7 +2111,11 @@ glyph             ;12345678
 
 `Could not process binary file` - The binary file could not be opened or processed.
 
+`Default parameter assignment error` - The parameter in the macro definition could not be a default value.
+
 `Directive takes no arguments` - An argument is present for a pseudo-op or directive that takes no arguments.
+
+`Duplicate paramater name found` - The macro definition contains one or more parameters that have already been defined.
 
 `Encoding is not a name or option` - The encoding selected is not a valid name.
 
@@ -2137,9 +2141,13 @@ glyph             ;12345678
 
 `Invalid parameter reference` - The macro reference does not reference a defined parameter.
 
+`Invalid parameter(s)` - The parameters defined for the macro are not valid.
+
 `Invalid Program Counter assignment` - An attempt was made to set the program counter to an invalid value.
 
 `Label is not the leftmost character` - The label is not the leftmost character in the line (this is a warning by default).
+
+`Macro expects a value for parameter; no default value defined` - The macro expects a parameter that was not supplied. 
 
 `Macro or segment is being called recursively` - A macro or segment is being invoked in its own definition.
 
@@ -2152,6 +2160,8 @@ glyph             ;12345678
 `Missing closure for macro` - The macro does not have a closure.
 
 `Missing closure for segment` - A segment does not have a closure.
+
+`Parameter name invalid` - The parameter for the macro definition has an invalid name.
 
 `Program Counter overflow` - The program counter overflowed passed the allowable limit.
 

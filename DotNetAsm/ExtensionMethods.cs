@@ -274,10 +274,7 @@ namespace DotNetAsm
         /// <param name="str">The string to evaluate.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
         /// <exception cref="T:System.Exception"></exception>
-        public static List<string> CommaSeparate(this string str)
-        {
-            return CommaSeparate(str, '(', ')');
-        }
+        public static List<string> CommaSeparate(this string str) => CommaSeparate(str, '(', ')');
 
         /// <summary>
         /// Does a comma-separated-value analysis on the <see cref="T:DotNetAsm.SourceLine"/>'s operand
@@ -361,10 +358,12 @@ namespace DotNetAsm
             return (char.IsSymbol(c) && !c.IsRadixOperator()) || c == '/' || c == '*' || c == '-' || c == '&' || c == '%' || c == '!';
         }
 
-        public static bool IsRadixOperator(this char c)
-        {
-            return c == '$' || c == '%';
-        }
+        /// <summary>
+        /// Indicates whether the specified Unicode character is a radix operator.
+        /// </summary>
+        /// <returns><c>true</c>, if the character is a radix operator, <c>false</c> otherwise.</returns>
+        /// <param name="c">The Unicode character.</param>
+        public static bool IsRadixOperator(this char c) => c == '$' || c == '%';
     }
 
     public static class Int64_Extension
@@ -389,17 +388,14 @@ namespace DotNetAsm
     public static class Double_Extension
     {
         /// <summary>
-        /// Returns a value indicating whether this double is almost equal to
-        /// a specified <see cref="System.Double"/>. 
+        /// Returns a value indicating whether this double is almost equal with great
+        /// precision to a specified <see cref="double"/>. 
         /// </summary>
         /// <returns><c>true</c>, if the two values are almost equal, 
         /// <c>false</c> otherwise.</returns>
         /// <param name="d1">This double.</param>
         /// <param name="obj">A double-precision floating point object.</param>
-        public static bool AlmostEquals(this double d1, double obj)
-        {
-            double epsilon = Math.Max(Math.Abs(d1), Math.Abs(obj)) * 1E-15;
-            return Math.Abs(d1 - obj) <= epsilon;
-        }
+        public static bool AlmostEquals(this double d1, double obj) =>
+            Math.Abs(d1 - obj) <= Math.Max(Math.Abs(d1), Math.Abs(obj)) * 1E-15;
     }
 }

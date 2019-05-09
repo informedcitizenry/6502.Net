@@ -190,7 +190,7 @@ namespace DotNetAsm
                         }
                         else
                         {
-                            size += atoi.Length;//Assembler.Encoding.GetByteCount(atoi);
+                            size += atoi.Length;
                         }
                     }
                 }

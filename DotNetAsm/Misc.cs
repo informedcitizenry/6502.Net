@@ -15,11 +15,11 @@ namespace DotNetAsm
         /// <summary>
         /// Represents the smallest possible value of an Int24. This field is constant.
         /// </summary>
-        public const int MinValue = (0 - 8388608);
+        public const int MinValue = (0 - 8_388_608);
         /// <summary>
         /// Represents the largest possible value of an Int24. This field is constant.
         /// </summary>
-        public const int MaxValue = 8388607;
+        public const int MaxValue = 8_388_607;
     }
 
     /// <summary>

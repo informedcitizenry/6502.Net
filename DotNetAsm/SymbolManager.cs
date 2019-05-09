@@ -228,7 +228,7 @@ namespace DotNetAsm
                         {
                             word = "-",
                             type = ExpressionElement.Type.Operator,
-                            subtype = ExpressionElement.Subtype.Unary
+                            subType = ExpressionElement.Subtype.Unary
                         });
                         i++;
                         symbol = symbol.Substring(1);
@@ -237,7 +237,7 @@ namespace DotNetAsm
                     {
                         word = symbol,
                         type = ExpressionElement.Type.Operand,
-                        subtype = ExpressionElement.Subtype.None
+                        subType = ExpressionElement.Subtype.None
                     };
                 }
             }

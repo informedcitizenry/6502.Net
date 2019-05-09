@@ -119,17 +119,18 @@ namespace DotNetAsm
         void AssembleBinaryBytes(SourceLine line)
         {
             var args = line.Operand.CommaSeparate();
-            var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(args[0].TrimOnce('"')));
-            if (binary == null)
-                throw new Exception("Unable to find binary file " + args[0]);
-            int offs = 0, size = binary.Data.Length;
+            var binary = IncludeBinary(line, args);
+            if (binary != null)
+            {
+                int offs = 0, size = binary.Data.Length;
 
-            GetBinaryOffsetSize(args, size, ref offs, ref size);
+                GetBinaryOffsetSize(args, size, ref offs, ref size);
 
-            if (size > ushort.MaxValue)
-                Assembler.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size);
-            else
-                line.Assembly = Assembler.Output.AddBytes(binary.Data.Skip(offs), size);
+                if (size > ushort.MaxValue)
+                    Assembler.Log.LogEntry(line, ErrorStrings.IllegalQuantity, size);
+                else
+                    line.Assembly = Assembler.Output.AddBytes(binary.Data.Skip(offs), size);
+            }
         }
 
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
@@ -140,17 +141,17 @@ namespace DotNetAsm
                     Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
                 else
                     Assembler.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
-                return new BinaryFile(string.Empty);
+                return null;
             }
             if (args.Count > 3)
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-                return new BinaryFile(string.Empty);
+                return null;
             }
             if (!args.First().EnclosedInQuotes())
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
-                return new BinaryFile(string.Empty);
+                return null;
             }
             var filename = args.First().TrimOnce('"');
             var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
@@ -160,9 +161,14 @@ namespace DotNetAsm
                 binary = new BinaryFile(args.First());
 
                 if (binary.Open())
+                {
                     _includedBinaries.Add(binary);
+                }
                 else
+                {
                     Assembler.Log.LogEntry(line, ErrorStrings.CouldNotProcessBinary, args.First());
+                    return null;
+                }
             }
             return binary;
         }
@@ -293,9 +299,13 @@ namespace DotNetAsm
                     {
                         int boffset = 0;
                         var binary = IncludeBinary(line, csv);
-                        int bsize = binary.Data.Length;
-                        GetBinaryOffsetSize(csv, bsize, ref boffset, ref bsize);
-                        return bsize;
+                        if (binary != null)
+                        {
+                            int bsize = binary.Data.Length;
+                            GetBinaryOffsetSize(csv, bsize, ref boffset, ref bsize);
+                            return bsize;
+                        }
+                        return 0;
                     }
                 case ".byte":
                 case ".sbyte":

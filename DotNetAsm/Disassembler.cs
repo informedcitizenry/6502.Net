@@ -24,8 +24,7 @@ namespace DotNetAsm
             Reserved.DefineType("Blocks", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE );
             Reserved.DefineType("Directives",
                     ".cpu", ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef", 
-                    ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn",
-                    ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
+                    ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
                 );
         }
 

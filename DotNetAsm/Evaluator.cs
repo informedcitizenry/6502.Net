@@ -64,115 +64,115 @@ namespace DotNetAsm
         static readonly Dictionary<ExpressionElement, OperationDef> _operators = new Dictionary<ExpressionElement, OperationDef>
         {
             {
-                new ExpressionElement{ word = ",",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ",",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
                 new OperationDef(null,                                              int.MinValue)
             },
             {
-                new ExpressionElement{ word = "||", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
+                new ExpressionElement{ word = "||", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0? 1 : 0),  0)
             },
             {
-                new ExpressionElement{ word = "&&", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
+                new ExpressionElement{ word = "&&", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => ((int)parms[1]!=0?1:0) & ((int)parms[0]!=0? 1 : 0),  1)
             },
             {
-                new ExpressionElement{ word = "|",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "|",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                | (long)parms[0],      2)
             },
             {
-                new ExpressionElement{ word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "^",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                ^ (long)parms[0],      3)
             },
             {
-                new ExpressionElement{ word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "&",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                & (long)parms[0],      4)
             },
             {
-                new ExpressionElement{ word = "!=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "!=", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => !parms[1].AlmostEquals(parms[0])          ? 1 : 0,   5)
             },
             {
-                new ExpressionElement{ word = "==", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "==", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => parms[1].AlmostEquals(parms[0])           ? 1 : 0,   5)
             },
             {
-                new ExpressionElement{ word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "<",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => parms[1]                      <  parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ word = "<=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "<=", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => parms[1]                      <= parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ word = ">=", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ">=", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => parms[1]                      >= parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = ">",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => parms[1]                      >  parms[0] ? 1 : 0,   6)
             },
             {
-                new ExpressionElement{ word = "<<", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "<<", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (int)parms[1]                 << (int)parms[0],      7)
             },
             {
-                new ExpressionElement{ word = ">>", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = ">>", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (int)parms[1]                 >> (int)parms[0],      7)
             },
             {
-                new ExpressionElement{ word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "-",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      -  parms[0],           8)
             },
             {
-                new ExpressionElement{ word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "+",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      +  parms[0],           8)
             },
             {
-                new ExpressionElement{ word = "/",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "/",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      /  parms[0],           9)
             },
             {
-                new ExpressionElement{ word = "*",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "*",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => parms[1]                      *  parms[0],           9)
             },
             {
-                new ExpressionElement{ word = "%",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "%",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[1]                %  (long)parms[0],     9)
             },
             {
-                new ExpressionElement{ word = "-",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "-",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary },
                 new OperationDef(parms => -parms[0],                                          10)
             },
             {
-                new ExpressionElement{ word = "+",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary },
+                new ExpressionElement{ word = "+",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary },
                 new OperationDef(parms => +parms[0],                                          10)
             },
             {
-                new ExpressionElement{ word = "~",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "~",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => ~((long)parms[0]),                                  11)
             },
             {
-                new ExpressionElement{ word = "!",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
+                new ExpressionElement{ word = "!",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Boolean },
                 new OperationDef(parms => (long)parms[0] == 0 ? 1 : 0,                        11)
             },
             {
-                new ExpressionElement{ word = "**", type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Binary },
+                new ExpressionElement{ word = "**", type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
                 new OperationDef(parms => Math.Pow(parms[1], parms[0]),                       12)
             },
             {
-                new ExpressionElement{ word = ">",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = ">",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)(parms[0] / 0x100) % 256,                     13)
             },
             {
-                new ExpressionElement{ word = "<",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "<",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[0]  % 256,                              13)
             },
             {
-                new ExpressionElement{ word = "&",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "&",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)parms[0]  % 65536,                            13)
             },
             {
-                new ExpressionElement{ word = "^",  type = ExpressionElement.Type.Operator, subtype = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
+                new ExpressionElement{ word = "^",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Unary, arithmeticType = ExpressionElement.ArithmeticType.Integral },
                 new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,                   13)
             }
         };
@@ -201,30 +201,30 @@ namespace DotNetAsm
 
             _functions = new Dictionary<string, OperationDef>(comparer)
             {
-                { "abs",    new OperationDef(parms => Math.Abs(parms[0]),             1) },
-                { "acos",   new OperationDef(parms => Math.Acos(parms[0]),            1) },
-                { "atan",   new OperationDef(parms => Math.Atan(parms[0]),            1) },
-                { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),  1) },
-                { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),         1) },
-                { "cos",    new OperationDef(parms => Math.Cos(parms[0]),             1) },
-                { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),            1) },
-                { "deg",    new OperationDef(parms => (parms[0] * 180 / Math.PI),     1) },
-                { "exp",    new OperationDef(parms => Math.Exp(parms[0]),             1) },
-                { "floor",  new OperationDef(parms => Math.Floor(parms[0]),           1) },
-                { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))), 1) },
+                { "abs",    new OperationDef(parms => Math.Abs(parms[0]),                                       1) },
+                { "acos",   new OperationDef(parms => Math.Acos(parms[0]),                                      1) },
+                { "atan",   new OperationDef(parms => Math.Atan(parms[0]),                                      1) },
+                { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),                            1) },
+                { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),                                   1) },
+                { "cos",    new OperationDef(parms => Math.Cos(parms[0]),                                       1) },
+                { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),                                      1) },
+                { "deg",    new OperationDef(parms => parms[0] * 180 / Math.PI,                                 1) },
+                { "exp",    new OperationDef(parms => Math.Exp(parms[0]),                                       1) },
+                { "floor",  new OperationDef(parms => Math.Floor(parms[0]),                                     1) },
+                { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))),   1) },
                 { "hypot",  new OperationDef(parms => Math.Sqrt(Math.Pow(parms[1], 2) + Math.Pow(parms[0], 2)), 2) },
-                { "ln",     new OperationDef(parms => Math.Log(parms[0]),             1) },
-                { "log10",  new OperationDef(parms => Math.Log10(parms[0]),           1) },
-                { "pow",    new OperationDef(parms => Math.Pow(parms[1], parms[0]),   2) },
-                { "rad",    new OperationDef(parms => (parms[0] * Math.PI / 180),     1) },
-                { "random", new OperationDef(parms => _rng.Next((int)parms[1], (int)parms[0]), 2) },
-                { "round",  new OperationDef(parms => Math.Round(parms[0]),           1) },
-                { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),            1) },
-                { "sin",    new OperationDef(parms => Math.Sin(parms[0]),             1) },
-                { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),            1) },
-                { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),            1) },
-                { "tan",    new OperationDef(parms => Math.Tan(parms[0]),             1) },
-                { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),            1) }
+                { "ln",     new OperationDef(parms => Math.Log(parms[0]),                                       1) },
+                { "log10",  new OperationDef(parms => Math.Log10(parms[0]),                                     1) },
+                { "pow",    new OperationDef(parms => Math.Pow(parms[1], parms[0]),                             2) },
+                { "rad",    new OperationDef(parms => parms[0] * Math.PI / 180,                                 1) },
+                { "random", new OperationDef(parms => _rng.Next((int)parms[1], (int)parms[0]),                  2) },
+                { "round",  new OperationDef(parms => Math.Round(parms[0]),                                     1) },
+                { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),                                      1) },
+                { "sin",    new OperationDef(parms => Math.Sin(parms[0]),                                       1) },
+                { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),                                      1) },
+                { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),                                      1) },
+                { "tan",    new OperationDef(parms => Math.Tan(parms[0]),                                       1) },
+                { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),                                      1) }
             };
 
             _parsingFunc = ParseElements;
@@ -265,40 +265,40 @@ namespace DotNetAsm
                         currentElement.type = ExpressionElement.Type.Operator;
                         if (c == ',')
                         {
-                            currentElement.subtype = ExpressionElement.Subtype.Binary;
+                            currentElement.subType = ExpressionElement.Subtype.Binary;
                         }
                         else
                         {
-                            if (currentElement.subtype == ExpressionElement.Subtype.Open)
+                            if (currentElement.subType == ExpressionElement.Subtype.Open)
                             {
                                 if (c.IsRadixOperator() && nextIsOperand)
                                 {
                                     currentElement.type = ExpressionElement.Type.Operand;
-                                    currentElement.subtype = ExpressionElement.Subtype.None;
+                                    currentElement.subType = ExpressionElement.Subtype.None;
                                 }
                                 else
                                 {
-                                    currentElement.subtype = ExpressionElement.Subtype.Unary;
+                                    currentElement.subType = ExpressionElement.Subtype.Unary;
                                 }
                             }
                             else
                             {
-                                currentElement.subtype = ExpressionElement.Subtype.Binary;
+                                currentElement.subType = ExpressionElement.Subtype.Binary;
                             }
                         }
                     }
                     else if (!_compounds.Contains(elementBuilder.ToString() + c))
                     {
-                        currentElement.subtype = ExpressionElement.Subtype.Binary;
+                        currentElement.subType = ExpressionElement.Subtype.Binary;
                         AddElement();
                         if (c.IsRadixOperator())
                         {
                             currentElement.type = ExpressionElement.Type.Operand;
-                            currentElement.subtype = ExpressionElement.Subtype.None;
+                            currentElement.subType = ExpressionElement.Subtype.None;
                         }
                         else
                         {
-                            currentElement.subtype = ExpressionElement.Subtype.Unary;
+                            currentElement.subType = ExpressionElement.Subtype.Unary;
                         }
                     }
                     elementBuilder.Append(c);
@@ -316,9 +316,9 @@ namespace DotNetAsm
                     }
                     currentElement.type = ExpressionElement.Type.Group;
                     if (c == '(')
-                        currentElement.subtype = ExpressionElement.Subtype.Open;
+                        currentElement.subType = ExpressionElement.Subtype.Open;
                     else
-                        currentElement.subtype = ExpressionElement.Subtype.Close;
+                        currentElement.subType = ExpressionElement.Subtype.Close;
                     elementBuilder.Append(c);
                 }
                 else
@@ -327,7 +327,7 @@ namespace DotNetAsm
                     {
                         AddElement();
                         currentElement.type = ExpressionElement.Type.Operand;
-                        currentElement.subtype = ExpressionElement.Subtype.None;
+                        currentElement.subType = ExpressionElement.Subtype.None;
                     }
                     elementBuilder.Append(c);
                 }
@@ -374,9 +374,9 @@ namespace DotNetAsm
                         }
                         else
                         {
-                            if (element.subtype == ExpressionElement.Subtype.Open)
+                            if (element.subType == ExpressionElement.Subtype.Open)
                                 openParens++;
-                            else if (element.subtype == ExpressionElement.Subtype.Close)
+                            else if (element.subType == ExpressionElement.Subtype.Close)
                                 openParens--;
                             if (openParens > 0)
                                 len++;
@@ -411,7 +411,7 @@ namespace DotNetAsm
                         result.Push(double.Parse(element.word));
                     }
                 }
-                else if (element.type == ExpressionElement.Type.Function || element.subtype == ExpressionElement.Subtype.Open)
+                else if (element.type == ExpressionElement.Type.Function || element.subType == ExpressionElement.Subtype.Open)
                 {
                     operators.Push(element);
                     if (element.type == ExpressionElement.Type.Function)
@@ -426,10 +426,10 @@ namespace DotNetAsm
                         ExpressionElement topElement = new ExpressionElement();
                         var elemOrder = _operators[element].Item2;
                         topElement = operators.Peek();
-                        while (topElement.type == ExpressionElement.Type.Function || topElement.type == ExpressionElement.Type.Operator || topElement.subtype == ExpressionElement.Subtype.Open)
+                        while (topElement.type == ExpressionElement.Type.Function || topElement.type == ExpressionElement.Type.Operator || topElement.subType == ExpressionElement.Subtype.Open)
                         {
                             var topOrder = topElement.type == ExpressionElement.Type.Operator ? _operators[topElement].Item2 : int.MaxValue;
-                            if (topElement.subtype != ExpressionElement.Subtype.Open && topOrder >= elemOrder)
+                            if (topElement.subType != ExpressionElement.Subtype.Open && topOrder >= elemOrder)
                             {
                                 operators.Pop();
                                 DoOperation(topElement);
@@ -446,12 +446,12 @@ namespace DotNetAsm
                     }
                     operators.Push(element);
                 }
-                else if (element.subtype == ExpressionElement.Subtype.Close)
+                else if (element.subType == ExpressionElement.Subtype.Close)
                 {
                     if (operators.Count > 0)
                     {
                         var topElement = operators.Peek();
-                        while (topElement.subtype != ExpressionElement.Subtype.Open)
+                        while (topElement.subType != ExpressionElement.Subtype.Open)
                         {
                             operators.Pop();
                             DoOperation(topElement);
@@ -459,7 +459,7 @@ namespace DotNetAsm
                                 throw new Exception();
                             topElement = operators.Peek();
                         }
-                        if (topElement.subtype == ExpressionElement.Subtype.Open)
+                        if (topElement.subType == ExpressionElement.Subtype.Open)
                             operators.Pop();
                     }
                 }
@@ -486,11 +486,13 @@ namespace DotNetAsm
                 else
                 {
                     operation = _operators[op];
-                    if (op.subtype == ExpressionElement.Subtype.Binary)
+                    if (op.subType == ExpressionElement.Subtype.Binary)
                         parms.Add(result.Pop());
-                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Boolean && parms.Any(p => !((int)p == 1 || (int)p == 0)))
+                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Boolean 
+                        && parms.Any(p => !(p.AlmostEquals(1) || p.AlmostEquals(0))))
                         throw new Exception();
-                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Integral && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
+                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Integral 
+                        && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
                         throw new Exception();
                 }
                 result.Push(operation.Item1(parms));
@@ -507,7 +509,6 @@ namespace DotNetAsm
                 throw new ExpressionException(expression);
 
             var elements = _parsingFunc(expression);
-
             try
             {
                 var result = Calculate(elements);
@@ -570,12 +571,8 @@ namespace DotNetAsm
         /// variables) in expressions.
         /// </summary>
         /// <param name="parsingFunc">The parsing function to return the expression elements..</param>
-        public void DefineParser(Func<string, List<ExpressionElement>> parsingFunc)
-        {
-            if (parsingFunc == null)
-                throw new ArgumentNullException();
-            _parsingFunc = parsingFunc;
-        }
+        public void DefineParser(Func<string, List<ExpressionElement>> parsingFunc) 
+            => _parsingFunc = parsingFunc ?? throw new ArgumentNullException();
 
         #endregion
     }

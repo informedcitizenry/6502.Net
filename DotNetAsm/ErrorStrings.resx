@@ -204,6 +204,9 @@
   <data name="None" xml:space="preserve">
     <value>General syntax error</value>
   </data>
+  <data name="ParameterNameInvalid" xml:space="preserve">
+    <value>Parameter name '{0}' invalid</value>
+  </data>
   <data name="PCOverflow" xml:space="preserve">
     <value>Program Counter overflow '{0}'</value>
   </data>

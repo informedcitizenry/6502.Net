@@ -14,6 +14,8 @@ namespace DotNetAsm
     /// </summary>
     public struct ExpressionElement : IEquatable<ExpressionElement>
     {
+        #region Enums
+
         /// <summary>
         /// The element type
         /// </summary>
@@ -47,6 +49,10 @@ namespace DotNetAsm
             Boolean
         };
 
+        #endregion
+
+        #region Members
+
         /// <summary>
         /// The symbol or value of the element.
         /// </summary>
@@ -60,30 +66,40 @@ namespace DotNetAsm
         /// <summary>
         /// The element's subtype.
         /// </summary>
-        public Subtype subtype;
+        public Subtype subType;
 
         /// <summary>
         /// The type of the arithmetic operation.
         /// </summary>
         public ArithmeticType arithmeticType;
 
-        public override string ToString() => string.Format("{0} [{1}.{2}]", word, type, subtype);
+        #endregion
+
+        #region Methods
+
+        #region Override Methods
+
+        public override string ToString() => string.Format("{0} [{1}.{2}]", word, type, subType);
 
         public override bool Equals(object obj) => obj is ExpressionElement && this == (ExpressionElement)obj;
 
         public override int GetHashCode() => word.GetHashCode() | 
                                              type.GetHashCode() | 
-                                             subtype.GetHashCode();
+                                             subType.GetHashCode();
 
         public static bool operator ==(ExpressionElement lhs, ExpressionElement rhs) 
                                         => lhs.word.Equals(rhs.word) &&
                                            lhs.type == rhs.type &&
-                                           lhs.subtype == rhs.subtype;
+                                           lhs.subType == rhs.subType;
 
         public static bool operator !=(ExpressionElement lhs, ExpressionElement rhs) 
                                         => !lhs.word.Equals(rhs.word) ||
                                             lhs.type != rhs.type ||
-                                            lhs.subtype != rhs.subtype;
+                                            lhs.subType != rhs.subType;
+
+        #endregion
+
+        #region IEquitable Methods
 
         /// <summary>
         /// Determines whether the specified <see cref="DotNetAsm.ExpressionElement"/> is 
@@ -95,6 +111,10 @@ namespace DotNetAsm
         /// <see cref="T:DotNetAsm.ExpressionElement"/>; otherwise, <c>false</c>.</returns>
         public bool Equals(ExpressionElement other) => word.Equals(other.word) &&
                                                        type == other.type &&
-                                                       subtype == other.subtype;
+                                                       subType == other.subType;
+
+        #endregion
+
+        #endregion
     }
 }

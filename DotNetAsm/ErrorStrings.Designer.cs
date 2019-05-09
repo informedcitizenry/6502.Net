@@ -221,6 +221,12 @@ namespace DotNetAsm {
             }
         }
         
+        public static string ParameterNameInvalid {
+            get {
+                return ResourceManager.GetString("ParameterNameInvalid", resourceCulture);
+            }
+        }
+        
         public static string PCOverflow {
             get {
                 return ResourceManager.GetString("PCOverflow", resourceCulture);
