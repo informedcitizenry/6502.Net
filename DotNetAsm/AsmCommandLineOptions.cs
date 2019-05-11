@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace DotNetAsm
 {
@@ -43,30 +42,30 @@ namespace DotNetAsm
         #endregion
 
         static string _helpString =
-            "Usage: {0} [options...] <inputs> [output]\r\n\r\n"+
-            "    -a, --no-assembly        Suppress assembled bytes from assembly\r\n"+
-            "    --arch <arg>             Specify architecture-specific options\r\n"+
-            "    -b, --big-endian         Set byte order of output to big-endian\r\n"+
-            "                             listing\r\n"+
-            "    -C, --case-sensitive     Treat all symbols as case-sensitive\r\n"+
-            "    -c, --cpu <arg>          Specify the target CPU and instruction set\r\n"+
-            "    -D, --define <args>      Assign value to a global symbol/label in\r\n"+
-            "                             <args>\r\n"+
-            "    -d, --no-dissassembly    Suppress disassembly from assembly listing\r\n"+
-            "    -l, --labels <arg>       Output label definitions to <arg>\r\n"+
-            "    -L, --list <arg>         Output listing to <arg>\r\n"+
-            "    -o, --output <arg>       Output assembly to <arg>\r\n"+
-            "    -q, --quiet              Assemble in quiet mode (no console\r\n"+
-            "    -s, --no-source          Suppress original source from assembly\r\n"+
-            "                             listing\r\n"+
-            "    -V, --version            Print current version\r\n"+
-            "                             messages)\r\n"+
-            "    --verbose-asm            Expand listing to include all directives\r\n"+
-            "                             and comments\r\n"+
-            "    -w, --no-warn            Suppress all warnings\r\n"+
-            "    --werror                 Treat all warnings as error\r\n"+
-            "    --wleft                  Issue warnings about whitespaces before\r\n"+
-            "                             labels\r\n"+
+            "Usage: {0} [options...] <inputs> [output]\r\n\r\n" +
+            "    -a, --no-assembly        Suppress assembled bytes from assembly\r\n" +
+            "    --arch <arg>             Specify architecture-specific options\r\n" +
+            "    -b, --big-endian         Set byte order of output to big-endian\r\n" +
+            "                             listing\r\n" +
+            "    -C, --case-sensitive     Treat all symbols as case-sensitive\r\n" +
+            "    -c, --cpu <arg>          Specify the target CPU and instruction set\r\n" +
+            "    -D, --define <args>      Assign value to a global symbol/label in\r\n" +
+            "                             <args>\r\n" +
+            "    -d, --no-dissassembly    Suppress disassembly from assembly listing\r\n" +
+            "    -l, --labels <arg>       Output label definitions to <arg>\r\n" +
+            "    -L, --list <arg>         Output listing to <arg>\r\n" +
+            "    -o, --output <arg>       Output assembly to <arg>\r\n" +
+            "    -q, --quiet              Assemble in quiet mode (no console\r\n" +
+            "    -s, --no-source          Suppress original source from assembly\r\n" +
+            "                             listing\r\n" +
+            "    -V, --version            Print current version\r\n" +
+            "                             messages)\r\n" +
+            "    --verbose-asm            Expand listing to include all directives\r\n" +
+            "                             and comments\r\n" +
+            "    -w, --no-warn            Suppress all warnings\r\n" +
+            "    --werror                 Treat all warnings as error\r\n" +
+            "    --wleft                  Issue warnings about whitespaces before\r\n" +
+            "                             labels\r\n" +
             "    <inputs>                 The source files to assemble";
 
         #region Constructors
@@ -100,10 +99,8 @@ namespace DotNetAsm
 
         #region Methods
 
-        string GetHelpText()
-        {
-            return string.Format(_helpString, Assembly.GetEntryAssembly().GetName().Name);
-        }
+        string GetHelpText() => 
+            string.Format(_helpString, Assembly.GetEntryAssembly().GetName().Name);
 
         /// <summary>
         /// Process the command-line arguments passed by the end-user.
@@ -219,12 +216,12 @@ namespace DotNetAsm
                                 SetFlag(ref _warnLeft);
                                 break;
                             default:
-                                throw new Exception(string.Format("Invalid option '{0}'", optionName));
+                                throw new Exception(string.Format("Invalid option '{0}'. Try '-?|-h|help' for usage.", optionName));
                         }
                     }
                     catch (ArgumentException)
                     {
-                        throw new Exception(string.Format("Invalid argument or arguments for option '{0}'", optionName));
+                        throw new Exception(string.Format("Invalid argument or arguments for option '{0}'. Try '-?|-h|help' for usage.", optionName));
                     }
 
                     void SetFlag(ref bool opt)
@@ -323,17 +320,11 @@ namespace DotNetAsm
         /// based on the criterion that input files were specified and either
         /// 1) an output file was also, or that 2) no listing nor label file was.
         /// </summary>
-        public bool GenerateOutput
-        {
-            get
-            {
-                return _source.Count > 0 &&
+        public bool GenerateOutput => _source.Count > 0 &&
                      (
                       !string.IsNullOrEmpty(_outputFile) ||
                       (string.IsNullOrEmpty(_labelFile) && string.IsNullOrEmpty(_listingFile))
                      );
-            }
-        }
 
         /// <summary>
         /// Gets the read-only list of input filenames.
@@ -380,15 +371,7 @@ namespace DotNetAsm
         /// <summary>
         /// Gets a flag that treats warnings as errors.
         /// </summary>
-        public bool WarningsAsErrors
-        {
-            get
-            {
-                if (!_noWarn)
-                    return _werror;
-                return false;
-            }
-        }
+        public bool WarningsAsErrors => !_noWarn && _werror;
 
         /// <summary>
         /// Gets the number of arguments passed after the call to 
@@ -412,39 +395,23 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the System.StringComparison, which is based on the case-sensitive flag.
         /// </summary>
-        public StringComparison StringComparison
-        {
-            get
-            {
-                return _caseSensitive ? 
-                    StringComparison.Ordinal : 
+        public StringComparison StringComparison => _caseSensitive ?
+                    StringComparison.Ordinal :
                     StringComparison.OrdinalIgnoreCase;
-            }
-        }
 
         /// <summary>
         /// Gets the System.StringComparer, which is based on the case-sensitive flag.
         /// </summary>
-        public StringComparer StringComparar
-        {
-            get
-            {
-                return _caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-            }
-        }
+        public StringComparer StringComparar => _caseSensitive ? 
+                    StringComparer.Ordinal : 
+                    StringComparer.OrdinalIgnoreCase;
 
         /// <summary>
         /// Gets the RegexOption flag indicating case-sensitivity based on the case-sensitive flag.
         /// </summary>
-        public System.Text.RegularExpressions.RegexOptions RegexOption
-        {
-            get
-            {
-                return _caseSensitive ? 
-                    System.Text.RegularExpressions.RegexOptions.None : 
+        public System.Text.RegularExpressions.RegexOptions RegexOption => _caseSensitive ?
+                    System.Text.RegularExpressions.RegexOptions.None :
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase;
-            }
-        }
 
         /// <summary>
         /// Gets a flag that indicates that the output should be in big-endian byte order.

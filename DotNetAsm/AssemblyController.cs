@@ -779,9 +779,6 @@ namespace DotNetAsm
 
         public void Assemble()
         {
-            if (Assembler.Options.InputFiles.Count == 0)
-                return;
-
             if (Assembler.Options.PrintVersion && DisplayingBanner != null)
             {
                 Console.WriteLine(DisplayingBanner.Invoke(this, true));
@@ -790,13 +787,16 @@ namespace DotNetAsm
                 return;
             }
 
+            if (Assembler.Options.InputFiles.Count == 0)
+                return;
+
             if (Assembler.Options.Quiet)
                 Console.SetOut(TextWriter.Null);
 
             if (DisplayingBanner != null)
                 Console.WriteLine(DisplayingBanner.Invoke(this, false));
 
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
 
             stopwatch.Start();
             var source = Preprocess();

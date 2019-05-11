@@ -153,9 +153,6 @@
   <data name="FilenameNotSpecified" xml:space="preserve">
     <value>Filename not specified</value>
   </data>
-  <data name="FilePreviouslyIncluded" xml:space="preserve">
-    <value>File {0} previously included. Possible circular reference?</value>
-  </data>
   <data name="IllegalQuantity" xml:space="preserve">
     <value>Illegal quantity '{0}'</value>
   </data>

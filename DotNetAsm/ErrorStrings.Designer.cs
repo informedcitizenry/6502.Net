@@ -119,12 +119,6 @@ namespace DotNetAsm {
             }
         }
         
-        public static string FilePreviouslyIncluded {
-            get {
-                return ResourceManager.GetString("FilePreviouslyIncluded", resourceCulture);
-            }
-        }
-        
         public static string IllegalQuantity {
             get {
                 return ResourceManager.GetString("IllegalQuantity", resourceCulture);

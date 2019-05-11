@@ -135,22 +135,14 @@ namespace DotNetAsm
 
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
-            if (args.Count == 0 || args.First().EnclosedInQuotes() == false)
+            if (args.Count < 1 || args.Count > 3 || !args.First().EnclosedInQuotes())
             {
                 if (args.Count == 0)
                     Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
+                else if (args.Count > 3)
+                    Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
                 else
                     Assembler.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
-                return null;
-            }
-            if (args.Count > 3)
-            {
-                Assembler.Log.LogEntry(line, ErrorStrings.TooManyArguments, line.Instruction);
-                return null;
-            }
-            if (!args.First().EnclosedInQuotes())
-            {
-                Assembler.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);
                 return null;
             }
             var filename = args.First().TrimOnce('"');

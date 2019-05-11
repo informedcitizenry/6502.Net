@@ -135,10 +135,8 @@ namespace DotNetAsm
         /// Used to avoid symbol clashes across separate collections.
         /// </summary>
         /// <param name="crossCheck">The cross check collection.</param>
-        public void AddCrossCheck(SymbolCollectionBase crossCheck)
-        {
-            _crossChecks.Add(crossCheck);
-        }
+        public void AddCrossCheck(SymbolCollectionBase crossCheck) 
+            => _crossChecks.Add(crossCheck);
 
         /// <summary>
         /// Gets the symbol value.
@@ -159,10 +157,8 @@ namespace DotNetAsm
         /// <returns>The scoped symbol value.</returns>
         /// <param name="symbolName">Symbol name.</param>
         /// <param name="fromScope">The current scope.</param>
-        public long GetScopedSymbolValue(string symbolName, string fromScope)
-        {
-            return GetSymbolValue(GetNearestScope(symbolName, fromScope));
-        }
+        public long GetScopedSymbolValue(string symbolName, string fromScope) 
+            => GetSymbolValue(GetNearestScope(symbolName, fromScope));
 
         /// <summary>
         /// Ises the scoped symbol.
@@ -171,10 +167,8 @@ namespace DotNetAsm
         /// <c>false</c> otherwise.</returns>
         /// <param name="symbolName">Symbol name.</param>
         /// <param name="fromScope">The current scope.</param>
-        public bool IsScopedSymbol(string symbolName, string fromScope)
-        {
-            return IsSymbol(GetNearestScope(symbolName, fromScope));
-        }
+        public bool IsScopedSymbol(string symbolName, string fromScope) 
+            => IsSymbol(GetNearestScope(symbolName, fromScope));
 
         /// <summary>
         /// Checks if the collection contains the symbol.
@@ -225,10 +219,8 @@ namespace DotNetAsm
         /// Gets the enumerator.
         /// </summary>
         /// <returns>The enumerator.</returns>
-        public IEnumerator<KeyValuePair<string, long>> GetEnumerator()
-        {
-            return _symbols.GetEnumerator();
-        }
+        public IEnumerator<KeyValuePair<string, long>> GetEnumerator() 
+            => _symbols.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => _symbols.GetEnumerator();
 

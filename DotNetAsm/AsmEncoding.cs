@@ -80,7 +80,7 @@ namespace DotNetAsm
         /// <see cref="T:System.Int32" /> value.
         /// </summary>
         /// <param name="s">The string element to encode.</param>
-        /// <returns>A signed 32-bit integer representing the 
+        /// <returns>An unsigned 32-bit integer representing the 
         /// encoding of the character.</returns>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         /// <exception cref="T:System.ArgumentNullException"></exception>
@@ -156,10 +156,7 @@ namespace DotNetAsm
         /// <param name="code">The code of the mapping.</param>
         /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
         /// <exception cref="T:System.ArgumentNullException"></exception>
-        public void Map(char mapping, int code)
-        {
-            Map(mapping.ToString(), code);
-        }
+        public void Map(char mapping, int code) => Map(mapping.ToString(), code);
 
         /// <summary>
         /// Remove a mapping for the current encoding.
@@ -203,10 +200,7 @@ namespace DotNetAsm
         /// <summary>
         /// Select the current encoding to the default UTF-8 encoding
         /// </summary>
-        public void SelectDefaultEncoding()
-        {
-            _currentMap = _maps["none"];
-        }
+        public void SelectDefaultEncoding() => _currentMap = _maps["none"];
 
         /// <summary>
         /// Select the current named encoding
@@ -235,7 +229,7 @@ namespace DotNetAsm
                 if (_currentMap.ContainsKey(elem))
                     numbytes += ((long)_currentMap[elem]).Size();
                 else
-                    numbytes += UTF8.GetByteCount(elem); 
+                    numbytes += UTF8.GetByteCount(elem);
             }
             return numbytes;
         }
@@ -339,7 +333,7 @@ namespace DotNetAsm
             while (i < byteCount)
             {
                 int displ = 0;
-                int encoding = 0;
+                int encoding = 0; 
                 if (i + 3 + byteIndex < byteCount)
                 {
                     encoding = bytes[i + byteIndex] |
@@ -410,10 +404,7 @@ namespace DotNetAsm
         /// <param name="charCount">The number of characters to encode</param>
         /// <returns>The maximum number of bytes produced by 
         /// encoding the specified number of characters.</returns>
-        public override int GetMaxByteCount(int charCount)
-        {
-            return charCount * sizeof(Int32);
-        }
+        public override int GetMaxByteCount(int charCount) => charCount * sizeof(int);
 
         /// <summary>
         /// Calculates the maximum number of characters produced 

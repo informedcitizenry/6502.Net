@@ -24,7 +24,7 @@ Multiple statements per line are allowed; they are separated by a colon (`:`) ch
 ```        
         lda MESSAGE,x:jsr CHROUT    ; multiple statement line
 ```
-Semi-colons denote the beginning of line comments, and remaining line text will not be processed by the assembler. 
+Semi-colons denote the beginning of line comments, and remaining line text will not be processed by the assembler.
 ### Numeric constants
 Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal numbers are written as is, while hex numbers are prefixed with a `$` and binary numbers are prefixed with a `%`.
 ```
@@ -57,7 +57,7 @@ Trailing colons for jump instructions are optional.
 
 Once labels are defined they cannot be redinfed in other parts of code. This gets tricky as source grows, since one must choose a unique name for each label. There are a few ways to avoid this problem.
 
-The first is to append the label with an underscore, making it a local label. 
+The first is to append the label with an underscore, making it a local label.
 ```
 routine1    lda message,x
             beq _done
@@ -424,7 +424,7 @@ Several built-in math functions that can also be called as part of the expressio
 ```
             lda #sqrt(25)
 ```
-See the section below on functions for a full list of available functions. 
+See the section below on functions for a full list of available functions.
 
 #### Math constants
 The math constants π and _e_ are defined as `MATH_PI` and `MATH_E`, respectively, and can be referenced in expressions as follows:
@@ -513,7 +513,7 @@ inc16       .macro  address
             inc \address+1
 +           .endmacro
 ```
-The macro is called `inc16` and takes a parameter called `address`. The code inside the macro references the parameter with a backslash `\` followed by the parameter name. The parameter is a textual subsitution; whatever you pass will be expanded at the reference point. Note the anonymous forward symbol at the branch instruction will be local to the block, as would any symbols inside the macro definition when expanded. To invoke a macro simply reference the name with a `.` in front:
+The macro is called `inc16` and takes a parameter called `address`. The code inside the macro references the parameter with a backslash `\` followed by the parameter name. The parameter is a textual substitution; whatever you pass will be expanded at the reference point. Note the anonymous forward symbol at the branch instruction will be local to the block, as would any symbols inside the macro definition when expanded. To invoke a macro simply reference the name with a `.` in front:
 ```
 myvariable  .word ?
 
@@ -537,7 +537,7 @@ Parameters can be referenced by number in this way:
 today       .macro
             .string "Today is @{1}"
             .endmacro
-            
+
         ;; Expansion of ".today Tuesday""
             .string "Today is Tuesday"
 ```
@@ -1073,7 +1073,7 @@ mysub   lda #13             ; output newline
 <table>
 <tr><td><b>Name</b></td><td><code>.string</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly. Multiple arguments can be passed. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1265,7 +1265,7 @@ done    ...                 ; assembly will never
 <tr><td><b>Name</b></td><td><code>.equ</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>=</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assign the label, anonymous symbol, or program counter to the expression. Note that there is an implied version of this directive, such that if the directive and expression are ommitted altogether, the label or symbol is set to the program counter.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>symbol, value</code></td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
 chrin      .equ $ffcf
@@ -1296,8 +1296,8 @@ start       ; same as start .equ *
         * = $0800
         nop
         .errorif * > $0801, "Uh oh!" ; if program counter
-                                    ; is greater than 2049,
-                                    ; raise a custom error
+                                     ; is greater than 2049,
+                                     ; raise a custom error
 </pre>
 </td></tr>
 </table>
@@ -1335,7 +1335,7 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. The initialization expression can be blank. Multiple iteration expressions can be specified.</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. The initialization expression can be blank. Multiple iteration expressions can be specified. This operation is only performed on first pass.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>[init_expression], condition[, iteration_expression[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1402,7 +1402,7 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.macro</code>/<code>.endmacro</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading backslash <code>\</code> and either the macro name or the number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are called by name with a leading "." All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
+<tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading either a backslash <code>\</code> or as <code>@{param}</code> from within a string, either by name or by number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are invoked with a leading <code>.</code>. All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>parameter[, parameter[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1440,7 +1440,7 @@ print       .macro  value = 13, printsub = $ffd2
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Maps a character or range of characters to custom binary output in the selected encoding. Note: <code>none</code> is not affected by <code>.map</code> and <code>.unmap</code> directives. It is recommended to represent individual char literals as strings.
 </td></tr>
-<tr><td><b>Arguments</b></td><td><code>start[, end]</code>,<code>code</code>/<br>
+<tr><td><b>Arguments</b></td><td><code>start[, end]</code>/<br>
 <code>"&lt;start&gt;&lt;end&gt;"</code>,<code>code</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1544,7 +1544,7 @@ message     .cstring "HELLO, HIGH CODE!"
 <table>
 <tr><td><b>Name</b></td><td><code>.repeat</code>/<code>.endrepeat</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat the specified source the specified number of times. Can be nested, but must be terminated with an <code>.endrepeat</code>.</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat the specified source the specified number of times. Can be nested, but must be terminated with an <code>.endrepeat</code>. This operation is only performed on first pass.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>repeatvalue</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1566,7 +1566,7 @@ message     .cstring "HELLO, HIGH CODE!"
 <table>
 <tr><td><b>Name</b></td><td><code>.segment</code>/<code>.endsegment</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Defines a block of code as a segment, to be declared into source with the <code>.dsegment</code> directive. Similar to macros but takes no parameters and symbols are not local. Useful for building large mix of source code and data without needing to relocate code manually. Segments can be defined within other segment block definitions, but are not considered "nested." Segment closures require the segment name after the directive.</td></tr>
+<tr><td><b>Definition</b></td><td>Defines a block of code as a segment, to be declared into source with the <code>.dsegment</code> directive. Segments are similar to macros, but take no parameters and symbols are not local. Useful for building a large mix of source code and data without needing to relocate code manually. Segments can be defined within other segment block definitions, but are not considered "nested." Segment closures require the segment name after the directive.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>segmentname</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1627,7 +1627,6 @@ glyph             ;12345678
 <tr><td><b>Example</b></td><td>
 <pre>
             .typedef   .byte, defb
-
             * = $c000
             defb 0,1,2,3 ; >c000 00 01 02 03
 </pre>
@@ -2125,8 +2124,6 @@ glyph             ;12345678
 
 `<Feature> is depricated` - The instruction or feature is depricated (this is a warning by default).
 
-`File previously included. Possible circular reference?` - An input file was given in the command-line or a directive was issued to include a source file that was previously include.
-
 `Filename not specified` - A directive expected a filename that was not provided.
 
 `Format is invalid.` - The format string passed to `format()` is not valid
@@ -2147,7 +2144,7 @@ glyph             ;12345678
 
 `Label is not the leftmost character` - The label is not the leftmost character in the line (this is a warning by default).
 
-`Macro expects a value for parameter; no default value defined` - The macro expects a parameter that was not supplied. 
+`Macro expects a value for parameter; no default value defined` - The macro expects a parameter that was not supplied.
 
 `Macro or segment is being called recursively` - A macro or segment is being invoked in its own definition.
 

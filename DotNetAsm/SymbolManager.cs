@@ -154,7 +154,7 @@ namespace DotNetAsm
             for (int i = 0; i < expression.Length; i++)
             {
                 char c = expression[i];
-                if (c == '\'' || c == '"')
+                if (c == '\'')
                 {
                     var literal = expression.GetNextQuotedString(i);
                     var unescaped = literal.TrimOnce('\'');
