@@ -40,34 +40,33 @@ namespace Asm6502.Net
             var arch = Assembler.Options.Architecture.ToLower();
             var progstart = Convert.ToUInt16(Assembler.Output.ProgramStart);
             var progend = Convert.ToUInt16(Assembler.Output.ProgramCounter);
-            var progsize = Convert.ToUInt16(Assembler.Output.GetCompilation().Count);
+            var progsize = Assembler.Output.GetCompilation().Count;
 
-            using (MemoryStream ms = new MemoryStream())
+            using (var ms = new MemoryStream()) {
+            using (var writer = new BinaryWriter(ms))
             {
-                using (BinaryWriter writer = new BinaryWriter(ms))
+                if (string.IsNullOrEmpty(arch) || arch.Equals("cbm"))
                 {
-                    if (string.IsNullOrEmpty(arch) || arch.Equals("cbm"))
-                    {
-                        writer.Write(progstart);
-                    }
-                    else if (arch.Equals("atari-xex"))
-                    {
-                        writer.Write(new byte[] { 0xff, 0xff }); // FF FF
-                        writer.Write(progstart);
-                        writer.Write(progend);
-                    }
-                    else if (arch.Equals("apple2"))
-                    {
-                        writer.Write(progstart);
-                        writer.Write(progsize);
-                    }
-                    else if (!arch.Equals("flat"))
-                    {
-                        var error = string.Format("Unknown architecture specified '{0}'", arch);
-                        throw new ArgumentException(error);
-                    }
-                    return ms.ToArray();
+                    writer.Write(progstart);
                 }
+                else if (arch.Equals("atari-xex"))
+                {
+                    writer.Write(new byte[] { 0xff, 0xff }); // FF FF
+                    writer.Write(progstart);
+                    writer.Write(progend);
+                }
+                else if (arch.Equals("apple2"))
+                {
+                    writer.Write(progstart);
+                    writer.Write(progsize);
+                }
+                else if (!arch.Equals("flat"))
+                {
+                    var error = string.Format("Unknown architecture specified '{0}'", arch);
+                    throw new ArgumentException(error);
+                }
+                return ms.ToArray();
+            }
             }
         }
 
