@@ -46,5 +46,7 @@ Global
 		$2.FileSeparator = @:\n
 		$2.LastFilePostfix = @:\n
 		$2.LineAlign = 0
+		$0.DotNetNamingPolicy = $3
+		$3.DirectoryNamespaceAssociation = PrefixedHierarchical
 	EndGlobalSection
 EndGlobal

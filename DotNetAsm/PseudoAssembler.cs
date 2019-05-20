@@ -20,7 +20,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        HashSet<BinaryFile> _includedBinaries;
+        readonly HashSet<BinaryFile> _includedBinaries;
         readonly Dictionary<string, string> _typeDefs;
         readonly Func<string, bool> _reservedSymbol;
         readonly Func<string, bool> _instruction;

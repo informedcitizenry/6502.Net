@@ -213,7 +213,7 @@ namespace Asm6502.Net
 
             ConstructOpcodeTable();
 
-            _filteredOpcodes = new Dictionary<string, Instruction>(_opcodes6502, Assembler.Options.StringComparar);
+            _filteredOpcodes = new OpcodeTable(_opcodes6502, Assembler.Options.StringComparar);
 
             _cpu = "6502";
         }
@@ -419,10 +419,8 @@ namespace Asm6502.Net
             return val;
         }
 
-
-        Tuple<OperandFormat, Instruction> GetFormatAndOpcode(SourceLine line)
+        (OperandFormat fmt, Instruction instruction) GetFormatAndOpcode(SourceLine line)
         {
-
             var mnemonic = line.Instruction.ToLower();
             string expression1 = string.Empty, expression2 = string.Empty;
             long eval1 = long.MinValue, eval2 = long.MinValue;
@@ -447,7 +445,7 @@ namespace Asm6502.Net
                 finalFormat = formatBuilder.ToString();
                 if (!_filteredOpcodes.TryGetValue(finalFormat, out instruction))
                 {
-                    return new Tuple<OperandFormat, Instruction>(null, null);
+                    return (null, null);
                 }
             }
             else
@@ -580,7 +578,7 @@ namespace Asm6502.Net
                     // some instructions the size is bigger than the expression comes out to, so
                     // make the expression size larger
                     if (expSize > 3)
-                        return new Tuple<OperandFormat, Instruction>(null, null); // we didn't find it
+                        return (null, null); // we didn't find it
                     finalFormat = finalFormat.Replace("x" + (expSize++) * 2, "x" + expSize * 2);
                 }
 
@@ -591,7 +589,7 @@ namespace Asm6502.Net
                 Eval1 = eval1,
                 Eval2 = eval2
             };
-            return new Tuple<OperandFormat, Instruction>(fmt, instruction);
+            return (fmt, instruction);
         }
 
         #region ILineAssembler.Methods
@@ -628,7 +626,7 @@ namespace Asm6502.Net
                 return;
             }
             var formatOpcode = GetFormatAndOpcode(line);
-            if (formatOpcode.Item1 == null)
+            if (formatOpcode.fmt == null)
             {
                 if (!_filteredOpcodes.Any(kvp => kvp.Key.StartsWith(line.Instruction, Assembler.Options.StringComparison)))
                     Assembler.Log.LogEntry(line, ErrorStrings.InstructionNotSupported, line.Instruction);
@@ -636,8 +634,8 @@ namespace Asm6502.Net
                     Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
                 return;
             }
-            long eval1 = formatOpcode.Item1.Eval1, eval2 = formatOpcode.Item1.Eval2;
-            int instructionSize = formatOpcode.Item2.Size, opcode = formatOpcode.Item2.Opcode;
+            long eval1 = formatOpcode.fmt.Eval1, eval2 = formatOpcode.fmt.Eval2;
+            int instructionSize = formatOpcode.instruction.Size, opcode = formatOpcode.instruction.Opcode;
 
             // how the evaluated expressions will display in disassembly
             long eval1DisplayValue = eval1, eval2DisplayValue = eval2;
@@ -663,9 +661,9 @@ namespace Asm6502.Net
                     eval1 = Convert.ToSByte(rel8);
                     if (Reserved.IsOneOf("RockwellBranches", line.Instruction))
                     {
-                        eval1DisplayValue = formatOpcode.Item1.Eval1 & 0xFF;
+                        eval1DisplayValue = formatOpcode.fmt.Eval1 & 0xFF;
                         eval2DisplayValue = eval2 & 0xFFFF;
-                        eval2 = formatOpcode.Item1.Eval1;
+                        eval2 = formatOpcode.fmt.Eval1;
                     }
                     else if (_cpu.Equals("65CE02"))
                     {
@@ -716,7 +714,7 @@ namespace Asm6502.Net
             if (eval1 != long.MinValue)
                 operbytes = eval2 == long.MinValue ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
             
-            line.Disassembly = string.Format(formatOpcode.Item1.FormatString, eval1DisplayValue, eval2DisplayValue);
+            line.Disassembly = string.Format(formatOpcode.fmt.FormatString, eval1DisplayValue, eval2DisplayValue);
             line.Assembly = Assembler.Output.Add(Convert.ToInt32(operbytes) | opcode, instructionSize);
         }
 
@@ -768,8 +766,8 @@ namespace Asm6502.Net
             {
                 // oh well, now we have to try to parse
                 var formatOpcode = GetFormatAndOpcode(line);
-                if (formatOpcode.Item2 != null)
-                    return formatOpcode.Item2.Size;
+                if (formatOpcode.instruction != null)
+                    return formatOpcode.instruction.Size;
                 return 0;
             }
             catch

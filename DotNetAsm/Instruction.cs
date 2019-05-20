@@ -43,11 +43,11 @@ namespace DotNetAsm
         /// <summary>
         /// The first captured evaluated expression.
         /// </summary>
-        public long Eval1;
+        public long Eval1 { get; set; }
 
         /// <summary>
         /// The second captured evaluated expression.
         /// </summary>
-        public long Eval2;
+        public long Eval2 { get; set; }
     }
 }
