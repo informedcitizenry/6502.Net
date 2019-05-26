@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -163,13 +164,15 @@ namespace DotNetAsm
 
                     ulong encodedValue = 0;
                     var places = 0;
-                    foreach (char unescapedChar in unescaped)
-                        encodedValue += (ulong)(Assembler.Encoding.GetEncodedValue(unescapedChar.ToString()) << (8 * places++));
-
-                    var charval = encodedValue.ToString();
-                    translated.Append(charval);
+                    var textElementEnumerator = StringInfo.GetTextElementEnumerator(unescaped);
+                    while (textElementEnumerator.MoveNext())
+                    {
+                        var textElement = textElementEnumerator.GetTextElement();
+                        encodedValue += (ulong)(Assembler.Encoding.GetEncodedValue(textElement) << (8 * places++));
+                    }
+                    translated.Append(encodedValue);
                     i += literal.Length - 1;
-                    lastTokenChar = charval.Last();
+                    lastTokenChar = encodedValue.ToString().Last();
                 }
                 else if ((c == '*' || c == '-' || c == '+') &&
                          (lastTokenChar.IsOperator() || lastTokenChar == '(' || lastTokenChar == char.MinValue))
