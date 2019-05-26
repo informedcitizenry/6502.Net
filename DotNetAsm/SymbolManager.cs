@@ -154,15 +154,19 @@ namespace DotNetAsm
             for (int i = 0; i < expression.Length; i++)
             {
                 char c = expression[i];
-                if (c == '\'')
+                if (c == '\'' || c == '"')
                 {
                     var literal = expression.GetNextQuotedString(i);
-                    var unescaped = literal.TrimOnce('\'');
+                    var unescaped = literal.TrimOnce(c);
                     if (unescaped.Contains("\\"))
-                    {
                         unescaped = Regex.Unescape(unescaped);
-                    }
-                    var charval = Assembler.Encoding.GetEncodedValue(unescaped.Substring(0, 1)).ToString();
+
+                    ulong encodedValue = 0;
+                    var places = 0;
+                    foreach (char unescapedChar in unescaped)
+                        encodedValue += (ulong)(Assembler.Encoding.GetEncodedValue(unescapedChar.ToString()) << (8 * places++));
+
+                    var charval = encodedValue.ToString();
                     translated.Append(charval);
                     i += literal.Length - 1;
                     lastTokenChar = charval.Last();

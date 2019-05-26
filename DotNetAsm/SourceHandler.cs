@@ -154,6 +154,10 @@ namespace DotNetAsm
                         }
                     }
                 }
+                else
+                {
+                    throw new FileNotFoundException(string.Format("Unable to open source file '{0}'", fileName));
+                }
                 if (openblock.Instruction.Equals(ConstStrings.OPEN_SCOPE))
                 {
                     var closeBlock = new SourceLine
