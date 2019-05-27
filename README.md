@@ -242,6 +242,14 @@ stdstring   .string format("The stdout routine is at ${0:X4}", stdout)
             ;; "The stdout routine is at $FFD2
 
 ```
+Many traditional assemblers allow programmers to use their character and value string pseudo-ops interchangeably, e.g. `.byte "HELLO"` and `.asc "HELLO"`. Note that 6502.Net treats character strings differently for the `.byte` and other value-based commands. For these pseudo-ops string characters are compacted, while the pseudo-op length is enforced:
+```
+            .byte "H"       ; okay
+            .dword "HELLO"  ; also okay, .dword can accomodate 4 ASCII bytes
+            .byte 'H','I'   ; still ok--two different literals
+            .byte "HELLO"   ; will error out
+```
+Generally, it is best to use the string commands for processing character string literals, and the value commands for multibyte values.
 #### Encodings
 Assembly source text is processed as UTF-8, and by default strings and character literals are encoded as such. You can change how text output with the `.encoding` and `.map` directives. Use `.encoding` to select an encoding, either pre-defined or custom. The encoding name follows the same rules as labels. There are four pre-defined encodings:
 
