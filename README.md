@@ -1,13 +1,13 @@
 # 6502.Net, A Simple .Net-Based 6502/65C02/65CE02/W65C816S Cross-Assembler
 ### Version 1.20.1.3
 ## Introduction
-The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, CSG 65CE02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
+The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, Rockwell R65C02, CSG 65CE02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
 
 The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
 
 The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system.
 
-The Rockwell variant of the 65C02 adds extra branching instructions whose conditions are memory bits, as well as instructions that set or reset individual bits. The 65CE02 is in turn based on that CPU family, and so is an enhancement of the 65C02, and its most notable appliance was for the unreleased Commodore 65. This CPU adds better support for relocatable code.
+The Rockwell variant of the 65C02 adds extra branching instructions whose conditions are bit values of locations in zero page, as well as instructions that set or reset individual bits of zero page locations. The 65CE02 is in turn based on that CPU family, and so is an enhancement of the 65C02, and its most notable application was for the unreleased Commodore 65. This CPU adds robust support for fully relocatable code.
 
 The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
 ## Overview
@@ -242,14 +242,14 @@ stdstring   .string format("The stdout routine is at ${0:X4}", stdout)
             ;; "The stdout routine is at $FFD2
 
 ```
-Many traditional assemblers allow programmers to use their character and value string pseudo-ops interchangeably, e.g. `.byte "HELLO"` and `.asc "HELLO"`. Note that 6502.Net treats character strings differently for the `.byte` and other value-based commands. For these pseudo-ops string characters are compacted, while the pseudo-op length is enforced:
+Many traditional assemblers allow programmers to use their character and value string pseudo-ops interchangeably, e.g. `.byte "HELLO"` and `.asc "HELLO"`. Note that 6502.Net treats character strings differently for `.byte` and the other value-based commands. For these pseudo-ops string characters are packed into single values, and the pseudo-op length is still enforced:
 ```
             .byte "H"       ; okay
             .dword "HELLO"  ; also okay, .dword can accomodate 4 ASCII bytes
             .byte 'H','I'   ; still ok--two different literals
             .byte "HELLO"   ; will error out
 ```
-Generally, it is best to use the string commands for processing character string literals, and the value commands for multibyte values.
+Generally, therefore, it is best to use the string commands for processing character string literals.
 #### Encodings
 Assembly source text is processed as UTF-8, and by default strings and character literals are encoded as such. You can change how text output with the `.encoding` and `.map` directives. Use `.encoding` to select an encoding, either pre-defined or custom. The encoding name follows the same rules as labels. There are four pre-defined encodings:
 
@@ -698,9 +698,9 @@ By default, 6502.Net "thinks" like a 6502 assembler, compiling only the publishe
             ldx #0
             slo (zpvar,x)
 ```
-There are four options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `R65C02`, `65CE02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are  in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
+There are six options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `R65C02`, `65CE02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are  in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
 
-Immediate mode on the 65816 differs based on register size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers.
+Immediate mode on the 65816 can emit different output based on the expected size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers.
 ```
             rep #%00110000
 
@@ -741,7 +741,7 @@ The R65C02 (Rockwell) extensions come with bit-condition branching and bit flipp
 ```
 bbr,bbs,rmb,smb
 ```
-The 65CE02 is an enhanced R65C02. Its most notable difference from the other 65xx is all branch instructions have 16-bit relative counterparts, thereby allowing the writing of fully relocatable code. The mnemonics unique to this CPU are:
+The mnemonics the 65CE02 adds are:
 ```
 asr,asw,bge,blt,bsr,cle,cpz,dew,dez,inw,inz,ldz,neg,phw,
 phz,plw,plz,row,rtn,see,tab,taz,tba,tsy,tys,tza
