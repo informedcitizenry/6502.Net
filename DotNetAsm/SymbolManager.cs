@@ -161,15 +161,12 @@ namespace DotNetAsm
                     var unescaped = literal.TrimOnce(c);
                     if (unescaped.Contains("\\"))
                         unescaped = Regex.Unescape(unescaped);
+                    var bytes = Assembler.Encoding.GetBytes(unescaped);
+                    if (bytes.Length > sizeof(int))
+                        throw new OverflowException(literal);
 
-                    ulong encodedValue = 0;
-                    var places = 0;
-                    var textElementEnumerator = StringInfo.GetTextElementEnumerator(unescaped);
-                    while (textElementEnumerator.MoveNext())
-                    {
-                        var textElement = textElementEnumerator.GetTextElement();
-                        encodedValue += (ulong)(Assembler.Encoding.GetEncodedValue(textElement) << (8 * places++));
-                    }
+                    Array.Resize(ref bytes, sizeof(int));
+                    var encodedValue = BitConverter.ToInt64(bytes, 0);
                     translated.Append(encodedValue);
                     i += literal.Length - 1;
                     lastTokenChar = encodedValue.ToString().Last();
