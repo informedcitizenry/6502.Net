@@ -166,7 +166,7 @@ namespace DotNetAsm
                         throw new OverflowException(literal);
 
                     Array.Resize(ref bytes, sizeof(int));
-                    var encodedValue = BitConverter.ToInt64(bytes, 0);
+                    var encodedValue = BitConverter.ToInt32(bytes, 0);
                     translated.Append(encodedValue);
                     i += literal.Length - 1;
                     lastTokenChar = encodedValue.ToString().Last();
