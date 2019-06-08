@@ -164,12 +164,12 @@ namespace DotNetAsm
                     var bytes = Assembler.Encoding.GetBytes(unescaped);
                     if (bytes.Length > sizeof(int))
                         throw new OverflowException(literal);
-
-                    Array.Resize(ref bytes, sizeof(int));
+                    if (bytes.Length < sizeof(int))
+                        Array.Resize(ref bytes, sizeof(int));
                     var encodedValue = BitConverter.ToInt32(bytes, 0);
                     translated.Append(encodedValue);
                     i += literal.Length - 1;
-                    lastTokenChar = encodedValue.ToString().Last();
+                    lastTokenChar = '0'; // can be any operand
                 }
                 else if ((c == '*' || c == '-' || c == '+') &&
                          (lastTokenChar.IsOperator() || lastTokenChar == '(' || lastTokenChar == char.MinValue))

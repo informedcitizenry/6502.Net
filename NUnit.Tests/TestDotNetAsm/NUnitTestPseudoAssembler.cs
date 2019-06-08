@@ -246,7 +246,7 @@ namespace NUnit.Tests.TestDotNetAsm
             TestInstruction(line, test.Count(), test.Count(), test);
 
             line.Operand = line.Operand + "$80";
-            TestForFailure<ExpressionException>(line);
+            TestForFailure<OverflowException>(line);
 
             line.Operand = string.Format("42, ?, ?, \"{0}\", $80", teststring);
             TestForFailure(line);
