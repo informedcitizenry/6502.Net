@@ -194,10 +194,12 @@ namespace DotNetAsm
                             }
                             else if (c == '"' || c == '\'')
                             {
-                                string quoted = repl.SourceString.GetNextQuotedString(i);
+                                string quoted = repl.SourceString.GetNextQuotedString(i, true);
                                 if (!string.IsNullOrEmpty(quoted))
                                 {
-                                    for (int j = i + 1; j < quoted.Length - 1; j++)
+                                    i += quoted.Length + 1;
+                                    quoted = Regex.Unescape(quoted);
+                                    for (int j = i + 1; j < quoted.Length; j++)
                                     {
                                         var qc = quoted[j];
                                         if (qc == '@' && quoted[j + 1] == '{')
@@ -223,7 +225,6 @@ namespace DotNetAsm
                                             }
                                         }
                                     }
-                                    i += quoted.Length - 1;
                                 }
 
                             }

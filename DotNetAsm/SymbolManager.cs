@@ -157,18 +157,17 @@ namespace DotNetAsm
                 char c = expression[i];
                 if (c == '\'' || c == '"')
                 {
-                    var literal = expression.GetNextQuotedString(i);
-                    var unescaped = literal.TrimOnce(c);
-                    if (unescaped.Contains("\\"))
-                        unescaped = Regex.Unescape(unescaped);
-                    var bytes = Assembler.Encoding.GetBytes(unescaped);
+                    var literal = expression.GetNextQuotedString(i, true);
+                    i += literal.Length + 1;
+                    if (literal.Contains("\\"))
+                        literal = Regex.Unescape(literal);
+                    var bytes = Assembler.Encoding.GetBytes(literal);
                     if (bytes.Length > sizeof(int))
                         throw new OverflowException(literal);
                     if (bytes.Length < sizeof(int))
                         Array.Resize(ref bytes, sizeof(int));
                     var encodedValue = BitConverter.ToInt32(bytes, 0);
                     translated.Append(encodedValue);
-                    i += literal.Length - 1;
                     lastTokenChar = '0'; // can be any operand
                 }
                 else if ((c == '*' || c == '-' || c == '+') &&

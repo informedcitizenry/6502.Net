@@ -253,7 +253,6 @@ namespace DotNetAsm
                 for (int i = 0; i < sourceList.Count; i++)
                 {
                     _currentLine = sourceList[i];
-
                     try
                     {
                         if (_passes == 0)
@@ -327,9 +326,10 @@ namespace DotNetAsm
                                             if (c == '"' || c == '\'')
                                             {
                                                 // process quotes separately
-                                                var quoted = _currentLine.SourceString.GetNextQuotedString(atIndex: j);
-                                                tokenBuilder.Append(quoted);
-                                                j += quoted.Length - 1;
+                                                var quoted = _currentLine.SourceString.GetNextQuotedString(atIndex: j, doNotUnescape: true);
+                                                var quoteEndIx = quoted.Length + 2;
+                                                tokenBuilder.Append(_currentLine.SourceString.Substring(j, quoteEndIx));
+                                                j += quoteEndIx - 1;
                                             }
                                             else if (c == ';')
                                             {

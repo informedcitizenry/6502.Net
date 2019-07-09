@@ -135,7 +135,7 @@ namespace DotNetAsm
 
         BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
-            if (args.Count < 1 || args.Count > 3 || !args.First().EnclosedInQuotes())
+            if (args.Count < 1 || args.Count > 3 || !args.First().EnclosedInQuotes(out string filename))
             {
                 if (args.Count == 0)
                     Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -145,7 +145,6 @@ namespace DotNetAsm
                     Assembler.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                 return null;
             }
-            var filename = args.First().TrimOnce('"');
             var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
 
             if (binary == null)

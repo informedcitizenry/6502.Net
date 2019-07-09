@@ -86,10 +86,51 @@ namespace DotNetAsm
         /// Tests whether the string is enclosed in double quotes.
         /// </summary>
         /// <param name="str">The string to evaluate.</param>
+        /// <param name="result">The resulting quoted string if the entire string is enclosed in quotes.</param>
+        /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
+        public static bool EnclosedInQuotes(this string str, out string result)
+        {
+            result = str.GetNextQuotedString(0, true);
+            return !string.IsNullOrEmpty(result) && str.Substring(1, str.Length - 2).Equals(result);
+        }
+
+        /// <summary>
+        /// Tests whether the string is enclosed in double quotes.
+        /// </summary>
+        /// <param name="str">The string to evaluate.</param>
         /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInQuotes(this string str)
         {
-            return !string.IsNullOrEmpty(str) && str.Equals(str.GetNextQuotedString(0));
+            if (string.IsNullOrEmpty(str) || (str[0] != '\'' && str[0] != '"'))
+                return false;
+
+            char enclosure = char.MinValue;
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                if (enclosure != char.MinValue || c == '\'' || c == '"')
+                {
+                    if (enclosure == c)
+                        return i == str.Length - 1;
+
+                    if (enclosure == char.MinValue)
+                    {
+                        enclosure = c;
+                    }
+                    else if (c == '\\')
+                    {
+                        if (i >= str.Length - 2)
+                            return false;
+                        if (str[i + 1] == 'u')
+                            i += 5;
+                        else if (str[i + 1] == 'x')
+                            i += 3;
+                        else
+                            i++;
+                    }
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -166,17 +207,16 @@ namespace DotNetAsm
                 for (int i = 0; i < str.Length; i++)
                 {
                     var c = str[i];
-                    var quoted = string.Empty;
-
                     if (c == '"' || c == '\'')
                     {
-                        quoted = str.GetNextQuotedString(atIndex: i);
+                        var quoted = str.GetNextQuotedString(atIndex: i, doNotUnescape: true);
+                        var quotedEndIx = quoted.Length + 2;
                         if (num_parens >= 1)
-                            parengroup.Append(quoted);
-                        i += quoted.Length - 1;
+                            parengroup.Append(str.Substring(i, quotedEndIx));
+                        i += quotedEndIx - 1;
                         continue;
                     }
-                    else if (num_parens >= 1 || c == open)
+                    if (num_parens >= 1 || c == open)
                         parengroup.Append(c);
 
                     if (c == open)
@@ -201,10 +241,7 @@ namespace DotNetAsm
         /// <returns>The next quoted string, or empty if no quoted string present.</returns>
         /// <param name="str">String.</param>
         /// <exception cref="T:System.Exception"></exception>
-        public static string GetNextQuotedString(this string str)
-        {
-            return str.GetNextQuotedString(0);
-        }
+        public static string GetNextQuotedString(this string str) => str.GetNextQuotedString(0);
 
         /// <summary>
         /// Gets the next double- or single-quoted string within the string.
@@ -214,6 +251,27 @@ namespace DotNetAsm
         /// <param name="atIndex">The index at which to search the string.</param>
         /// <exception cref="T:System.Exception"></exception>
         public static string GetNextQuotedString(this string str, int atIndex)
+            => str.GetNextQuotedString(atIndex, false);
+
+        /// <summary>
+        /// Gets the next double- or single-quoted string within the string.
+        /// </summary>
+        /// <returns>The next quoted string, or empty if no quoted string present.</returns>
+        /// <param name="str">String.</param>
+        /// <param name="doNotUnescape">If true, do not unescape the string.</param>
+        /// <exception cref="T:System.Exception"></exception>
+        public static string GetNextQuotedString(this string str, bool doNotUnescape)
+            => str.GetNextQuotedString(0, doNotUnescape);
+
+        /// <summary>
+        /// Gets the next double- or single-quoted string within the string.
+        /// </summary>
+        /// <returns>The next quoted string, or empty if no quoted string present.</returns>
+        /// <param name="str">String.</param>
+        /// <param name="atIndex">The index at which to search the string.</param>
+        /// <param name="doNotUnescape">If true, do not unescape the string.</param>
+        /// <exception cref="T:System.Exception"></exception>
+        public static string GetNextQuotedString(this string str, int atIndex, bool doNotUnescape)
         {
             var quoted = new StringBuilder();
             var enclosestring = char.MinValue;
@@ -224,46 +282,61 @@ namespace DotNetAsm
                 var c = str[i];
                 if (!enclosestring.Equals(char.MinValue) || c == '\'' || c == '"')
                 {
-                    quoted.Append(c);
-                    stringsize++;
                     if (c.Equals('\'') || c.Equals('"'))
                     {
                         if (enclosestring.Equals(char.MinValue))
-                            enclosestring = c;
-                        else if (enclosestring.Equals(c))
-                            break;
-                    }
-                    else if (c.Equals('\\'))
-                    {
-                        // escape cannot be the last char in the string
-                        if (++i == str.Length - 1)
-                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-                        c = str[i];
-                        if (c.Equals('u') || c.Equals('x'))
                         {
-                            var m = Regex.Match(str.Substring(i), @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2})");
-                            if (!string.IsNullOrEmpty(m.Value))
-                            {
-
-                                quoted.Append(m.Value);
-                                i += m.Value.Length - 1;
-                            }
+                            enclosestring = c;
+                        }
+                        else if (enclosestring.Equals(c))
+                        {
+                            if (enclosestring.Equals('\'') && stringsize > 1)
+                                throw new Exception(ErrorStrings.TooManyCharacters);
+                            enclosestring = char.MinValue;
+                            break;
                         }
                         else
                         {
                             quoted.Append(c);
                         }
                     }
+                    else if (c.Equals('\\'))
+                    {
+                        // escape cannot be the last char in the string
+                        if (++i == str.Length - 1)
+                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                        var escIx = i - 1;
+                        var escLen = 2;
+                        c = str[i];
+                        if (c.Equals('u') || c.Equals('x'))
+                        {
+                            var m = Regex.Match(str.Substring(i), @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2})");
+                            if (!string.IsNullOrEmpty(m.Value))
+                            {
+                                escLen = m.Value.Length + 1;
+                                i += escLen - 2;
+                            }
+                        }
+                        if (doNotUnescape)
+                        {
+                            quoted.Append(str.Substring(escIx, escLen));
+                        }
+                        else
+                        {
+                            var unescaped = Regex.Unescape(str.Substring(escIx, escLen));
+                            quoted.Append(unescaped);
+                        }
+                        stringsize++;
+                    }
+                    else
+                    {
+                        quoted.Append(c);
+                        stringsize++;
+                    }
                 }
             }
             if (!enclosestring.Equals(char.MinValue))
-            {
-                if (stringsize < 2 || !quoted[quoted.Length - 1].Equals(enclosestring))
-                    throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-
-                if (enclosestring.Equals('\'') && stringsize > 3)
-                    throw new Exception(ErrorStrings.TooManyCharacters);
-            }
+                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
             return quoted.ToString();
         }
 
@@ -303,9 +376,10 @@ namespace DotNetAsm
                 char c = str[i];
                 if (c == '\'' || c == '"')
                 {
-                    var quoted = str.GetNextQuotedString(atIndex: i);
-                    i += quoted.Length - 1;
-                    sb.Append(quoted);
+                    var quoted = str.GetNextQuotedString(atIndex: i, doNotUnescape: true);
+                    var quotedEndIx = quoted.Length + 2;
+                    sb.Append(str.Substring(i, quotedEndIx));
+                    i += quotedEndIx - 1;
                     if (i >= str.Length - 1)
                         csv.Add(sb.ToString().Trim());
                 }

@@ -7,6 +7,14 @@ namespace NUnit.Tests.TestDotNetAsm
     [TestFixture]
     public abstract class NUnitHandlerTestBase
     {
+        protected NUnitHandlerTestBase()
+        {
+            Assembler.Initialize();
+
+            Assembler.Evaluator.DefineParser((arg) =>
+                Assembler.Symbols.TranslateExpressionSymbols(new SourceLine(), arg, string.Empty, false));
+        }
+
         protected IBlockHandler Handler { get; set; }
 
         protected IEnumerable<SourceLine> ProcessBlock(IEnumerable<SourceLine> testSource)

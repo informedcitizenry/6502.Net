@@ -136,7 +136,6 @@ namespace DotNetAsm
         // Evaluate parameter the string as either a char literal or expression
         string EvalEncodingParam(string p)
         {
-            // if char literal return the char itself
             var quoted = p.GetNextQuotedString();
             if (string.IsNullOrEmpty(quoted))
             {
@@ -149,11 +148,8 @@ namespace DotNetAsm
                 {
                     throw new ArgumentException(p);
                 }
-            }   
-            var unescaped = Regex.Unescape(quoted);
-            if (unescaped.First().Equals('"'))
-                return unescaped.TrimOnce('"');
-            return unescaped.TrimOnce('\'');
+            }
+            return quoted;
         }
 
         /// <summary>
@@ -170,9 +166,9 @@ namespace DotNetAsm
             int size = 0;
             foreach (string s in csvs)
             {
-                if (s.EnclosedInQuotes())
+                if (s.EnclosedInQuotes(out string quoted))
                 {
-                    size += Assembler.Encoding.GetByteCount(Regex.Unescape(s.TrimOnce(s.First())));
+                    size += Assembler.Encoding.GetByteCount(quoted);//Regex.Unescape(s.TrimOnce(s.First())));
                 }
                 else
                 {
@@ -246,8 +242,7 @@ namespace DotNetAsm
                 var atoi = GetFormattedString(arg, Assembler.Options.StringComparison, Assembler.Evaluator);
                 if (string.IsNullOrEmpty(atoi))
                 {
-                    var quoted = arg.GetNextQuotedString();
-                    if (string.IsNullOrEmpty(quoted))
+                    if (!arg.EnclosedInQuotes(out string quoted))
                     {
                         if (arg == "?")
                         {
@@ -259,15 +254,7 @@ namespace DotNetAsm
                     }
                     else
                     {
-                        if (!quoted.Equals(arg))
-                        {
-                            Assembler.Log.LogEntry(line, ErrorStrings.None);
-                            return;
-                        }
-                        var unescaped = quoted.TrimOnce(quoted.First());
-                        if (unescaped.Contains("\\"))
-                            unescaped = Regex.Unescape(unescaped);
-                        encoded = Assembler.Output.Add(unescaped, Assembler.Encoding);
+                        encoded = Assembler.Output.Add(quoted, Assembler.Encoding);
                     }
                 }
                 else
@@ -324,7 +311,7 @@ namespace DotNetAsm
 
             var csvs = parms.TrimStartOnce('(').TrimEndOnce(')').CommaSeparate();
             var fmt = csvs.First();
-            if (fmt.Length < 5 || !fmt.EnclosedInQuotes())
+            if (fmt.Length < 5 || !fmt.EnclosedInQuotes(out string fmtQuoted))
                 throw new Exception(ErrorStrings.None);
             var parmlist = new List<object>();
 
@@ -332,12 +319,12 @@ namespace DotNetAsm
             {
                 if (string.IsNullOrEmpty(csvs[i]))
                     throw new Exception(ErrorStrings.None);
-                if (csvs[i].EnclosedInQuotes())
-                    parmlist.Add(Regex.Unescape(csvs[i].TrimOnce('"')));
+                if (csvs[i].EnclosedInQuotes(out string quoted))
+                    parmlist.Add(quoted);
                 else
                     parmlist.Add(evaluator.Eval(csvs[i]));
             }
-            return string.Format(Regex.Unescape(fmt.TrimOnce('"')), parmlist.ToArray());
+            return string.Format(fmtQuoted, parmlist.ToArray());
         }
 
         #endregion
