@@ -17,7 +17,7 @@ namespace Asm6502.Net
     {
         #region Members
 
-        IAssemblyController _controller;
+        readonly IAssemblyController _controller;
 
         string _cpu;
 
@@ -455,7 +455,7 @@ namespace Asm6502.Net
                 { "slo ${0:x4},y",           new Instruction { CPU = "6502i",   Size = 3,  Opcode = 0x1b } },
                 { "slo ${0:x4},x",           new Instruction { CPU = "6502i",   Size = 3,  Opcode = 0x1f } },
                 { "rla (${0:x2},x)",         new Instruction { CPU = "6502i",   Size = 2,  Opcode = 0x23 } },
-                { "rla ${0:x2}",             new Instruction { CPU = "6502",    Size = 2,  Opcode = 0x27 } },
+                { "rla ${0:x2}",             new Instruction { CPU = "6502i",   Size = 2,  Opcode = 0x27 } },
                 { "anc #${0:x2}",            new Instruction { CPU = "6502i",   Size = 2,  Opcode = 0x2b } },
                 { "rla ${0:x4}",             new Instruction { CPU = "6502i",   Size = 3,  Opcode = 0x2f } },
                 { "rla (${0:x2}),y",         new Instruction { CPU = "6502i",   Size = 2,  Opcode = 0x33 } },

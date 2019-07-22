@@ -26,6 +26,30 @@ namespace NUnit.Tests.TestDotNetAsm
         }
 
         [Test]
+        public void TestGetQuotes()
+        {
+            string test = ".string \"he said hello world to me\", $00";
+            Assert.AreEqual("he said hello world to me", test.GetNextQuotedString());
+
+            test = ".string \"quote 1\", \"quote 2\", 0";
+            var quote2ix = test.IndexOf(',');
+            Assert.AreEqual("quote 2", test.GetNextQuotedString(quote2ix));
+
+            test = ".string \"he said, \\\"hello, world!\\\" to me\", $00";
+            Assert.AreEqual("he said, \"hello, world!\" to me", test.GetNextQuotedString());
+        }
+
+        [Test]
+        public void TestGetParentheses()
+        {
+            string test = "function(3,2,3)";
+            Assert.AreEqual("(3,2,3)", test.GetNextParenEnclosure());
+
+            test = "function(\"some string)\", ')')";
+            Assert.AreEqual("(\"some string)\", ')')", test.GetNextParenEnclosure());
+        }
+
+        [Test]
         public void TestAssert()
         {
             var line = new SourceLine();

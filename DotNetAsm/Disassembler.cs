@@ -54,7 +54,7 @@ namespace DotNetAsm
         /// Add the address of the source to the disassembly. The first method
         /// called in the DisassembleLine method.
         /// </summary>
-        /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
+        /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <returns>A hex representation of the source line address.</returns>
         string DisassembleAddress(SourceLine line)
         {
@@ -115,8 +115,7 @@ namespace DotNetAsm
 
                 for (int i = 0; i < subdisasms.Count; i++)
                 {
-                    sb.Append($"{subdisasms[i],-29}{source,-10}").TrimEnd();
-                    sb.AppendLine();
+                    sb.AppendLine($"{subdisasms[i],-29}{source,-10}".TrimEnd());
                     pc += 8;
                     if (i < subdisasms.Count - 1)
                     {

@@ -133,7 +133,7 @@ namespace DotNetAsm
         /// brackets, or double-quotes
         /// </summary>
         /// <param name="str">This string.</param>
-        /// <param name="type">The <see cref="{DotNetAsm.StringExtensions.EnclosureType"/>.</param>
+        /// <param name="type">The <see cref="{DotNetAsm.StringExtensions.EnclosureType}"/>.</param>
         /// <param name="includeClosure">Include the closure in the resulting substring.</param>
         /// <param name="allowEscape">Allow the substring to escape the enclosure, so it will not be
         /// evaluated as an enclosure.</param>
@@ -144,7 +144,7 @@ namespace DotNetAsm
         public static string GetEnclosure(this string str, EnclosureType type, bool includeClosure, bool allowEscape, bool doNotUnescape = true)
         {
             int closureIx = -1;
-            string open = string.Empty, close = string.Empty;
+            string open = string.Empty, close = string.Empty, errorString = ErrorStrings.QuoteStringNotEnclosed;
             switch (type)
             {
                 case EnclosureType.Quote:
@@ -158,10 +158,12 @@ namespace DotNetAsm
                 case EnclosureType.Parenthesis:
                     open = OPEN_PARENS;
                     close = CLOSE_PARENS;
+                    errorString = ErrorStrings.None;
                     break;
                 case EnclosureType.BracketParenthesis:
                     open = "[";
                     close = "]";
+                    errorString = ErrorStrings.None;
                     break;
             }
             var enclosureBuilder = new StringBuilder();
@@ -172,18 +174,28 @@ namespace DotNetAsm
                 {
                     if (allowEscape && c == '\\')
                     {
-                        if (i >= str.Length - 2)
-                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
                         int escLen = 2;
                         if (str[i + 1] == 'u')
                             escLen = 6;
                         else if (str[i + 1] == 'x')
                             escLen = 4;
+                        if (i >= str.Length - escLen)
+                            throw new Exception(errorString);
+
                         if (doNotUnescape)
                             enclosureBuilder.Append(str.Substring(i, escLen));
                         else
                             enclosureBuilder.Append(Regex.Unescape(str.Substring(i, escLen)));
                         i += escLen - 1;
+                    }
+                    else if (type != EnclosureType.Quote && type != EnclosureType.SingleQuote && (c == '\'' || c == '"'))
+                    {
+                        var quoted = str.Substring(i).GetEnclosure(type: EnclosureType.Quote,
+                                                      includeClosure: true,
+                                                      allowEscape: true,
+                                                      doNotUnescape: true);
+                        enclosureBuilder.Append(quoted);
+                        i += quoted.Length - 1;
                     }
                     else
                     {
@@ -204,7 +216,7 @@ namespace DotNetAsm
                 }
             }
             if (closureIx > -1)
-                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                throw new Exception(errorString);
             return string.Empty;
         }
 
@@ -315,7 +327,7 @@ namespace DotNetAsm
         /// and returns the individual value as a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/>.
         /// </summary>
         /// <param name="str">The string to evaluate.</param>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
+        /// <returns>A <see cref="{System.Collections.Generic.List&lt;string&gt;}"/> of the values.</returns>
         /// <exception cref="T:System.Exception"></exception>
         public static List<string> CommaSeparate(this string str)
         {
