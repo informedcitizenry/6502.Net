@@ -11,7 +11,7 @@ using System.Text;
 
 namespace DotNetAsm
 {
-    public sealed class Disassembler: AssemblerBase, ILineDisassembler
+    public sealed class Disassembler : AssemblerBase, ILineDisassembler
     {
         #region Constructors
 
@@ -21,9 +21,9 @@ namespace DotNetAsm
         public Disassembler()
         {
             PrintingOn = true;
-            Reserved.DefineType("Blocks", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE );
+            Reserved.DefineType("Blocks", ConstStrings.OPEN_SCOPE, ConstStrings.CLOSE_SCOPE);
             Reserved.DefineType("Directives",
-                    ".cpu", ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef", 
+                    ".cpu", ".elif", ".else", ".endif", ".eor", ".error", ".errorif", ".if", ".ifdef",
                     ".warnif", ".relocate", ".pseudopc", ".realpc", ".endrelocate", ".warn"
                 );
         }
@@ -44,10 +44,10 @@ namespace DotNetAsm
             if (string.IsNullOrEmpty(lineinfo) == false)
             {
                 if (lineinfo.Length > 14)
-                lineinfo = lineinfo.Substring(0, 11) + "...";
-                lineinfo += "(" + line.LineNumber.ToString() + ")";
+                    lineinfo = lineinfo.Substring(0, 11) + "...";
+                lineinfo += $"({line.LineNumber})";
             }
-            return string.Format("{0,-20}:", lineinfo);
+            return $"{lineinfo,-20}:";
         }
 
         /// <summary>
@@ -62,8 +62,8 @@ namespace DotNetAsm
                 Reserved.IsReserved(line.Instruction))) ||
                 line.DoNotAssemble)
                 return string.Empty;
-                      
-            if (line.Instruction == "=" || 
+
+            if (line.Instruction == "=" ||
                 line.Instruction.Equals(".let", Assembler.Options.StringComparison) ||
                 line.Instruction.Equals(".equ", Assembler.Options.StringComparison))
             {
@@ -83,13 +83,13 @@ namespace DotNetAsm
                 {
                     value = Assembler.Symbols.Labels.GetSymbolValue(line.Scope + line.Label);
                 }
-                return string.Format("=${0:x" + value.Size() * 2 + "}", value);
+                return string.Format($"=${{0:x{value.Size() & 2}}}", value);
             }
             if (line.Instruction.StartsWith(".", Assembler.Options.StringComparison) &&
                     !Reserved.IsReserved(line.Instruction))
-                return string.Format(">{0:x4}", line.PC);
-            
-            return string.Format(".{0:x4}", line.PC);
+                return $">{line.PC:x4}";
+
+            return $".{line.PC:x4}";
         }
 
         /// <summary>
@@ -104,28 +104,26 @@ namespace DotNetAsm
                 return string.Empty;
 
             var sb = new StringBuilder();
-            line.Assembly.ForEach(b => sb.AppendFormat(" {0:x2}", b));
+            line.Assembly.ForEach(b => sb.Append($" {b:x2}"));
 
             if (sb.Length > 24)
             {
                 long pc = line.PC;
-                
+
                 var subdisasms = sb.ToString().SplitByLength(24).ToList();
                 sb.Clear();
 
                 for (int i = 0; i < subdisasms.Count; i++)
                 {
-                    sb.AppendFormat("{0,-29}{1,-10}",
-                                    subdisasms[i],
-                                    source).TrimEnd();
+                    sb.Append($"{subdisasms[i],-29}{source,-10}").TrimEnd();
                     sb.AppendLine();
                     pc += 8;
                     if (i < subdisasms.Count - 1)
                     {
-                        string format = ">{0:x4}    ";
+                        string pcHex = $">{pc:x4}    ";
                         if (Assembler.Options.VerboseList)
-                            format = "                    :" + format;
-                        sb.AppendFormat(format, pc);
+                            sb.Append("                    :");
+                        sb.Append(pcHex);
                     }
                     source = string.Empty;
                 }
@@ -178,7 +176,7 @@ namespace DotNetAsm
                     sourcestr = string.Empty;
                 sb.Append(DisassembleFileLine(line));
             }
-            sb.AppendFormat("{0,-9}", DisassembleAddress(line));
+            sb.Append($"{DisassembleAddress(line),-9}");
 
             if (Assembler.Options.NoAssembly == false)
             {
@@ -190,24 +188,24 @@ namespace DotNetAsm
                 }
 
                 if (string.IsNullOrEmpty(line.Disassembly) && Assembler.Options.NoDissasembly == false)
-                    sb.AppendFormat("{0,-29}", asm);
+                    sb.Append($"{asm,-29}");
                 else
-                    sb.AppendFormat("{0,-13}", asm);
+                    sb.Append($"{asm,-13}");
             }
-            
+
             if (Assembler.Options.NoDissasembly == false)
             {
                 if (string.IsNullOrEmpty(line.Disassembly) == false)
-                    sb.AppendFormat("{0,-16}", line.Disassembly);
+                    sb.Append($"{line.Disassembly,-16}");
                 else if (Assembler.Options.NoAssembly)
-                    sb.AppendFormat("{0,-28}", line.Disassembly);
+                    sb.Append($"{line.Disassembly,-28}");
             }
 
             if (Assembler.Options.NoSource == false)
-                sb.AppendFormat("{0,-10}", sourcestr);
+                sb.Append($"{sourcestr,-10}");
             else if (string.IsNullOrEmpty(line.Disassembly) && line.Assembly.Count == 0)
                 sb.TrimEnd();
-            
+
             sb.AppendLine();
         }
 

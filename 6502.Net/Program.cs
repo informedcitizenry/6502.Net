@@ -42,31 +42,32 @@ namespace Asm6502.Net
             var progend = Convert.ToUInt16(Assembler.Output.ProgramCounter);
             var progsize = Assembler.Output.GetCompilation().Count;
 
-            using (var ms = new MemoryStream()) {
-            using (var writer = new BinaryWriter(ms))
+            using (var ms = new MemoryStream())
             {
-                if (string.IsNullOrEmpty(arch) || arch.Equals("cbm"))
+                using (var writer = new BinaryWriter(ms))
                 {
-                    writer.Write(progstart);
+                    if (string.IsNullOrEmpty(arch) || arch.Equals("cbm"))
+                    {
+                        writer.Write(progstart);
+                    }
+                    else if (arch.Equals("atari-xex"))
+                    {
+                        writer.Write(new byte[] { 0xff, 0xff }); // FF FF
+                        writer.Write(progstart);
+                        writer.Write(progend);
+                    }
+                    else if (arch.Equals("apple2"))
+                    {
+                        writer.Write(progstart);
+                        writer.Write(progsize);
+                    }
+                    else if (!arch.Equals("flat"))
+                    {
+                        var error = string.Format("Unknown architecture specified '{0}'", arch);
+                        throw new ArgumentException(error);
+                    }
+                    return ms.ToArray();
                 }
-                else if (arch.Equals("atari-xex"))
-                {
-                    writer.Write(new byte[] { 0xff, 0xff }); // FF FF
-                    writer.Write(progstart);
-                    writer.Write(progend);
-                }
-                else if (arch.Equals("apple2"))
-                {
-                    writer.Write(progstart);
-                    writer.Write(progsize);
-                }
-                else if (!arch.Equals("flat"))
-                {
-                    var error = string.Format("Unknown architecture specified '{0}'", arch);
-                    throw new ArgumentException(error);
-                }
-                return ms.ToArray();
-            }
             }
         }
 

@@ -42,7 +42,7 @@ namespace DotNetAsm
         {
             const int ENDCOMMENT_SIZE = 11;
             bool inComment = false;
-            for(int i = 0; i < source.Count; i++)
+            for (int i = 0; i < source.Count; i++)
             {
                 var line = source[i];
                 line.IsComment = inComment;

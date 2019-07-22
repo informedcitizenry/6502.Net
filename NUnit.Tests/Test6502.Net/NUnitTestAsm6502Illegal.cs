@@ -1,8 +1,6 @@
 ﻿using DotNetAsm;
 using NUnit.Framework;
 using System;
-using System.Linq;
-using System.Text;
 
 namespace NUnit.Tests.Test6502.Net
 {

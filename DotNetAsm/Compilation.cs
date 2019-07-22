@@ -21,6 +21,7 @@ namespace DotNetAsm
     {
         #region Exception
 
+        [Serializable]
         public class InvalidPCAssignmentException : Exception
         {
             readonly int _pc;
@@ -425,7 +426,7 @@ namespace DotNetAsm
         /// Gets the program end address, which is the address of the final assembled byte
         /// from the program start.
         /// </summary>
-        public int ProgramEnd 
+        public int ProgramEnd
         {
             get
             {

@@ -39,7 +39,7 @@ namespace DotNetAsm
         /// passed will re-initialize the common Options object.
         /// </summary>
         /// <param name="args">The commandline arguments.</param>
-        public static void Initialize(string[] args) 
+        public static void Initialize(string[] args)
         {
             Options = new AsmCommandLineOptions();
 
@@ -100,7 +100,7 @@ namespace DotNetAsm
     /// </summary>
     public abstract class AssemblerBase
     {
-   
+
         #region Constructors
 
         /// <summary>

@@ -5,9 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
-using System.IO;
-
 namespace DotNetAsm
 {
     /// <summary>
@@ -41,7 +38,7 @@ namespace DotNetAsm
         /// <param name="token">The token to check</param>
         /// <returns><c>True</c> if the token is an instruction or directive, otherwise <c>false</c>.</returns>
         bool IsInstruction(string token);
- 
+
         /// <summary>
         /// Gets or sets the disassembler. 
         /// </summary>

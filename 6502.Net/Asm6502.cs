@@ -19,12 +19,6 @@ namespace Asm6502.Net
     /// </summary>
     public sealed partial class Asm6502 : AssemblerBase, ILineAssembler
     {
-        #region Members
-
-        IAssemblyController _controller;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -35,18 +29,19 @@ namespace Asm6502.Net
         public Asm6502(IAssemblyController controller)
         {
             Reserved.DefineType("OneBytes",
-                    "brk", "clc", "cld", "cli", "clv", "dex", "dey", "inx",
-                    "iny", "jam", "nop", "pha", "phb", "phd", "phk", "php",
-                    "phx", "phy", "pla", "plb", "pld", "plp", "plx", "ply",
-                    "rts", "rti", "rtl", "sec", "sed", "sei", "stp", "tax",
-                    "tay", "tcd", "tcs", "tdc", "tsc", "tsx", "txa", "txs",
-                    "txy", "tya", "tyx", "wai", "wdm", "xba", "xce", "dez",
-                    "inz", "taz", "tza", "see", "cle", "rtn", "map", "tsy",
-                    "tys", "phz", "plz"
+                    "brk", "clc", "cld", "cla", "cle", "cli", "clv", "clx",
+                    "cly", "csh", "dex", "dey", "dez", "inx", "iny", "inz",
+                    "jam", "map", "nop", "pha", "phb", "phd", "phk", "php",
+                    "phx", "phy", "phz", "pla", "plb", "pld", "plp", "plx",
+                    "ply", "plz", "rts", "rti", "rtl", "rtn", "say", "sec",
+                    "sed", "see", "sei", "set", "stp", "tax", "tay", "taz",
+                    "tcd", "tcs", "tdc", "tsc", "tsx", "tsy", "txa", "txs",
+                    "txy", "tya", "tys", "tyx", "tza", "wai", "wdm", "xba",
+                    "xce"
                 );
 
             Reserved.DefineType("Branches",
-                    "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc", 
+                    "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc",
                     "bvs", "bra"
                 );
 
@@ -62,16 +57,10 @@ namespace Asm6502.Net
                     "bbr", "bbs"
                 );
 
-            Reserved.DefineType("ImpliedAccumulator",
-                    "asl", "lsr", "rol", "ror", "asr", "neg"
+            Reserved.DefineType("MoveMemory16",
+                    "tai", "tdd", "tia", "tii", "tin"
                 );
 
-            Reserved.DefineType("Indirects",
-                    "adc", "and", "cmp", "dcp", "eor", "isb", 
-                    "lax", "lda", "ora", "pei", "rla", "rra",
-                    "sax", "sbc", "sha", "slo", "sre", "sta",
-                    "top"
-                );
 
             Reserved.DefineType("Jumps",
                     "jmp", "jsr"
@@ -81,12 +70,8 @@ namespace Asm6502.Net
                     "jml", "jsl"
                 );
 
-            Reserved.DefineType("ImpliedAC02",
-                    "dec", "inc"
-                );
-
             Reserved.DefineType("MoveMemory",
-                    "mvn", "mvp" 
+                    "mvn", "mvp"
                 );
 
             Reserved.DefineType("ReturnAddress",
@@ -98,14 +83,15 @@ namespace Asm6502.Net
                 );
 
             Reserved.DefineType("Mnemonics",
-                    "adc", "anc", "and", "ane", "arr", "asl", "asr", "bit",
-                    "cmp", "cop", "cpx", "cpy", "dcp", "dop", "eor", "isb",
-                    "jml", "jmp", "jsl", "jsr", "las", "lax", "lda", "ldx",
-                    "ldy", "lsr", "ora", "pea", "pei", "rep", "rla", "rol",
-                    "ror", "rra", "sbc", "sax", "sep", "shx", "shy", "slo",
-                    "sre", "sha", "sta", "stx", "sty", "stz", "tas", "top",
-                    "trb", "tsb", "asr", "asw", "bsr", "cpz", "dew", "dew",
-                    "inw", "neg", "phw", "plw", "row", "ldz"
+                    "adc", "anc", "and", "ane", "arr", "asl", "asr", "asw",
+                    "bit", "bsr", "cmp", "cop", "cpx", "cpy", "cpz", "dcp",
+                    "dec", "dew", "dop", "eor", "inc", "inw", "isb", "jml",
+                    "jmp", "jsl", "jsr", "las", "lax", "lda", "ldx", "ldy",
+                    "ldz", "lsr", "neg", "ora", "pea", "pei", "phw", "rep",
+                    "rla", "rol", "ror", "row", "rra", "sax", "sbc", "sep",
+                    "sha", "shx", "shy", "slo", "sre", "st1", "st2", "sta",
+                    "stx", "sty", "stz", "tam", "tas", "tma", "top", "trb",
+                    "tsb"
                 );
 
             _controller = controller;
@@ -212,7 +198,6 @@ namespace Asm6502.Net
             Assembler.Encoding.SelectDefaultEncoding();
 
             ConstructOpcodeTable();
-
             _filteredOpcodes = new OpcodeTable(_opcodes6502, Assembler.Options.StringComparar);
 
             _cpu = "6502";
@@ -222,7 +207,7 @@ namespace Asm6502.Net
 
         #region Methods
 
-        void SetCpu(CpuChangedEventArgs args)
+        public void SetCpu(object sender, CpuChangedEventArgs args)
         {
             if (args.Line.Operand.EnclosedInQuotes() == false &&
                 !args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
@@ -247,6 +232,12 @@ namespace Asm6502.Net
                 case "65816":
                     _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
                                                    .Concat(_opcodes65816)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    break;
+                case "HuC6280":
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02.Where(o => (o.Value.Opcode & 0x0f) != 0x02))
+                                                   .Concat(_opcodesR65C02)
+                                                   .Concat(_opcodesHuC6280)
                                                    .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
                 case "65CE02":
@@ -300,14 +291,14 @@ namespace Asm6502.Net
             _filteredOpcodes.Remove("cmb" + prv);
             _filteredOpcodes.Remove("sbc" + prv);
 
-            _filteredOpcodes["ora" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x09 };
-            _filteredOpcodes["and" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x29 };
-            _filteredOpcodes["eor" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x49 };
-            _filteredOpcodes["adc" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0x69 };
+            _filteredOpcodes["ora" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x09 };
+            _filteredOpcodes["and" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x29 };
+            _filteredOpcodes["eor" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x49 };
+            _filteredOpcodes["adc" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x69 };
             _filteredOpcodes["bit" + fmt] = new Instruction { CPU = "65C02", Size = size, Opcode = 0x89 };
-            _filteredOpcodes["lda" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0xa9 };
-            _filteredOpcodes["cmp" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0xc9 };
-            _filteredOpcodes["sbc" + fmt] = new Instruction { CPU = "6502",  Size = size, Opcode = 0xe9 };
+            _filteredOpcodes["lda" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xa9 };
+            _filteredOpcodes["cmp" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xc9 };
+            _filteredOpcodes["sbc" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xe9 };
         }
 
         void SetImmediateXY(int size)
@@ -380,215 +371,178 @@ namespace Asm6502.Net
             }
         }
 
-        long ParseSubExpression(string subexpression, char open, char closure, StringBuilder formatBuilder, string instruction, bool yzIndexed)
-        {
-            var commasep = subexpression.Substring(1, subexpression.Length - 2).CommaSeparate(open, closure);
-            if (commasep.Count() > 2)
-                throw new Exception(string.Format(ErrorStrings.AddressingModeNotSupported, instruction));
-
-            string expression = commasep.First().Trim();
-
-            var val = Assembler.Evaluator.Eval(expression);
-            var valSize = val.Size();
-            var expFormat = "${0:x" + valSize * 2 + "}";
-            if ((Reserved.IsOneOf("Indirects", instruction) && 
-                valSize == 1 && 
-                (yzIndexed || commasep.Count() == 2 || CpuIs65C02)) ||
-                instruction.Equals("jmp") || 
-                (instruction.Equals("jsr") && _cpu.Equals("65CE02")))
-            {
-                if (valSize > 2)
-                    throw new OverflowException(val.ToString());
-                formatBuilder.Append(open);
-                formatBuilder.Append(expFormat);
-                if (commasep.Count() > 1)
-                    formatBuilder.AppendFormat(",{0}{1}", commasep.Last(), closure);
-                else
-                    formatBuilder.Append(closure);
-            }
-            else
-            {
-                if (commasep.Count() > 1 || yzIndexed)
-                {
-                    if (Reserved.IsOneOf("Indirects", instruction))
-                        throw new OverflowException(val.ToString());
-                    throw new Exception(string.Format(ErrorStrings.AddressingModeNotSupported, instruction));
-                }
-                formatBuilder.Append(expFormat);
-            }
-            return val;
-        }
-
-        (OperandFormat fmt, Instruction instruction) GetFormatAndOpcode(SourceLine line)
+        (OperandFormat fmt, Instruction instruction) ParseToInstruction(SourceLine line)
         {
             var mnemonic = line.Instruction.ToLower();
-            string expression1 = string.Empty, expression2 = string.Empty;
-            long eval1 = long.MinValue, eval2 = long.MinValue;
-            StringBuilder formatBuilder = new StringBuilder();
+            var operand = line.Operand;
+            if (operand.Equals("a", Assembler.Options.StringComparison) &&
+                !Assembler.Symbols.IsSymbol("a"))
+                operand = string.Empty;
 
-            formatBuilder.AppendFormat("{0}", mnemonic);
-
-            bool impliedA = line.Operand.Equals("a", Assembler.Options.StringComparison);
-
-            if (impliedA &&
-                !(Reserved.IsOneOf("ImpliedAccumulator", mnemonic) ||
-                  (Reserved.IsOneOf("ImpliedAC02", mnemonic) && !_cpu.StartsWith("6502", StringComparison.Ordinal))
-                 )
-                )
-                throw new Exception();
-
-            string finalFormat;
+            var fmt = new OperandFormat();
+            var formatBuilder = new StringBuilder(mnemonic);
             Instruction instruction;
-
-            if (string.IsNullOrEmpty(line.Operand) || impliedA)
+            if (!string.IsNullOrEmpty(operand))
             {
-                finalFormat = formatBuilder.ToString();
-                if (!_filteredOpcodes.TryGetValue(finalFormat, out instruction))
-                {
-                    return (null, null);
-                }
-            }
-            else
-            {
+                byte forcedWidth = 0;
                 formatBuilder.Append(' ');
-                int expSize = 1;
-
-                string operand = line.Operand;
-
-                if (operand[0] == '[')
+                var csv = operand.CommaSeparate();
+                var firstElement = csv.First();
+                var firstChar = firstElement[0];
+                bool isRockwell = Reserved.IsOneOf("Rockwell", mnemonic);
+                if (firstChar == '[' || firstChar == '(')
                 {
-                    // differentiate between 'and [16]' and 'and [16] 16'
-                    var firstBracket = operand.FirstParenEnclosure(useBracket: true);
-                    var firstBracketLength = firstBracket.Length;
-                    if (operand.Length > firstBracketLength)
+                    var firstParen = firstElement.GetNextParenEnclosure();
+                    var firstParenLength = firstParen.Length;
+                    if (firstElement[0] == '[' && firstElement.Length > firstParenLength)
                     {
-                        var delim = operand.Substring(firstBracketLength).First(c => !char.IsWhiteSpace(c));
-                        if (delim != ',')
-                        {
-                            if (!char.IsWhiteSpace(operand[firstBracketLength]))
-                                throw new Exception(ErrorStrings.None);
-                            expSize = Convert.ToInt32(Assembler.Evaluator.Eval(firstBracket.Substring(1, firstBracketLength - 2)));
-                            if (expSize != 16 && expSize != 24)
-                                throw new Exception(ErrorStrings.None);
-                            expSize /= 8;
-                            operand = operand.Substring(firstBracketLength + 1);
-                        }
-                    }
-                }
-                if (operand[0] == '#')
-                {
-                    if (operand.Length < 2 || char.IsWhiteSpace(operand[1]))
-                        throw new ExpressionException(operand);
-                    expression1 = operand.Substring(1);
-                    eval1 = Assembler.Evaluator.Eval(expression1);
-                    expSize = eval1.Size();
-                    formatBuilder.Append("#${0:x" + expSize * 2 + "}");
-                }
-                else
-                {
-                    IEnumerable<string> commasep;
-                    if (line.Operand[0] == '[')
-                        commasep = operand.CommaSeparate('[', ']');
-                    else
-                        commasep = operand.CommaSeparate();
-                    if (Reserved.IsOneOf("RockwellBranches", mnemonic))
-                    {
-                        expSize = 3;
-                        var commasepArr = commasep.ToArray();
-                        if (commasepArr.Length != 3)
+                        // differentiate between 'and [16]' and 'and [16] 16'
+                        if (!char.IsWhiteSpace(firstElement[firstParenLength]))
                             throw new Exception(ErrorStrings.None);
-
-                        formatBuilder.Append(Assembler.Evaluator.Eval(commasepArr[0], 0, 7));
-                        formatBuilder.Append(",${0:x2},${1:x2}");
-                        eval1 = Assembler.Evaluator.Eval(commasepArr[1], sbyte.MinValue, byte.MaxValue);
-                        eval2 = Assembler.Evaluator.Eval(commasepArr[2], sbyte.MinValue, byte.MaxValue);
-                    }
-                    else
-                    {
-                        if (commasep.Count() > 2)
-                            throw new Exception(ErrorStrings.None);
-
-                        string outerexpression = string.Empty;
-                        if (commasep.Count() > 1)
+                        forcedWidth = Convert.ToByte(Assembler.Evaluator.Eval(firstParen.Substring(1, firstParenLength - 2)));
+                        if (forcedWidth == 0 || (forcedWidth & 0b1110_0111) != 0)
+                            throw new Exception(string.Format(ErrorStrings.IllegalQuantity, firstElement));
+                        forcedWidth /= 8;
+                        firstElement = firstElement.Substring(firstParenLength + 1).TrimStart();
+                        firstChar = firstElement[0];
+                        if (firstChar == '[' || firstChar == '(')
                         {
-                            if (Reserved.IsOneOf("MoveMemory", mnemonic) ||
-                                Reserved.IsOneOf("Rockwell", mnemonic))
-                            {
-                                expression2 = commasep.Last();
-                                eval2 = Assembler.Evaluator.Eval(expression2.Trim());
-                                if (Reserved.IsOneOf("MoveMemory", mnemonic))
-                                    outerexpression = "${1:x2}";
-                                else
-                                    outerexpression = "${0:x2}";
-                            }
+                            firstParen = firstElement.GetNextParenEnclosure();
+                            firstParenLength = firstParen.Length;
+                            if (firstElement.Length == firstParenLength)
+                                evaluateFirstParen();
                             else
-                            {
-                                outerexpression = commasep.Last();
-
-                            }
-                        }
-                        var param1 = commasep.First();
-                        bool yzIndexed = commasep.Last().Equals("y", Assembler.Options.StringComparison) ||
-                                         commasep.Last().Equals("z", Assembler.Options.StringComparison);
-                        if (param1[0] == '(' && param1.Last() == ')' &&
-                            param1.FirstParenEnclosure().Equals(param1) &&
-                            (commasep.Count() == 1 || yzIndexed))
-                        {
-                            eval1 = ParseSubExpression(param1, '(', ')', formatBuilder, mnemonic, yzIndexed);
-                            expression1 = eval1.ToString();
-                        }
-                        else if (param1[0] == '[')
-                        {
-
-                            eval1 = ParseSubExpression(param1, '[', ']', formatBuilder, mnemonic, yzIndexed);
-                            expression1 = eval1.ToString();
+                                addElementToFormat(firstElement);
                         }
                         else
                         {
-                            expression1 = param1.TrimEnd();
-                            eval1 = Assembler.Evaluator.Eval(expression1);
-                            if (expSize == 1)
-                            {
-                                if (Reserved.IsOneOf("Branches16", mnemonic) ||
-                                    (Reserved.IsOneOf("Branches", mnemonic) && _cpu.Equals("65CE02")))
-                                    expSize++; // we have to check this too in case the user does a brl $10ffff
-                                else
-                                    expSize = eval1.Size();
-                            }
-                            if (Reserved.IsOneOf("Rockwell", mnemonic))
-                            {
-                                if (eval1 < 0 || eval1 > 7)
-                                    throw new OverflowException(eval1.ToString());
-                                formatBuilder.Append(eval1);
-
-                            }
-                            else
-                            {
-                                formatBuilder.Append("${0:x" + expSize * 2 + "}");
-                            }
+                            addElementToFormat(firstElement);
                         }
-                        if (commasep.Count() > 1)
-                            formatBuilder.AppendFormat(",{0}", outerexpression);
+                    }
+                    else if (firstElement.Length == firstParenLength)
+                    {
+                        evaluateFirstParen();
+                    }
+                    else
+                    {
+                        addElementToFormat(firstElement);
+                    }
+
+                    void evaluateFirstParen()
+                    {
+                        if (firstParenLength < 3)
+                            throw new ExpressionException(operand);
+                        firstParen = firstParen.Substring(1, firstParen.Length - 2);
+                        var parenCsv = firstParen.CommaSeparate();
+
+                        formatBuilder.Append(firstChar);
+
+                        addElementToFormat(parenCsv.First());
+
+                        var parenLast = parenCsv.Last();
+                        if (parenCsv.Count > 1 &&
+                            (parenLast.Equals("s", Assembler.Options.StringComparison) ||
+                             parenLast.Equals("sp", Assembler.Options.StringComparison) ||
+                             parenLast.Equals("x", Assembler.Options.StringComparison))
+                            )
+                        {
+                            // indexed indirect
+                            formatBuilder.AppendFormat($",{parenLast}");
+                        }
+                        formatBuilder.Append(firstElement[firstElement.Length - 1]);
                     }
                 }
-                finalFormat = formatBuilder.ToString();
-
-                while (!_filteredOpcodes.TryGetValue(finalFormat, out instruction))
+                else if (isRockwell)
                 {
-                    // some instructions the size is bigger than the expression comes out to, so
-                    // make the expression size larger
-                    if (expSize > 3)
-                        return (null, null); // we didn't find it
-                    finalFormat = finalFormat.Replace("x" + (expSize++) * 2, "x" + expSize * 2);
+                    var bit = Assembler.Evaluator.Eval(firstElement);
+                    if (bit < 0 || bit > 7)
+                        throw new OverflowException(bit.ToString());
+                    fmt.Evaluations.Add(bit);
+                    formatBuilder.Append(bit);
+                }
+                else
+                {
+                    if (firstChar == '#')
+                    {
+                        if (firstElement.Length < 2 || char.IsWhiteSpace(firstElement[1]))
+                            throw new ExpressionException(firstElement);
+                        formatBuilder.Append(firstChar);
+                        firstElement = firstElement.Substring(1);
+                        csv[0] = firstElement;
+                    }
+                    addElementToFormat(firstElement);
+                }
+                var csvCount = csv.Count;
+                for (var i = 1; i < csvCount; i++)
+                {
+                    formatBuilder.Append(',');
+                    var currElement = csv[i];
+                    if (i == csvCount - 1 &&
+                        (currElement.Equals("x", Assembler.Options.StringComparison) ||
+                         currElement.Equals("y", Assembler.Options.StringComparison) ||
+                         currElement.Equals("s", Assembler.Options.StringComparison) ||
+                         currElement.Equals("z", Assembler.Options.StringComparison)
+                        )
+                       )
+                    {
+                        formatBuilder.Append(currElement);
+                    }
+                    else
+                    {
+                        // account for leading bits for Rockwell instructions
+                        int index = isRockwell ? i - 1 : i;
+                        addElementToFormat(currElement, index);
+                    }
                 }
 
+                void addElementToFormat(string element, int index = 0)
+                {
+                    var eval = Assembler.Evaluator.Eval(element);
+                    var evalSize = eval.Size();
+                    if (forcedWidth > 0 && evalSize > forcedWidth)
+                        throw new OverflowException(element);
+                    if (forcedWidth > evalSize)
+                        evalSize = forcedWidth;
+                    formatBuilder.Append($"${{{index}:x{evalSize * 2}}}");
+                    fmt.Evaluations.Add(eval);
+                    fmt.EvaluationSizes.Add(evalSize);
+                }
             }
-            var fmt = new OperandFormat
+            var finalFormat = formatBuilder.ToString();
+            while (!_filteredOpcodes.TryGetValue(finalFormat, out instruction))
             {
-                FormatString = finalFormat,
-                Eval1 = eval1,
-                Eval2 = eval2
-            };
+                if (fmt.Evaluations.Count == 0)
+                    return (null, null); // not a valid implied mode instruction
+
+                // some instructions the size is bigger than the component expressions may come out to, so
+                // make the expression sizes larger
+                if (fmt.Evaluations.Count == 3)
+                {
+                    // Hudson support
+                    for (var i = 0; i < 3; i++)
+                    {
+                        if (fmt.EvaluationSizes[i] == 2)
+                            continue;
+                        if (fmt.EvaluationSizes[i] > 2)
+                            return (null, null);
+                        finalFormat = finalFormat.Replace($"{i}:x2", $"{i}:x4");
+                        fmt.EvaluationSizes[i]++;
+                    }
+                }
+                else
+                {
+                    var newSize = fmt.EvaluationSizes[0] + 1;
+                    if (newSize > 3)
+                        return (null, null); // we didn't find it
+                    finalFormat = finalFormat.Replace($"0:x{fmt.EvaluationSizes[0] * 2}", $"0:x{newSize * 2}");
+                    fmt.EvaluationSizes[0] = newSize;
+                }
+            }
+            fmt.FormatString = finalFormat;
+
+            if (Reserved.IsOneOf("Rockwell", line.Instruction))
+                fmt.Evaluations.RemoveAt(0);
+
             return (fmt, instruction);
         }
 
@@ -603,7 +557,7 @@ namespace Asm6502.Net
                                         Assembler.Output.LogicalPC);
                 return;
             }
-            if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
+            if (line.Instruction.Equals(".rta", Assembler.Options.StringComparison))
             {
                 AssembleRta(line);
                 return;
@@ -617,117 +571,124 @@ namespace Asm6502.Net
                 else
                 {
                     if (_cpu == null || !_cpu.Equals("65816"))
-                        Assembler.Log.LogEntry(line, 
-                            "The current CPU supports only 8-bit immediate mode instructions. The directive '" + line.Instruction + "' will not affect assembly", 
+                        Assembler.Log.LogEntry(line,
+                            $"The current CPU supports only 8-bit immediate mode instructions. The directive '{line.Instruction}' will not affect assembly",
                             Assembler.Options.WarningsAsErrors);
                     else
                         SetRegLongShort(line.Instruction);
                 }
                 return;
             }
-            var formatOpcode = GetFormatAndOpcode(line);
+            var formatOpcode = ParseToInstruction(line);
             if (formatOpcode.fmt == null)
             {
                 if (!_filteredOpcodes.Any(kvp => kvp.Key.StartsWith(line.Instruction, Assembler.Options.StringComparison)))
                     Assembler.Log.LogEntry(line, ErrorStrings.InstructionNotSupported, line.Instruction);
                 else
-                    Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
+                    throw new Exception(string.Format(ErrorStrings.AddressingModeNotSupported, line.Instruction));//Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
                 return;
             }
-            long eval1 = formatOpcode.fmt.Eval1, eval2 = formatOpcode.fmt.Eval2;
-            int instructionSize = formatOpcode.instruction.Size, opcode = formatOpcode.instruction.Opcode;
+            long opcode = formatOpcode.instruction.Opcode;
 
             // how the evaluated expressions will display in disassembly
-            long eval1DisplayValue = eval1, eval2DisplayValue = eval2;
-
-            if (Reserved.IsOneOf("Branches", line.Instruction) || 
-                Reserved.IsOneOf("RockwellBranches", line.Instruction) || 
-                Reserved.IsOneOf("Branches16", line.Instruction))
+            var evals = formatOpcode.fmt.Evaluations;
+            var evalDisplays = evals.ToList();
+            var numEvals = evals.Count;
+            bool isRockwell = Reserved.IsOneOf("RockwellBranches", line.Instruction);
+            if (Reserved.IsOneOf("Branches", line.Instruction) ||
+                Reserved.IsOneOf("Branches16", line.Instruction) ||
+                isRockwell)
             {
-                long displ = Reserved.IsOneOf("RockwellBranches", line.Instruction) ? eval2 : eval1;
+                long displ = Reserved.IsOneOf("RockwellBranches", line.Instruction) ? evals[1] :
+                                                                                      evals[0];
                 if (displ > 0xFFFF)
                     throw new OverflowException(displ.ToString());
 
                 long rel8 = Assembler.Output.GetRelativeOffset((int)displ, Assembler.Output.LogicalPC + 2);
-                eval1DisplayValue = eval1 & 0xFFFF;
                 if (Reserved.IsOneOf("Branches16", line.Instruction) ||
                         (_cpu.Equals("65CE02") && Reserved.IsOneOf("Branches", line.Instruction)
                             && (rel8 < sbyte.MinValue || rel8 > sbyte.MaxValue)))
                 {
-                    eval1 = Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)displ, Assembler.Output.LogicalPC + 3));
+                    evalDisplays[0] = displ & 0xFFFF;
+                    evals[0] = Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)displ, Assembler.Output.LogicalPC + 3));
                 }
                 else
                 {
-                    eval1 = Convert.ToSByte(rel8);
-                    if (Reserved.IsOneOf("RockwellBranches", line.Instruction))
+                    if (isRockwell)
                     {
-                        eval1DisplayValue = formatOpcode.fmt.Eval1 & 0xFF;
-                        eval2DisplayValue = eval2 & 0xFFFF;
-                        eval2 = formatOpcode.fmt.Eval1;
+                        evals[1] = Convert.ToSByte(rel8);
+                        evalDisplays[0] = evals[0] & 0xFF;
+                        evalDisplays[1] = displ & 0xFFFF;
                     }
-                    else if (_cpu.Equals("65CE02"))
+                    else
                     {
-                        // change 16-bit relative to 8-bit version
-                        instructionSize--;
-                        opcode -= 3;
+                        evalDisplays[0] = displ & 0xFFFF;
+                        evals[0] = Convert.ToSByte(rel8);
+                        if (_cpu.Equals("65CE02"))
+                        {
+                            // change 16-bit relative to 8-bit version
+                            opcode -= 3;
+                        }
                     }
+                    formatOpcode.fmt.EvaluationSizes[0] = 1;
                 }
             }
             else
             {
-                var operandsize = 0;
-
-                if (eval1 != long.MinValue)
+                var totalSize = 0;
+                if (numEvals > 0)
                 {
-                    if (Reserved.IsOneOf("Rockwell", line.Instruction))
+                    for (var i = 0; i < numEvals; i++)
                     {
-                        if (eval2.Size() > 1)
-                            throw new OverflowException(line.Operand);
-                        eval1DisplayValue = eval1 = eval2 & 0xFF;
-                        eval2DisplayValue = eval2 = long.MinValue;
-                    }
-                    else if(instructionSize == 4)
-                    {
-                        eval1 &= 0xFFFFFF;
-                    }
-                    else if (instructionSize == 3 && eval2 == long.MinValue)
-                    {
-                        eval1 &= 0xFFFF;
-                    }
-                    else
-                    {
-                        eval1 &= 0xFF;
-                        if (eval2 != long.MinValue)
-                            eval2 &= 0xFF;
-                    }
-                    operandsize = eval1.Size();
-                }
-                if (eval2 != long.MinValue)
-                    operandsize += eval2.Size();
+                        var operandSize = formatOpcode.fmt.EvaluationSizes[i];
+                        switch (operandSize)
+                        {
+                            case 3:
+                                evals[i] &= 0xFFFFFF;
+                                break;
+                            case 2:
+                                evals[i] &= 0xFFFF;
+                                break;
+                            case 1:
+                                evals[i] &= 0xFF;
+                                break;
+                            default:
+                                throw new OverflowException(evals[i].ToString());
 
-                if (operandsize >= instructionSize)
-                {
-                    throw new OverflowException(line.Operand);
+                        }
+                        totalSize += operandSize;
+                    }
+                    if (totalSize >= formatOpcode.instruction.Size)
+                        throw new OverflowException(line.Operand);
                 }
+                if (numEvals > 1 && Reserved.IsOneOf("MoveMemory", line.Instruction))
+                    evals.Reverse();
             }
-            long operbytes = 0;
-            if (eval1 != long.MinValue)
-                operbytes = eval2 == long.MinValue ? (eval1 << 8) : (((eval1 << 8) | eval2) << 8);
-            
-            line.Disassembly = string.Format(formatOpcode.fmt.FormatString, eval1DisplayValue, eval2DisplayValue);
-            line.Assembly = Assembler.Output.Add(Convert.ToInt32(operbytes) | opcode, instructionSize);
+            var instrBytes = new List<byte>(Assembler.Output.Add(opcode, 1));
+            for (var i = 0; i < numEvals; i++)
+                instrBytes.AddRange(Assembler.Output.Add(evals[i], formatOpcode.fmt.EvaluationSizes[i]));
+
+            line.Disassembly = string.Format(formatOpcode.fmt.FormatString, evalDisplays.Cast<object>().ToArray());
+            line.Assembly = instrBytes;
         }
 
         public int GetInstructionSize(SourceLine line)
         {
             if (Reserved.IsOneOf("LongShort", line.Instruction))
                 return 0;
-                
+
             if (string.IsNullOrEmpty(line.Operand))
                 return 1;
 
-            if (line.Operand[0] == '#')
+            if (line.Operand[0] == '#' && !line.Instruction.Equals("tst", Assembler.Options.StringComparison))
+            {
+                if (_m16 && line.Instruction.EndsWith("a", Assembler.Options.StringComparison))
+                    return 3;
+                if (_x16 && (line.Instruction.EndsWith("x", Assembler.Options.StringComparison) ||
+                             line.Instruction.EndsWith("y", Assembler.Options.StringComparison)))
+                    return 3;
                 return 2;
+            }
 
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
                 return 2 * line.Operand.CommaSeparate().Count;
@@ -756,16 +717,20 @@ namespace Asm6502.Net
             if (Reserved.IsOneOf("MoveMemory", line.Instruction))
                 return 3;
 
+            if (Reserved.IsOneOf("MoveMemory16", line.Instruction))
+                return 7;
+
             // not perfect, but again we are just getting most approximate...
-            if (line.Operand[0] == '(' && 
+            if (line.Operand[0] == '(' &&
                 (line.Operand.EndsWith("),y", Assembler.Options.StringComparison) ||
-                line.Operand.EndsWith(",x)", Assembler.Options.StringComparison)))
+                line.Operand.EndsWith(",x)", Assembler.Options.StringComparison) ||
+                line.Operand.EndsWith("),z", Assembler.Options.StringComparison)))
                 return 2;
 
             try
             {
                 // oh well, now we have to try to parse
-                var formatOpcode = GetFormatAndOpcode(line);
+                var formatOpcode = ParseToInstruction(line);
                 if (formatOpcode.instruction != null)
                     return formatOpcode.instruction.Size;
                 return 0;
@@ -780,12 +745,6 @@ namespace Asm6502.Net
                     => Reserved.IsReserved(instruction);
 
         #endregion
-
-        #endregion
-
-        #region Properties
-
-        bool CpuIs65C02 => _cpu.Equals("65816") || _cpu.Equals("65CE02") || _cpu.Equals("R65C02") || _cpu.Equals("65C02");
 
         #endregion
     }

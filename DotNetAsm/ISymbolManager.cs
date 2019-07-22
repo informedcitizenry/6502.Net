@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 
 namespace DotNetAsm
@@ -35,15 +34,24 @@ namespace DotNetAsm
         void AddAnonymousLine(SourceLine line);
 
         /// <summary>
-        /// Translates the symbols in expression strings to values.
+        /// Translates all special symbols in the expression into a 
+        /// <see cref="System.Collections.Generic.List{DotNetAsm.ExpressionElement}"/>
+        /// for use by the evualator.
         /// </summary>
-        /// <returns>The translated expression.</returns>
-        /// <param name="line">The <see cref="DotNetAsm.SourceLine"/> the expression
-        /// appears in. This is needed for scoping purposes.</param>
-        /// <param name="expression">The expression string.</param>
-        /// <param name="scope">Scope information about the current expression.</param>
-        /// <param name="errorOnNotFound">Raise an error if the symbol could
-        /// not be translated.</param>
+        /// <returns>The expression symbols.</returns>
+        /// <param name="line">The current source line.</param>
+        /// <param name="expression">The expression to evaluate.</param>
+        /// <param name="scope">The current scope.</param>
+        /// <param name="errorOnNotFound">If set to <c>true</c> raise an error 
+        /// if a symbol encountered in the expression was not found.</param>
         List<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnNotFound);
+
+        /// <summary>
+        /// Returns a flag indicating whether the symbol is defined in any of the 
+        /// symbol manager's collections.
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <returns>True, if the symbol is a defined label or variable, otherwise false.</returns>
+        bool IsSymbol(string symbol);
     }
 }

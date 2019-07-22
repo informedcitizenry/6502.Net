@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace DotNetAsm
 {
     /// <summary>
@@ -35,19 +37,37 @@ namespace DotNetAsm
     /// </summary>
     public class OperandFormat
     {
+        #region Constructors
+
+        /// <summary>
+        /// Constructs a new OperandFormat instance
+        /// </summary>
+        public OperandFormat()
+        {
+            FormatString = string.Empty;
+            Evaluations = new List<long>();
+            EvaluationSizes = new List<int>();
+        }
+
+        #endregion
+
+        #region Properties
+
         /// <summary>
         /// The format string of the operand
         /// </summary>
         public string FormatString;
 
         /// <summary>
-        /// The first captured evaluated expression.
+        /// The captured evaluations
         /// </summary>
-        public long Eval1 { get; set; }
+        public List<long> Evaluations { get; set; }
 
         /// <summary>
-        /// The second captured evaluated expression.
+        /// The captured evaluation sizes
         /// </summary>
-        public long Eval2 { get; set; }
+        public List<int> EvaluationSizes { get; set; }
+
+        #endregion
     }
 }

@@ -28,7 +28,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs a <see cref="T:DotNetAsm.StringAssemblerBase"/> class.
         /// </summary>
-        protected StringAssemblerBase() 
+        protected StringAssemblerBase()
         {
             Reserved.DefineType("Directives",
                     ".cstring", ".lsstring", ".nstring", ".pstring", ".string"

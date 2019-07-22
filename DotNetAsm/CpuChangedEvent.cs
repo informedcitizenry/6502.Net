@@ -20,5 +20,5 @@ namespace DotNetAsm
     /// <summary>
     /// CPU change event handler delegate
     /// </summary>
-    public delegate void CpuChangeEventHandler(CpuChangedEventArgs args);
+    public delegate void CpuChangeEventHandler(object sender, CpuChangedEventArgs args);
 }

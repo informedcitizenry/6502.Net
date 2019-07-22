@@ -32,7 +32,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual(3, result);
 
             result = eval.Eval("3-(-4)");
-            Assert.AreEqual(3-(-4), result);
+            Assert.AreEqual(3 - (-4), result);
 
             result = eval.Eval("(2 << 4) << 1");
             Assert.AreEqual((2 << 4) << 1, result);
@@ -65,7 +65,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual((long)(Math.Pow(2, 4) + Math.Pow(2, 6)), result);
 
             result = eval.Eval("pow(pow(2,1),pow(2,2))+pow((3+1)*2,abs(-3)-1)");
-            var result2 = Math.Pow(Math.Pow(2, 1), Math.Pow(2, 2)) + Math.Pow((3+1)*2, Math.Abs(-3)-1);
+            var result2 = Math.Pow(Math.Pow(2, 1), Math.Pow(2, 2)) + Math.Pow((3 + 1) * 2, Math.Abs(-3) - 1);
             Assert.AreEqual((long)result2, result);
         }
 
@@ -126,7 +126,7 @@ namespace NUnit.Tests.TestDotNetAsm
             var tan = evaluator.Eval("tan(444.0)*5.0");
             var tanh = evaluator.Eval("tanh(0.0)");
 
-            
+
             Assert.AreEqual((long)Math.Abs(-2234), abs);
             Assert.AreEqual((long)Math.Acos(1.0), acos);
             Assert.AreEqual((long)Math.Atan(0.0), atan);

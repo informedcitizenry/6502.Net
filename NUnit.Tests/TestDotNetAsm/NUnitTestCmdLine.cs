@@ -1,5 +1,5 @@
-﻿using NUnit.Framework;
-using DotNetAsm;
+﻿using DotNetAsm;
+using NUnit.Framework;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
@@ -35,7 +35,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void FlagOptionTest()
         {
-            string[] args = 
+            string[] args =
             {
                 "-b",
                 "--quiet"
@@ -51,7 +51,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void OneArgumentTest()
         {
-            string[] args = 
+            string[] args =
             {
                 "test.a65",
                 "-o",
@@ -69,7 +69,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void MultipleArgumentTest()
         {
-            string[] args = 
+            string[] args =
             {
                 "test1.a65",
                 "test2.a65",
@@ -92,7 +92,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void MultipleOptionTest()
         {
-            string[] args = 
+            string[] args =
             {
                 "library.a65",
                 "game.a65",

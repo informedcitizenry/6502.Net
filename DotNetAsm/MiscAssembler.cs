@@ -22,9 +22,9 @@ namespace DotNetAsm
         /// </summary>
         public MiscAssembler()
         {
-            Reserved.DefineType("Directives", 
+            Reserved.DefineType("Directives",
                     "assert", ".eor", ".echo", ".target",
-                    ".error", ".errorif", 
+                    ".error", ".errorif",
                     ".warnif", ".warn"
                 );
         }
@@ -62,7 +62,7 @@ namespace DotNetAsm
             }
             var eor = Assembler.Evaluator.Eval(line.Operand, sbyte.MinValue, byte.MaxValue);
             var eor_b = Convert.ToByte(eor);
-            Assembler.Output.Transforms.Push(delegate(byte b)
+            Assembler.Output.Transforms.Push(delegate (byte b)
             {
                 b ^= eor_b;
                 return b;
@@ -110,8 +110,8 @@ namespace DotNetAsm
         {
             if (!operand.EnclosedInQuotes())
             {
-                operand = StringAssemblerBase.GetFormattedString(line.Operand, 
-                                                                 Assembler.Options.StringComparison, 
+                operand = StringAssemblerBase.GetFormattedString(line.Operand,
+                                                                 Assembler.Options.StringComparison,
                                                                  Assembler.Evaluator);
                 if (string.IsNullOrEmpty(operand))
                     Assembler.Log.LogEntry(line, ErrorStrings.QuoteStringNotEnclosed);

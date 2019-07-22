@@ -70,13 +70,13 @@ namespace DotNetAsm
                 return string.Format("Do Not Assemble {0}", SourceString);
 
             if (IsParsed)
-            return string.Format("Line {0} ${1:X4} [ID={2}] L:{3} I:{4} O:{5}",
-                                                        LineNumber
-                                                      , PC
-                                                      , Id
-                                                      , Label.Substring(0,30)
-                                                      , Instruction
-                                                      , Operand.Substring(0,30));
+                return string.Format("Line {0} ${1:X4} [ID={2}] L:{3} I:{4} O:{5}",
+                                                            LineNumber
+                                                          , PC
+                                                          , Id
+                                                          , Label.Substring(0, 30)
+                                                          , Instruction
+                                                          , Operand.Substring(0, 30));
             return string.Format("Line {0} ${1:X4} [ID={2}] {3}",
                                                         LineNumber
                                                       , PC
@@ -84,12 +84,12 @@ namespace DotNetAsm
                                                       , SourceString);
         }
 
-        public override int GetHashCode() => LineNumber.GetHashCode() | 
+        public override int GetHashCode() => LineNumber.GetHashCode() |
                                              Filename.GetHashCode() |
                                              SourceString.GetHashCode();
 
         public override bool Equals(object obj)
-                => obj != null && 
+                => obj != null &&
                    (ReferenceEquals(this, obj) ||
                     (obj is SourceLine && this.Equals((SourceLine)obj)));
 
@@ -97,7 +97,7 @@ namespace DotNetAsm
 
         #region IEquatable
 
-        public bool Equals(SourceLine other) => 
+        public bool Equals(SourceLine other) =>
                     other.LineNumber == LineNumber &&
                     other.Filename.Equals(Filename) &&
                     other.SourceString.Equals(SourceString);

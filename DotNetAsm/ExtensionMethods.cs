@@ -63,6 +63,17 @@ namespace DotNetAsm
 
     public static class StringExtensions
     {
+        public enum EnclosureType
+        {
+            Quote = 0,
+            SingleQuote,
+            Parenthesis,
+            BracketParenthesis
+        }
+
+        static readonly string OPEN_PARENS = "([";
+        static readonly string CLOSE_PARENS = ")]";
+
         /// <summary>
         /// String to split by into substrings by length.
         /// </summary>
@@ -101,36 +112,100 @@ namespace DotNetAsm
         /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInQuotes(this string str)
         {
-            if (string.IsNullOrEmpty(str) || (str[0] != '\'' && str[0] != '"'))
-                return false;
-
-            char enclosure = char.MinValue;
-            for (int i = 0; i < str.Length; i++)
+            var lastStrIx = str.Length - 1;
+            if (lastStrIx >= 1 && (str[0] == '\'' || str[0] == '"') && str[0] == str[lastStrIx])
             {
-                char c = str[i];
-                if (enclosure != char.MinValue || c == '\'' || c == '"')
+                char closure = str[0];
+                for (int i = 1; i <= lastStrIx; i++)
                 {
-                    if (enclosure == c)
-                        return i == str.Length - 1;
-
-                    if (enclosure == char.MinValue)
-                    {
-                        enclosure = c;
-                    }
+                    char c = str[i];
+                    if (c == closure)
+                        return i == lastStrIx;
                     else if (c == '\\')
-                    {
-                        if (i >= str.Length - 2)
-                            return false;
-                        if (str[i + 1] == 'u')
-                            i += 5;
-                        else if (str[i + 1] == 'x')
-                            i += 3;
-                        else
-                            i++;
-                    }
+                        i++;
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Retrieve a substring within the string enclosed in the specified enclosure type, such as
+        /// brackets, or double-quotes
+        /// </summary>
+        /// <param name="str">This string.</param>
+        /// <param name="type">The <see cref="{DotNetAsm.StringExtensions.EnclosureType"/>.</param>
+        /// <param name="includeClosure">Include the closure in the resulting substring.</param>
+        /// <param name="allowEscape">Allow the substring to escape the enclosure, so it will not be
+        /// evaluated as an enclosure.</param>
+        /// <param name="doNotUnescape">Do not unescape the escaped enclosure in the final substring.</param>
+        /// <returns>The substring containing the enclosure, or an empty string if no enclosure is
+        /// found in the string.</returns>
+        /// <exception cref="{System.Exception"}/>
+        public static string GetEnclosure(this string str, EnclosureType type, bool includeClosure, bool allowEscape, bool doNotUnescape = true)
+        {
+            int closureIx = -1;
+            string open = string.Empty, close = string.Empty;
+            switch (type)
+            {
+                case EnclosureType.Quote:
+                    open = "\"'";
+                    close = "\"'";
+                    break;
+                case EnclosureType.SingleQuote:
+                    open = "'";
+                    close = "'";
+                    break;
+                case EnclosureType.Parenthesis:
+                    open = OPEN_PARENS;
+                    close = CLOSE_PARENS;
+                    break;
+                case EnclosureType.BracketParenthesis:
+                    open = "[";
+                    close = "]";
+                    break;
+            }
+            var enclosureBuilder = new StringBuilder();
+            for (var i = 0; i < str.Length; i++)
+            {
+                var c = str[i];
+                if (closureIx > -1)
+                {
+                    if (allowEscape && c == '\\')
+                    {
+                        if (i >= str.Length - 2)
+                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+                        int escLen = 2;
+                        if (str[i + 1] == 'u')
+                            escLen = 6;
+                        else if (str[i + 1] == 'x')
+                            escLen = 4;
+                        if (doNotUnescape)
+                            enclosureBuilder.Append(str.Substring(i, escLen));
+                        else
+                            enclosureBuilder.Append(Regex.Unescape(str.Substring(i, escLen)));
+                        i += escLen - 1;
+                    }
+                    else
+                    {
+                        if (c == close[closureIx])
+                        {
+                            if (includeClosure)
+                                enclosureBuilder.Append(c);
+                            return enclosureBuilder.ToString();
+                        }
+                        enclosureBuilder.Append(c);
+                    }
+                }
+                else
+                {
+                    closureIx = open.IndexOf(c);
+                    if (closureIx > -1 && includeClosure)
+                        enclosureBuilder.Append(c);
+                }
+            }
+            if (closureIx > -1)
+                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
+            return string.Empty;
         }
 
         /// <summary>
@@ -173,68 +248,24 @@ namespace DotNetAsm
         }
 
         /// <summary>
-        /// Capture and return the first parenthetical group in the string.
+        /// Gets the next parenthetical group in the string.
         /// </summary>
-        /// <param name="str">The string to evaluate</param>
-        /// <returns>The first instance of a parenthetical group.</returns>
+        /// <param name="str">The string to evaluate.</param>
+        /// <returns>The first instance of a parenthetical group, or the whole string.</returns>
         /// <exception cref="T:System.FormatException"></exception>
-        public static string FirstParenEnclosure(this string str)
-        {
-            return FirstParenEnclosure(str, false);
-        }
+        public static string GetNextParenEnclosure(this string str) =>
+            str.GetEnclosure(type: EnclosureType.Parenthesis, includeClosure: true, allowEscape: false);
 
         /// <summary>
-        /// Capture and return the first parenthetical group in the string.
+        /// Gets the next parenthetical group in the string.
         /// </summary>
-        /// <returns>The first instance of a parenthetical group.</returns>
-        /// <param name="str">The string to evaluate..</param>
-        /// <param name="useBracket">If set to <c>true</c> consider square brackets.
-        /// as open and close parentheses.</param>
-        public static string FirstParenEnclosure(this string str, bool useBracket)
-        {
-            char open = '(', closure = ')';
-            if (useBracket)
-            {
-                open = '[';
-                closure = ']';
-            }
-            if (str.Contains(open.ToString()) || str.Contains(closure.ToString()))
-            {
-                if (str.Length < 3)
-                    throw new ExpressionException(str);
-                var num_parens = 0;
-                var parengroup = new StringBuilder();
-                for (int i = 0; i < str.Length; i++)
-                {
-                    var c = str[i];
-                    if (c == '"' || c == '\'')
-                    {
-                        var quoted = str.GetNextQuotedString(atIndex: i, doNotUnescape: true);
-                        var quotedEndIx = quoted.Length + 2;
-                        if (num_parens >= 1)
-                            parengroup.Append(str.Substring(i, quotedEndIx));
-                        i += quotedEndIx - 1;
-                        continue;
-                    }
-                    if (num_parens >= 1 || c == open)
-                        parengroup.Append(c);
+        /// <returns>The first instance of a parenthetical group, or the whole string.</returns>
+        /// <param name="str">The string to evaluate.</param>
+        /// <param name="atIndex">The index at which to search the string.</param>
+        /// <exception cref="T:System.FormatException"></exception>
+        public static string GetNextParenEnclosure(this string str, int atIndex) =>
+            str.Substring(atIndex).GetNextParenEnclosure();
 
-                    if (c == open)
-                    {
-                        num_parens++;
-                    }
-                    else if (c == closure)
-                    {
-                        num_parens--;
-                        if (num_parens == 0)
-                            return parengroup.ToString();
-                    }
-                }
-                if (num_parens != 0)
-                    throw new FormatException();
-            }
-            return str;
-        }
         /// <summary>
         /// Gets the next double- or single-quoted string within the string.
         /// </summary>
@@ -273,71 +304,10 @@ namespace DotNetAsm
         /// <exception cref="T:System.Exception"></exception>
         public static string GetNextQuotedString(this string str, int atIndex, bool doNotUnescape)
         {
-            var quoted = new StringBuilder();
-            var enclosestring = char.MinValue;
-            int stringsize = 0;
-
-            for (int i = atIndex; i < str.Length; i++)
-            {
-                var c = str[i];
-                if (!enclosestring.Equals(char.MinValue) || c == '\'' || c == '"')
-                {
-                    if (c.Equals('\'') || c.Equals('"'))
-                    {
-                        if (enclosestring.Equals(char.MinValue))
-                        {
-                            enclosestring = c;
-                        }
-                        else if (enclosestring.Equals(c))
-                        {
-                            if (enclosestring.Equals('\'') && stringsize > 1)
-                                throw new Exception(ErrorStrings.TooManyCharacters);
-                            enclosestring = char.MinValue;
-                            break;
-                        }
-                        else
-                        {
-                            quoted.Append(c);
-                        }
-                    }
-                    else if (c.Equals('\\'))
-                    {
-                        // escape cannot be the last char in the string
-                        if (++i == str.Length - 1)
-                            throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-                        var escIx = i - 1;
-                        var escLen = 2;
-                        c = str[i];
-                        if (c.Equals('u') || c.Equals('x'))
-                        {
-                            var m = Regex.Match(str.Substring(i), @"^(u[a-fA-F0-9]{4}|x[a-fA-F0-9]{2})");
-                            if (!string.IsNullOrEmpty(m.Value))
-                            {
-                                escLen = m.Value.Length + 1;
-                                i += escLen - 2;
-                            }
-                        }
-                        if (doNotUnescape)
-                        {
-                            quoted.Append(str.Substring(escIx, escLen));
-                        }
-                        else
-                        {
-                            var unescaped = Regex.Unescape(str.Substring(escIx, escLen));
-                            quoted.Append(unescaped);
-                        }
-                        stringsize++;
-                    }
-                    else
-                    {
-                        quoted.Append(c);
-                        stringsize++;
-                    }
-                }
-            }
-            if (!enclosestring.Equals(char.MinValue))
-                throw new Exception(ErrorStrings.QuoteStringNotEnclosed);
-            return quoted.ToString();
+            return str.Substring(atIndex).GetEnclosure(type: EnclosureType.Quote,
+                                                       includeClosure: false,
+                                                       allowEscape: true,
+                                                       doNotUnescape: doNotUnescape);
         }
 
         /// <summary>
@@ -347,18 +317,7 @@ namespace DotNetAsm
         /// <param name="str">The string to evaluate.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
         /// <exception cref="T:System.Exception"></exception>
-        public static List<string> CommaSeparate(this string str) => CommaSeparate(str, '(', ')');
-
-        /// <summary>
-        /// Does a comma-separated-value analysis on the <see cref="T:DotNetAsm.SourceLine"/>'s operand
-        /// and returns the individual value as a <see cref="T:System.Collections.Generic.List&lt;string&gt;"/>.
-        /// </summary>
-        /// <returns>A <see cref="T:System.Collections.Generic.List&lt;string&gt;"/> of the values.</returns>
-        /// <param name="str">The string to evaluate.</param>
-        /// <param name="open">Open paranethesis character.</param>
-        /// <param name="closure">Close paranthesis character.</param>
-        /// <remarks>All commas inside paranetheses will be skipped.</remarks>
-        public static List<string> CommaSeparate(this string str, char open, char closure)
+        public static List<string> CommaSeparate(this string str)
         {
             var csv = new List<string>();
 
@@ -368,7 +327,6 @@ namespace DotNetAsm
             if (!str.Contains(","))
                 return new List<string> { str };
 
-            var num_parens = 0;
             var sb = new StringBuilder();
 
             for (int i = 0; i < str.Length; i++)
@@ -380,39 +338,25 @@ namespace DotNetAsm
                     var quotedEndIx = quoted.Length + 2;
                     sb.Append(str.Substring(i, quotedEndIx));
                     i += quotedEndIx - 1;
-                    if (i >= str.Length - 1)
-                        csv.Add(sb.ToString().Trim());
                 }
-                else if (num_parens > 0)
+                else if (c == '(' || c == '[')
                 {
-                    sb.Append(c);
-                    if (c == closure)
-                    {
-                        num_parens--;
-                        if (i == str.Length - 1)
-                            csv.Add(sb.ToString().Trim());
-                    }
+                    var parenClosure = str.GetNextParenEnclosure(atIndex: i);
+                    sb.Append(parenClosure);
+                    i += parenClosure.Length - 1;
+                }
+                else if (c == ',')
+                {
+                    csv.Add(sb.ToString().Trim());
+                    sb.Clear();
                 }
                 else
                 {
-                    if (c == open)
-                    {
-                        num_parens++;
-                    }
-                    else if (c == ',')
-                    {
-                        csv.Add(sb.ToString().Trim());
-                        sb.Clear();
-                        continue;
-                    }
                     sb.Append(c);
-                    if (i == str.Length - 1)
-                        csv.Add(sb.ToString().Trim());
                 }
             }
-            if (num_parens != 0)
-                throw new Exception(ErrorStrings.None);
-
+            if (sb.Length > 0)
+                csv.Add(sb.ToString().Trim());
             if (str.Last().Equals(','))
                 csv.Add(string.Empty);
             return csv;
@@ -451,7 +395,7 @@ namespace DotNetAsm
         {
             if (value < 0)
                 value = (~value) << 1;
-            
+
             if ((value & 0xFFFFFF00) == 0) return 1;
             if ((value & 0xFFFF0000) == 0) return 2;
             if ((value & 0xFF000000) == 0) return 3;

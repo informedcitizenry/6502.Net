@@ -99,7 +99,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        string GetHelpText() => 
+        string GetHelpText() =>
             string.Format(_helpString, Assembly.GetEntryAssembly().GetName().Name);
 
         /// <summary>
@@ -402,8 +402,8 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the System.StringComparer, which is based on the case-sensitive flag.
         /// </summary>
-        public StringComparer StringComparar => _caseSensitive ? 
-                    StringComparer.Ordinal : 
+        public StringComparer StringComparar => _caseSensitive ?
+                    StringComparer.Ordinal :
                     StringComparer.OrdinalIgnoreCase;
 
         /// <summary>

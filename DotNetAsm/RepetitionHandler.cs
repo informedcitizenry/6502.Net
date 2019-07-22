@@ -96,7 +96,7 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of a <see cref="T:DotNetAsm.RepetitionHandler"/> object.
         /// </summary>
-        public RepetitionHandler() 
+        public RepetitionHandler()
         {
             Reserved.DefineType("Directives", ".repeat", ".endrepeat");
 

@@ -7,7 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace DotNetAsm
 {
@@ -115,7 +114,7 @@ namespace DotNetAsm
         /// <see cref="T:DotNetAsm.ReservedWords"/> collection. Setting this value
         /// will clear the collection values.
         /// </summary>
-        public StringComparer Comparer 
+        public StringComparer Comparer
         {
             set
             {

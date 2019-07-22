@@ -36,7 +36,7 @@ namespace DotNetAsm
         /// an instruction.</param>
         /// <param name="reservedSymbolFunc">A function callback to determine if the given token 
         /// is a symbol name.</param>
-        public PseudoAssembler(Func<string, bool> isInstructionFunc, Func<string, bool> reservedSymbolFunc) 
+        public PseudoAssembler(Func<string, bool> isInstructionFunc, Func<string, bool> reservedSymbolFunc)
         {
             _includedBinaries = new HashSet<BinaryFile>();
 

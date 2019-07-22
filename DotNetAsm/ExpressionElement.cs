@@ -24,7 +24,7 @@ namespace DotNetAsm
             Group = 0,
             Operand,
             Function,
-            Operator          
+            Operator
         };
 
         /// <summary>
@@ -83,16 +83,16 @@ namespace DotNetAsm
 
         public override bool Equals(object obj) => obj is ExpressionElement && this == (ExpressionElement)obj;
 
-        public override int GetHashCode() => word.GetHashCode() | 
-                                             type.GetHashCode() | 
+        public override int GetHashCode() => word.GetHashCode() |
+                                             type.GetHashCode() |
                                              subType.GetHashCode();
 
-        public static bool operator ==(ExpressionElement lhs, ExpressionElement rhs) 
+        public static bool operator ==(ExpressionElement lhs, ExpressionElement rhs)
                                         => lhs.word.Equals(rhs.word) &&
                                            lhs.type == rhs.type &&
                                            lhs.subType == rhs.subType;
 
-        public static bool operator !=(ExpressionElement lhs, ExpressionElement rhs) 
+        public static bool operator !=(ExpressionElement lhs, ExpressionElement rhs)
                                         => !lhs.word.Equals(rhs.word) ||
                                             lhs.type != rhs.type ||
                                             lhs.subType != rhs.subType;

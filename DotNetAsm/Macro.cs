@@ -357,7 +357,7 @@ namespace DotNetAsm
         /// <param name="token">The token to check</param>
         /// <returns><c>True</c> if the token is a valid macro name,
         /// otherwise<c>false</c>.</returns>
-        public static bool IsValidMacroName(string token) => 
+        public static bool IsValidMacroName(string token) =>
             Regex.IsMatch(token, "^\\.?" + Patterns.SymbolUnicodeNoLeadingUnderscore + "$");
 
         #endregion

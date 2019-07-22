@@ -9,7 +9,7 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     class TestController : IAssemblyController
     {
-        public TestController() 
+        public TestController()
         {
 
         }
@@ -51,7 +51,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void AssembleLine(SourceLine line)
         {
             if (line.Instruction.Equals(".cpu", StringComparison.Ordinal))
-                CpuChanged?.Invoke(new CpuChangedEventArgs { Line = new SourceLine { Operand = line.Operand } });
+                CpuChanged?.Invoke(this, new CpuChangedEventArgs { Line = new SourceLine { Operand = line.Operand } });
         }
 
         public ILineDisassembler Disassembler { get; set; }
@@ -270,8 +270,8 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestFormatFunction()
         {
-            var testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)", 
-                                                                    Assembler.Options.StringComparison, 
+            var testformat = StringAssemblerBase.GetFormattedString("format(\"{0}={1:X2}\", \"TEST\", 2)",
+                                                                    Assembler.Options.StringComparison,
                                                                     Assembler.Evaluator);
             Assert.AreEqual("TEST=02", testformat);
 
@@ -440,7 +440,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "$10, $ea";
             TestInstruction(line, 0x0010, 10, new byte[] { 0xea, 0xea, 0xea, 0xea, 0xea,
                                                            0xea, 0xea, 0xea, 0xea, 0xea});
-            
+
             line.Operand = string.Empty;
             TestForFailure<InvalidOperationException>(line);
 

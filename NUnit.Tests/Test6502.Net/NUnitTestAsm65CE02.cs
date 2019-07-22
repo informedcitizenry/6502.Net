@@ -1,6 +1,5 @@
 ﻿using DotNetAsm;
 using NUnit.Framework;
-using System;
 namespace NUnit.Tests.Test6502.Net
 {
     [TestFixture]
@@ -26,7 +25,7 @@ namespace NUnit.Tests.Test6502.Net
             TestInstruction(line, 0x0003, new byte[] { opcode, 0xfd, 0xbf }, mnemonic + " " + line.Operand);
 
             line.Operand = "$10000";
-            TestForFailure<OverflowException>(line);
+            TestForFailure(line);
 
             opcode -= 3;
             base.TestRelativeBranch(mnemonic, opcode, false);

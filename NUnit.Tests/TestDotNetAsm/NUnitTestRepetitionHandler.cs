@@ -21,7 +21,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             var handler = new RepetitionHandler();
 
-            foreach(SourceLine line in source)
+            foreach (SourceLine line in source)
             {
                 handler.Process(line);
             }
@@ -47,8 +47,8 @@ namespace NUnit.Tests.TestDotNetAsm
 
             var processed = new List<SourceLine>();
             var handler = new RepetitionHandler();
-            
-            foreach(SourceLine line in source)
+
+            foreach (SourceLine line in source)
             {
                 if (handler.Processes(line.Instruction) || handler.IsProcessing())
                 {
@@ -72,7 +72,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestNestedRepititions()
         {
             var source = new List<SourceLine>();
-            
+
             source.Add(new SourceLine { Instruction = ".repeat", Operand = "2" });
             source.Add(new SourceLine { Instruction = "jsr", Operand = "$ffd2 " });
             source.Add(new SourceLine { Instruction = "tax" });

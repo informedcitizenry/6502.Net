@@ -41,7 +41,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             expression = "'E' + 2";
             Assert.AreEqual(71, Assembler.Evaluator.Eval(expression));
-            
+
             expression = "(+) * (++)";
             Assert.AreEqual(1, Assembler.Evaluator.Eval(expression));
 

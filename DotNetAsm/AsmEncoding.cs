@@ -333,7 +333,7 @@ namespace DotNetAsm
             while (i < byteCount)
             {
                 int displ = 0;
-                int encoding = 0; 
+                int encoding = 0;
                 if (i + 3 + byteIndex < byteCount)
                 {
                     encoding = bytes[i + byteIndex] |

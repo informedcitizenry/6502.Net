@@ -132,9 +132,9 @@ namespace DotNetAsm
             if (line.Instruction.EndsWith("if", Assembler.Options.StringComparison))
                 _doNotAsm = !Assembler.Evaluator.EvalCondition(line.Operand);
             else if (line.Instruction.EndsWith("ifdef", Assembler.Options.StringComparison))
-                _doNotAsm = !(Assembler.Symbols.Labels.IsSymbol(line.Operand) || Assembler.Symbols.Variables.IsSymbol(line.Operand));
+                _doNotAsm = !Assembler.Symbols.IsSymbol(line.Operand);
             else if (line.Instruction.EndsWith("ifndef", Assembler.Options.StringComparison))
-                _doNotAsm = Assembler.Symbols.Labels.IsSymbol(line.Operand) || Assembler.Symbols.Variables.IsSymbol(line.Operand);
+                _doNotAsm = Assembler.Symbols.IsSymbol(line.Operand);
         }
 
         public void Reset()

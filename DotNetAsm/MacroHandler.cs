@@ -65,7 +65,7 @@ namespace DotNetAsm
                 else
                 {
                     // We are consuming source after an undefined .dsegment
-                    _expandedSource.Add(line); 
+                    _expandedSource.Add(line);
 
                 }
                 return;
@@ -103,7 +103,7 @@ namespace DotNetAsm
             }
             else if (instruction.Equals(".endmacro") || instruction.Equals(".endsegment"))
             {
-                var def = instruction.Replace("end",string.Empty);
+                var def = instruction.Replace("end", string.Empty);
                 var name = "." + _definitions.Peek().Label;
                 if (!_definitions.Peek().Instruction.Equals(def, Assembler.Options.StringComparison))
                 {
@@ -128,7 +128,7 @@ namespace DotNetAsm
                                              ConstStrings.CLOSE_SCOPE);
                 if (def.Equals(".segment"))
                 {
-                    while(_declarations.Any(l => l.Operand.Equals(name, Assembler.Options.StringComparison)))
+                    while (_declarations.Any(l => l.Operand.Equals(name, Assembler.Options.StringComparison)))
                     {
                         var dsegment = _declarations.Pop();
                         var segname = dsegment.Operand;

@@ -1,18 +1,9 @@
-﻿# 6502.Net, A Simple .Net-Based 6502/65C02/65CE02/W65C816S Cross-Assembler
-### Version 1.20.2
+﻿# 6502.Net, A Simple .Net-Based 65xx Cross-Assembler
+### Version 1.21
 ## Introduction
-The 6502.Net Macro Assembler is a simple cross-assembler targeting the MOS 6502, WDC 65C02, Rockwell R65C02, CSG 65CE02, WDC 65C816 and related CPU architectures. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from its successors the 65C02 and 65C816.
-
-The 6502 was a popular choice for video game system and microcomputer manufacturers in the 1970s and mid-1980s, due to its cost and efficient design. Among hobbyists and embedded systems manufacturers today it still sees its share of use. For more information, see the [wiki entry](https://en.wikipedia.org/wiki/MOS_Technology_6502) or [6502 resource page](http://6502.org) to learn more about this microprocessor.
-
-The 65C02 is an enhancement to the 6502, offering some improvements, including unconditional relative branching and a fix to the infamous "indirect jump page wrap" defect. It was notable in the market as the brains behind the Apple *II*e and Apple IIc home computers, as well as the NEC TurboGrafx-16/PC Engine game system.
-
-The Rockwell variant of the 65C02 adds extra branching instructions whose conditions are bit values of locations in zero page, as well as instructions that set or reset individual bits of zero page locations. The 65CE02 is in turn based on that CPU family, and so is an enhancement of the 65C02, and its most notable application was for the unreleased Commodore 65. This CPU adds robust support for fully relocatable code.
-
-The W65C816S (or 65816 for short), is a true successor to the 6502, a fully backward compatible 16-bit CPU. It is mostly known for powering the Apple IIgs and the Super Nintendo game console.  
+The 6502.Net Macro Assembler is a simple cross-assembler targeting several 65xx-based CPUs, including the MOS 6502, WDC 65C02, and others. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from successor CPUs, including the 65C02 and 65C816.
 ## Overview
 The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net.exe myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
-
 You can specify as many source files as assembly input as needed. For instance, `6502.Net.exe mylib.asm myprg.asm` will assemble both the `mylib.asm` and `myprgm.asm` files sequentially to output. Be aware that if both files define the same symbol an assembler error will result.
 ## General Features
 ### Assembly Statements
@@ -741,10 +732,15 @@ The R65C02 (Rockwell) extensions come with bit-condition branching and bit flipp
 ```
 bbr,bbs,rmb,smb
 ```
-The mnemonics the 65CE02 adds are:
+The mnemonics of the 65CE02, an enhanced R65C02, are:
 ```
 asr,asw,bge,blt,bsr,cle,cpz,dew,dez,inw,inz,ldz,neg,phw,
 phz,plw,plz,row,rtn,see,tab,taz,tba,tsy,tys,tza
+```
+The Hudson Soft HuC6280 is, like the 65CE02, an improved version of the Rockwell architecture, and includes:
+```
+cla,clx,cly,sax,say,set,st1,st2,sxy,tai,tam,tdd,tia,tin,
+tma,tst
 ```
 For 65816 compatibility the following mnemonics are recognized:
 ```
@@ -1939,6 +1935,7 @@ glyph             ;12345678
         <li><code>65C02</code>       - Legal 6502 and 65C02 instructions</li>
         <li><code>R65C02</code>      - Legal 6502, 65C02 and RC6502 instructions</li>
         <li><code>65CE02</code>      - Legal 6502, 65C02, RC6502 and 65CE02 instructions</li>
+		<li><code>HuC6280</code>     - Legal 6502, 65C02, RC6502 and Hudson C6280 instructions</li>
         <li><code>65816</code>       - Legal 6502, 65C02 and W65C816 instructions</li>
 </ul>
 </td></tr>

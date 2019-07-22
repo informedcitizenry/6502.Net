@@ -56,10 +56,10 @@ namespace NUnit.Tests.TestDotNetAsm
 
             int foragoodtime = 0xffd220; // for a good time jsr $ffd2
             output.Align(0x10, foragoodtime); // fill 11 bytes with 0xffd220...
-            
+
             var bytes1 = output.GetCompilation();
-            
-            var expected1 = new byte[] { 0x20, 0xd2, 0xff, 
+
+            var expected1 = new byte[] { 0x20, 0xd2, 0xff,
                                          0x20, 0xd2, 0xff,
                                          0x20, 0xd2, 0xff,
                                          0x20, 0xd2 };

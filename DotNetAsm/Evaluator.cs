@@ -17,6 +17,7 @@ namespace DotNetAsm
     /// <summary>
     /// Exception class for evaluation expressions.
     /// </summary>
+    [Serializable]
     public class ExpressionException : Exception
     {
         /// <summary>
@@ -51,7 +52,7 @@ namespace DotNetAsm
         Func<string, List<ExpressionElement>> _parsingFunc;
 
         #region Static Members
-        
+
         static Random _rng = new Random();
 
         static Dictionary<string, OperationDef> _functions;
@@ -183,10 +184,10 @@ namespace DotNetAsm
 
         #region Constructors
 
-        public Evaluator() 
+        public Evaluator()
             : this(false)
         {
-            
+
         }
 
         /// <summary>
@@ -488,10 +489,10 @@ namespace DotNetAsm
                     operation = _operators[op];
                     if (op.subType == ExpressionElement.Subtype.Binary)
                         parms.Add(result.Pop());
-                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Boolean 
+                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Boolean
                         && parms.Any(p => !(p.AlmostEquals(1) || p.AlmostEquals(0))))
                         throw new Exception();
-                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Integral 
+                    if (op.arithmeticType == ExpressionElement.ArithmeticType.Integral
                         && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
                         throw new Exception();
                 }
@@ -518,14 +519,14 @@ namespace DotNetAsm
 
                 if (double.IsNaN(result))
                     throw new ExpressionException(expression);
-                
+
                 return result;
             }
             catch (Exception ex)
             {
                 if (!(ex is DivideByZeroException))
                     throw new ExpressionException(expression);
-                throw ex;
+                throw;
             }
         }
 
@@ -571,7 +572,7 @@ namespace DotNetAsm
         /// variables) in expressions.
         /// </summary>
         /// <param name="parsingFunc">The parsing function to return the expression elements..</param>
-        public void DefineParser(Func<string, List<ExpressionElement>> parsingFunc) 
+        public void DefineParser(Func<string, List<ExpressionElement>> parsingFunc)
             => _parsingFunc = parsingFunc ?? throw new ArgumentNullException();
 
         #endregion

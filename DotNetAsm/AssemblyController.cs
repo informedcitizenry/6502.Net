@@ -28,6 +28,7 @@ namespace DotNetAsm
     /// <summary>
     /// Represents an error that occurs when an undefined symbol is referenced.
     /// </summary>
+    [Serializable]
     public class SymbolNotDefinedException : Exception
     {
         /// <summary>
@@ -96,7 +97,7 @@ namespace DotNetAsm
 
             Assembler.Evaluator.DefineParser(SymbolsToValues);
 
-            _localLabelScope = string.Empty; 
+            _localLabelScope = string.Empty;
 
             _assemblers = new Stack<ILineAssembler>();
             _assemblers.Push(new PseudoAssembler(IsInstruction,
@@ -234,7 +235,7 @@ namespace DotNetAsm
         void OnCpuChanged(SourceLine line)
         {
             if (CpuChanged != null)
-                CpuChanged.Invoke(new CpuChangedEventArgs { Line = line });
+                CpuChanged.Invoke(this, new CpuChangedEventArgs { Line = line });
             else
                 Assembler.Log.LogEntry(line, ErrorStrings.UnknownInstruction, line.Instruction);
         }
@@ -804,7 +805,7 @@ namespace DotNetAsm
             if (Assembler.Log.HasErrors == false)
             {
                 DoPasses(source);
-              
+
                 if (Assembler.Log.HasErrors == false)
                 {
                     SaveOutput();
