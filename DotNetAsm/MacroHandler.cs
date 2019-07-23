@@ -15,17 +15,12 @@ namespace DotNetAsm
     {
         #region Members
 
-        Dictionary<string, Macro> _macros;
-
-        List<SourceLine> _expandedSource;
-
-        Stack<List<SourceLine>> _macroDefinitions;
-
-        Func<string, bool> _instructionFcn;
-
-        Stack<SourceLine> _definitions;
-
-        Stack<SourceLine> _declarations;
+        private readonly Dictionary<string, Macro> _macros;
+        private List<SourceLine> _expandedSource;
+        private readonly Stack<List<SourceLine>> _macroDefinitions;
+        private readonly Func<string, bool> _instructionFcn;
+        private readonly Stack<SourceLine> _definitions;
+        private readonly Stack<SourceLine> _declarations;
 
         #endregion
 
@@ -44,10 +39,7 @@ namespace DotNetAsm
             _declarations = new Stack<SourceLine>();
         }
 
-        public bool Processes(string token)
-        {
-            return Reserved.IsReserved(token) || _macros.ContainsKey(token);
-        }
+        public bool Processes(string token) => Reserved.IsReserved(token) || _macros.ContainsKey(token);
 
         public void Process(SourceLine line)
         {
@@ -130,7 +122,7 @@ namespace DotNetAsm
                 {
                     while (_declarations.Any(l => l.Operand.Equals(name, Assembler.Options.StringComparison)))
                     {
-                        var dsegment = _declarations.Pop();
+                        SourceLine dsegment = _declarations.Pop();
                         var segname = dsegment.Operand;
                         var ix = _expandedSource.IndexOf(dsegment);
                         _expandedSource.RemoveAt(ix);
@@ -147,7 +139,7 @@ namespace DotNetAsm
                 }
                 if (_macros.ContainsKey(line.Operand))
                 {
-                    var seg = _macros[line.Operand];
+                    Macro seg = _macros[line.Operand];
                     _expandedSource = seg.Expand(line).ToList();
                 }
                 else
@@ -158,7 +150,7 @@ namespace DotNetAsm
             }
             else
             {
-                var macro = _macros[line.Instruction];
+                Macro macro = _macros[line.Instruction];
                 if (macro == null)
                 {
                     Assembler.Log.LogEntry(line, ErrorStrings.MissingClosureMacro, line.Instruction);

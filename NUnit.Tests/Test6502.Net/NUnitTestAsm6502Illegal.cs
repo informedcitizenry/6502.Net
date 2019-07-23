@@ -6,7 +6,7 @@ namespace NUnit.Tests.Test6502.Net
 {
     public class NUnitTestAsm6502Illegal : TestDotNetAsm.NUnitAsmTestBase
     {
-        IAssemblyController Controller;
+        private readonly IAssemblyController Controller;
 
         public NUnitTestAsm6502Illegal()
         {
@@ -14,7 +14,7 @@ namespace NUnit.Tests.Test6502.Net
             LineAssembler = new Asm6502.Net.Asm6502(Controller);
         }
 
-        void SetCpu(string cpu)
+        private void SetCpu(string cpu)
         {
             var line = new SourceLine
             {

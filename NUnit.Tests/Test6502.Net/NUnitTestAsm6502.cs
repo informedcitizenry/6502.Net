@@ -242,22 +242,13 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestBcc()
-        {
-            TestRelativeBranch("bcc", 0x90);
-        }
+        public void TestBcc() => TestRelativeBranch("bcc", 0x90);
 
         [Test]
-        public void TestBcs()
-        {
-            TestRelativeBranch("bcs", 0xb0);
-        }
+        public void TestBcs() => TestRelativeBranch("bcs", 0xb0);
 
         [Test]
-        public void TestBeq()
-        {
-            TestRelativeBranch("beq", 0xf0);
-        }
+        public void TestBeq() => TestRelativeBranch("beq", 0xf0);
 
         [Test]
         public void TestBit()
@@ -293,64 +284,34 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestBmi()
-        {
-            TestRelativeBranch("bmi", 0x30);
-        }
+        public void TestBmi() => TestRelativeBranch("bmi", 0x30);
 
         [Test]
-        public void TestBne()
-        {
-            TestRelativeBranch("bne", 0xd0);
-        }
+        public void TestBne() => TestRelativeBranch("bne", 0xd0);
 
         [Test]
-        public void TestBpl()
-        {
-            TestRelativeBranch("bpl", 0x10);
-        }
+        public void TestBpl() => TestRelativeBranch("bpl", 0x10);
 
         [Test]
-        public void TestBrk()
-        {
-            TestImplied("brk", 0x00);
-        }
+        public void TestBrk() => TestImplied("brk", 0x00);
 
         [Test]
-        public void TestBvc()
-        {
-            TestRelativeBranch("bvc", 0x50);
-        }
+        public void TestBvc() => TestRelativeBranch("bvc", 0x50);
 
         [Test]
-        public void TestBvs()
-        {
-            TestRelativeBranch("bvs", 0x70);
-        }
+        public void TestBvs() => TestRelativeBranch("bvs", 0x70);
 
         [Test]
-        public void TestClc()
-        {
-            TestImplied("clc", 0x18);
-        }
+        public void TestClc() => TestImplied("clc", 0x18);
 
         [Test]
-        public void TestCld()
-        {
-            TestImplied("cld", 0xd8);
-        }
+        public void TestCld() => TestImplied("cld", 0xd8);
 
         [Test]
-        public void TestCli()
-        {
-            TestImplied("cli", 0x58);
-        }
+        public void TestCli() => TestImplied("cli", 0x58);
 
         [Test]
-        public void TestClv()
-        {
-            TestImplied("clv", 0xb8);
-        }
+        public void TestClv() => TestImplied("clv", 0xb8);
 
         [Test]
         public void TestCmp()
@@ -503,16 +464,10 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestDex()
-        {
-            TestImplied("dex", 0xca);
-        }
+        public void TestDex() => TestImplied("dex", 0xca);
 
         [Test]
-        public void TestDey()
-        {
-            TestImplied("dey", 0x88);
-        }
+        public void TestDey() => TestImplied("dey", 0x88);
 
         [Test]
         public void TestEor()
@@ -590,16 +545,10 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestInx()
-        {
-            TestImplied("inx", 0xe8);
-        }
+        public void TestInx() => TestImplied("inx", 0xe8);
 
         [Test]
-        public void TestIny()
-        {
-            TestImplied("iny", 0xc8);
-        }
+        public void TestIny() => TestImplied("iny", 0xc8);
 
         [Test]
         public void TestJmp()
@@ -869,28 +818,16 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestPha()
-        {
-            TestImplied("pha", 0x48);
-        }
+        public void TestPha() => TestImplied("pha", 0x48);
 
         [Test]
-        public void TestPhp()
-        {
-            TestImplied("php", 0x08);
-        }
+        public void TestPhp() => TestImplied("php", 0x08);
 
         [Test]
-        public void TestPla()
-        {
-            TestImplied("pla", 0x68);
-        }
+        public void TestPla() => TestImplied("pla", 0x68);
 
         [Test]
-        public void TestPlp()
-        {
-            TestImplied("plp", 0x28);
-        }
+        public void TestPlp() => TestImplied("plp", 0x28);
 
         [Test]
         public void TestRol()
@@ -999,34 +936,19 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestRti()
-        {
-            TestImplied("rti", 0x40);
-        }
+        public void TestRti() => TestImplied("rti", 0x40);
 
         [Test]
-        public void TestRts()
-        {
-            TestImplied("rts", 0x60);
-        }
+        public void TestRts() => TestImplied("rts", 0x60);
 
         [Test]
-        public void TestSec()
-        {
-            TestImplied("sec", 0x38);
-        }
+        public void TestSec() => TestImplied("sec", 0x38);
 
         [Test]
-        public void TestSed()
-        {
-            TestImplied("sed", 0xf8);
-        }
+        public void TestSed() => TestImplied("sed", 0xf8);
 
         [Test]
-        public void TestSei()
-        {
-            TestImplied("sei", 0x78);
-        }
+        public void TestSei() => TestImplied("sei", 0x78);
 
         [Test]
         public void TestSta()
@@ -1142,40 +1064,22 @@ namespace NUnit.Tests.Test6502.Net
         }
 
         [Test]
-        public void TestTax()
-        {
-            TestImplied("tax", 0xaa);
-        }
+        public void TestTax() => TestImplied("tax", 0xaa);
 
         [Test]
-        public void TestTay()
-        {
-            TestImplied("tay", 0xa8);
-        }
+        public void TestTay() => TestImplied("tay", 0xa8);
 
         [Test]
-        public void TestTsx()
-        {
-            TestImplied("tsx", 0xba);
-        }
+        public void TestTsx() => TestImplied("tsx", 0xba);
 
         [Test]
-        public void TestTxa()
-        {
-            TestImplied("txa", 0x8a);
-        }
+        public void TestTxa() => TestImplied("txa", 0x8a);
 
         [Test]
-        public void TestTxs()
-        {
-            TestImplied("txs", 0x9a);
-        }
+        public void TestTxs() => TestImplied("txs", 0x9a);
 
         [Test]
-        public void TestTya()
-        {
-            TestImplied("tya", 0x98);
-        }
+        public void TestTya() => TestImplied("tya", 0x98);
 
         [Test]
         public void TestSyntaxErrors()
@@ -1262,13 +1166,13 @@ namespace NUnit.Tests.Test6502.Net
 
             var ascbytes = Encoding.ASCII.GetBytes(teststring.TrimOnce('"'));
             var petbytes = Encoding.ASCII.GetBytes(teststring.TrimOnce('"').ToUpper());
-            var cbmscreenbytes = petbytes.Select(b =>
+            System.Collections.Generic.IEnumerable<byte> cbmscreenbytes = petbytes.Select(b =>
             {
                 if (b >= '@' && b <= 'Z')
                     b -= 0x40;
                 return b;
             });
-            var atascreenbytes = ascbytes.Select(b =>
+            System.Collections.Generic.IEnumerable<byte> atascreenbytes = ascbytes.Select(b =>
             {
                 if (b < 96)
                     return Convert.ToByte(b - 32);

@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Linq;
 using System.Text;
 
@@ -38,9 +37,9 @@ namespace DotNetAsm
         /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <returns>A formatted representation of the filename and 
         /// line number of the source.</returns>
-        string DisassembleFileLine(SourceLine line)
+        private string DisassembleFileLine(SourceLine line)
         {
-            string lineinfo = line.Filename;
+            var lineinfo = line.Filename;
             if (string.IsNullOrEmpty(lineinfo) == false)
             {
                 if (lineinfo.Length > 14)
@@ -56,18 +55,20 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <returns>A hex representation of the source line address.</returns>
-        string DisassembleAddress(SourceLine line)
+        private string DisassembleAddress(SourceLine line)
         {
             if ((string.IsNullOrEmpty(line.Label) && (string.IsNullOrEmpty(line.Instruction) ||
                 Reserved.IsReserved(line.Instruction))) ||
                 line.DoNotAssemble)
+            {
                 return string.Empty;
+            }
 
             if (line.Instruction == "=" ||
                 line.Instruction.Equals(".let", Assembler.Options.StringComparison) ||
                 line.Instruction.Equals(".equ", Assembler.Options.StringComparison))
             {
-                Int64 value = 0;
+                long value = 0;
                 if (line.Label == "*" || Assembler.Options.NoSource)
                     return string.Empty;
                 if (line.Label == "-" || line.Label == "+")
@@ -87,7 +88,9 @@ namespace DotNetAsm
             }
             if (line.Instruction.StartsWith(".", Assembler.Options.StringComparison) &&
                     !Reserved.IsReserved(line.Instruction))
+            {
                 return $">{line.PC:x4}";
+            }
 
             return $".{line.PC:x4}";
         }
@@ -98,7 +101,7 @@ namespace DotNetAsm
         /// <param name="line">The source line</param>
         /// <returns>A string representation of the hex bytes of
         /// the source assembly.</returns>
-        string DisassembleAsm(SourceLine line, string source)
+        private string DisassembleAsm(SourceLine line, string source)
         {
             if (line.Assembly.Count == 0 || Assembler.Options.NoAssembly)
                 return string.Empty;
@@ -108,18 +111,18 @@ namespace DotNetAsm
 
             if (sb.Length > 24)
             {
-                long pc = line.PC;
+                var pc = line.PC;
 
                 var subdisasms = sb.ToString().SplitByLength(24).ToList();
                 sb.Clear();
 
-                for (int i = 0; i < subdisasms.Count; i++)
+                for (var i = 0; i < subdisasms.Count; i++)
                 {
                     sb.AppendLine($"{subdisasms[i],-29}{source,-10}".TrimEnd());
                     pc += 8;
                     if (i < subdisasms.Count - 1)
                     {
-                        string pcHex = $">{pc:x4}    ";
+                        var pcHex = $">{pc:x4}    ";
                         if (Assembler.Options.VerboseList)
                             sb.Append("                    :");
                         sb.Append(pcHex);
@@ -147,7 +150,7 @@ namespace DotNetAsm
             if (!PrintingOn || line.SourceString.Equals(ConstStrings.SHADOW_SOURCE))
                 return;
 
-            string sourcestr = line.SourceString;
+            var sourcestr = line.SourceString;
             if (!Assembler.Options.VerboseList)
             {
                 if (line.DoNotAssemble || Reserved.IsReserved(line.Instruction))

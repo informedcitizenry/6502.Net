@@ -8,7 +8,7 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     public class NUnitTestDisassembler : NUnitAsmTestBase
     {
-        IAssemblyController Controller;
+        private readonly IAssemblyController Controller;
 
         public NUnitTestDisassembler()
         {
@@ -31,7 +31,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Instruction = ".fill";
             line.Operand = "9*3,%........";
 
-            string expected =
+            var expected =
 ">093e     00 00 00 00 00 00 00 00                                 .fill 9*3,%........" + Environment.NewLine +
 ">0946     00 00 00 00 00 00 00 00" + Environment.NewLine +
 ">094e     00 00 00 00 00 00 00 00" + Environment.NewLine +

@@ -29,10 +29,7 @@ namespace DotNetAsm
         /// Constructs an instance of the ExpressionException class.
         /// </summary>
         /// <param name="expression">The expression that raises the exception.</param>
-        public ExpressionException(string expression) : base()
-        {
-            ExpressionString = expression;
-        }
+        public ExpressionException(string expression) : base() => ExpressionString = expression;
 
         /// <summary>
         /// Overrides the Exception message.
@@ -49,20 +46,17 @@ namespace DotNetAsm
     {
         #region Members
 
-        Func<string, List<ExpressionElement>> _parsingFunc;
+        private Func<string, List<ExpressionElement>> _parsingFunc;
 
         #region Static Members
 
-        static Random _rng = new Random();
-
-        static Dictionary<string, OperationDef> _functions;
-
-        static readonly HashSet<string> _compounds = new HashSet<string>
+        private static readonly Random _rng = new Random();
+        private static Dictionary<string, OperationDef> _functions;
+        private static readonly HashSet<string> _compounds = new HashSet<string>
         {
             "||", "&&", "<<", ">>", "<=", "==", ">=", "!=", "**"
         };
-
-        static readonly Dictionary<ExpressionElement, OperationDef> _operators = new Dictionary<ExpressionElement, OperationDef>
+        private static readonly Dictionary<ExpressionElement, OperationDef> _operators = new Dictionary<ExpressionElement, OperationDef>
         {
             {
                 new ExpressionElement{ word = ",",  type = ExpressionElement.Type.Operator, subType = ExpressionElement.Subtype.Binary },
@@ -246,10 +240,10 @@ namespace DotNetAsm
         public List<ExpressionElement> ParseElements(string expression)
         {
             var elements = new List<ExpressionElement>();
-            StringBuilder elementBuilder = new StringBuilder();
-            ExpressionElement currentElement = new ExpressionElement();
+            var elementBuilder = new StringBuilder();
+            var currentElement = new ExpressionElement();
 
-            for (int i = 0; i < expression.Length; i++)
+            for (var i = 0; i < expression.Length; i++)
             {
                 var c = expression[i];
                 if (char.IsWhiteSpace(c))
@@ -258,8 +252,8 @@ namespace DotNetAsm
                 }
                 else if (c.IsOperator() || c == ',')
                 {
-                    char next = i < expression.Length - 1 ? expression[i + 1] : char.MinValue;
-                    bool nextIsOperand = char.IsLetterOrDigit(next) || next == '_' || next == '.' || next == '#';
+                    var next = i < expression.Length - 1 ? expression[i + 1] : char.MinValue;
+                    var nextIsOperand = char.IsLetterOrDigit(next) || next == '_' || next == '.' || next == '#';
                     if (currentElement.type != ExpressionElement.Type.Operator)
                     {
                         AddElement();
@@ -348,18 +342,18 @@ namespace DotNetAsm
             }
         }
 
-        double Calculate(List<ExpressionElement> parsedElements)
+        private double Calculate(List<ExpressionElement> parsedElements)
         {
             var operators = new Stack<ExpressionElement>();
-            Stack<double> result = new Stack<double>();
-            int openParens = 0;
+            var result = new Stack<double>();
+            var openParens = 0;
 
-            for (int i = 0; i < parsedElements.Count; i++)
+            for (var i = 0; i < parsedElements.Count; i++)
             {
-                var element = parsedElements[i];
+                ExpressionElement element = parsedElements[i];
                 if (openParens > 0)
                 {
-                    int parmsPassed = 1;
+                    var parmsPassed = 1;
                     int start = i + 1, len = 0;
                     for (i++; i < parsedElements.Count && openParens > 0; i++)
                     {
@@ -424,7 +418,7 @@ namespace DotNetAsm
                 {
                     if (operators.Count > 0)
                     {
-                        ExpressionElement topElement = new ExpressionElement();
+                        var topElement = new ExpressionElement();
                         var elemOrder = _operators[element].Item2;
                         topElement = operators.Peek();
                         while (topElement.type == ExpressionElement.Type.Function || topElement.type == ExpressionElement.Type.Operator || topElement.subType == ExpressionElement.Subtype.Open)
@@ -451,7 +445,7 @@ namespace DotNetAsm
                 {
                     if (operators.Count > 0)
                     {
-                        var topElement = operators.Peek();
+                        ExpressionElement topElement = operators.Peek();
                         while (topElement.subType != ExpressionElement.Subtype.Open)
                         {
                             operators.Pop();
@@ -473,7 +467,7 @@ namespace DotNetAsm
             void DoOperation(ExpressionElement op)
             {
                 OperationDef operation = null;
-                List<double> parms = new List<double> { result.Pop() };
+                var parms = new List<double> { result.Pop() };
                 if (op.type == ExpressionElement.Type.Function)
                 {
                     operation = _functions[op.word];
@@ -491,10 +485,15 @@ namespace DotNetAsm
                         parms.Add(result.Pop());
                     if (op.arithmeticType == ExpressionElement.ArithmeticType.Boolean
                         && parms.Any(p => !(p.AlmostEquals(1) || p.AlmostEquals(0))))
+                    {
                         throw new Exception();
+                    }
+
                     if (op.arithmeticType == ExpressionElement.ArithmeticType.Integral
                         && parms.Any(p => !p.AlmostEquals(Math.Round(p))))
+                    {
                         throw new Exception();
+                    }
                 }
                 result.Push(operation.Item1(parms));
             }
@@ -504,12 +503,12 @@ namespace DotNetAsm
         }
 
         // Evaluate internally the expression to a double.
-        double EvalInternal(string expression)
+        private double EvalInternal(string expression)
         {
             if (string.IsNullOrEmpty(expression))
                 throw new ExpressionException(expression);
 
-            var elements = _parsingFunc(expression);
+            List<ExpressionElement> elements = _parsingFunc(expression);
             try
             {
                 var result = Calculate(elements);
@@ -537,7 +536,7 @@ namespace DotNetAsm
         /// <returns>The result of the expression evaluation as a <see cref="T:System.Int64"/> value.</returns>
         /// <exception cref="T:DotNetAsm.ExpressionException">DotNetAsm.ExpressionException</exception>
         /// <exception cref="T:System.DivideByZeroException">System.DivideByZeroException</exception>
-        public long Eval(string expression) => Eval(expression, Int32.MinValue, UInt32.MaxValue);
+        public long Eval(string expression) => Eval(expression, int.MinValue, uint.MaxValue);
 
         /// <summary>
         /// Evaluates a text string as a mathematical expression.

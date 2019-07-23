@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DotNetAsm
 {
@@ -17,9 +18,8 @@ namespace DotNetAsm
     {
         #region Members
 
-        bool _doNotAssemble;
-
-        bool _comment;
+        private bool _doNotAssemble;
+        private bool _comment;
 
         #endregion
 
@@ -62,6 +62,110 @@ namespace DotNetAsm
         /// </summary>
         public void Reset() => Label = Instruction = Operand = string.Empty;
 
+        /// <summary>
+        /// Parse the line's source into respective label, instruction and operand
+        /// components.
+        /// </summary>
+        /// <param name="isInstruction">A <see cref="System.Func{string, bool}; that
+        /// checks if a given token in the source is an instruction."/></param>
+        /// <returns>An enumerator to a <see cref="System.Collections.Generic.IEnumerable{DotNetAsm.SourceLine}"/>.
+        /// The enumerator captures compound source lines.</returns>
+        public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction)
+        {
+            if (string.IsNullOrWhiteSpace(SourceString))
+                yield return null;
+            var tokenBuilder = new StringBuilder();
+            for (var j = 0; j < SourceString.Length; j++)
+            {
+                var c = SourceString[j];
+                if (string.IsNullOrEmpty(Instruction))
+                {
+                    var token = string.Empty;
+                    if (char.IsWhiteSpace(c) || j == SourceString.Length - 1 || c == '=' || c == '*' || c == ':' || c == ';')
+                    {
+                        if (!char.IsWhiteSpace(c) && c != ':' && c != ';')
+                            tokenBuilder.Append(c);
+                        token = tokenBuilder.ToString();
+                        tokenBuilder.Clear();
+                    }
+                    else
+                    {
+                        tokenBuilder.Append(c);
+                    }
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        if (isInstruction(token))
+                        {
+                            Instruction = token;
+                            if (c == ':')
+                            {
+                                if (j < SourceString.Length - 1)
+                                {
+                                    yield return new SourceLine
+                                    {
+                                        SourceString = $"\t{SourceString.Substring(j + 1)}"
+                                    };
+                                }
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrEmpty(Label))
+                            {
+                                Assembler.Log.LogEntry(this, ErrorStrings.UnknownInstruction, token);
+                                break;
+                            }
+                            Label = token;
+                        }
+                    }
+                    if (c == ';')
+                        break;
+                }
+                else
+                {
+                    if (tokenBuilder.Length > 0 || !char.IsWhiteSpace(c))
+                    {
+                        if (c == '"' || c == '\'')
+                        {
+                            // process quotes separately
+                            var quoted = SourceString.GetNextQuotedString(atIndex: j, doNotUnescape: true);
+                            var quoteEndIx = quoted.Length + 2;
+                            tokenBuilder.Append(SourceString.Substring(j, quoteEndIx));
+                            j += quoteEndIx - 1;
+                        }
+                        else if (c == ';')
+                        {
+                            j = SourceString.Length - 1;
+                        }
+                        else if (c == ':')
+                        {
+                            Operand = tokenBuilder.ToString().TrimEnd();
+                            tokenBuilder.Clear();
+                            if (j < SourceString.Length - 1)
+                            {
+                                yield return new SourceLine
+                                {
+                                    SourceString = $"\t{SourceString.Substring(j + 1)}"
+                                };
+                            }
+
+                            break;
+                        }
+                        else
+                        {
+                            tokenBuilder.Append(c);
+                        }
+                    }
+                    if (j == SourceString.Length - 1)
+                    {
+                        Operand = tokenBuilder.ToString().TrimEnd();
+                        tokenBuilder.Clear();
+                    }
+                }
+            }
+        }
+
         #region Override Methods
 
         public override string ToString()
@@ -70,6 +174,7 @@ namespace DotNetAsm
                 return string.Format("Do Not Assemble {0}", SourceString);
 
             if (IsParsed)
+            {
                 return string.Format("Line {0} ${1:X4} [ID={2}] L:{3} I:{4} O:{5}",
                                                             LineNumber
                                                           , PC
@@ -77,6 +182,8 @@ namespace DotNetAsm
                                                           , Label.Substring(0, 30)
                                                           , Instruction
                                                           , Operand.Substring(0, 30));
+            }
+
             return string.Format("Line {0} ${1:X4} [ID={2}] {3}",
                                                         LineNumber
                                                       , PC
@@ -172,7 +279,7 @@ namespace DotNetAsm
         /// </summary>
         public bool IsComment
         {
-            get { return _comment; }
+            get => _comment;
             set
             {
                 _comment = value;
@@ -183,7 +290,7 @@ namespace DotNetAsm
 
         public bool DoNotAssemble
         {
-            get { return _doNotAssemble; }
+            get => _doNotAssemble;
             set
             {
                 if (!IsComment)
@@ -210,10 +317,7 @@ namespace DotNetAsm
         /// Gets a flag indicating whether this <see cref="T:DotNetAsm.SourceLine"/> has been parsed.
         /// </summary>
         /// <value><c>true</c> if the line has been parsed; otherwise, <c>false</c>.</value>
-        public bool IsParsed
-        {
-            get => !string.IsNullOrEmpty(Label) || !string.IsNullOrEmpty(Instruction);
-        }
+        public bool IsParsed => !string.IsNullOrEmpty(Label) || !string.IsNullOrEmpty(Instruction);
 
         #endregion
     }

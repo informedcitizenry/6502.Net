@@ -7,16 +7,13 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     public class NUnitTestForNext : NUnitHandlerTestBase
     {
-        public NUnitTestForNext()
-        {
-            Handler = new ForNextHandler();
-        }
+        public NUnitTestForNext() => Handler = new ForNextHandler();
 
-        IEnumerable<SourceLine> HandleLines(List<SourceLine> unprocessed)
+        private IEnumerable<SourceLine> HandleLines(List<SourceLine> unprocessed)
         {
-            for (int i = 0; i < unprocessed.Count; i++)
+            for (var i = 0; i < unprocessed.Count; i++)
             {
-                var line = unprocessed[i];
+                SourceLine line = unprocessed[i];
                 if (Handler.Processes(line.Instruction) || Handler.IsProcessing())
                 {
                     unprocessed.RemoveAt(i--);

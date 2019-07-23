@@ -18,7 +18,7 @@ namespace DotNetAsm
     /// </summary>
     public class ErrorLog
     {
-        readonly
+        private readonly
         #region Members
 
         List<(string message, bool isError)> _errors;
@@ -114,10 +114,7 @@ namespace DotNetAsm
         /// <param name="linenumber">The source line number.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(string filename, int linenumber, string message, bool isError = true)
-        {
-            LogEntry(filename, linenumber, message, null, isError);
-        }
+        public void LogEntry(string filename, int linenumber, string message, bool isError = true) => LogEntry(filename, linenumber, message, null, isError);
 
         /// <summary>
         /// Log a message.
@@ -125,10 +122,7 @@ namespace DotNetAsm
         /// <param name="filename">The source file.</param>
         /// <param name="linenumber">The source line number.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(string filename, int linenumber, bool isError = true)
-        {
-            LogEntry(filename, linenumber, string.Empty, isError);
-        }
+        public void LogEntry(string filename, int linenumber, bool isError = true) => LogEntry(filename, linenumber, string.Empty, isError);
 
         /// <summary>
         /// Log a message.
@@ -137,10 +131,7 @@ namespace DotNetAsm
         /// <param name="message">The custom string message.</param>
         /// <param name="source">The error source.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(SourceLine line, string message, object source, bool isError = true)
-        {
-            LogEntry(line.Filename, line.LineNumber, message, source, isError);
-        }
+        public void LogEntry(SourceLine line, string message, object source, bool isError = true) => LogEntry(line.Filename, line.LineNumber, message, source, isError);
 
         /// <summary>
         /// Log a message.
@@ -148,10 +139,7 @@ namespace DotNetAsm
         /// <param name="line">The The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="isError">(Optional) indicate if the mesage is an error.</param>
-        public void LogEntry(SourceLine line, string message, bool isError = true)
-        {
-            LogEntry(line.Filename, line.LineNumber, message, null, isError);
-        }
+        public void LogEntry(SourceLine line, string message, bool isError = true) => LogEntry(line.Filename, line.LineNumber, message, null, isError);
 
         /// <summary>
         /// Log a message.

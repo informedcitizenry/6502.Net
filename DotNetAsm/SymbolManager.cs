@@ -17,13 +17,15 @@ namespace DotNetAsm
     /// </summary>
     public sealed class SymbolManager : ISymbolManager
     {
-        #region Members
 
-        Dictionary<int, SourceLine> _anonPlusLines, _anonMinusLines, _orderedMinusLines;
+        #region Members
+        private readonly Dictionary<int, SourceLine> _anonPlusLines;
+        private readonly Dictionary<int, SourceLine> _anonMinusLines;
+        private Dictionary<int, SourceLine> _orderedMinusLines;
 
         #region Static Members
 
-        static readonly Dictionary<string, double> _constants = new Dictionary<string, double>(StringComparer.Ordinal)
+        private static readonly Dictionary<string, double> _constants = new Dictionary<string, double>(StringComparer.Ordinal)
         {
             { "MATH_PI", Math.PI },
             { "MATH_E", Math.E }
@@ -59,7 +61,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        string GetNamedSymbolValue(string symbol, SourceLine line, string scope)
+        private string GetNamedSymbolValue(string symbol, SourceLine line, string scope)
         {
             if (symbol.First() == '_')
                 symbol = string.Concat(scope, symbol);
@@ -73,7 +75,7 @@ namespace DotNetAsm
 
         }
 
-        string ConvertAnonymous(string symbol, SourceLine line, bool errorOnNotFound)
+        private string ConvertAnonymous(string symbol, SourceLine line, bool errorOnNotFound)
         {
             var trimmed = symbol.Trim(new char[] { '(', ')' });
             var addr = GetFirstAnonymousLabelFrom(line, trimmed);//GetAnonymousAddress(_currentLine, trimmed);
@@ -99,12 +101,12 @@ namespace DotNetAsm
             }
         }
 
-        long GetFirstAnonymousLabelFrom(SourceLine fromLine, string direction)
+        private long GetFirstAnonymousLabelFrom(SourceLine fromLine, string direction)
         {
-            int id = fromLine.Id;
+            var id = fromLine.Id;
 
-            int count = direction.Length;
-            bool forward = direction[0] == '+';
+            var count = direction.Length;
+            var forward = direction[0] == '+';
             SourceLine found = null;
             while (count > 0)
             {
@@ -127,7 +129,9 @@ namespace DotNetAsm
                 if (string.IsNullOrEmpty(found.Scope) || found.Scope.Equals(fromLine.Scope, Assembler.Options.StringComparison) ||
                     (fromLine.Scope.Length > found.Scope.Length &&
                      found.Scope.Equals(fromLine.Scope.Substring(0, found.Scope.Length), Assembler.Options.StringComparison)))
+                {
                     count--;
+                }
 
                 id = found.Id;
             }
@@ -138,11 +142,11 @@ namespace DotNetAsm
 
         public List<ExpressionElement> TranslateExpressionSymbols(SourceLine line, string expression, string scope, bool errorOnNotFound)
         {
-            char lastTokenChar = char.MinValue;
+            var lastTokenChar = char.MinValue;
             StringBuilder translated = new StringBuilder(), symbolBuilder = new StringBuilder();
-            for (int i = 0; i < expression.Length; i++)
+            for (var i = 0; i < expression.Length; i++)
             {
-                char c = expression[i];
+                var c = expression[i];
                 if (c == '\'' || c == '"')
                 {
                     var literal = expression.GetNextQuotedString(i, true);
@@ -161,7 +165,7 @@ namespace DotNetAsm
                 else if ((c == '*' || c == '-' || c == '+') &&
                          (lastTokenChar.IsOperator() || lastTokenChar == '(' || lastTokenChar == char.MinValue))
                 {
-                    bool isSpecial = false;
+                    var isSpecial = false;
                     if (c == '*' && (lastTokenChar == '(' || i == 0 || expression[i - 1] != '*'))
                     {
                         isSpecial = true;
@@ -204,7 +208,7 @@ namespace DotNetAsm
             }
             var elements = Assembler.Evaluator.ParseElements(translated.ToString()).ToList();
 
-            for (int i = 0; i < elements.Count; i++)
+            for (var i = 0; i < elements.Count; i++)
             {
                 if (elements[i].type == ExpressionElement.Type.Operand && (elements[i].word[0] == '_' || char.IsLetter(elements[i].word[0])))
                 {

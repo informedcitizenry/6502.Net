@@ -17,7 +17,7 @@ namespace DotNetAsm
         /// <summary>
         /// A block of for next loops implemented as a linked list.
         /// </summary>
-        class ForNextBlock
+        private class ForNextBlock
         {
             #region Classes
 
@@ -57,8 +57,8 @@ namespace DotNetAsm
 
             #region Members
 
-            LinkedList<ForNextEntry> _entries;
-            LinkedListNode<ForNextEntry> _currentEntry;
+            private readonly LinkedList<ForNextEntry> _entries;
+            private LinkedListNode<ForNextEntry> _currentEntry;
 
             #endregion
 
@@ -141,7 +141,7 @@ namespace DotNetAsm
             public IEnumerable<SourceLine> GetProcessedLines()
             {
                 var processed = new List<SourceLine>();
-                foreach (var entry in _entries)
+                foreach (ForNextEntry entry in _entries)
                 {
                     if (entry.LinkedBlock != null)
                         processed.AddRange(entry.LinkedBlock.GetProcessedLines());
@@ -156,7 +156,7 @@ namespace DotNetAsm
             /// </summary>
             public void ResetEntries()
             {
-                foreach (var entry in _entries)
+                foreach (ForNextEntry entry in _entries)
                 {
                     if (entry.LinkedBlock != null)
                         entry.LinkedBlock.ResetEntries();
@@ -211,13 +211,11 @@ namespace DotNetAsm
 
         #endregion
 
-        ForNextBlock _rootBlock;
-        ForNextBlock _currBlock;
-        ForNextBlock _breakBlock;
-
-        readonly List<SourceLine> _processedLines;
-
-        int _levels;
+        private readonly ForNextBlock _rootBlock;
+        private ForNextBlock _currBlock;
+        private ForNextBlock _breakBlock;
+        private readonly List<SourceLine> _processedLines;
+        private int _levels;
 
         /// <summary>
         /// Constructs an instance of the <see cref="T:DotNetAsm.ForNextHandler"/>.
@@ -238,7 +236,7 @@ namespace DotNetAsm
         /// <summary>
         /// Perform a full reset on the block.
         /// </summary>
-        void FullReset()
+        private void FullReset()
         {
             _breakBlock = null;
             _processedLines.Clear();
@@ -246,10 +244,7 @@ namespace DotNetAsm
             _rootBlock.ResetEntries();
         }
 
-        public bool Processes(string token)
-        {
-            return Reserved.IsOneOf("Directives", token);
-        }
+        public bool Processes(string token) => Reserved.IsOneOf("Directives", token);
 
         public void Process(SourceLine line)
         {
@@ -274,7 +269,7 @@ namespace DotNetAsm
                     });
                 }
                 // .for <init_expression>, <condition>, <iteration_expression>
-                var csvs = line.Operand.CommaSeparate();
+                List<string> csvs = line.Operand.CommaSeparate();
                 if (csvs.Count < 2)
                 {
                     Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -303,7 +298,7 @@ namespace DotNetAsm
                 {
                     if (!string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        var iteratorvar = Assembler.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        KeyValuePair<string, string> iteratorvar = Assembler.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         if (string.IsNullOrEmpty(iteratorvar.Key))
                         {
                             Assembler.Log.LogEntry(line, ErrorStrings.BadExpression, csvs.First());
@@ -376,7 +371,7 @@ namespace DotNetAsm
                     Assembler.Log.LogEntry(line, "Illegal use of .break");
                     return;
                 }
-                string procinst = "@@ break @@";
+                var procinst = "@@ break @@";
                 var shadow = new SourceLine
                 {
                     SourceString = ConstStrings.SHADOW_SOURCE,
@@ -394,7 +389,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    var child = _currBlock.NextChild();
+                    ForNextBlock child = _currBlock.NextChild();
                     _currBlock.Advance();
                     _currBlock = child;
                     _currBlock.Begin();
@@ -402,7 +397,7 @@ namespace DotNetAsm
 
                     if (_breakBlock == null && !string.IsNullOrEmpty(_currBlock.InitExpression))
                     {
-                        var initval = Assembler.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
+                        KeyValuePair<string, string> initval = Assembler.Symbols.Variables.SetVariable(_currBlock.InitExpression, _currBlock.Scope);
                         _processedLines.Add(new SourceLine
                         {
                             SourceString = ConstStrings.SHADOW_SOURCE,
@@ -431,7 +426,7 @@ namespace DotNetAsm
                 // in output source (i.e., emit .let n = ... epxressions)
                 foreach (var iterexp in _currBlock.IterExpressions)
                 {
-                    var itervar = Assembler.Symbols.Variables.SetVariable(iterexp, _currBlock.Scope);
+                    KeyValuePair<string, string> itervar = Assembler.Symbols.Variables.SetVariable(iterexp, _currBlock.Scope);
                     var iterval = Assembler.Symbols.Variables.GetScopedSymbolValue(itervar.Key, _currBlock.Scope);
                     _processedLines.Add(new SourceLine
                     {

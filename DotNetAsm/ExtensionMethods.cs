@@ -25,10 +25,12 @@ namespace DotNetAsm
         {
             if (sb == null || sb.Length == 0) return sb;
 
-            int i = sb.Length - 1;
+            var i = sb.Length - 1;
             for (; i >= 0; i--)
+            {
                 if (!char.IsWhiteSpace(sb[i]))
                     break;
+            }
 
             if (i < sb.Length - 1)
                 sb.Length = i + 1;
@@ -71,8 +73,8 @@ namespace DotNetAsm
             BracketParenthesis
         }
 
-        static readonly string OPEN_PARENS = "([";
-        static readonly string CLOSE_PARENS = ")]";
+        private static readonly string OPEN_PARENS = "([";
+        private static readonly string CLOSE_PARENS = ")]";
 
         /// <summary>
         /// String to split by into substrings by length.
@@ -83,7 +85,7 @@ namespace DotNetAsm
         /// <returns>An <see cref="T:System.Collections.Generic.IEnumerable&lt;string&gt;"/> class.</returns>
         public static IEnumerable<string> SplitByLength(this string str, int maxLength)
         {
-            int index = 0;
+            var index = 0;
             while (index + maxLength < str.Length)
             {
                 yield return str.Substring(index, maxLength);
@@ -115,10 +117,10 @@ namespace DotNetAsm
             var lastStrIx = str.Length - 1;
             if (lastStrIx >= 1 && (str[0] == '\'' || str[0] == '"') && str[0] == str[lastStrIx])
             {
-                char closure = str[0];
-                for (int i = 1; i <= lastStrIx; i++)
+                var closure = str[0];
+                for (var i = 1; i <= lastStrIx; i++)
                 {
-                    char c = str[i];
+                    var c = str[i];
                     if (c == closure)
                         return i == lastStrIx;
                     else if (c == '\\')
@@ -143,7 +145,7 @@ namespace DotNetAsm
         /// <exception cref="{System.Exception"}/>
         public static string GetEnclosure(this string str, EnclosureType type, bool includeClosure, bool allowEscape, bool doNotUnescape = true)
         {
-            int closureIx = -1;
+            var closureIx = -1;
             string open = string.Empty, close = string.Empty, errorString = ErrorStrings.QuoteStringNotEnclosed;
             switch (type)
             {
@@ -174,7 +176,7 @@ namespace DotNetAsm
                 {
                     if (allowEscape && c == '\\')
                     {
-                        int escLen = 2;
+                        var escLen = 2;
                         if (str[i + 1] == 'u')
                             escLen = 6;
                         else if (str[i + 1] == 'x')
@@ -254,10 +256,7 @@ namespace DotNetAsm
         /// <returns>The modified string.</returns>
         /// <param name="str">String.</param>
         /// <param name="c">The character to trim.</param>
-        public static string TrimOnce(this string str, char c)
-        {
-            return str.TrimStartOnce(c).TrimEndOnce(c);
-        }
+        public static string TrimOnce(this string str, char c) => str.TrimStartOnce(c).TrimEndOnce(c);
 
         /// <summary>
         /// Gets the next parenthetical group in the string.
@@ -341,9 +340,9 @@ namespace DotNetAsm
 
             var sb = new StringBuilder();
 
-            for (int i = 0; i < str.Length; i++)
+            for (var i = 0; i < str.Length; i++)
             {
-                char c = str[i];
+                var c = str[i];
                 if (c == '\'' || c == '"')
                 {
                     var quoted = str.GetNextQuotedString(atIndex: i, doNotUnescape: true);
@@ -383,10 +382,7 @@ namespace DotNetAsm
         /// </summary>
         /// <returns><c>true</c>, if the character is an operator, <c>false</c> otherwise.</returns>
         /// <param name="c">The Unicode character.</param>
-        public static bool IsOperator(this char c)
-        {
-            return (char.IsSymbol(c) && !c.IsRadixOperator()) || c == '/' || c == '*' || c == '-' || c == '&' || c == '%' || c == '!';
-        }
+        public static bool IsOperator(this char c) => (char.IsSymbol(c) && !c.IsRadixOperator()) || c == '/' || c == '*' || c == '-' || c == '&' || c == '%' || c == '!';
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a radix operator.
@@ -403,7 +399,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="value">The value to store.</param>
         /// <returns>The size in bytes.</returns>
-        public static int Size(this Int64 value)
+        public static int Size(this long value)
         {
             if (value < 0)
                 value = (~value) << 1;

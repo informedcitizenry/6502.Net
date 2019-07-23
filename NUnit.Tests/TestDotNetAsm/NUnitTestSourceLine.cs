@@ -10,7 +10,7 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             var line = new SourceLine();
             line.Operand = "147, \"He said, \",'\"',\"Hello, World!\",'\"', $0d, ','";
-            var csv = line.Operand.CommaSeparate();
+            System.Collections.Generic.List<string> csv = line.Operand.CommaSeparate();
 
             Assert.IsTrue(csv.Count == 7);
             Assert.AreEqual(csv[0], "147");
@@ -49,6 +49,56 @@ namespace NUnit.Tests.TestDotNetAsm
             // and check!
             Assert.AreEqual(false, line.IsComment);
             Assert.AreEqual(false, line.DoNotAssemble);
+        }
+
+        [Test]
+        public void TestParse()
+        {
+            var line = new SourceLine
+            {
+                SourceString = "label       lda #$01 ;comment"
+            };
+
+            foreach (var l in line.Parse(s => s.Equals("lda"))) { }
+            Assert.AreEqual("label", line.Label);
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$01", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "       lda #$01 ;comment";
+            foreach (var l in line.Parse(s => s.Equals("lda"))) { }
+            Assert.IsEmpty(line.Label);
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$01", line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "       inx;comment";
+            foreach (var l in line.Parse(s => s.Equals("inx"))) { }
+            Assert.IsEmpty(line.Label);
+            Assert.AreEqual("inx", line.Instruction);
+            Assert.IsEmpty(line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "label: ;comment";
+            foreach (var l in line.Parse(s => s.Equals("inx"))) { }
+            Assert.AreEqual("label", line.Label);
+            Assert.IsEmpty(line.Instruction);
+            Assert.IsEmpty(line.Operand);
+
+            line.Label = line.Instruction = line.Operand = string.Empty;
+            line.SourceString = "label      lda #$00:inx";
+            var yielded = new System.Collections.Generic.List<SourceLine>();
+            foreach (var l in line.Parse(s => s.Equals("lda")))
+                yielded.Add(l);
+            Assert.AreEqual("label", line.Label);
+            Assert.AreEqual("lda", line.Instruction);
+            Assert.AreEqual("#$00", line.Operand);
+            Assert.That(yielded.Count == 1);
+            Assert.IsEmpty(yielded[0].Label);
+            Assert.IsEmpty(yielded[0].Instruction);
+            Assert.IsEmpty(yielded[0].Operand);
+            Assert.AreEqual("\tinx", yielded[0].SourceString);
+           
         }
     }
 }

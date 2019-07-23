@@ -7,15 +7,12 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     public class NUnitTestMisc : NUnitAsmTestBase
     {
-        public NUnitTestMisc()
-        {
-            LineAssembler = new MiscAssembler();
-        }
+        public NUnitTestMisc() => LineAssembler = new MiscAssembler();
 
         [Test]
         public void TestEnclosedInQuotes()
         {
-            string test = "\"hello, world!\"";
+            var test = "\"hello, world!\"";
             Assert.IsTrue(test.EnclosedInQuotes());
 
             test = "\"\"hello, world!";
@@ -28,7 +25,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestGetQuotes()
         {
-            string test = ".string \"he said hello world to me\", $00";
+            var test = ".string \"he said hello world to me\", $00";
             Assert.AreEqual("he said hello world to me", test.GetNextQuotedString());
 
             test = ".string \"quote 1\", \"quote 2\", 0";
@@ -42,7 +39,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestGetParentheses()
         {
-            string test = "function(3,2,3)";
+            var test = "function(3,2,3)";
             Assert.AreEqual("(3,2,3)", test.GetNextParenEnclosure());
 
             test = "function(\"some string)\", ')')";

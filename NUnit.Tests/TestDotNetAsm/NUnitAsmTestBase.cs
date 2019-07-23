@@ -60,37 +60,19 @@ namespace NUnit.Tests.TestDotNetAsm
             Assembler.Log.ClearErrors();
         }
 
-        protected void TestInstruction(SourceLine line, int pc, byte[] expected, string disasm, bool positive)
-        {
-            TestInstruction(line, LineAssembler, pc, expected, disasm, positive);
-        }
+        protected void TestInstruction(SourceLine line, int pc, byte[] expected, string disasm, bool positive) => TestInstruction(line, LineAssembler, pc, expected, disasm, positive);
 
-        protected void TestInstruction(SourceLine line, int pc, int expectedsize, IEnumerable<byte> expected, bool positive)
-        {
-            TestInstruction(line, LineAssembler, pc, expectedsize, expected, positive);
-        }
+        protected void TestInstruction(SourceLine line, int pc, int expectedsize, IEnumerable<byte> expected, bool positive) => TestInstruction(line, LineAssembler, pc, expectedsize, expected, positive);
 
-        protected void TestInstruction(SourceLine line, ILineAssembler assembler, int pc, byte[] expected, string disasm)
-        {
-            TestInstruction(line, assembler, pc, expected, disasm, true);
-        }
+        protected void TestInstruction(SourceLine line, ILineAssembler assembler, int pc, byte[] expected, string disasm) => TestInstruction(line, assembler, pc, expected, disasm, true);
 
-        protected void TestInstruction(SourceLine line, ILineAssembler assembler, int pc, int expectedsize, byte[] expected)
-        {
-            TestInstruction(line, assembler, pc, expectedsize, expected, true);
-        }
+        protected void TestInstruction(SourceLine line, ILineAssembler assembler, int pc, int expectedsize, byte[] expected) => TestInstruction(line, assembler, pc, expectedsize, expected, true);
 
-        protected void TestInstruction(SourceLine line, int pc, byte[] expected, string disasm)
-        {
-            TestInstruction(line, LineAssembler, pc, expected, disasm, true);
-        }
+        protected void TestInstruction(SourceLine line, int pc, byte[] expected, string disasm) => TestInstruction(line, LineAssembler, pc, expected, disasm, true);
 
-        protected void TestInstruction(SourceLine line, int pc, int expectedsize, IEnumerable<byte> expected)
-        {
-            TestInstruction(line, LineAssembler, pc, expectedsize, expected, true);
-        }
+        protected void TestInstruction(SourceLine line, int pc, int expectedsize, IEnumerable<byte> expected) => TestInstruction(line, LineAssembler, pc, expectedsize, expected, true);
 
-        void ResetAssembler()
+        private void ResetAssembler()
         {
             if (Assembler.Output.Transforms.Count > 0)
                 Assembler.Output.Transforms.Pop();

@@ -37,9 +37,9 @@ namespace DotNetAsm
         /// Throw a conditional error or warning.
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> with the operand condition.</param>
-        void ThrowConditional(SourceLine line)
+        private void ThrowConditional(SourceLine line)
         {
-            var csv = line.Operand.CommaSeparate();
+            System.Collections.Generic.List<string> csv = line.Operand.CommaSeparate();
             if (csv.Count < 2)
                 Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
             else if (csv.Count > 2)
@@ -53,7 +53,7 @@ namespace DotNetAsm
         /// Used by the .eor directive.
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
-        void SetEor(SourceLine line)
+        private void SetEor(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Operand))
             {
@@ -71,7 +71,7 @@ namespace DotNetAsm
 
         public void AssembleLine(SourceLine line)
         {
-            string instruction = Assembler.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
+            var instruction = Assembler.Options.CaseSensitive ? line.Instruction : line.Instruction.ToLower();
             switch (instruction)
             {
                 case ".assert":
@@ -106,7 +106,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
         /// <param name="operand">The operand to output..</param>
-        void Output(SourceLine line, string operand)
+        private void Output(SourceLine line, string operand)
         {
             if (!operand.EnclosedInQuotes())
             {
@@ -139,9 +139,9 @@ namespace DotNetAsm
         /// Dos the assert.
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/>.</param>
-        void DoAssert(SourceLine line)
+        private void DoAssert(SourceLine line)
         {
-            var parms = line.Operand.CommaSeparate();
+            System.Collections.Generic.List<string> parms = line.Operand.CommaSeparate();
             if (parms.Count == 0)
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);

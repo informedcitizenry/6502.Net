@@ -20,10 +20,10 @@ namespace DotNetAsm
     {
         #region Members
 
-        readonly HashSet<BinaryFile> _includedBinaries;
-        readonly Dictionary<string, string> _typeDefs;
-        readonly Func<string, bool> _reservedSymbol;
-        readonly Func<string, bool> _instruction;
+        private readonly HashSet<BinaryFile> _includedBinaries;
+        private readonly Dictionary<string, string> _typeDefs;
+        private readonly Func<string, bool> _reservedSymbol;
+        private readonly Func<string, bool> _instruction;
 
         #endregion
 
@@ -54,9 +54,9 @@ namespace DotNetAsm
 
         #region Methods
 
-        void AssembleFills(SourceLine line)
+        private void AssembleFills(SourceLine line)
         {
-            var csv = line.Operand.CommaSeparate();
+            List<string> csv = line.Operand.CommaSeparate();
 
             var alignval = (int)Assembler.Evaluator.Eval(csv.First(), ushort.MinValue, ushort.MaxValue);
 
@@ -83,9 +83,9 @@ namespace DotNetAsm
             }
         }
 
-        void AssembleValues(SourceLine line, long minval, long maxval, int size)
+        private void AssembleValues(SourceLine line, long minval, long maxval, int size)
         {
-            var tokens = line.Operand.CommaSeparate();
+            List<string> tokens = line.Operand.CommaSeparate();
             if (line.Assembly.Count > 0)
                 line.Assembly.Clear();
             foreach (var t in tokens)
@@ -102,7 +102,7 @@ namespace DotNetAsm
             }
         }
 
-        void GetBinaryOffsetSize(List<string> args, int binarysize, ref int offs, ref int size)
+        private void GetBinaryOffsetSize(List<string> args, int binarysize, ref int offs, ref int size)
         {
             if (args.Count >= 2)
             {
@@ -116,10 +116,10 @@ namespace DotNetAsm
                 size = binarysize - offs;
         }
 
-        void AssembleBinaryBytes(SourceLine line)
+        private void AssembleBinaryBytes(SourceLine line)
         {
-            var args = line.Operand.CommaSeparate();
-            var binary = IncludeBinary(line, args);
+            List<string> args = line.Operand.CommaSeparate();
+            BinaryFile binary = IncludeBinary(line, args);
             if (binary != null)
             {
                 int offs = 0, size = binary.Data.Length;
@@ -133,9 +133,9 @@ namespace DotNetAsm
             }
         }
 
-        BinaryFile IncludeBinary(SourceLine line, List<string> args)
+        private BinaryFile IncludeBinary(SourceLine line, List<string> args)
         {
-            if (args.Count < 1 || args.Count > 3 || !args.First().EnclosedInQuotes(out string filename))
+            if (args.Count < 1 || args.Count > 3 || !args.First().EnclosedInQuotes(out var filename))
             {
                 if (args.Count == 0)
                     Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -145,7 +145,7 @@ namespace DotNetAsm
                     Assembler.Log.LogEntry(line, ErrorStrings.FilenameNotSpecified);
                 return null;
             }
-            var binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
+            BinaryFile binary = _includedBinaries.FirstOrDefault(b => b.Filename.Equals(filename));
 
             if (binary == null)
             {
@@ -164,20 +164,20 @@ namespace DotNetAsm
             return binary;
         }
 
-        void DefineType(SourceLine line)
+        private void DefineType(SourceLine line)
         {
             if (string.IsNullOrEmpty(line.Label) == false)
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
-            var csvs = line.Operand.CommaSeparate();
+            List<string> csvs = line.Operand.CommaSeparate();
             if (csvs.Count != 2)
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.None);
                 return;
             }
-            string currtype = csvs.First();
+            var currtype = csvs.First();
             if (!Reserved.IsOneOf("PseudoOps", currtype) &&
                 !base.IsReserved(currtype))
             {
@@ -185,7 +185,7 @@ namespace DotNetAsm
                 return;
             }
 
-            string newtype = csvs.Last();
+            var newtype = csvs.Last();
             if (!Regex.IsMatch(newtype, @"^\.?" + Patterns.SymbolUnicode + "$"))
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.None);
@@ -269,7 +269,7 @@ namespace DotNetAsm
                 return 0;
             }
 
-            var csv = line.Operand.CommaSeparate();
+            List<string> csv = line.Operand.CommaSeparate();
             if (csv.Count == 0)
             {
                 Assembler.Log.LogEntry(line, ErrorStrings.TooFewArguments, line.Instruction);
@@ -288,11 +288,11 @@ namespace DotNetAsm
                     }
                 case ".binary":
                     {
-                        int boffset = 0;
-                        var binary = IncludeBinary(line, csv);
+                        var boffset = 0;
+                        BinaryFile binary = IncludeBinary(line, csv);
                         if (binary != null)
                         {
-                            int bsize = binary.Data.Length;
+                            var bsize = binary.Data.Length;
                             GetBinaryOffsetSize(csv, bsize, ref boffset, ref bsize);
                             return bsize;
                         }

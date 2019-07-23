@@ -7,10 +7,7 @@ namespace NUnit.Tests.TestDotNetAsm
 {
     public class NUnitTestConditionHandler : NUnitHandlerTestBase
     {
-        public NUnitTestConditionHandler()
-        {
-            Handler = new ConditionHandler();
-        }
+        public NUnitTestConditionHandler() => Handler = new ConditionHandler();
 
         [Test]
         public void TestConditionHandlerBasic()

@@ -10,7 +10,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void InputTest()
         {
             string[] args = { "test.asm" };
-            AsmCommandLineOptions options = new AsmCommandLineOptions();
+            var options = new AsmCommandLineOptions();
             options.ParseArgs(args);
 
             Assert.AreEqual(1, options.ArgsPassed);
@@ -40,7 +40,7 @@ namespace NUnit.Tests.TestDotNetAsm
                 "-b",
                 "--quiet"
             };
-            AsmCommandLineOptions options = new AsmCommandLineOptions();
+            var options = new AsmCommandLineOptions();
             options.ParseArgs(args);
 
             Assert.AreEqual(2, options.ArgsPassed);
@@ -57,7 +57,7 @@ namespace NUnit.Tests.TestDotNetAsm
                 "-o",
                 "test.bin"
             };
-            AsmCommandLineOptions options = new AsmCommandLineOptions();
+            var options = new AsmCommandLineOptions();
             options.ParseArgs(args);
 
             Assert.AreEqual(3, options.ArgsPassed);
@@ -77,7 +77,7 @@ namespace NUnit.Tests.TestDotNetAsm
                 "chrout=$ffd2",
                 "chrin=$ffcf"
             };
-            AsmCommandLineOptions options = new AsmCommandLineOptions();
+            var options = new AsmCommandLineOptions();
             options.ParseArgs(args);
 
             Assert.AreEqual(5, options.ArgsPassed);
@@ -111,7 +111,7 @@ namespace NUnit.Tests.TestDotNetAsm
                 "-l",
                 "symbols.a65"
             };
-            AsmCommandLineOptions options = new AsmCommandLineOptions();
+            var options = new AsmCommandLineOptions();
             options.ParseArgs(args);
 
             Assert.AreEqual(14, options.ArgsPassed);

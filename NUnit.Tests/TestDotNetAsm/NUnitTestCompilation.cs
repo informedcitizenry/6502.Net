@@ -43,7 +43,7 @@ namespace NUnit.Tests.TestDotNetAsm
             output.Add(0xffd2, 2);
             Assert.AreEqual(0x0002, output.LogicalPC);
 
-            var bytes = output.GetCompilation();
+            System.Collections.ObjectModel.ReadOnlyCollection<byte> bytes = output.GetCompilation();
             Assert.AreEqual(0xd2, bytes[0]);
             Assert.AreEqual(0xff, bytes[1]);
         }
@@ -54,10 +54,10 @@ namespace NUnit.Tests.TestDotNetAsm
             var output = new Compilation();
             output.SetPC(0x4015);
 
-            int foragoodtime = 0xffd220; // for a good time jsr $ffd2
+            var foragoodtime = 0xffd220; // for a good time jsr $ffd2
             output.Align(0x10, foragoodtime); // fill 11 bytes with 0xffd220...
 
-            var bytes1 = output.GetCompilation();
+            System.Collections.ObjectModel.ReadOnlyCollection<byte> bytes1 = output.GetCompilation();
 
             var expected1 = new byte[] { 0x20, 0xd2, 0xff,
                                          0x20, 0xd2, 0xff,
@@ -71,7 +71,7 @@ namespace NUnit.Tests.TestDotNetAsm
 
             Assert.AreEqual(0x0007, output.LogicalPC);
 
-            var bytes2 = output.GetCompilation();
+            System.Collections.ObjectModel.ReadOnlyCollection<byte> bytes2 = output.GetCompilation();
             var expected2 = new byte[] { 0x20, 0xd2, 0xff,
                                          0x20, 0xd2, 0xff, 0x20 };
 

@@ -12,7 +12,7 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             var eval = new Evaluator();
 
-            string expression = "3+4";
+            var expression = "3+4";
             var result = eval.Eval(expression);
             Assert.AreEqual(7, result);
 
@@ -177,7 +177,7 @@ namespace NUnit.Tests.TestDotNetAsm
             result = eval.Eval(">65490*<32768");
             Assert.AreEqual((65490 / 256) * (32768 & 0xFF), result);
 
-            int myvar = 548;
+            var myvar = 548;
             var notZero = eval.Eval("~0");
             var not255 = eval.Eval("~255");
             var notmyvar = eval.Eval("~(548*2)%256");
@@ -216,7 +216,7 @@ namespace NUnit.Tests.TestDotNetAsm
         {
             IEvaluator evaluator = new Evaluator();
 
-            int myvar = 224;
+            var myvar = 224;
 
             var and = evaluator.Eval("224&$e0");
             var or = evaluator.Eval("224|$0f");

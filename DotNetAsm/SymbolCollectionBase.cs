@@ -35,10 +35,7 @@ namespace DotNetAsm
         /// <param name="symbolName">The symbol name in the operation that raised the exception.</param>
         /// <param name="reason">The exception reason.</param>
         public SymbolCollectionException(string symbolName, ExceptionReason reason)
-            : base(symbolName)
-        {
-            Reason = reason;
-        }
+            : base(symbolName) => Reason = reason;
 
         #endregion
 
@@ -60,9 +57,9 @@ namespace DotNetAsm
     {
         #region Members
 
-        readonly Dictionary<string, long> _symbols;
-        Regex _regVar, _regVarStrict;
-        List<SymbolCollectionBase> _crossChecks;
+        private readonly Dictionary<string, long> _symbols;
+        private readonly Regex _regVar, _regVarStrict;
+        private readonly List<SymbolCollectionBase> _crossChecks;
 
         #endregion
 
@@ -91,7 +88,7 @@ namespace DotNetAsm
         /// </summary>
         /// <returns>The sub scopes.</returns>
         /// <param name="parent">Parent.</param>
-        List<string> GetSubScopes(string parent)
+        private List<string> GetSubScopes(string parent)
         {
             if (string.IsNullOrEmpty(parent))
                 return new List<string>();
@@ -111,12 +108,12 @@ namespace DotNetAsm
         /// <returns>The nearest scope.</returns>
         /// <param name="symbolName">Symbol name.</param>
         /// <param name="fromScope">The nearest scope.</param>
-        string GetNearestScope(string symbolName, string fromScope)
+        private string GetNearestScope(string symbolName, string fromScope)
         {
-            var scopes = GetSubScopes(fromScope);
+            List<string> scopes = GetSubScopes(fromScope);
             foreach (var s in scopes)
             {
-                string scoped = s + "." + symbolName;
+                var scoped = s + "." + symbolName;
                 if (_symbols.ContainsKey(scoped.TrimStartOnce('.')))
                 {
                     return scoped.TrimStartOnce('.');
@@ -145,7 +142,7 @@ namespace DotNetAsm
         /// <param name="symbolName">Symbol name.</param>
         public long GetSymbolValue(string symbolName)
         {
-            if (_symbols.TryGetValue(symbolName, out long value))
+            if (_symbols.TryGetValue(symbolName, out var value))
                 return value;
 
             return long.MinValue;
@@ -202,7 +199,7 @@ namespace DotNetAsm
         /// for the symbol name.</param>
         public void SetSymbol(string symbolName, long value, bool isStrict)
         {
-            var reg = isStrict ? _regVarStrict : _regVar;
+            Regex reg = isStrict ? _regVarStrict : _regVar;
             if (reg.IsMatch(symbolName))
             {
                 if (_crossChecks.Any(c => c.IsSymbol(symbolName)))

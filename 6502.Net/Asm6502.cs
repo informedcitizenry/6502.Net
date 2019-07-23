@@ -273,14 +273,14 @@ namespace Asm6502.Net
 
         }
 
-        void SetImmediateA(int size)
+        private void SetImmediateA(int size)
         {
             if (size == 3 && _cpu.StartsWith("6502", StringComparison.Ordinal))
             {
                 return;
             }
-            string fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
-            string prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
+            var fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
+            var prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
 
             _filteredOpcodes.Remove("ora" + prv);
             _filteredOpcodes.Remove("and" + prv);
@@ -301,14 +301,14 @@ namespace Asm6502.Net
             _filteredOpcodes["sbc" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xe9 };
         }
 
-        void SetImmediateXY(int size)
+        private void SetImmediateXY(int size)
         {
             if (size == 3 && _cpu.StartsWith("6502", StringComparison.Ordinal))
             {
                 return;
             }
-            string fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
-            string prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
+            var fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
+            var prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
 
             _filteredOpcodes.Remove("ldy" + prv);
             _filteredOpcodes.Remove("ldx" + prv);
@@ -321,7 +321,7 @@ namespace Asm6502.Net
             _filteredOpcodes["cpx" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xe0 };
         }
 
-        void SetRegLongShort(string instruction)
+        private void SetRegLongShort(string instruction)
         {
             if (instruction.StartsWith(".x", Assembler.Options.StringComparison))
             {
@@ -353,11 +353,11 @@ namespace Asm6502.Net
             }
         }
 
-        void AssembleRta(SourceLine line)
+        private void AssembleRta(SourceLine line)
         {
-            var csv = line.Operand.CommaSeparate();
+            List<string> csv = line.Operand.CommaSeparate();
 
-            foreach (string rta in csv)
+            foreach (var rta in csv)
             {
                 if (rta.Equals("?"))
                 {
@@ -371,13 +371,15 @@ namespace Asm6502.Net
             }
         }
 
-        (OperandFormat fmt, Instruction instruction) ParseToInstruction(SourceLine line)
+        private (OperandFormat fmt, Instruction instruction) ParseToInstruction(SourceLine line)
         {
             var mnemonic = line.Instruction.ToLower();
             var operand = line.Operand;
             if (operand.Equals("a", Assembler.Options.StringComparison) &&
                 !Assembler.Symbols.IsSymbol("a"))
+            {
                 operand = string.Empty;
+            }
 
             var fmt = new OperandFormat();
             var formatBuilder = new StringBuilder(mnemonic);
@@ -386,10 +388,10 @@ namespace Asm6502.Net
             {
                 byte forcedWidth = 0;
                 formatBuilder.Append(' ');
-                var csv = operand.CommaSeparate();
+                List<string> csv = operand.CommaSeparate();
                 var firstElement = csv.First();
                 var firstChar = firstElement[0];
-                bool isRockwell = Reserved.IsOneOf("Rockwell", mnemonic);
+                var isRockwell = Reserved.IsOneOf("Rockwell", mnemonic);
                 if (firstChar == '[' || firstChar == '(')
                 {
                     var firstParen = firstElement.GetNextParenEnclosure();
@@ -433,7 +435,7 @@ namespace Asm6502.Net
                         if (firstParenLength < 3)
                             throw new ExpressionException(operand);
                         firstParen = firstParen.Substring(1, firstParen.Length - 2);
-                        var parenCsv = firstParen.CommaSeparate();
+                        List<string> parenCsv = firstParen.CommaSeparate();
 
                         formatBuilder.Append(firstChar);
 
@@ -490,7 +492,7 @@ namespace Asm6502.Net
                     else
                     {
                         // account for leading bits for Rockwell instructions
-                        int index = isRockwell ? i - 1 : i;
+                        var index = isRockwell ? i - 1 : i;
                         addElementToFormat(currElement, index);
                     }
                 }
@@ -571,15 +573,17 @@ namespace Asm6502.Net
                 else
                 {
                     if (_cpu == null || !_cpu.Equals("65816"))
+                    {
                         Assembler.Log.LogEntry(line,
                             $"The current CPU supports only 8-bit immediate mode instructions. The directive '{line.Instruction}' will not affect assembly",
                             Assembler.Options.WarningsAsErrors);
+                    }
                     else
                         SetRegLongShort(line.Instruction);
                 }
                 return;
             }
-            var formatOpcode = ParseToInstruction(line);
+            (OperandFormat fmt, Instruction instruction) formatOpcode = ParseToInstruction(line);
             if (formatOpcode.fmt == null)
             {
                 if (!_filteredOpcodes.Any(kvp => kvp.Key.StartsWith(line.Instruction, Assembler.Options.StringComparison)))
@@ -591,15 +595,15 @@ namespace Asm6502.Net
             long opcode = formatOpcode.instruction.Opcode;
 
             // how the evaluated expressions will display in disassembly
-            var evals = formatOpcode.fmt.Evaluations;
+            List<long> evals = formatOpcode.fmt.Evaluations;
             var evalDisplays = evals.ToList();
             var numEvals = evals.Count;
-            bool isRockwell = Reserved.IsOneOf("RockwellBranches", line.Instruction);
+            var isRockwell = Reserved.IsOneOf("RockwellBranches", line.Instruction);
             if (Reserved.IsOneOf("Branches", line.Instruction) ||
                 Reserved.IsOneOf("Branches16", line.Instruction) ||
                 isRockwell)
             {
-                long displ = Reserved.IsOneOf("RockwellBranches", line.Instruction) ? evals[1] :
+                var displ = Reserved.IsOneOf("RockwellBranches", line.Instruction) ? evals[1] :
                                                                                       evals[0];
                 if (displ > 0xFFFF)
                     throw new OverflowException(displ.ToString());
@@ -686,7 +690,10 @@ namespace Asm6502.Net
                     return 3;
                 if (_x16 && (line.Instruction.EndsWith("x", Assembler.Options.StringComparison) ||
                              line.Instruction.EndsWith("y", Assembler.Options.StringComparison)))
+                {
                     return 3;
+                }
+
                 return 2;
             }
 
@@ -725,12 +732,14 @@ namespace Asm6502.Net
                 (line.Operand.EndsWith("),y", Assembler.Options.StringComparison) ||
                 line.Operand.EndsWith(",x)", Assembler.Options.StringComparison) ||
                 line.Operand.EndsWith("),z", Assembler.Options.StringComparison)))
+            {
                 return 2;
+            }
 
             try
             {
                 // oh well, now we have to try to parse
-                var formatOpcode = ParseToInstruction(line);
+                (OperandFormat fmt, Instruction instruction) formatOpcode = ParseToInstruction(line);
                 if (formatOpcode.instruction != null)
                     return formatOpcode.instruction.Size;
                 return 0;

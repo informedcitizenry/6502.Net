@@ -16,11 +16,11 @@ namespace DotNetAsm
     {
         #region Members
 
-        int _condLevel;
-        Stack<string> _condStack;
-        Stack<bool> _resultStack;
-        readonly List<SourceLine> _processedLines;
-        bool _doNotAsm;
+        private int _condLevel;
+        private readonly Stack<string> _condStack;
+        private readonly Stack<bool> _resultStack;
+        private readonly List<SourceLine> _processedLines;
+        private bool _doNotAsm;
 
         #endregion
 
@@ -57,7 +57,7 @@ namespace DotNetAsm
                     _processedLines.Add(line);
                 return;
             }
-            string lastcond = _condStack.Count > 0 ? _condStack.Peek() : string.Empty;
+            var lastcond = _condStack.Count > 0 ? _condStack.Peek() : string.Empty;
 
             if (line.Instruction.StartsWith(".if", Assembler.Options.StringComparison))
             {
@@ -127,7 +127,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="line">The <see cref="T:DotNetAsm.SourceLine"/> containing the conditional
         /// directive.</param>
-        void UpdateDoNotAsm(SourceLine line)
+        private void UpdateDoNotAsm(SourceLine line)
         {
             if (line.Instruction.EndsWith("if", Assembler.Options.StringComparison))
                 _doNotAsm = !Assembler.Evaluator.EvalCondition(line.Operand);

@@ -20,28 +20,28 @@ namespace DotNetAsm
     {
         #region Members
 
-        List<string> _source;
-        List<string> _defines;
-        string _arch;
-        string _cpu;
-        string _listingFile;
-        string _labelFile;
-        string _outputFile;
-        bool _bigEndian;
-        bool _quiet;
-        bool _verboseDasm;
-        bool _werror;
-        bool _noWarn;
-        bool _caseSensitive;
-        bool _noAssembly;
-        bool _noSource;
-        bool _printVersion;
-        bool _noDisassembly;
-        bool _warnLeft;
+        private readonly List<string> _source;
+        private readonly List<string> _defines;
+        private string _arch;
+        private string _cpu;
+        private string _listingFile;
+        private string _labelFile;
+        private string _outputFile;
+        private bool _bigEndian;
+        private bool _quiet;
+        private bool _verboseDasm;
+        private bool _werror;
+        private bool _noWarn;
+        private bool _caseSensitive;
+        private bool _noAssembly;
+        private bool _noSource;
+        private bool _printVersion;
+        private bool _noDisassembly;
+        private bool _warnLeft;
 
         #endregion
 
-        static string _helpString =
+        private static readonly string _helpString =
             "Usage: {0} [options...] <inputs> [output]\r\n\r\n" +
             "    -a, --no-assembly        Suppress assembled bytes from assembly\r\n" +
             "    --arch <arg>             Specify architecture-specific options\r\n" +
@@ -99,7 +99,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        string GetHelpText() =>
+        private string GetHelpText() =>
             string.Format(_helpString, Assembly.GetEntryAssembly().GetName().Name);
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace DotNetAsm
             // primarily we're interested in clubbing assignment arguments together, so 
             // { "<option>", "=", "<arg>" } => "<option>=<arg>"
             var args = new List<string>();
-            for (int i = 0; i < passedArgs.Length; i++)
+            for (var i = 0; i < passedArgs.Length; i++)
             {
                 if (passedArgs[i] == "=")
                 {
@@ -129,13 +129,13 @@ namespace DotNetAsm
                 }
             }
             Arguments = args;
-            for (int i = 0; i < args.Count; i++)
+            for (var i = 0; i < args.Count; i++)
             {
                 var arg = args[i];
                 if (arg[0] == '-')
                 {
                     var optionName = GetOptionName(args[i]);
-                    int eqix = arg.IndexOf('=');
+                    var eqix = arg.IndexOf('=');
                     if (eqix > -1 && eqix == arg.Length - 1)
                         throw new Exception();
                     var nextArg = string.Empty;
@@ -273,7 +273,7 @@ namespace DotNetAsm
             string GetOptionName(string argument)
             {
                 int index = 0, length = 0;
-                foreach (char c in argument)
+                foreach (var c in argument)
                 {
                     if (c == '-' && length == 0)
                     {
@@ -307,13 +307,13 @@ namespace DotNetAsm
         /// <summary>
         /// Gets or sets the target architecture information.
         /// </summary>
-        public string Architecture { get { return _arch; } set { _arch = value; } }
+        public string Architecture { get => _arch; set => _arch = value; }
 
         /// <summary>
         /// Gets the selected CPU.
         /// </summary>
         /// <value>The cpu.</value>
-        public string CPU { get { return _cpu; } }
+        public string CPU => _cpu;
 
         /// <summary>
         /// Gets the value determining whether output file should be generated, 
@@ -329,44 +329,44 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the read-only list of input filenames.
         /// </summary>
-        public IReadOnlyList<string> InputFiles { get { return _source; } }
+        public IReadOnlyList<string> InputFiles => _source;
 
         /// <summary>
         /// Gets the read-only list of label defines.
         /// </summary>
-        public IReadOnlyList<string> LabelDefines { get { return _defines; } }
+        public IReadOnlyList<string> LabelDefines => _defines;
 
         /// <summary>
         /// Gets the output filename.
         /// </summary>
-        public string OutputFile { get { return _outputFile; } }
+        public string OutputFile => _outputFile;
 
         /// <summary>
         /// The assembly listing filename.
         /// </summary>
-        public string ListingFile { get { return _listingFile; } }
+        public string ListingFile => _listingFile;
 
         /// <summary>
         /// Gets the label listing filename.
         /// </summary>
-        public string LabelFile { get { return _labelFile; } }
+        public string LabelFile => _labelFile;
 
         /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
-        public bool Quiet { get { return _quiet; } }
+        public bool Quiet => _quiet;
 
         /// <summary>
         /// Gets the flag that indicates warnings should be suppressed.
         /// </summary>
-        public bool NoWarnings { get { return _noWarn; } }
+        public bool NoWarnings => _noWarn;
 
         /// <summary>
         /// Gets a value indicating whether to suppress warnings for whitespaces 
         /// before labels.
         /// </summary>
         /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
-        public bool WarnLeft { get { return _warnLeft; } }
+        public bool WarnLeft => _warnLeft;
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
@@ -378,19 +378,19 @@ namespace DotNetAsm
         /// <see cref="T:DotNetAsm.AsmCommandLineOptions.ProcessArgs"/>.
         /// </summary>
         /// <value>The arguments passed.</value>
-        public int ArgsPassed { get { return Arguments.Count(); } }
+        public int ArgsPassed => Arguments.Count();
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 
         /// verbose.
         /// </summary>
-        public bool VerboseList { get { return _verboseDasm; } }
+        public bool VerboseList => _verboseDasm;
 
         /// <summary>
         /// Gets a flag that indicates the source should be processed as
         /// case-sensitive.
         /// </summary>
-        public bool CaseSensitive { get { return _caseSensitive; } }
+        public bool CaseSensitive => _caseSensitive;
 
         /// <summary>
         /// Gets the System.StringComparison, which is based on the case-sensitive flag.
@@ -416,27 +416,27 @@ namespace DotNetAsm
         /// <summary>
         /// Gets a flag that indicates that the output should be in big-endian byte order.
         /// </summary>
-        public bool BigEndian { get { return _bigEndian; } }
+        public bool BigEndian => _bigEndian;
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress original source.
         /// </summary>
-        public bool NoSource { get { return _noSource; } }
+        public bool NoSource => _noSource;
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress 6502 disassembly.
         /// </summary>
-        public bool NoDissasembly { get { return _noDisassembly; } }
+        public bool NoDissasembly => _noDisassembly;
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress assembly bytes.
         /// </summary>
-        public bool NoAssembly { get { return _noAssembly; } }
+        public bool NoAssembly => _noAssembly;
 
         /// <summary>
         /// Gets a flag indicating the full version of the assembler should be printed.
         /// </summary>
-        public bool PrintVersion { get { return _printVersion; } }
+        public bool PrintVersion => _printVersion;
 
         #endregion
     }
