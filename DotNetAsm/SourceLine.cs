@@ -73,7 +73,7 @@ namespace DotNetAsm
         public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction)
         {
             if (string.IsNullOrWhiteSpace(SourceString))
-                yield return null;
+                yield break;
             var tokenBuilder = new StringBuilder();
             for (var j = 0; j < SourceString.Length; j++)
             {

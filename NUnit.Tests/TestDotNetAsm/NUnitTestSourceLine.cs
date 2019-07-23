@@ -85,6 +85,13 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.IsEmpty(line.Instruction);
             Assert.IsEmpty(line.Operand);
 
+            line.SourceString = line.Label = line.Instruction = line.Operand = string.Empty;
+            foreach (var l in line.Parse(s => s.Equals("inx"))) { };
+            Assert.IsEmpty(line.Label);
+            Assert.IsEmpty(line.Instruction);
+            Assert.IsEmpty(line.Operand);
+            Assert.IsFalse(line.IsParsed);
+            
             line.Label = line.Instruction = line.Operand = string.Empty;
             line.SourceString = "label      lda #$00:inx";
             var yielded = new System.Collections.Generic.List<SourceLine>();
