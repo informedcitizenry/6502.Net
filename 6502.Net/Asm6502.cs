@@ -496,7 +496,6 @@ namespace Asm6502.Net
                         addElementToFormat(currElement, index);
                     }
                 }
-
                 void addElementToFormat(string element, int index = 0)
                 {
                     var eval = Assembler.Evaluator.Eval(element);
@@ -583,8 +582,8 @@ namespace Asm6502.Net
                 }
                 return;
             }
-            (OperandFormat fmt, Instruction instruction) formatOpcode = ParseToInstruction(line);
-            if (formatOpcode.fmt == null)
+            (OperandFormat fmt, Instruction instruction) = ParseToInstruction(line);
+            if (fmt == null)
             {
                 if (!_filteredOpcodes.Any(kvp => kvp.Key.StartsWith(line.Instruction, Assembler.Options.StringComparison)))
                     Assembler.Log.LogEntry(line, ErrorStrings.InstructionNotSupported, line.Instruction);
@@ -592,10 +591,10 @@ namespace Asm6502.Net
                     throw new Exception(string.Format(ErrorStrings.AddressingModeNotSupported, line.Instruction));//Assembler.Log.LogEntry(line, ErrorStrings.AddressingModeNotSupported, line.Instruction);
                 return;
             }
-            long opcode = formatOpcode.instruction.Opcode;
+            long opcode = instruction.Opcode;
 
             // how the evaluated expressions will display in disassembly
-            List<long> evals = formatOpcode.fmt.Evaluations;
+            List<long> evals = fmt.Evaluations;
             var evalDisplays = evals.ToList();
             var numEvals = evals.Count;
             var isRockwell = Reserved.IsOneOf("RockwellBranches", line.Instruction);
@@ -634,7 +633,7 @@ namespace Asm6502.Net
                             opcode -= 3;
                         }
                     }
-                    formatOpcode.fmt.EvaluationSizes[0] = 1;
+                    fmt.EvaluationSizes[0] = 1;
                 }
             }
             else
@@ -644,35 +643,41 @@ namespace Asm6502.Net
                 {
                     for (var i = 0; i < numEvals; i++)
                     {
-                        var operandSize = formatOpcode.fmt.EvaluationSizes[i];
-                        switch (operandSize)
+                        var operandSize = fmt.EvaluationSizes[i];
+                        if (evals[i] < 0)
                         {
-                            case 3:
-                                evals[i] &= 0xFFFFFF;
-                                break;
-                            case 2:
-                                evals[i] &= 0xFFFF;
-                                break;
-                            case 1:
-                                evals[i] &= 0xFF;
-                                break;
-                            default:
-                                throw new OverflowException(evals[i].ToString());
+                            // for negative numbers we need to "lop" off the leading binary 1s
+                            // due to twos-complement.
+                            switch (operandSize)
+                            {
+                                case 3:
+                                    evals[i] &= 0xFFFFFF;
+                                    break;
+                                case 2:
+                                    evals[i] &= 0xFFFF;
+                                    break;
+                                case 1:
+                                    evals[i] &= 0xFF;
+                                    break;
+                                default:
+                                    throw new OverflowException(evals[i].ToString());
 
+                            }
                         }
                         totalSize += operandSize;
                     }
-                    if (totalSize >= formatOpcode.instruction.Size)
+                    if (totalSize >= instruction.Size)
                         throw new OverflowException(line.Operand);
                 }
                 if (numEvals > 1 && Reserved.IsOneOf("MoveMemory", line.Instruction))
                     evals.Reverse();
             }
+            // create a new list of bytes for each attempted pass
             var instrBytes = new List<byte>(Assembler.Output.Add(opcode, 1));
             for (var i = 0; i < numEvals; i++)
-                instrBytes.AddRange(Assembler.Output.Add(evals[i], formatOpcode.fmt.EvaluationSizes[i]));
+                instrBytes.AddRange(Assembler.Output.Add(evals[i], fmt.EvaluationSizes[i]));
 
-            line.Disassembly = string.Format(formatOpcode.fmt.FormatString, evalDisplays.Cast<object>().ToArray());
+            line.Disassembly = string.Format(fmt.FormatString, evalDisplays.Cast<object>().ToArray());
             line.Assembly = instrBytes;
         }
 
