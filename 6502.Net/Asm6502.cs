@@ -638,30 +638,27 @@ namespace Asm6502.Net
             }
             else
             {
-                var totalSize = 0;
                 if (numEvals > 0)
                 {
+                    var totalSize = 0;
                     for (var i = 0; i < numEvals; i++)
                     {
                         var operandSize = fmt.EvaluationSizes[i];
-                        if (evals[i] < 0)
+                        if (evalDisplays[i] < 0)
                         {
-                            // for negative numbers we need to "lop" off the leading binary 1s
-                            // due to twos-complement.
+                            // for negative numbers we need to "lop off" the leading binary 1s
+                            // to display in the disassembly correctly
                             switch (operandSize)
                             {
                                 case 3:
-                                    evals[i] &= 0xFFFFFF;
+                                    evalDisplays[i] &= 0xFFFFFF;
                                     break;
                                 case 2:
-                                    evals[i] &= 0xFFFF;
-                                    break;
-                                case 1:
-                                    evals[i] &= 0xFF;
+                                    evalDisplays[i] &= 0xFFFF;
                                     break;
                                 default:
-                                    throw new OverflowException(evals[i].ToString());
-
+                                    evalDisplays[i] &= 0xFF;
+                                    break;
                             }
                         }
                         totalSize += operandSize;
