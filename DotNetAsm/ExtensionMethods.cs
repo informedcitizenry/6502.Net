@@ -136,6 +136,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="str">This string.</param>
         /// <param name="type">The <see cref="{DotNetAsm.StringExtensions.EnclosureType}"/>.</param>
+        /// <param name="allowNested">Allow the enclosure to contain nested enclosures.</param>
         /// <param name="includeClosure">Include the closure in the resulting substring.</param>
         /// <param name="allowEscape">Allow the substring to escape the enclosure, so it will not be
         /// evaluated as an enclosure.</param>
@@ -143,9 +144,10 @@ namespace DotNetAsm
         /// <returns>The substring containing the enclosure, or an empty string if no enclosure is
         /// found in the string.</returns>
         /// <exception cref="{System.Exception"}/>
-        public static string GetEnclosure(this string str, EnclosureType type, bool includeClosure, bool allowEscape, bool doNotUnescape = true)
+        public static string GetEnclosure(this string str, EnclosureType type, bool allowNested, bool includeClosure, bool allowEscape, bool doNotUnescape = true)
         {
             var closureIx = -1;
+            var nested = 0;
             string open = string.Empty, close = string.Empty, errorString = ErrorStrings.QuoteStringNotEnclosed;
             switch (type)
             {
@@ -193,11 +195,17 @@ namespace DotNetAsm
                     else if (type != EnclosureType.Quote && type != EnclosureType.SingleQuote && (c == '\'' || c == '"'))
                     {
                         var quoted = str.Substring(i).GetEnclosure(type: EnclosureType.Quote,
+                                                      allowNested: false,
                                                       includeClosure: true,
                                                       allowEscape: true,
                                                       doNotUnescape: true);
                         enclosureBuilder.Append(quoted);
                         i += quoted.Length - 1;
+                    }
+                    else if (c == open[closureIx] && allowNested)
+                    {
+                        nested++;
+                        enclosureBuilder.Append(c);
                     }
                     else
                     {
@@ -205,19 +213,30 @@ namespace DotNetAsm
                         {
                             if (includeClosure)
                                 enclosureBuilder.Append(c);
-                            return enclosureBuilder.ToString();
+                            if (allowNested)
+                                nested--;
+                            if (nested == 0)
+                                return enclosureBuilder.ToString();
                         }
-                        enclosureBuilder.Append(c);
+                        else
+                        {
+                            enclosureBuilder.Append(c);
+                        }
                     }
                 }
                 else
                 {
                     closureIx = open.IndexOf(c);
-                    if (closureIx > -1 && includeClosure)
-                        enclosureBuilder.Append(c);
+                    if (closureIx > -1)
+                    {
+                        if (includeClosure)
+                            enclosureBuilder.Append(c);
+                        if (allowNested)
+                            nested++;
+                    }
                 }
             }
-            if (closureIx > -1)
+            if (closureIx > -1 || nested > 0)
                 throw new Exception(errorString);
             return string.Empty;
         }
@@ -265,7 +284,7 @@ namespace DotNetAsm
         /// <returns>The first instance of a parenthetical group, or the whole string.</returns>
         /// <exception cref="T:System.FormatException"></exception>
         public static string GetNextParenEnclosure(this string str) =>
-            str.GetEnclosure(type: EnclosureType.Parenthesis, includeClosure: true, allowEscape: false);
+            str.GetEnclosure(type: EnclosureType.Parenthesis, allowNested: true, includeClosure: true, allowEscape: false);
 
         /// <summary>
         /// Gets the next parenthetical group in the string.
@@ -316,6 +335,7 @@ namespace DotNetAsm
         public static string GetNextQuotedString(this string str, int atIndex, bool doNotUnescape)
         {
             return str.Substring(atIndex).GetEnclosure(type: EnclosureType.Quote,
+                                                       allowNested: false,
                                                        includeClosure: false,
                                                        allowEscape: true,
                                                        doNotUnescape: doNotUnescape);
