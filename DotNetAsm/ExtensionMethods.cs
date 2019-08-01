@@ -103,8 +103,8 @@ namespace DotNetAsm
         /// <returns><c>True</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInQuotes(this string str, out string result)
         {
-            result = str.GetNextQuotedString(0, true);
-            return !string.IsNullOrEmpty(result) && str.Substring(1, str.Length - 2).Equals(result);
+            result = str.GetEnclosure(EnclosureType.Quote, includeClosure: false, doNotUnescape: true);
+            return !string.IsNullOrEmpty(result) && str.Length == result.Length + 2;
         }
 
         /// <summary>
@@ -144,30 +144,35 @@ namespace DotNetAsm
         /// <returns>The substring containing the enclosure, or an empty string if no enclosure is
         /// found in the string.</returns>
         /// <exception cref="{System.Exception"}/>
-        public static string GetEnclosure(this string str, EnclosureType type, bool allowNested, bool includeClosure, bool allowEscape, bool doNotUnescape = true)
+        internal static string GetEnclosure(this string str, EnclosureType type, bool includeClosure, bool doNotUnescape = true)
         {
             var closureIx = -1;
             var nested = 0;
             string open = string.Empty, close = string.Empty, errorString = ErrorStrings.QuoteStringNotEnclosed;
+            bool allowNested = false, allowEscape = false;
             switch (type)
             {
                 case EnclosureType.Quote:
                     open = "\"'";
                     close = "\"'";
+                    allowEscape = true;
                     break;
                 case EnclosureType.SingleQuote:
                     open = "'";
                     close = "'";
+                    allowEscape = true;
                     break;
                 case EnclosureType.Parenthesis:
                     open = OPEN_PARENS;
                     close = CLOSE_PARENS;
                     errorString = ErrorStrings.None;
+                    allowNested = true;
                     break;
                 case EnclosureType.BracketParenthesis:
                     open = "[";
                     close = "]";
                     errorString = ErrorStrings.None;
+                    allowNested = true;
                     break;
             }
             var enclosureBuilder = new StringBuilder();
@@ -195,10 +200,8 @@ namespace DotNetAsm
                     else if (type != EnclosureType.Quote && type != EnclosureType.SingleQuote && (c == '\'' || c == '"'))
                     {
                         var quoted = str.Substring(i).GetEnclosure(type: EnclosureType.Quote,
-                                                      allowNested: false,
-                                                      includeClosure: true,
-                                                      allowEscape: true,
-                                                      doNotUnescape: true);
+                                                                   includeClosure: true,
+                                                                   doNotUnescape: true);
                         enclosureBuilder.Append(quoted);
                         i += quoted.Length - 1;
                     }
@@ -284,7 +287,7 @@ namespace DotNetAsm
         /// <returns>The first instance of a parenthetical group, or the whole string.</returns>
         /// <exception cref="T:System.FormatException"></exception>
         public static string GetNextParenEnclosure(this string str) =>
-            str.GetEnclosure(type: EnclosureType.Parenthesis, allowNested: true, includeClosure: true, allowEscape: false);
+            str.GetEnclosure(type: EnclosureType.Parenthesis, includeClosure: true);
 
         /// <summary>
         /// Gets the next parenthetical group in the string.
@@ -334,11 +337,9 @@ namespace DotNetAsm
         /// <exception cref="T:System.Exception"></exception>
         public static string GetNextQuotedString(this string str, int atIndex, bool doNotUnescape)
         {
-            return str.Substring(atIndex).GetEnclosure(type: EnclosureType.Quote,
-                                                       allowNested: false,
+            return str.Substring(atIndex).GetEnclosure(type: EnclosureType.Quote, 
                                                        includeClosure: false,
-                                                       allowEscape: true,
-                                                       doNotUnescape: doNotUnescape);
+                                                       doNotUnescape);
         }
 
         /// <summary>
