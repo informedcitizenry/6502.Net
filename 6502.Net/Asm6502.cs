@@ -456,10 +456,7 @@ namespace Asm6502.Net
                 }
                 else if (isRockwell)
                 {
-                    var bit = Assembler.Evaluator.Eval(firstElement);
-                    if (bit < 0 || bit > 7)
-                        throw new OverflowException(bit.ToString());
-                    fmt.Evaluations.Add(bit);
+                    var bit = Assembler.Evaluator.Eval(firstElement, 0, 7);
                     formatBuilder.Append(bit);
                 }
                 else
@@ -540,10 +537,6 @@ namespace Asm6502.Net
                 }
             }
             fmt.FormatString = finalFormat;
-
-            if (Reserved.IsOneOf("Rockwell", line.Instruction))
-                fmt.Evaluations.RemoveAt(0);
-
             return (fmt, instruction);
         }
 
