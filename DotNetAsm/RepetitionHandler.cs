@@ -18,7 +18,7 @@ namespace DotNetAsm
         /// <summary>
         /// A block of repetitions implemented as a linked list.
         /// </summary>
-        private class RepetitionBlock
+        class RepetitionBlock
         {
             /// <summary>
             /// An entry in a <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/>.
@@ -82,10 +82,12 @@ namespace DotNetAsm
 
         #region Members
 
-        private readonly RepetitionBlock _rootBlock;
-        private RepetitionBlock _currBlock;
-        private readonly List<SourceLine> _processedLines;
-        private int _levels;
+        RepetitionBlock _rootBlock;
+        RepetitionBlock _currBlock;
+
+        readonly List<SourceLine> _processedLines;
+
+        int _levels;
 
         #endregion
 
@@ -173,11 +175,11 @@ namespace DotNetAsm
         /// Perform final processing on the processed lines of the <see cref="T:DotNetAsm.RepetitionHandler"/>.
         /// </summary>
         /// <param name="block">The <see cref="T:DotNetAsm.RepetitionHandler.RepetitionBlock"/> to process</param>
-        private void ProcessLines(RepetitionBlock block)
+        void ProcessLines(RepetitionBlock block)
         {
-            for (var i = 0; i < block.RepeatAmounts; i++)
+            for (int i = 0; i < block.RepeatAmounts; i++)
             {
-                foreach (RepetitionBlock.RepetitionEntry entry in block.Entries)
+                foreach (var entry in block.Entries)
                 {
                     if (entry.LinkedBlock != null)
                         ProcessLines(entry.LinkedBlock);

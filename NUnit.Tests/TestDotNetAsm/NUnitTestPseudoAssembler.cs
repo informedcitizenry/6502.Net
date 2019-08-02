@@ -7,16 +7,19 @@ using System.Text;
 
 namespace NUnit.Tests.TestDotNetAsm
 {
-    internal class TestController : IAssemblyController
+    class TestController : IAssemblyController
     {
         public TestController()
         {
 
         }
 
-        public TestController(string[] args) => Assembler.Evaluator.DefineParser(str => Assembler.Symbols.TranslateExpressionSymbols(new SourceLine(), str, string.Empty, false));
+        public TestController(string[] args)
+        {
+            Assembler.Evaluator.DefineParser(str => Assembler.Symbols.TranslateExpressionSymbols(new SourceLine(), str, string.Empty, false));
+        }
 
-        private string GetSymbol(string arg)
+        string GetSymbol(string arg)
         {
             if (Assembler.Symbols.Labels.IsSymbol(arg))
                 return Assembler.Symbols.Labels.GetSymbolValue(arg).ToString();
@@ -30,14 +33,20 @@ namespace NUnit.Tests.TestDotNetAsm
 
         }
 
-        public void AddAssembler(ILineAssembler asm) => throw new NotImplementedException();
+        public void AddAssembler(ILineAssembler asm)
+        {
+            throw new NotImplementedException();
+        }
 
         public void AddSymbol(string symbol)
         {
             // don't do anything with this
         }
 
-        public bool IsInstruction(string token) => throw new NotImplementedException();
+        public bool IsInstruction(string token)
+        {
+            throw new NotImplementedException();
+        }
 
         public void AssembleLine(SourceLine line)
         {
@@ -58,7 +67,10 @@ namespace NUnit.Tests.TestDotNetAsm
 
     public class NUnitTestPseudoAssembler : NUnitAsmTestBase
     {
-        public NUnitTestPseudoAssembler() => LineAssembler = new PseudoAssembler(s => false, s => false);
+        public NUnitTestPseudoAssembler()
+        {
+            LineAssembler = new PseudoAssembler(s => false, s => false);
+        }
         [Test]
         public void TestMultiByte()
         {
@@ -184,7 +196,7 @@ namespace NUnit.Tests.TestDotNetAsm
         [Test]
         public void TestStringFormats()
         {
-            var teststring = "HELLO, WORLD";
+            string teststring = "HELLO, WORLD";
             var ascbytes = Encoding.ASCII.GetBytes(teststring);
 
             var test = new List<byte>();
@@ -213,7 +225,7 @@ namespace NUnit.Tests.TestDotNetAsm
             test.Add(Convert.ToByte(ascbytes.Count() + 2));
             test.AddRange(ascbytes);
 
-            var instructionsize = 1     // total operand size byte
+            int instructionsize = 1     // total operand size byte
                                   + ascbytes.Count() // string size
                                   + 2;  // two uninitialized bytes
 
@@ -312,7 +324,7 @@ namespace NUnit.Tests.TestDotNetAsm
             line.Operand = "\"az\", \"A\"";
             LineAssembler.AssembleLine(line);
 
-            var test = "hello reality";
+            string test = "hello reality";
             line.Instruction = ".string";
             line.Operand = string.Format("\"{0}\"", test);
             TestInstruction(line, test.Length, test.Length, Encoding.UTF8.GetBytes(test.ToUpper()));

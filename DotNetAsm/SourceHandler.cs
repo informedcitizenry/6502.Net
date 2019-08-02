@@ -18,7 +18,7 @@ namespace DotNetAsm
     {
         #region members
 
-        private readonly List<SourceLine> _includedLines;
+        List<SourceLine> _includedLines;
 
         #endregion
 
@@ -38,13 +38,13 @@ namespace DotNetAsm
 
         #region IBlockHandler
 
-        private void ProcessCommentBlocks(List<SourceLine> source)
+        void ProcessCommentBlocks(List<SourceLine> source)
         {
             const int ENDCOMMENT_SIZE = 11;
-            var inComment = false;
-            for (var i = 0; i < source.Count; i++)
+            bool inComment = false;
+            for (int i = 0; i < source.Count; i++)
             {
-                SourceLine line = source[i];
+                var line = source[i];
                 line.IsComment = inComment;
                 if (inComment)
                 {
@@ -109,7 +109,7 @@ namespace DotNetAsm
             var openblock = new SourceLine();
             if (line.Instruction.Equals(".binclude", Assembler.Options.StringComparison))
             {
-                List<string> args = line.Operand.CommaSeparate();
+                var args = line.Operand.CommaSeparate();
 
                 if (args.Count > 1)
                 {
@@ -142,9 +142,9 @@ namespace DotNetAsm
                 {
                     FileRegistry.Add(fileName);
                     Console.WriteLine("Processing input file " + fileName + "...");
-                    var currentline = 1;
+                    int currentline = 1;
                     var sourcelines = new List<SourceLine>();
-                    using (var reader = new StreamReader(File.Open(fileName, FileMode.Open)))
+                    using (StreamReader reader = new StreamReader(File.Open(fileName, FileMode.Open)))
                     {
                         while (reader.EndOfStream == false)
                         {

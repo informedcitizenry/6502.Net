@@ -63,7 +63,7 @@ namespace NUnit.Tests.TestDotNetAsm
             expected.Add(new SourceLine { LineNumber = 3, Instruction = ".endblock" });
             expected.Add(new SourceLine { LineNumber = 6, Instruction = "inc", Operand = "$d001" });
 
-            var i = 0;
+            int i = 0;
             source.ForEach(l => l.LineNumber = i++);
 
             var processed = ProcessBlock(source).ToList();

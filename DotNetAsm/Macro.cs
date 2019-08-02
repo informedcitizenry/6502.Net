@@ -80,12 +80,12 @@ namespace DotNetAsm
 
         #region Methods
 
-        private string ReplaceParameter(string paramName, List<Param> parms)
+        string ReplaceParameter(string paramName, List<Param> parms)
         {
             Param paramPassed = null;
-            var paramNumber = -1;
-            var paramPassedName = string.Empty;
-            if (int.TryParse(paramName, out var number))
+            int paramNumber = -1;
+            string paramPassedName = string.Empty;
+            if (int.TryParse(paramName, out int number))
                 paramNumber = number;
 
             if (paramNumber > 0)
@@ -109,26 +109,24 @@ namespace DotNetAsm
         public IEnumerable<SourceLine> Expand(SourceLine macrocall)
         {
             if (!string.IsNullOrEmpty(macrocall.Label))
-            {
                 yield return new SourceLine
                 {
                     Label = macrocall.Label,
                     Scope = macrocall.Scope
                 };
-            }
 
             if (IsSegment == false)
             {
                 var parms = new List<Param>(Params);
                 // any parameters passed?
                 // get passed parameters
-                List<string> passed = macrocall.Operand.CommaSeparate();
+                var passed = macrocall.Operand.CommaSeparate();
 
                 // no passed parameters is ok
                 if (passed == null)
                     passed = new List<string>();
 
-                var useDefaultsIx = parms.Count - passed.Count - 1;
+                int useDefaultsIx = parms.Count - passed.Count - 1;
                 if (useDefaultsIx > -1)
                 {
                     while (useDefaultsIx < parms.Count)
@@ -144,7 +142,7 @@ namespace DotNetAsm
                 }
                 else
                 {
-                    for (var i = 0; i < passed.Count; i++)
+                    for (int i = 0; i < passed.Count; i++)
                     {
                         if (i >= parms.Count)
                         {
@@ -157,12 +155,9 @@ namespace DotNetAsm
                         else if (string.IsNullOrEmpty(passed[i]))
                         {
                             if (string.IsNullOrEmpty(parms[i].DefaultValue))
-                            {
                                 throw new Exception(string.Format(ErrorStrings.MacroParamNoDefault,
                                     macrocall.Instruction.TrimStartOnce('.'),
                                     parms[i].Number));
-                            }
-
                             parms[i].Passed = parms[i].DefaultValue;
                         }
                         else
@@ -171,25 +166,25 @@ namespace DotNetAsm
                         }
                     }
                 }
-                foreach (SourceLine src in Source)
+                foreach (var src in Source)
                 {
                     var repl = src.Clone() as SourceLine;
                     repl.Scope = macrocall.Scope + repl.Scope;
                     if (IsSegment == false)
                     {
-                        for (var i = 0; i < repl.SourceString.Length; i++)
+                        for (int i = 0; i < repl.SourceString.Length; i++)
                         {
                             var c = repl.SourceString[i];
                             if (c == '\\')
                             {
-                                var j = i + 1;
+                                int j = i + 1;
                                 while (j < repl.SourceString.Length && char.IsLetterOrDigit(repl.SourceString[j]))
                                     j++;
                                 if (j == i + 1)
                                     throw new Exception(ErrorStrings.MacroParamNotSpecified);
-                                var paramName = repl.SourceString.Substring(i + 1, j - i - 1);
-                                var paramPassed = ReplaceParameter(paramName, parms);
-                                var rgx = new Regex(@"\\" + paramName, Assembler.Options.RegexOption);
+                                string paramName = repl.SourceString.Substring(i + 1, j - i - 1);
+                                string paramPassed = ReplaceParameter(paramName, parms);
+                                Regex rgx = new Regex(@"\\" + paramName, Assembler.Options.RegexOption);
                                 if (rgx.IsMatch(repl.SourceString))
                                 {
                                     repl.SourceString = rgx.Replace(repl.SourceString, paramPassed);
@@ -199,31 +194,28 @@ namespace DotNetAsm
                             }
                             else if (c == '"' || c == '\'')
                             {
-                                var quoted = repl.SourceString.GetNextQuotedString(i, true);
+                                string quoted = repl.SourceString.GetNextQuotedString(i, true);
                                 if (!string.IsNullOrEmpty(quoted))
                                 {
                                     i += quoted.Length + 1;
                                     quoted = Regex.Unescape(quoted);
-                                    for (var j = i + 1; j < quoted.Length; j++)
+                                    for (int j = i + 1; j < quoted.Length; j++)
                                     {
                                         var qc = quoted[j];
                                         if (qc == '@' && quoted[j + 1] == '{')
                                         {
                                             j += 2;
-                                            var k = j;
+                                            int k = j;
                                             while (k < quoted.Length && quoted[k] != '}')
                                                 k++;
                                             if (quoted[k] == '}')
                                             {
-                                                var paramName = quoted.Substring(j, k - j);
+                                                string paramName = quoted.Substring(j, k - j);
                                                 if ((char.IsDigit(paramName[0]) && qc == '$') ||
                                                     (char.IsLetter(paramName[0]) && qc == '{'))
-                                                {
                                                     throw new Exception(ErrorStrings.None);
-                                                }
-
-                                                var paramPassed = ReplaceParameter(paramName, parms);
-                                                var rgx = new Regex(@"@\{" + paramName + @"\}", Assembler.Options.RegexOption);
+                                                string paramPassed = ReplaceParameter(paramName, parms);
+                                                Regex rgx = new Regex(@"@\{" + paramName + @"\}", Assembler.Options.RegexOption);
                                                 if (rgx.IsMatch(quoted))
                                                 {
                                                     quoted = rgx.Replace(quoted, paramPassed);
@@ -270,8 +262,8 @@ namespace DotNetAsm
                                            string closeBlock)
         {
             var macro = new Macro();
-            var name = definition.Label;
-            var isSegment = false;
+            string name = definition.Label;
+            bool isSegment = false;
             if (definition.Instruction.Equals(".segment", comparer))
             {
                 isSegment = true;
@@ -287,13 +279,13 @@ namespace DotNetAsm
 
                 if (string.IsNullOrEmpty(definition.Operand) == false)
                 {
-                    List<string> parms = definition.Operand.CommaSeparate();
+                    var parms = definition.Operand.CommaSeparate();
                     if (parms == null)
                     {
                         Assembler.Log.LogEntry(definition, ErrorStrings.InvalidParameters, definition.Operand);
                         return macro;
                     }
-                    for (var i = 0; i < parms.Count; i++)
+                    for (int i = 0; i < parms.Count; i++)
                     {
                         var p = parms[i];
                         var parm = new Macro.Param
@@ -327,20 +319,14 @@ namespace DotNetAsm
                     }
                 }
             }
-            foreach (SourceLine line in source.Where(l => !l.IsComment))
+            foreach (var line in source.Where(l => !l.IsComment))
             {
                 if (object.ReferenceEquals(definition, line) ||
-                    object.ReferenceEquals(closure, line))
-                {
-                    continue;
-                }
+                    object.ReferenceEquals(closure, line)) continue;
 
                 if ((isSegment && line.Instruction.Equals("." + name, comparer))
                     || line.Instruction.Equals("." + name, comparer))
-                {
                     throw new Exception(string.Format(ErrorStrings.RecursiveMacro, line.Label));
-                }
-
                 macro.Source.Add(line);
             }
             if (string.IsNullOrEmpty(closure.Operand) == false)

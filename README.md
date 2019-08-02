@@ -1,5 +1,5 @@
 ﻿# 6502.Net, A Simple .Net-Based 65xx Cross-Assembler
-### Version 1.21.0.2
+### Version 1.21.0.1
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting several 65xx-based CPUs, including the MOS 6502, WDC 65C02, and others. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from successor CPUs, including the 65C02 and 65C816.
 ## Overview

@@ -18,7 +18,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        private readonly IEvaluator _evaluator;
+        IEvaluator _evaluator;
 
         #endregion
 
@@ -30,13 +30,16 @@ namespace DotNetAsm
         /// <param name="comparer">A <see cref="T:System.StringComparper"/>.</param>
         /// <param name="evaluator">A <see cref="T:DotNetAsm.IEvaluator"/> to evaluate RValue.</param>
         public VariableCollection(StringComparer comparer, IEvaluator evaluator)
-            : base(comparer) => _evaluator = evaluator;
+            : base(comparer)
+        {
+            _evaluator = evaluator;
+        }
 
         #endregion
 
         #region Methods
 
-        private KeyValuePair<string, string> ParseExpression(string expression)
+        KeyValuePair<string, string> ParseExpression(string expression)
         {
             var symbolBuilder = new StringBuilder();
             var len = expression.Length;
@@ -61,7 +64,10 @@ namespace DotNetAsm
         /// <returns>The variable from expression.</returns>
         /// <param name="expression">The assignment expression.</param>
         /// <param name="inScope">The current scope the expression is in.</param>
-        public string GetVariableFromExpression(string expression, string inScope) => string.Concat(inScope, ParseExpression(expression).Key);
+        public string GetVariableFromExpression(string expression, string inScope)
+        {
+            return string.Concat(inScope, ParseExpression(expression).Key);
+        }
 
         /// <summary>
         /// Gets the assignment (RValue) from the expression.
@@ -70,7 +76,7 @@ namespace DotNetAsm
         /// <param name="expression">Expression.</param>
         public string GetAssignmentFromExpression(string expression)
         {
-            KeyValuePair<string, string> kv = ParseExpression(expression);
+            var kv = ParseExpression(expression);
             if (string.IsNullOrEmpty(kv.Key) == false)
                 return kv.Value;
             return string.Empty;
@@ -87,7 +93,7 @@ namespace DotNetAsm
         /// <exception cref="T:DotNetAsm.SymbolCollectionException">DotNetAsm.SymbolCollectionException</exception>
         public KeyValuePair<string, string> SetVariable(string expression, string inScope)
         {
-            KeyValuePair<string, string> result = ParseExpression(expression);
+            var result = ParseExpression(expression);
             if (string.IsNullOrEmpty(result.Key))
                 throw new ExpressionException(expression);
             SetSymbol(result.Key, _evaluator.Eval(result.Value), false);

@@ -17,9 +17,11 @@ namespace DotNetAsm
     {
         #region Members
 
-        private HashSet<string> _values;
-        private Dictionary<string, HashSet<string>> _types;
-        private StringComparer _comparer;
+        HashSet<string> _values;
+
+        Dictionary<string, HashSet<string>> _types;
+
+        StringComparer _comparer;
 
         #endregion
 
@@ -59,7 +61,7 @@ namespace DotNetAsm
         /// </exception>
         public void AddWord(string type, string word)
         {
-            HashSet<string> t = _types[type];
+            var t = _types[type];
             t.Add(word);
             _values.Add(word);
         }

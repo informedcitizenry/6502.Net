@@ -119,7 +119,10 @@ namespace DotNetAsm
         /// <summary>
         /// Constructs an instance of the class implementing the base class.
         /// </summary>
-        protected AssemblerBase() => Reserved = new ReservedWords(Assembler.Options.StringComparar);
+        protected AssemblerBase()
+        {
+            Reserved = new ReservedWords(Assembler.Options.StringComparar);
+        }
 
         #endregion
 

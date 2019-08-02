@@ -22,8 +22,9 @@ namespace DotNetAsm
     {
         #region Members
 
-        private readonly Dictionary<string, Dictionary<string, int>> _maps;
-        private Dictionary<string, int> _currentMap;
+        Dictionary<string, Dictionary<string, int>> _maps;
+
+        Dictionary<string, int> _currentMap;
 
         #endregion
 
@@ -62,7 +63,7 @@ namespace DotNetAsm
         /// </summary>
         /// <param name="s">The string element to encode.</param>
         /// <returns>An array of encoded bytes for the character.</returns>
-        private byte[] GetCharBytes(string s)
+        byte[] GetCharBytes(string s)
         {
             if (_currentMap.ContainsKey(s))
             {
@@ -220,8 +221,8 @@ namespace DotNetAsm
         /// <param name="s">The string to encode</param>
         public override int GetByteCount(string s)
         {
-            var numbytes = 0;
-            TextElementEnumerator textEnumerator = StringInfo.GetTextElementEnumerator(s);
+            int numbytes = 0;
+            var textEnumerator = StringInfo.GetTextElementEnumerator(s);
             while (textEnumerator.MoveNext())
             {
                 var elem = textEnumerator.GetTextElement();
@@ -258,7 +259,7 @@ namespace DotNetAsm
         public override byte[] GetBytes(string s)
         {
             var bytes = new List<byte>();
-            TextElementEnumerator textEnumerator = StringInfo.GetTextElementEnumerator(s);
+            var textEnumerator = StringInfo.GetTextElementEnumerator(s);
 
             while (textEnumerator.MoveNext())
             {
@@ -307,7 +308,7 @@ namespace DotNetAsm
         /// <exception cref="T:System.Text.TextDecoderFallbackException"></exception>
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
-            var chars = new char[GetMaxCharCount(count)];
+            char[] chars = new char[GetMaxCharCount(count)];
             return GetChars(bytes, index, count, chars, 0);
         }
 
@@ -327,12 +328,12 @@ namespace DotNetAsm
         /// <exception cref="T:System.IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            var j = charIndex;
-            var i = 0;
+            int j = charIndex;
+            int i = 0;
             while (i < byteCount)
             {
-                var displ = 0;
-                var encoding = 0;
+                int displ = 0;
+                int encoding = 0;
                 if (i + 3 + byteIndex < byteCount)
                 {
                     encoding = bytes[i + byteIndex] |

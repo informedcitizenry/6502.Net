@@ -24,20 +24,32 @@ namespace DotNetAsm
         [Serializable]
         public class InvalidPCAssignmentException : Exception
         {
-            private readonly int _pc;
+            readonly int _pc;
 
-            public InvalidPCAssignmentException(int value) => _pc = value;
-            public override string Message => _pc.ToString();
+            public InvalidPCAssignmentException(int value)
+            {
+                _pc = value;
+            }
+            public override string Message
+            {
+                get
+                {
+                    return _pc.ToString();
+                }
+            }
         }
 
         #endregion
 
         #region Members
 
-        private readonly List<byte> _bytes;
-        private int _logicalPc;
-        private int _pc;
-        private bool _overflow;
+        List<byte> _bytes;
+
+        int _logicalPc;
+
+        int _pc;
+
+        bool _overflow;
 
         #endregion
 
@@ -75,7 +87,7 @@ namespace DotNetAsm
         /// <returns></returns>
         public static int GetAlignmentSize(int pc, int amount)
         {
-            var align = 0;
+            int align = 0;
             while ((pc + align) % amount != 0)
                 align++;
             return align;
@@ -108,7 +120,7 @@ namespace DotNetAsm
             if (size == 0)
                 return;
             var ix = _bytes.Count - size;
-            List<byte> bytes = BitConverter.GetBytes(value).ToList().GetRange(0, size);
+            var bytes = BitConverter.GetBytes(value).ToList().GetRange(0, size);
             if (BitConverter.IsLittleEndian != this.IsLittleEndian)
                 bytes.Reverse();
             _bytes.RemoveAt(ix);
@@ -155,7 +167,7 @@ namespace DotNetAsm
         /// <param name="size">The size, in bytes, of the value.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
         /// of the bytes added to the compilation.</returns>
-        public List<byte> Add(long value, int size)
+        public List<byte> Add(Int64 value, int size)
         {
             var bytes = BitConverter.GetBytes(value);
             return AddBytes(bytes, size, false);
@@ -227,7 +239,7 @@ namespace DotNetAsm
         /// <param name="value">The fill value.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
         /// of the bytes added to the compilation.</returns>
-        public List<byte> Fill(int amount, long value)
+        public List<byte> Fill(int amount, Int64 value)
         {
             var size = value.Size();
             byte[] fillbytes;
@@ -238,7 +250,7 @@ namespace DotNetAsm
                 fillbytes = BitConverter.GetBytes(value).Take(size).ToArray();
 
             var repeated = new List<byte>();
-            for (var i = 0; i < amount; i++)
+            for (int i = 0; i < amount; i++)
                 repeated.AddRange(fillbytes);
 
             return AddBytes(repeated.GetRange(0, amount), true);
@@ -299,7 +311,7 @@ namespace DotNetAsm
             }
             else
             {
-                var diff = ProgramCounter - (ProgramStart + _bytes.Count);
+                int diff = ProgramCounter - (ProgramStart + _bytes.Count);
                 if (diff > 0)
                     _bytes.AddRange(new byte[diff]);
             }
@@ -315,16 +327,16 @@ namespace DotNetAsm
 
             if (Transforms.Count > 0)
             {
-                List<byte> transformed = bytes.ToList().GetRange(0, size);
-                for (var i = 0; i < size; i++)
+                var transformed = bytes.ToList().GetRange(0, size);
+                for (int i = 0; i < size; i++)
                 {
-                    foreach (Func<byte, byte> t in Transforms)
+                    foreach (var t in Transforms)
                         transformed[i] = t(transformed[i]);
                 }
                 _bytes.AddRange(transformed);
                 return transformed;
             }
-            List<byte> bytesAdded = bytes.ToList().GetRange(0, size);
+            var bytesAdded = bytes.ToList().GetRange(0, size);
             _bytes.AddRange(bytesAdded);
             return bytesAdded;
         }
@@ -337,7 +349,10 @@ namespace DotNetAsm
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
         /// of the bytes added to the compilation.</returns>
-        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian) => AddBytes(bytes, size, ignoreEndian, true);
+        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
+        {
+            return AddBytes(bytes, size, ignoreEndian, true);
+        }
 
         /// <summary>
         /// Add a range of bytes to the compilation.
@@ -346,7 +361,10 @@ namespace DotNetAsm
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
         /// <returns>A <see cref="T:System.Collections.Generic.List&lt;byte&gt;"/> 
         /// of the bytes added to the compilation.</returns>
-        public List<byte> AddBytes(IEnumerable<byte> bytes, bool ignoreEndian) => AddBytes(bytes, bytes.Count(), ignoreEndian);
+        public List<byte> AddBytes(IEnumerable<byte> bytes, bool ignoreEndian)
+        {
+            return AddBytes(bytes, bytes.Count(), ignoreEndian);
+        }
 
         /// <summary>
         /// Add a range of bytes to the compilation.
@@ -380,7 +398,7 @@ namespace DotNetAsm
         public int GetRelativeOffset(int address1, int address2)
         {
             address2 = address2 & MaxAddress;
-            var offset = address1 - address2;
+            int offset = address1 - address2;
             if (Math.Abs(offset) > (MaxAddress / 2))
             {
                 if (offset < 0)
@@ -434,14 +452,14 @@ namespace DotNetAsm
         /// <summary>
         /// Gets the status of the compilation, if it is currently compiling
         /// </summary>
-        private bool CompilingHasStarted => _bytes.Count > 0;
+        bool CompilingHasStarted { get { return _bytes.Count > 0; } }
 
         /// <summary>
         /// Gets the real Program Counter
         /// </summary>
         public int ProgramCounter
         {
-            get => _pc;
+            get { return _pc; }
             set
             {
                 if (value < 0 || value < _pc)
@@ -459,14 +477,14 @@ namespace DotNetAsm
         /// Gets a flag that indicates if a PC overflow has occurred. This flag will 
         /// only be cleared with a call to the Reset method.
         /// </summary>
-        public bool PCOverflow => _overflow;
+        public bool PCOverflow { get { return _overflow; } }
 
         /// <summary>
         /// Gets the current logical Program Counter.
         /// </summary>
         public int LogicalPC
         {
-            get => _logicalPc;
+            get { return _logicalPc; }
             set
             {
                 if (value < 0 || value < _logicalPc)

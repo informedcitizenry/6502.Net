@@ -66,7 +66,7 @@ namespace NUnit.Tests.TestDotNetAsm
             var encoding = new AsmEncoding();
 
             encoding.SelectEncoding("test");
-            var teststring = "τϵστ";
+            string teststring = "τϵστ";
             var testbytes = encoding.GetBytes(teststring);
             var expectedbytes = Encoding.UTF8.GetBytes(teststring);
             Assert.AreEqual(expectedbytes, testbytes);
@@ -106,7 +106,7 @@ namespace NUnit.Tests.TestDotNetAsm
         public void TestEmojis()
         {
             var encoding = new AsmEncoding();
-            var smiley = "😀"; // smiley face
+            string smiley = "😀"; // smiley face
             var expectedbytes = new byte[] { 0xF0, 0x9F, 0x98, 0x80 }; // utf-8 encoding of U+1F600
             var testbytes = encoding.GetBytes(smiley);
             Assert.AreEqual(expectedbytes, testbytes);

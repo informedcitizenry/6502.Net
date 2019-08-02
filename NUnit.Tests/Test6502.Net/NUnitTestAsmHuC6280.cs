@@ -11,7 +11,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "st1",
                 Operand = "#$42"
@@ -27,7 +27,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "st2",
                 Operand = "#$42"
@@ -43,7 +43,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "sxy"
             };
@@ -58,7 +58,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "sax"
             };
@@ -73,7 +73,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "say"
             };
@@ -88,7 +88,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "cla"
             };
@@ -102,7 +102,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "clx"
             };
@@ -117,7 +117,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "cly"
             };
@@ -132,7 +132,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "csh"
             };
@@ -147,7 +147,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "set"
             };
@@ -162,7 +162,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tma",
                 Operand = "#$42"
@@ -178,7 +178,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tam",
                 Operand = "#$42"
@@ -194,7 +194,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "ora",
                 Operand = "($42,x)"
@@ -216,7 +216,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "and",
                 Operand = "($42,x)"
@@ -238,7 +238,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "eor",
                 Operand = "($42,x)"
@@ -260,7 +260,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "adc",
                 Operand = "($42,x)"
@@ -282,7 +282,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "cmp",
                 Operand = "($42,x)"
@@ -304,7 +304,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "sbc",
                 Operand = "($42,x)"
@@ -326,7 +326,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tii",
                 Operand = "$42,$d2,$01"
@@ -360,7 +360,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tdd",
                 Operand = "$42,$d2,$01"
@@ -394,7 +394,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tin",
                 Operand = "$42,$d2,$01"
@@ -428,7 +428,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tia",
                 Operand = "$42,$d2,$01"
@@ -462,7 +462,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tai",
                 Operand = "$42,$d2,$01"
@@ -496,7 +496,7 @@ namespace NUnit.Tests.Test6502.Net
         {
             SetCpu("HuC6280");
 
-            var line = new SourceLine
+            SourceLine line = new SourceLine
             {
                 Instruction = "tst",
                 Operand = "#$42,$d2"

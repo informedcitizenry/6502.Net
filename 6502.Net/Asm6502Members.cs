@@ -17,19 +17,22 @@ namespace Asm6502.Net
     {
         #region Members
 
-        private readonly IAssemblyController _controller;
-        private string _cpu;
-        private bool _m16, _x16;
-        private OpcodeTable _filteredOpcodes;
-        private OpcodeTable _opcodes6502, _opcodes6502i;
-        private OpcodeTable _opcodes65C02, _opcodesR65C02, _opcodes65CE02, _opcodesHuC6280;
-        private OpcodeTable _opcodes65816;
+        readonly IAssemblyController _controller;
+
+        string _cpu;
+
+        bool _m16, _x16;
+
+        OpcodeTable _filteredOpcodes;
+        OpcodeTable _opcodes6502, _opcodes6502i;
+        OpcodeTable _opcodes65C02, _opcodesR65C02, _opcodes65CE02, _opcodesHuC6280;
+        OpcodeTable _opcodes65816;
 
         #endregion
 
         #region Methods
 
-        private void ConstructOpcodeTable()
+        void ConstructOpcodeTable()
         {
             _opcodes6502 = new OpcodeTable()
             {

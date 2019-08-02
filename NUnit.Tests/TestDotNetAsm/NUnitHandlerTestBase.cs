@@ -20,7 +20,7 @@ namespace NUnit.Tests.TestDotNetAsm
         protected IEnumerable<SourceLine> ProcessBlock(IEnumerable<SourceLine> testSource)
         {
             var testProcessed = new List<SourceLine>();
-            foreach (SourceLine line in testSource)
+            foreach (var line in testSource)
             {
                 if (Handler.Processes(line.Instruction) ||
                     Handler.IsProcessing())

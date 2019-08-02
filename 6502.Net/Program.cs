@@ -15,7 +15,7 @@ namespace Asm6502.Net
 {
     public class Program
     {
-        private static string DisplayBannerEventHandler(object sender, bool showVersionOnly)
+        static string DisplayBannerEventHandler(object sender, bool showVersionOnly)
         {
             var sb = new StringBuilder();
 
@@ -32,7 +32,7 @@ namespace Asm6502.Net
             return sb.ToString();
         }
 
-        private static byte[] WriteHeaderEventHandler(object sender)
+        static byte[] WriteHeaderEventHandler(object sender)
         {
             var controller = sender as IAssemblyController;
 
@@ -70,7 +70,7 @@ namespace Asm6502.Net
             }
         }
 
-        private static void Main(string[] args)
+        static void Main(string[] args)
         {
             try
             {

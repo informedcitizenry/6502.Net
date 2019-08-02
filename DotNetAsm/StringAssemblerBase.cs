@@ -19,7 +19,7 @@ namespace DotNetAsm
     {
         #region Members
 
-        private readonly Regex _regEncName;
+        Regex _regEncName;
 
         #endregion
 
@@ -45,7 +45,7 @@ namespace DotNetAsm
 
         #region Methods
 
-        private void UpdateEncoding(SourceLine line)
+        void UpdateEncoding(SourceLine line)
         {
             line.DoNotAssemble = true;
             var instruction = line.Instruction.ToLower();
@@ -74,7 +74,7 @@ namespace DotNetAsm
                         if (parms.Count < 2 || parms.Count > 3)
                             throw new ArgumentException(line.Operand);
 
-                        var translation = 0;
+                        int translation = 0;
 
                         if (lastparm.EnclosedInQuotes())
                         {
@@ -134,7 +134,7 @@ namespace DotNetAsm
         }
 
         // Evaluate parameter the string as either a char literal or expression
-        private string EvalEncodingParam(string p)
+        string EvalEncodingParam(string p)
         {
             var quoted = p.GetNextQuotedString();
             if (string.IsNullOrEmpty(quoted))
@@ -162,11 +162,11 @@ namespace DotNetAsm
             if (Reserved.IsOneOf("Encoding", line.Instruction))
                 return 0;
 
-            List<string> csvs = line.Operand.CommaSeparate();
-            var size = 0;
-            foreach (var s in csvs)
+            var csvs = line.Operand.CommaSeparate();
+            int size = 0;
+            foreach (string s in csvs)
             {
-                if (s.EnclosedInQuotes(out var quoted))
+                if (s.EnclosedInQuotes(out string quoted))
                 {
                     size += Assembler.Encoding.GetByteCount(quoted);//Regex.Unescape(s.TrimOnce(s.First())));
                 }
@@ -193,10 +193,7 @@ namespace DotNetAsm
             }
             if (line.Instruction.Equals(".cstring", Assembler.Options.StringComparison) ||
                 line.Instruction.Equals(".pstring", Assembler.Options.StringComparison))
-            {
                 size++;
-            }
-
             return size;
         }
 
@@ -236,7 +233,7 @@ namespace DotNetAsm
             {
                 Assembler.Output.Transforms.Push(b => Convert.ToByte(b << 1));
             }
-            List<string> args = line.Operand.CommaSeparate();
+            var args = line.Operand.CommaSeparate();
             if (line.Assembly.Count > 0)
                 line.Assembly.Clear();
             foreach (var arg in args)
@@ -245,7 +242,7 @@ namespace DotNetAsm
                 var atoi = GetFormattedString(arg, Assembler.Options.StringComparison, Assembler.Evaluator);
                 if (string.IsNullOrEmpty(atoi))
                 {
-                    if (!arg.EnclosedInQuotes(out var quoted))
+                    if (!arg.EnclosedInQuotes(out string quoted))
                     {
                         if (arg == "?")
                         {
@@ -312,17 +309,17 @@ namespace DotNetAsm
                 throw new Exception(ErrorStrings.None);
             var parms = operand.Substring(operand.IndexOf('('));
 
-            List<string> csvs = parms.TrimStartOnce('(').TrimEndOnce(')').CommaSeparate();
+            var csvs = parms.TrimStartOnce('(').TrimEndOnce(')').CommaSeparate();
             var fmt = csvs.First();
-            if (fmt.Length < 5 || !fmt.EnclosedInQuotes(out var fmtQuoted))
+            if (fmt.Length < 5 || !fmt.EnclosedInQuotes(out string fmtQuoted))
                 throw new Exception(ErrorStrings.None);
             var parmlist = new List<object>();
 
-            for (var i = 1; i < csvs.Count; i++)
+            for (int i = 1; i < csvs.Count; i++)
             {
                 if (string.IsNullOrEmpty(csvs[i]))
                     throw new Exception(ErrorStrings.None);
-                if (csvs[i].EnclosedInQuotes(out var quoted))
+                if (csvs[i].EnclosedInQuotes(out string quoted))
                     parmlist.Add(quoted);
                 else
                     parmlist.Add(evaluator.Eval(csvs[i]));

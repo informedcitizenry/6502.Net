@@ -18,9 +18,9 @@ namespace DotNetAsm
     {
         #region Members
 
-        private int _anon;
-        private readonly Stack<string> _scope;
-        private readonly List<SourceLine> _processedLines;
+        int _anon;
+        readonly Stack<string> _scope;
+        readonly List<SourceLine> _processedLines;
 
         #endregion
 
@@ -41,9 +41,9 @@ namespace DotNetAsm
 
         public void Process(SourceLine line)
         {
-            IEnumerable<string> rev = _scope.Reverse();
+            var rev = _scope.Reverse();
             var scopeBuilder = new StringBuilder(line.Scope);
-            foreach (var s in rev)
+            foreach (string s in rev)
                 scopeBuilder.AppendFormat("{0}.", s);
 
             line.Scope = scopeBuilder.ToString();
