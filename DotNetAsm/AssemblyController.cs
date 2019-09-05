@@ -270,95 +270,12 @@ namespace DotNetAsm
                             // Parse the source into labels, instructions, etc.
                             //
                             //------------------------------------------------------
-                            if (!_currentLine.IsParsed)
+                            if (!_currentLine.IsParsed && !string.IsNullOrEmpty(_currentLine.SourceString))
                             {
-                                if (string.IsNullOrWhiteSpace(_currentLine.SourceString))
-                                    continue;
-                                StringBuilder tokenBuilder = new StringBuilder();
-                                for (int j = 0; j < _currentLine.SourceString.Length; j++)
-                                {
-                                    var c = _currentLine.SourceString[j];
-                                    if (string.IsNullOrEmpty(_currentLine.Instruction))
-                                    {
-                                        string token = string.Empty;
-                                        if (char.IsWhiteSpace(c) || j == _currentLine.SourceString.Length - 1 || c == '=' || c == '*' || c == ':' || c == ';')
-                                        {
-                                            if (!char.IsWhiteSpace(c) && c != ':' && c != ';')
-                                                tokenBuilder.Append(c);
-                                            token = tokenBuilder.ToString();
-                                            tokenBuilder.Clear();
-                                        }
-                                        else
-                                        {
-                                            tokenBuilder.Append(c);
-                                        }
-                                        if (!string.IsNullOrEmpty(token))
-                                        {
-                                            if (IsInstruction(token) || token == "=" || token[0] == '.')
-                                            {
-                                                _currentLine.Instruction = token;
-                                                if (c == ':')
-                                                {
-                                                    if (j < _currentLine.SourceString.Length - 1)
-                                                        sourceList.Insert(i + 1, new SourceLine
-                                                        {
-                                                            SourceString = _currentLine.SourceString.Substring(j + 1)
-                                                        });
-                                                    break;
-                                                }
-                                            }
-                                            else
-                                            {
-                                                if (!string.IsNullOrEmpty(_currentLine.Label))
-                                                {
-                                                    Assembler.Log.LogEntry(_currentLine, ErrorStrings.UnknownInstruction, token);
-                                                    break;
-                                                }
-                                                _currentLine.Label = token;
-                                            }
-                                        }
-                                        if (c == ';')
-                                            break;
-                                    }
-                                    else
-                                    {
-                                        if (tokenBuilder.Length > 0 || !char.IsWhiteSpace(c))
-                                        {
-                                            if (c == '"' || c == '\'')
-                                            {
-                                                // process quotes separately
-                                                var quoted = _currentLine.SourceString.GetNextQuotedString(atIndex: j, doNotUnescape: true);
-                                                var quoteEndIx = quoted.Length + 2;
-                                                tokenBuilder.Append(_currentLine.SourceString.Substring(j, quoteEndIx));
-                                                j += quoteEndIx - 1;
-                                            }
-                                            else if (c == ';')
-                                            {
-                                                j = _currentLine.SourceString.Length - 1;
-                                            }
-                                            else if (c == ':')
-                                            {
-                                                _currentLine.Operand = tokenBuilder.ToString().TrimEnd();
-                                                tokenBuilder.Clear();
-                                                if (j < _currentLine.SourceString.Length - 1)
-                                                    sourceList.Insert(i + 1, new SourceLine
-                                                    {
-                                                        SourceString = _currentLine.SourceString.Substring(j + 1)
-                                                    });
-                                                break;
-                                            }
-                                            else
-                                            {
-                                                tokenBuilder.Append(c);
-                                            }
-                                        }
-                                        if (j == _currentLine.SourceString.Length - 1)
-                                        {
-                                            _currentLine.Operand = tokenBuilder.ToString().TrimEnd();
-                                            tokenBuilder.Clear();
-                                        }
-                                    }
-                                }
+                                _processedLines.Add(_currentLine);
+                                foreach (var line in _currentLine.Parse(token => (token.Length
+                                    > 0 && token[0] == '.') || IsInstruction(token) || token.Equals("=")))
+                                    _processedLines.Add(line);
                             }
                         }
                         //------------------------------------------------------

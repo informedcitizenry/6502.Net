@@ -209,18 +209,17 @@ namespace Asm6502.Net
 
         public void SetCpu(object sender, CpuChangedEventArgs args)
         {
-            if (args.Line.Operand.EnclosedInQuotes() == false &&
+            if (args.Line.Operand.EnclosedInQuotes(out string cpu) == false &&
                 !args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
             {
                 Assembler.Log.LogEntry(args.Line, ErrorStrings.QuoteStringNotEnclosed);
                 return;
             }
-            var cpu = args.Line.Operand.Trim('"');
             if (!SupportedCPUs.Contains(cpu))
             {
-                var error = string.Format("Invalid CPU '{0}' specified", cpu);
+                var error = string.Format($"Invalid CPU '{cpu}' specified");
                 if (args.Line.SourceString.Equals(ConstStrings.COMMANDLINE_ARG))
-                    throw new Exception(string.Format(error));
+                    throw new Exception(error);
 
                 Assembler.Log.LogEntry(args.Line, error);
                 return;
@@ -265,7 +264,6 @@ namespace Asm6502.Net
                     break;
 
             }
-
             if (_m16)
                 SetImmediateA(3);
             if (_x16)
@@ -275,10 +273,9 @@ namespace Asm6502.Net
 
         private void SetImmediateA(int size)
         {
-            if (size == 3 && _cpu.StartsWith("6502", StringComparison.Ordinal))
-            {
+            if (size == 3 && !_cpu.Equals("65816"))
                 return;
-            }
+
             var fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
             var prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
 
@@ -291,22 +288,21 @@ namespace Asm6502.Net
             _filteredOpcodes.Remove("cmb" + prv);
             _filteredOpcodes.Remove("sbc" + prv);
 
-            _filteredOpcodes["ora" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x09 };
-            _filteredOpcodes["and" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x29 };
-            _filteredOpcodes["eor" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x49 };
-            _filteredOpcodes["adc" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0x69 };
+            _filteredOpcodes["ora" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0x09 };
+            _filteredOpcodes["and" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0x29 };
+            _filteredOpcodes["eor" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0x49 };
+            _filteredOpcodes["adc" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0x69 };
             _filteredOpcodes["bit" + fmt] = new Instruction { CPU = "65C02", Size = size, Opcode = 0x89 };
-            _filteredOpcodes["lda" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xa9 };
-            _filteredOpcodes["cmp" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xc9 };
-            _filteredOpcodes["sbc" + fmt] = new Instruction { CPU = "6502", Size = size, Opcode = 0xe9 };
+            _filteredOpcodes["lda" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0xa9 };
+            _filteredOpcodes["cmp" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0xc9 };
+            _filteredOpcodes["sbc" + fmt] = new Instruction { CPU =  "6502", Size = size, Opcode = 0xe9 };
         }
 
         private void SetImmediateXY(int size)
         {
-            if (size == 3 && _cpu.StartsWith("6502", StringComparison.Ordinal))
-            {
+            if (size == 3 && !_cpu.Equals("65816"))
                 return;
-            }
+
             var fmt = size == 3 ? " #${0:x4}" : " #${0:x2}";
             var prv = size == 3 ? " #${0:x2}" : " #${0:x4}";
 
@@ -586,17 +582,19 @@ namespace Asm6502.Net
             }
             long opcode = instruction.Opcode;
 
+            var evals = fmt.Evaluations;
+
             // how the evaluated expressions will display in disassembly
-            List<long> evals = fmt.Evaluations;
             var evalDisplays = evals.ToList();
             var numEvals = evals.Count;
+
             var isRockwell = Reserved.IsOneOf("RockwellBranches", line.Instruction);
             if (Reserved.IsOneOf("Branches", line.Instruction) ||
                 Reserved.IsOneOf("Branches16", line.Instruction) ||
                 isRockwell)
             {
                 var displ = Reserved.IsOneOf("RockwellBranches", line.Instruction) ? evals[1] :
-                                                                                      evals[0];
+                                                                                     evals[0];
                 if (displ > 0xFFFF)
                     throw new OverflowException(displ.ToString());
 
@@ -685,13 +683,9 @@ namespace Asm6502.Net
                     return 3;
                 if (_x16 && (line.Instruction.EndsWith("x", Assembler.Options.StringComparison) ||
                              line.Instruction.EndsWith("y", Assembler.Options.StringComparison)))
-                {
                     return 3;
-                }
-
                 return 2;
             }
-
             if (Reserved.IsOneOf("ReturnAddress", line.Instruction))
                 return 2 * line.Operand.CommaSeparate().Count;
 
@@ -700,7 +694,6 @@ namespace Asm6502.Net
                 if (_cpu.Equals("65CE02")) return 3;
                 return 2;
             }
-
             if (Reserved.IsOneOf("Rockwell", line.Instruction))
             {
                 if (Reserved.IsOneOf("RockwellBranches", line.Instruction))
@@ -727,9 +720,7 @@ namespace Asm6502.Net
                 (line.Operand.EndsWith("),y", Assembler.Options.StringComparison) ||
                 line.Operand.EndsWith(",x)", Assembler.Options.StringComparison) ||
                 line.Operand.EndsWith("),z", Assembler.Options.StringComparison)))
-            {
                 return 2;
-            }
 
             try
             {
