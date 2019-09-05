@@ -171,8 +171,10 @@ namespace DotNetAsm
         /// </remarks>
         IEnumerable<SourceLine> Preprocess()
         {
-            var source = new List<SourceLine>();
+            if (!string.IsNullOrEmpty(Assembler.Options.CPU))
+                OnCpuChanged(new SourceLine { SourceString = ConstStrings.COMMANDLINE_ARG, Operand = Assembler.Options.CPU });
 
+            var source = new List<SourceLine>();
             source.AddRange(ProcessDefinedLabels());
             foreach (var file in Assembler.Options.InputFiles)
             {
@@ -191,9 +193,6 @@ namespace DotNetAsm
                 _sourceHandler.Reset();
                 return source;
             }
-            if (!string.IsNullOrEmpty(Assembler.Options.CPU))
-                OnCpuChanged(new SourceLine { SourceString = ConstStrings.COMMANDLINE_ARG, Operand = Assembler.Options.CPU });
-
             return null;
         }
 
