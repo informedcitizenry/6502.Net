@@ -254,6 +254,7 @@ namespace DotNetAsm
                     }
                     else
                     {
+                        quoted = Regex.Unescape(quoted);
                         encoded = Assembler.Output.Add(quoted, Assembler.Encoding);
                     }
                 }

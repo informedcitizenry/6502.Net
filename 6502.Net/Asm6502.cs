@@ -525,6 +525,8 @@ namespace Asm6502.Net
                 }
                 else
                 {
+                    if (fmt.Evaluations.Count > 3)
+                        return (null, null); // too many evaluations
                     var newSize = fmt.EvaluationSizes[0] + 1;
                     if (newSize > 3)
                         return (null, null); // we didn't find it

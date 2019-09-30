@@ -135,15 +135,12 @@ namespace DotNetAsm
         /// brackets, or double-quotes
         /// </summary>
         /// <param name="str">This string.</param>
-        /// <param name="type">The <see cref="{DotNetAsm.StringExtensions.EnclosureType}"/>.</param>
-        /// <param name="allowNested">Allow the enclosure to contain nested enclosures.</param>
+        /// <param name="type">The <see cref="EnclosureType"/>.</param>
         /// <param name="includeClosure">Include the closure in the resulting substring.</param>
-        /// <param name="allowEscape">Allow the substring to escape the enclosure, so it will not be
-        /// evaluated as an enclosure.</param>
         /// <param name="doNotUnescape">Do not unescape the escaped enclosure in the final substring.</param>
         /// <returns>The substring containing the enclosure, or an empty string if no enclosure is
         /// found in the string.</returns>
-        /// <exception cref="{System.Exception"}/>
+        /// <exception cref="Exception"/>
         internal static string GetEnclosure(this string str, EnclosureType type, bool includeClosure, bool doNotUnescape = true)
         {
             var closureIx = -1;
