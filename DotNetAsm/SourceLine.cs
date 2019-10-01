@@ -72,19 +72,26 @@ namespace DotNetAsm
         /// The enumerator captures compound source lines.</returns>
         public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction)
         {
+            if (LineNumber == 120 || LineNumber == 325)
+            {
+                int bob = 0;
+            }
             if (string.IsNullOrWhiteSpace(SourceString))
                 yield break;
             var tokenBuilder = new StringBuilder();
-            for (var j = 0; j < SourceString.Length; j++)
+            for (var i = 0; i < SourceString.Length; i++)
             {
-                var c = SourceString[j];
+                var c = SourceString[i];
                 if (string.IsNullOrEmpty(Instruction))
                 {
                     var token = string.Empty;
-                    if (char.IsWhiteSpace(c) || j == SourceString.Length - 1 || c == '=' || c == '*' || c == ':' || c == ';')
+                    if (char.IsWhiteSpace(c) || i == SourceString.Length - 1 || c == '=' || c == '*' || c == ':' || c == ';')
                     {
-                        if (!char.IsWhiteSpace(c) && c != ':' && c != ';')
+                        if (!char.IsWhiteSpace(c) && c != ':' && c != ';' && (c != '=' || tokenBuilder.Length == 0))
                             tokenBuilder.Append(c);
+                        else if (c == '=' && tokenBuilder.Length > 0)
+                            i--;
+
                         token = tokenBuilder.ToString();
                         tokenBuilder.Clear();
                     }
@@ -99,11 +106,11 @@ namespace DotNetAsm
                             Instruction = token;
                             if (c == ':')
                             {
-                                if (j < SourceString.Length - 1)
+                                if (i < SourceString.Length - 1)
                                 {
                                     yield return new SourceLine
                                     {
-                                        SourceString = $"\t{SourceString.Substring(j + 1)}"
+                                        SourceString = $"\t{SourceString.Substring(i + 1)}"
                                     };
                                 }
                                 break;
@@ -129,24 +136,24 @@ namespace DotNetAsm
                         if (c == '"' || c == '\'')
                         {
                             // process quotes separately
-                            var quoted = SourceString.GetNextQuotedString(atIndex: j, doNotUnescape: true);
+                            var quoted = SourceString.GetNextQuotedString(atIndex: i, doNotUnescape: true);
                             var quoteEndIx = quoted.Length + 2;
-                            tokenBuilder.Append(SourceString.Substring(j, quoteEndIx));
-                            j += quoteEndIx - 1;
+                            tokenBuilder.Append(SourceString.Substring(i, quoteEndIx));
+                            i += quoteEndIx - 1;
                         }
                         else if (c == ';')
                         {
-                            j = SourceString.Length - 1;
+                            i = SourceString.Length - 1;
                         }
                         else if (c == ':')
                         {
                             Operand = tokenBuilder.ToString().TrimEnd();
                             tokenBuilder.Clear();
-                            if (j < SourceString.Length - 1)
+                            if (i < SourceString.Length - 1)
                             {
                                 yield return new SourceLine
                                 {
-                                    SourceString = $"\t{SourceString.Substring(j + 1)}"
+                                    SourceString = $"\t{SourceString.Substring(i + 1)}"
                                 };
                             }
 
@@ -157,7 +164,7 @@ namespace DotNetAsm
                             tokenBuilder.Append(c);
                         }
                     }
-                    if (j == SourceString.Length - 1)
+                    if (i == SourceString.Length - 1)
                     {
                         Operand = tokenBuilder.ToString().TrimEnd();
                         tokenBuilder.Clear();
