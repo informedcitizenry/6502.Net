@@ -105,6 +105,7 @@ namespace NUnit.Tests.TestDotNetAsm
                 "VERSION=1.0",
                 "--cpu",
                 "6502i",
+                "--verbose-asm",
                 "--list=game_list.a65",
                 "-a",
                 "--werror",
@@ -114,7 +115,7 @@ namespace NUnit.Tests.TestDotNetAsm
             AsmCommandLineOptions options = new AsmCommandLineOptions();
             options.ParseArgs(args);
 
-            Assert.AreEqual(14, options.ArgsPassed);
+            Assert.AreEqual(15, options.ArgsPassed);
             Assert.AreEqual(2, options.InputFiles.Count);
             Assert.AreEqual("library.a65", options.InputFiles[0]);
             Assert.AreEqual("game.a65", options.InputFiles[1]);
@@ -124,6 +125,7 @@ namespace NUnit.Tests.TestDotNetAsm
             Assert.AreEqual("VERSION=1.0", options.LabelDefines[1]);
             Assert.AreEqual("6502i", options.CPU);
             Assert.AreEqual("game_list.a65", options.ListingFile);
+            Assert.IsTrue(options.VerboseList);
             Assert.IsTrue(options.NoAssembly);
             Assert.IsTrue(options.WarningsAsErrors);
             Assert.AreEqual("symbols.a65", options.LabelFile);

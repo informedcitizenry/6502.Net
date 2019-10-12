@@ -7,6 +7,7 @@
 
 using DotNetAsm;
 using OpcodeTable = System.Collections.Generic.Dictionary<string, DotNetAsm.Instruction>;
+using HOPCODETABLET = System.Collections.Generic.Dictionary<int, DotNetAsm.Instruction>;
 
 namespace Asm6502.Net
 {
@@ -215,8 +216,10 @@ namespace Asm6502.Net
                 { "stz ${0:x4}",             new Instruction { CPU = "65C02",   Size = 3,  Opcode = 0x9c } },
                 { "stz ${0:x4},x",           new Instruction { CPU = "65C02",   Size = 3,  Opcode = 0x9e } },
                 { "lda (${0:x2})",           new Instruction { CPU = "65C02",   Size = 2,  Opcode = 0xb2 } },
+                { "wai",                     new Instruction { CPU = "65816",   Size = 1,  Opcode = 0xcb } },
                 { "cmp (${0:x2})",           new Instruction { CPU = "65C02",   Size = 2,  Opcode = 0xd2 } },
                 { "phx",                     new Instruction { CPU = "65C02",   Size = 1,  Opcode = 0xda } },
+                { "stp",                     new Instruction { CPU = "65816",   Size = 1,  Opcode = 0xdb } },
                 { "sbc (${0:x2})",           new Instruction { CPU = "65C02",   Size = 2,  Opcode = 0xf2 } },
                 { "plx",                     new Instruction { CPU = "65C02",   Size = 1,  Opcode = 0xfa } },
             };
@@ -419,12 +422,10 @@ namespace Asm6502.Net
                 { "rep #${0:x2}",            new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xc2 } },
                 { "cmp ${0:x2},s",           new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xc3 } },
                 { "cmp [${0:x2}]",           new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xc7 } },
-                { "wai",                     new Instruction { CPU = "65816",   Size = 1,  Opcode = 0xcb } },
                 { "cmp ${0:x6}",             new Instruction { CPU = "65816",   Size = 4,  Opcode = 0xcf } },
                 { "cmp (${0:x2},s),y",       new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xd3 } },
                 { "pei (${0:x2})",           new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xd4 } },
                 { "cmp [${0:x2}],y",         new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xd7 } },
-                { "stp",                     new Instruction { CPU = "65816",   Size = 1,  Opcode = 0xdb } },
                 { "jmp [${0:x4}]",           new Instruction { CPU = "65816",   Size = 3,  Opcode = 0xdc } },
                 { "cmp ${0:x6},x",           new Instruction { CPU = "65816",   Size = 4,  Opcode = 0xdf } },
                 { "sep #${0:x2}",            new Instruction { CPU = "65816",   Size = 2,  Opcode = 0xe2 } },

@@ -604,7 +604,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestStp()
         {
-            SetCpu("65816");
+            SetCpu("65C02");
             var line = new SourceLine
             {
                 Instruction = "stp"
@@ -732,7 +732,7 @@ namespace NUnit.Tests.Test6502.Net
         [Test]
         public void TestWai()
         {
-            SetCpu("65816");
+            SetCpu("65C02");
             var line = new SourceLine
             {
                 Instruction = "wai"

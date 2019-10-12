@@ -72,10 +72,6 @@ namespace DotNetAsm
         /// The enumerator captures compound source lines.</returns>
         public IEnumerable<SourceLine> Parse(Func<string, bool> isInstruction)
         {
-            if (LineNumber == 120 || LineNumber == 325)
-            {
-                int bob = 0;
-            }
             if (string.IsNullOrWhiteSpace(SourceString))
                 yield break;
             var tokenBuilder = new StringBuilder();

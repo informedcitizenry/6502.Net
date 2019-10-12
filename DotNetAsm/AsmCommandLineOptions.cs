@@ -275,10 +275,12 @@ namespace DotNetAsm
                 int index = 0, length = 0;
                 foreach (char c in argument)
                 {
-                    if (c == '-' && length == 0)
+                    if (c == '-')
                     {
-                        index++;
-                        continue;
+                        if (length == 0) // is it a -OPTION
+                            index++;
+                        else
+                            length++;    // must be a --OPT-ION
                     }
                     else if (char.IsLetterOrDigit(c))
                     {

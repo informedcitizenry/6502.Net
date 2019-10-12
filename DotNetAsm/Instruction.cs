@@ -16,12 +16,12 @@ namespace DotNetAsm
     public class Instruction
     {
         /// <summary>
-        /// The instruction size (including operands).
+        /// Gets or sets the instruction size (including operands).
         /// </summary>
         public int Size { get; set; }
 
         /// <summary>
-        /// The opcode of the instruction.
+        /// Gets or sets the opcode of the instruction.
         /// </summary>
         public int Opcode { get; set; }
 
