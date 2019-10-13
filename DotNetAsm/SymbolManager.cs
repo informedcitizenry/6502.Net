@@ -143,6 +143,9 @@ namespace DotNetAsm
             for (int i = 0; i < expression.Length; i++)
             {
                 char c = expression[i];
+                if (lastTokenChar.IsRadixOperator() && !char.IsLetterOrDigit(c))
+                    throw new ExpressionException(expression);
+                
                 if (c == '\'' || c == '"')
                 {
                     var literal = expression.GetNextQuotedString(i, true);

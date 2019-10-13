@@ -83,7 +83,7 @@ namespace DotNetAsm
                 {
                     value = Assembler.Symbols.Labels.GetSymbolValue(line.Scope + line.Label);
                 }
-                return string.Format($"=${{0:x{value.Size() & 2}}}", value);
+                return string.Format($"=${{0:x{value.Size() * 2}}}", value);
             }
             if (line.Instruction.StartsWith(".", Assembler.Options.StringComparison) &&
                     !Reserved.IsReserved(line.Instruction))
