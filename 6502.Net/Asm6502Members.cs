@@ -27,6 +27,7 @@ namespace Asm6502.Net
         OpcodeTable _filteredOpcodes;
         OpcodeTable _opcodes6502, _opcodes6502i;
         OpcodeTable _opcodes65C02, _opcodesR65C02, _opcodes65CE02, _opcodesHuC6280;
+        OpcodeTable _opcodesW65C02, _opcodes65CS02;
         OpcodeTable _opcodes65816;
 
         #endregion
@@ -216,13 +217,18 @@ namespace Asm6502.Net
                 { "stz ${0:x4}",             new Instruction { CPU = "65C02",   Size = 3,  Opcode = 0x9c } },
                 { "stz ${0:x4},x",           new Instruction { CPU = "65C02",   Size = 3,  Opcode = 0x9e } },
                 { "lda (${0:x2})",           new Instruction { CPU = "65C02",   Size = 2,  Opcode = 0xb2 } },
-                { "wai",                     new Instruction { CPU = "65816",   Size = 1,  Opcode = 0xcb } },
                 { "cmp (${0:x2})",           new Instruction { CPU = "65C02",   Size = 2,  Opcode = 0xd2 } },
                 { "phx",                     new Instruction { CPU = "65C02",   Size = 1,  Opcode = 0xda } },
-                { "stp",                     new Instruction { CPU = "65816",   Size = 1,  Opcode = 0xdb } },
                 { "sbc (${0:x2})",           new Instruction { CPU = "65C02",   Size = 2,  Opcode = 0xf2 } },
                 { "plx",                     new Instruction { CPU = "65C02",   Size = 1,  Opcode = 0xfa } },
             };
+
+            _opcodesW65C02 = new OpcodeTable()
+            {
+                { "wai",                     new Instruction { CPU = "W65C02",  Size = 1,  Opcode = 0xcb } },
+                { "stp",                     new Instruction { CPU = "W65C02",  Size = 1,  Opcode = 0xdb } }
+            };
+
 
             _opcodesR65C02 = new OpcodeTable()
             {
@@ -532,7 +538,9 @@ namespace Asm6502.Net
             "HuC6280",
             "R65C02",
             "65CE02",
-            "65816"
+            "65816",
+            "W65C02",
+            "65CS02"
         };
 
         #endregion

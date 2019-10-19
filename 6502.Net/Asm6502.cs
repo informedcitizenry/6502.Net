@@ -230,12 +230,14 @@ namespace Asm6502.Net
             {
                 case "65816":
                     _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
+                                                   .Concat(_opcodesW65C02)
                                                    .Concat(_opcodes65816)
                                                    .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
                 case "HuC6280":
                     _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02.Where(o => (o.Value.Opcode & 0x0f) != 0x02))
                                                    .Concat(_opcodesR65C02)
+                                                   .Concat(_opcodesW65C02)
                                                    .Concat(_opcodesHuC6280)
                                                    .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
@@ -249,6 +251,17 @@ namespace Asm6502.Net
                 case "R65C02":
                     _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
                                                    .Concat(_opcodesR65C02)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    break;
+                case "65CS02":
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
+                                                   .Concat(_opcodesW65C02)
+                                                   .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
+                    break;
+                case "W65C02":
+                    _filteredOpcodes = _opcodes6502.Concat(_opcodes65C02)
+                                                   .Concat(_opcodesR65C02)
+                                                   .Concat(_opcodesW65C02)
                                                    .ToDictionary(k => k.Key, k => k.Value, Assembler.Options.StringComparar);
                     break;
                 case "65C02":

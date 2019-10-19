@@ -1,5 +1,5 @@
 ﻿# 6502.Net, A Simple .Net-Based 65xx Cross-Assembler
-### Version 1.21.1
+### Version 1.22
 ## Introduction
 The 6502.Net Macro Assembler is a simple cross-assembler targeting several 65xx-based CPUs, including the MOS 6502, WDC 65C02, and others. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from successor CPUs, including the 65C02 and 65C816.
 ## Overview
@@ -689,7 +689,7 @@ By default, 6502.Net "thinks" like a 6502 assembler, compiling only the publishe
             ldx #0
             slo (zpvar,x)
 ```
-There are six options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `R65C02`, `65CE02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are  in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
+There are eight options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `65CS02`, `R65C02`, `W65C02`, `65CE02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are  in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
 
 Immediate mode on the 65816 can emit different output based on the expected size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers.
 ```
@@ -1933,7 +1933,9 @@ glyph             ;12345678
         <li><code>6502</code>        - Legal 6502 instructions only (default)</li>
         <li><code>6502i</code>       - Legal and illegal 6502 instructions</li>
         <li><code>65C02</code>       - Legal 6502 and 65C02 instructions</li>
+        <li><code>65CS02</code>      - Legal 6502, 65C02 and W65C02 instructions</li>s
         <li><code>R65C02</code>      - Legal 6502, 65C02 and RC6502 instructions</li>
+        <li><code>W65C02</code>      - Legal 6502, 65C02, RC6502 and W65C02 instructions</li>
         <li><code>65CE02</code>      - Legal 6502, 65C02, RC6502 and 65CE02 instructions</li>
 		<li><code>HuC6280</code>     - Legal 6502, 65C02, RC6502 and Hudson C6280 instructions</li>
         <li><code>65816</code>       - Legal 6502, 65C02 and W65C816 instructions</li>
