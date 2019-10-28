@@ -724,24 +724,29 @@ cld,cli,clv,cmp,cpx,cpy,dec,dex,dey,eor,inc,inx,iny,jmp,
 jsr,lda,ldx,ldy,lsr,nop,ora,pha,php,pla,plp,rol,ror,rti,
 rts,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
 ```
-65C02 support adds the following additional mnemonics:
+The 65C02 branch of CPUs had various enhancements and revisions to the base instruction set, which, in addition to the 6502, includes the following:
 ```
 bra,phx,phy,plx,ply,trb,tsb
 ```
-The R65C02 (Rockwell) extensions come with bit-condition branching and bit flipping for zero-page variables:
+One revision made by Rockwell, known as the R65C02, comes with bit-condition branching and bit flipping for zero-page variables:
 ```
 bbr,bbs,rmb,smb
 ```
-The mnemonics of the 65CE02, an enhanced R65C02, are:
+Western Design Center's W65C02 adds to this set two halt instructions:
 ```
-asr,asw,bge,blt,bsr,cle,cpz,dew,dez,inw,inz,ldz,neg,phw,
-phz,plw,plz,row,rtn,see,tab,taz,tba,tsy,tys,tza
+stp,wai
 ```
-The Hudson Soft HuC6280 is, like the 65CE02, an improved version of the Rockwell architecture, and includes:
+The Hudson Soft variant, the HuC6280, on top of the W65C02 includes:
 ```
 cla,clx,cly,sax,say,set,st1,st2,sxy,tai,tam,tdd,tia,tin,
 tma,tst
 ```
+The 65CE02 keeps the Rockwell instructions but in place of the HuC6280 and the W65C02 adds:
+```
+asr,asw,bge,blt,bsr,cle,cpz,dew,dez,inw,inz,ldz,neg,phw,
+phz,plw,plz,row,rtn,see,tab,taz,tba,tsy,tys,tza
+```
+
 For 65816 compatibility the following mnemonics are recognized:
 ```
 brl,cop,jml,jsl,mvn,mvp,pea,pei,per,phb,phd,phk,plb,pld,
@@ -1933,7 +1938,7 @@ glyph             ;12345678
         <li><code>6502</code>        - Legal 6502 instructions only (default)</li>
         <li><code>6502i</code>       - Legal and illegal 6502 instructions</li>
         <li><code>65C02</code>       - Legal 6502 and 65C02 instructions</li>
-        <li><code>65CS02</code>      - Legal 6502, 65C02 and W65C02 instructions</li>s
+        <li><code>65CS02</code>      - Legal 6502, 65C02 and W65C02 instructions</li>
         <li><code>R65C02</code>      - Legal 6502, 65C02 and RC6502 instructions</li>
         <li><code>W65C02</code>      - Legal 6502, 65C02, RC6502 and W65C02 instructions</li>
         <li><code>65CE02</code>      - Legal 6502, 65C02, RC6502 and 65CE02 instructions</li>
