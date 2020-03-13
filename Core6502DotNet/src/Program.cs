@@ -205,24 +205,8 @@ namespace Core6502DotNet
             }
         }
 
-        static void TestDryRun(string cpu, string path, string file)
+        static void Main(string[] args)
         {
-
-            string root;
-            if (!string.IsNullOrEmpty(path))
-                root = "../../../examples/";
-            else
-                root = "./";
-            string[] args = new string[]
-            {
-                $"{root}{path}/{file}",
-                "-o",
-                $"{file}.prg",
-                "-L",
-                $"{file}_list.a65",
-                "--cpu",
-                cpu
-            };
             Assembler.Initialize(args);
 
             AssemblerBase cpuAssembler;
@@ -239,7 +223,6 @@ namespace Core6502DotNet
             var controller = new AssemblyController(cpuAssembler);
             try
             {
-                //controller.AssembleFromCommandLine();
                 controller.Assemble();
             }
             catch (Exception ex)
@@ -247,13 +230,6 @@ namespace Core6502DotNet
                 Console.Error.WriteLine(ex.Message);
                 Console.Error.WriteLine(ex.StackTrace);
             }
-        }
-
-        static void Main(string[] args)
-        {
-            //OlderTests.TestCustomInputTokenization();
-            //OlderTests.TestCustomSourceLine();
-            TestDryRun("6502", "General", "macro.a65");
         }
     }
 

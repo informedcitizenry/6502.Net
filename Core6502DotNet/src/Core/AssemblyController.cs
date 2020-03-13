@@ -54,125 +54,6 @@ namespace Core6502DotNet
 
         #endregion
 
-        public void AssembleFromCommandLine()
-        {
-            // init all line assemblers
-            var multiLineAssembler = new MultiLineAssembler();
-
-            _assemblers.Add(multiLineAssembler);
-            _assemblers.Add(new AssignmentAssembler());
-            _assemblers.Add(new EncodingAssembler());
-            _assemblers.Add(new PseudoAssembler());
-            _assemblers.Add(new MiscAssembler());
-
-            var run = true;
-            while (run)
-            {
-                Console.Clear();
-                Console.WriteLine("Enter valid assembly or type \"END\" to stop.");
-                var srcBuilder = new StringBuilder();
-                while (true)
-                {
-                    var inputted = Console.ReadLine();
-                    if (inputted.Equals("END"))
-                        break;
-                    srcBuilder.AppendLine(inputted);
-                }
-                var preprocessor = new Preprocessor();
-                IEnumerable<SourceLine> processed = preprocessor.Preprocess("test.a65", "test.a65", srcBuilder.ToString());
-                Assembler.LineIterator = processed.Where(l => !string.IsNullOrWhiteSpace(l.UnparsedSource)).GetIterator();
-                StringBuilder disassembly = null;
-                while (Assembler.PassNeeded && !Assembler.Log.HasErrors)
-                {
-                    disassembly = new StringBuilder();
-                    if (Assembler.CurrentPass++ == 4)
-                    {
-                        Console.WriteLine("Too many cooks!");
-                        return;
-                    }
-                    var i = 0;
-                    foreach (SourceLine line in Assembler.LineIterator)
-                    {
-                        try
-                        {
-                            if (!string.IsNullOrEmpty(line.ParsedSource))
-                            {
-                                var asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
-                                if (asm == null && line.Instruction != null)
-                                {
-                                    Assembler.Log.LogEntry(line, line.Instruction.Position, $"Unknown instruction \"{line.InstructionName}\".");
-                                }
-                                else
-                                {
-                                    if (asm != null)
-                                    {
-                                        disassembly.AppendLine(asm.AssembleLine(line));
-                                        Console.WriteLine($"{line.Assembly.ToString(0)} {line.UnparsedSource}");
-                                        if (++i == 25)
-                                        {
-                                            Console.WriteLine("Press to continue...");
-                                            Console.ReadKey();
-                                            i = 0;
-                                        }
-                                    }
-                                }
-                            }
-                            else if (Assembler.Options.VerboseList)
-                            {
-                                disassembly.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
-                            }
-                        }
-                        catch (SymbolException symbEx)
-                        {
-                            Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message);
-                            //Console.WriteLine($"{line.Filename}({line.LineNumber}):{symbEx.Message}");
-                        }
-                        catch (ExpressionException ex)
-                        {
-                            var illegalQuant = ex is IllegalQuantityException;
-                            if (illegalQuant)
-                            {
-                                Assembler.Log.LogEntry(line, ex.Position, $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
-                                continue;
-                            }
-                            if (!(ex is IllegalQuantityException) || Assembler.CurrentPass > 0)
-                                Console.WriteLine($"{line.Filename}({line.LineNumber},{ex.Position}): {ex.Message}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Assembler.Log.LogEntry(line, ex.Message, true);
-                            Assembler.Log.LogEntry(line, ex.StackTrace, true);
-                            //Console.WriteLine("OVAAAFLOWWAAA!!!!");
-                        }
-                    }
-                    if (multiLineAssembler.InAnActiveBlock)
-                    {
-                        SourceLine activeLine = multiLineAssembler.ActiveBlockLine;
-                        //Console.WriteLine($"Block \"{activeLine.InstructionName}\" missing closure.");
-                        Assembler.Log.LogEntry(activeLine, $"Block \"{activeLine.InstructionName}\" missing closure.");
-                    }
-                    Assembler.LineIterator.Reset();
-                }
-                if (!Assembler.Log.HasErrors)
-                {
-                    if (!Assembler.Options.NoWarnings && Assembler.Log.HasWarnings)
-                        Assembler.Log.DumpWarnings();
-                    Console.WriteLine($"I sang this song in {Assembler.CurrentPass + 1} notes:");
-                    Console.WriteLine(disassembly.ToString());
-                    Console.WriteLine("Well that was fun, wasn't it? Go again? (Y)");
-                    ConsoleKeyInfo k = Console.ReadKey();
-                    Assembler.CurrentPass = -1;
-                    Assembler.Output.Reset();
-                    Assembler.PassNeeded = run = k.Key == ConsoleKey.Y;
-                }
-                else
-                {
-                    Assembler.Log.DumpAll();
-                    run = false;
-                }
-            }
-        }
-
         /// <summary>
         /// Begin the assembly process.
         /// </summary>
@@ -321,7 +202,6 @@ namespace Core6502DotNet
                                 else
                                 {
                                     Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
-                                    Assembler.Log.LogEntry(line, ex.StackTrace);
                                 }
                             }
                             else
