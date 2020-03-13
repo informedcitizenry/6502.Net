@@ -33,8 +33,8 @@ Version 2.0.1
   - [Math and Logical Constants](#math-and-logical-constants)
 - [Addressing model](#addressing-model)
 - [Macros and Custom Functions](#macros-and-custom-functions)
-- [Macros](#macros)
-- [Functions](#functions)
+  - [Macros](#macros)
+  - [Functions](#functions)
 - [Flow Control](#flow-control)
   - [Assembly Termination](#assembly-termination)
   - [Goto Statement](#goto-statement)
@@ -51,11 +51,11 @@ Version 2.0.1
   - [Pseudo Branch Instructions](#pseudo-branch-instructions)
   - [65816 Specific Directives](#65816-specific-directives)
 - [Reference](#reference)
-  - [6502 Illegal Mnemonics](#6502-illegal-mnemonics)
   - [Pseudo-Ops](#pseudo-ops)
   - [Other Assembler Directives](#other-assembler-directives)
   - [Built-In functions](#built-in-functions)
   - [Command-line options](#command-line-options)
+  - [6502 Illegal Mnemonics](#6502-illegal-mnemonics)  
   - [Reserved Words](#reserved-words)
 - [Licensing and Legal](#licensing-and-legal)
 
@@ -149,7 +149,7 @@ setborder:  sta $d020       // poke border color with acc.
 
 In general, once labels are defined they cannot be re-defined or have their values re-assigned in other parts of code. But there are some exceptions. One is to make a label a "cheap local" by appending an underscore at the beginning:
 
-```
+```asm
 routine1    lda message,x
             beq _done
             jsr $ffd2
@@ -184,7 +184,7 @@ endloop     lda #0
 
 Labels inside a named scope block can be referenced with dot notation from other places outside of the scope:
 
-```
+```asm
 kernal      .block
 
 chrin       = $ffcf
@@ -229,7 +229,7 @@ MYCONSTANT  .global 42
 
 Back and forward references allow one to do away with the need to think of unique label names altogether. Forward references are declared with a `+`, while back reference labels are declared using a `-`. They are forward or backward to the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
 
-```
+```asm
 printmessage
             ldx #0
 -           lda msg_ptr,x
@@ -244,7 +244,7 @@ printmessage
 
 As you can see that, while convenient, back and forward references hinder readability if used too liberally. They are best for small branch jumps, though can be used in expressions:
 
-```
+```asm
 -           .byte $01, $02, $03
             lda -,x
 ```
@@ -791,7 +791,7 @@ code_end    rts
 
 #### If Statement Blocks
 
-Conditional assembly is available using the `.if` and related directive.  Conditions can be nested, but expressions will be evaluated on first pass only.
+Conditional assembly is available using the `.if` and related directive.  Conditions can be nested. `.ifdef` and `.ifndef` variants are evaluated on first pass only, with their evaluations preserved in subsequent passes.
 
 ```asm
             ld a,$42
@@ -1004,93 +1004,6 @@ You can also set all registers to the same size with `.mx8` and `.mx16` respecti
 ```
 
 ## Reference
-
-### 6502 Illegal Mnemonics
-
-When setting the `.cpu` directive to `"6502i"`, the various unpublished and so-called illegal instructions can be assembled. Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by [VICE](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
-
-<table>
-<tr>
-<td>
-<table>
-<tr><th>Mnemonic</th><th>Addressing Mode</th><th>Opcode</th></tr>
-<tr><td>ANC</td><td>Immediate             </td><td>2B</td></tr>
-<tr><td>ANE</td><td>Immediate             </td><td>8B</td></tr>
-<tr><td>ARR</td><td>Immediate             </td><td>6B</td></tr>
-<tr><td>ASR</td><td>Immediate             </td><td>4B</td></tr>
-<tr><td>DCP</td><td>Indexed Indirect      </td><td>C3</td></tr>
-<tr><td>DCP</td><td>Zero-Page             </td><td>C7</td></tr>
-<tr><td>DCP</td><td>Absolute              </td><td>CF</td></tr>
-<tr><td>DCP</td><td>Indirect Indexed      </td><td>D3</td></tr>
-<tr><td>DCP</td><td>Zero-Page Indexed X   </td><td>D7</td></tr>
-<tr><td>DCP</td><td>Absolute Indexed Y    </td><td>DB</td></tr>
-<tr><td>DCP</td><td>Absolute Indexed X    </td><td>DF</td></tr>
-<tr><td>DOP</td><td>Implied/Immediate     </td><td>80</td></tr>
-<tr><td>ISB</td><td>Indexed Indirect      </td><td>E3</td></tr>
-<tr><td>ISB</td><td>Zero-Page             </td><td>E7</td></tr>
-<tr><td>ISB</td><td>Absolute              </td><td>EF</td></tr>
-<tr><td>ISB</td><td>Indirect Indexed      </td><td>F3</td></tr>
-<tr><td>ISB</td><td>Zero-Page Indexed X   </td><td>F7</td></tr>
-<tr><td>ISB</td><td>Absolute Indexed Y    </td><td>FB</td></tr>
-<tr><td>ISB</td><td>Absolute Indexed X    </td><td>FF</td></tr>
-<tr><td>JAM*</td><td>Implied               </td><td>02</td></tr>
-<tr><td>LAS</td><td>Absolute Indexed Y    </td><td>BB</td></tr>
-<tr><td>LAX</td><td>Indexed Indirect      </td><td>A3</td></tr>
-<tr><td>LAX</td><td>Zero-Page             </td><td>A7</td></tr>
-<tr><td>LAX</td><td>Absolute              </td><td>AF</td></tr>
-<tr><td>LAX</td><td>Indirect Indexed      </td><td>B3</td></tr>
-<tr><td>LAX</td><td>Zero-Page Indexed X   </td><td>B7</td></tr>
-<tr><td>LAX</td><td>Absolute Indexed Y    </td><td>BF</td></tr>  
-<tr><td>RLA</td><td>Indexed Indirect      </td><td>23</td></tr>
-<tr><td>RLA</td><td>Zero-Page             </td><td>27</td></tr>
-<tr><td>RLA</td><td>Absolute              </td><td>2F</td></tr>
-<tr><td>RLA</td><td>Indirect Indexed      </td><td>33</td></tr>
-<tr><td>RLA</td><td>Zero-Page Indexed X   </td><td>37</td></tr>
-<tr><td>RLA</td><td>Absolute Indexed Y    </td><td>3B</td></tr>
-</table>
-</td>
-<td>
-<table>
-<tr><th>Mnemonic</th><th>Addressing Mode</th><th>Opcode</th></tr>
-<tr><td>RLA</td><td>Absolute Indexed X    </td><td>3F</td></tr>
-<tr><td>RRA</td><td>Indexed Indirect      </td><td>63</td></tr>
-<tr><td>RRA</td><td>Zero-Page             </td><td>67</td></tr>
-<tr><td>RRA</td><td>Absolute              </td><td>6F</td></tr>
-<tr><td>RRA</td><td>Indirect Indexed      </td><td>73</td></tr>
-<tr><td>RRA</td><td>Zero-Page Indexed X   </td><td>77</td></tr>
-<tr><td>RRA</td><td>Absolute Indexed Y    </td><td>7B</td></tr>
-<tr><td>RRA</td><td>Absolute Indexed X    </td><td>7F</td></tr>
-<tr><td>SAX</td><td>Indexed Indirect      </td><td>83</td></tr>
-<tr><td>SAX</td><td>Zero-Page             </td><td>87</td></tr>
-<tr><td>SAX</td><td>Absolute              </td><td>8F</td></tr>
-<tr><td>SAX</td><td>Zero-Page Indexed X   </td><td>97</td></tr>
-<tr><td>SAX</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
-<tr><td>SHX</td><td>Absolute Indexed Y    </td><td>9E</td></tr>
-<tr><td>SHY</td><td>Absolute Indexed X    </td><td>9C</td></tr>
-<tr><td>SLO</td><td>Indexed Indirect      </td><td>03</td></tr>
-<tr><td>SLO</td><td>Zero-Page             </td><td>07</td></tr>
-<tr><td>SLO</td><td>Absolute              </td><td>0F</td></tr>
-<tr><td>SLO</td><td>Indirect Indexed      </td><td>13</td></tr>
-<tr><td>SLO</td><td>Zero-Page Indexed X   </td><td>17</td></tr>
-<tr><td>SLO</td><td>Absolute Indexed Y    </td><td>1B</td></tr>
-<tr><td>SLO</td><td>Absolute Indexed X    </td><td>1F</td></tr>
-<tr><td>SRE</td><td>Indexed Indirect      </td><td>43</td></tr>
-<tr><td>SRE</td><td>Zero-Page             </td><td>47</td></tr>
-<tr><td>SRE</td><td>Absolute              </td><td>4F</td></tr>
-<tr><td>SRE</td><td>Indirect Indexed      </td><td>53</td></tr>
-<tr><td>SRE</td><td>Zero-Page Indexed X   </td><td>57</td></tr>
-<tr><td>SRE</td><td>Absolute Indexed Y    </td><td>5B</td></tr>
-<tr><td>SRE</td><td>Absolute Indexed X    </td><td>5F</td></tr>
-<tr><td>STP*</td><td>Implied</td><td>12</td></tr>
-<tr><td>TAS</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
-<tr><td>TOP</td><td>Immediate/Absolute    </td><td>0C</td></tr>
-<tr><td>TOP</td><td>Absolute Indexed X    </td><td>1C</td></tr>
-</table>
-</td>
-</tr>
-</table>
-
-*-`JAM` and `STP` are essentially the same command; they both halt the CPU.
 
 ### Pseudo-Ops
 
@@ -2258,7 +2171,7 @@ message     .cstring "HELLO, HIGH CODE!"
             <ul>
                 <li><code>amsdos</code>  - Amstrad CPC DOS (disk)</li>
                 <li><code>amstap</code>  - Amstrad CPC DOS (tape)</li>
-                <li><code>msx</code> - MSx</li>
+                <li><code>msx</code> - MSX</li>
                 <li><code>zx</code>       - ZX Spectrum</li>
                 <li><code>flat</code>      - Flat binary with no header</li>
             </ul>
@@ -2464,6 +2377,93 @@ message     .cstring "HELLO, HIGH CODE!"
 </td></tr>
 </table>
 
+### 6502 Illegal Mnemonics
+
+When setting the `.cpu` directive to `"6502i"`, the various unpublished and so-called illegal instructions can be assembled. Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by [VICE](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
+
+<table>
+<tr>
+<td>
+<table>
+<tr><th>Mnemonic</th><th>Addressing Mode</th><th>Opcode</th></tr>
+<tr><td>ANC</td><td>Immediate             </td><td>2B</td></tr>
+<tr><td>ANE</td><td>Immediate             </td><td>8B</td></tr>
+<tr><td>ARR</td><td>Immediate             </td><td>6B</td></tr>
+<tr><td>ASR</td><td>Immediate             </td><td>4B</td></tr>
+<tr><td>DCP</td><td>Indexed Indirect      </td><td>C3</td></tr>
+<tr><td>DCP</td><td>Zero-Page             </td><td>C7</td></tr>
+<tr><td>DCP</td><td>Absolute              </td><td>CF</td></tr>
+<tr><td>DCP</td><td>Indirect Indexed      </td><td>D3</td></tr>
+<tr><td>DCP</td><td>Zero-Page Indexed X   </td><td>D7</td></tr>
+<tr><td>DCP</td><td>Absolute Indexed Y    </td><td>DB</td></tr>
+<tr><td>DCP</td><td>Absolute Indexed X    </td><td>DF</td></tr>
+<tr><td>DOP</td><td>Implied/Immediate     </td><td>80</td></tr>
+<tr><td>ISB</td><td>Indexed Indirect      </td><td>E3</td></tr>
+<tr><td>ISB</td><td>Zero-Page             </td><td>E7</td></tr>
+<tr><td>ISB</td><td>Absolute              </td><td>EF</td></tr>
+<tr><td>ISB</td><td>Indirect Indexed      </td><td>F3</td></tr>
+<tr><td>ISB</td><td>Zero-Page Indexed X   </td><td>F7</td></tr>
+<tr><td>ISB</td><td>Absolute Indexed Y    </td><td>FB</td></tr>
+<tr><td>ISB</td><td>Absolute Indexed X    </td><td>FF</td></tr>
+<tr><td>JAM*</td><td>Implied               </td><td>02</td></tr>
+<tr><td>LAS</td><td>Absolute Indexed Y    </td><td>BB</td></tr>
+<tr><td>LAX</td><td>Indexed Indirect      </td><td>A3</td></tr>
+<tr><td>LAX</td><td>Zero-Page             </td><td>A7</td></tr>
+<tr><td>LAX</td><td>Absolute              </td><td>AF</td></tr>
+<tr><td>LAX</td><td>Indirect Indexed      </td><td>B3</td></tr>
+<tr><td>LAX</td><td>Zero-Page Indexed X   </td><td>B7</td></tr>
+<tr><td>LAX</td><td>Absolute Indexed Y    </td><td>BF</td></tr>  
+<tr><td>RLA</td><td>Indexed Indirect      </td><td>23</td></tr>
+<tr><td>RLA</td><td>Zero-Page             </td><td>27</td></tr>
+<tr><td>RLA</td><td>Absolute              </td><td>2F</td></tr>
+<tr><td>RLA</td><td>Indirect Indexed      </td><td>33</td></tr>
+<tr><td>RLA</td><td>Zero-Page Indexed X   </td><td>37</td></tr>
+<tr><td>RLA</td><td>Absolute Indexed Y    </td><td>3B</td></tr>
+</table>
+</td>
+<td>
+<table>
+<tr><th>Mnemonic</th><th>Addressing Mode</th><th>Opcode</th></tr>
+<tr><td>RLA</td><td>Absolute Indexed X    </td><td>3F</td></tr>
+<tr><td>RRA</td><td>Indexed Indirect      </td><td>63</td></tr>
+<tr><td>RRA</td><td>Zero-Page             </td><td>67</td></tr>
+<tr><td>RRA</td><td>Absolute              </td><td>6F</td></tr>
+<tr><td>RRA</td><td>Indirect Indexed      </td><td>73</td></tr>
+<tr><td>RRA</td><td>Zero-Page Indexed X   </td><td>77</td></tr>
+<tr><td>RRA</td><td>Absolute Indexed Y    </td><td>7B</td></tr>
+<tr><td>RRA</td><td>Absolute Indexed X    </td><td>7F</td></tr>
+<tr><td>SAX</td><td>Indexed Indirect      </td><td>83</td></tr>
+<tr><td>SAX</td><td>Zero-Page             </td><td>87</td></tr>
+<tr><td>SAX</td><td>Absolute              </td><td>8F</td></tr>
+<tr><td>SAX</td><td>Zero-Page Indexed X   </td><td>97</td></tr>
+<tr><td>SAX</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
+<tr><td>SHX</td><td>Absolute Indexed Y    </td><td>9E</td></tr>
+<tr><td>SHY</td><td>Absolute Indexed X    </td><td>9C</td></tr>
+<tr><td>SLO</td><td>Indexed Indirect      </td><td>03</td></tr>
+<tr><td>SLO</td><td>Zero-Page             </td><td>07</td></tr>
+<tr><td>SLO</td><td>Absolute              </td><td>0F</td></tr>
+<tr><td>SLO</td><td>Indirect Indexed      </td><td>13</td></tr>
+<tr><td>SLO</td><td>Zero-Page Indexed X   </td><td>17</td></tr>
+<tr><td>SLO</td><td>Absolute Indexed Y    </td><td>1B</td></tr>
+<tr><td>SLO</td><td>Absolute Indexed X    </td><td>1F</td></tr>
+<tr><td>SRE</td><td>Indexed Indirect      </td><td>43</td></tr>
+<tr><td>SRE</td><td>Zero-Page             </td><td>47</td></tr>
+<tr><td>SRE</td><td>Absolute              </td><td>4F</td></tr>
+<tr><td>SRE</td><td>Indirect Indexed      </td><td>53</td></tr>
+<tr><td>SRE</td><td>Zero-Page Indexed X   </td><td>57</td></tr>
+<tr><td>SRE</td><td>Absolute Indexed Y    </td><td>5B</td></tr>
+<tr><td>SRE</td><td>Absolute Indexed X    </td><td>5F</td></tr>
+<tr><td>STP*</td><td>Implied</td><td>12</td></tr>
+<tr><td>TAS</td><td>Absolute Indexed Y    </td><td>9B</td></tr>
+<tr><td>TOP</td><td>Immediate/Absolute    </td><td>0C</td></tr>
+<tr><td>TOP</td><td>Absolute Indexed X    </td><td>1C</td></tr>
+</table>
+</td>
+</tr>
+</table>
+
+*-`JAM` and `STP` are essentially the same command; they both halt the CPU.
+
 ### Reserved Words
 
 All directives and mnemonics are reserved, and cannot be used for symbol names, such as variables or functions. In addition, the following are considered reserved if the assembler is in 6502 mode:
@@ -2481,7 +2481,8 @@ af,b,bc,c,d,de,e,h,hl,i,ix,ixh,ixl,iy,iyh,iyl,l,m,nc,nz,p,e,po,r
 In either mode, the following are reserved:
 
 ```
-a,false,int8_min,int8_max,int16_min,int16_max,int24_min,int24_max,int32_min,int32_max,math_e,math_pi,sp,true,uint8_min,uint8_max,uint16_min,uint16_max,uint24_min,uint24_max,uint32_min,uint32_max,z
+a,false,int8_min,int8_max,int16_min,int16_max,int24_min,int24_max,int32_min,int32_max,math_e,
+math_pi,sp,true,uint8_min,uint8_max,uint16_min,uint16_max,uint24_min,uint24_max,uint32_min,uint32_max,z
 ```
 
 ## Licensing and Legal
