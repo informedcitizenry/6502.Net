@@ -12,14 +12,4 @@
     <Copyright>(C) Copyright 2017-2020 informedcitizenry</Copyright>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Examples\General\evaluation.a65" />
-    <None Remove="Examples\General\factorial.a65" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Examples\General\evaluation.a65" />
-    <Compile Include="Examples\General\factorial.a65" />
-  </ItemGroup>
-
 </Project>
