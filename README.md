@@ -1,30 +1,121 @@
-﻿# 6502.Net, A Simple .Net-Based 65xx Cross-Assembler
-### Version 1.21.1
+﻿# 6502.Net, A Simple .Net-Based 65xx and Z80 Cross-Assembler
+
+Version 2.0.1
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Overview](#overview)
+- [General Features](#general-features)
+  - [Assembly Statements](#assembly-statements)
+    - [Comments](#comments)
+    - [Numbers and Strings](#numbers-and-strings)
+- [Symbols](#symbols)
+  - [Labels](#labels)
+  - [Scoped Symbols](#scoped-symbols)
+  - [Global Labels](#global-labels)
+  - [Back and Forward References](#back-and-forward-references)
+  - [Variables](#variables)
+  - [Lists](#lists)
+  - [Value types](#value-types)
+- [Non-code (data) assembly](#non-code-%28data%29-assembly)
+  - [Binary data](#binary-data)
+  - [Uninitialized data](#uninitialized-data)
+  - [Text data](#text-data)
+  - [String Format function](#string-format-function)
+  - [Encodings](#encodings)
+  - [Escape sequences](#escape-sequences)
+  - [File inclusions](#file-inclusions)
+- [Mathematical and Conditional Operations](#mathematical-and-conditional-operations)
+  - [Binary Operations](#binary-operations)
+  - [Unary Operations](#unary-operations)
+  - [Built-in functions](#built-in-functions)
+  - [Math and Logical Constants](#math-and-logical-constants)
+- [Addressing model](#addressing-model)
+- [Macros and Custom Functions](#macros-and-custom-functions)
+- [Macros](#macros)
+- [Functions](#functions)
+- [Flow Control](#flow-control)
+  - [Assembly Termination](#assembly-termination)
+  - [Goto Statement](#goto-statement)
+  - [Conditional Assembly](#conditional-assembly)
+    - [If Statement Blocks](#if-statement-blocks)
+    - [Switch Blocks](#switch-blocks)
+  - [Loop Assembly](#loop-assembly)
+    - [Simple Repetitions](#simple-repetitions)
+    - [For/Next](#for-next)
+    - [While](#while)
+- [CPU-Specific Assembly](#cpu-specific-assembly)
+  - [65xx Family generally](#65xx-family-generally)
+  - [Addressing Mode Sizes](#addressing-mode-sizes)
+  - [Pseudo Branch Instructions](#pseudo-branch-instructions)
+  - [65816 Specific Directives](#65816-specific-directives)
+- [Reference](#reference)
+  - [6502 Illegal Mnemonics](#6502-illegal-mnemonics)
+  - [Pseudo-Ops](#pseudo-ops)
+  - [Other Assembler Directives](#other-assembler-directives)
+  - [Built-In functions](#built-in-functions)
+  - [Command-line options](#command-line-options)
+  - [Reserved Words](#reserved-words)
+- [Licensing and Legal](#licensing-and-legal)
+
 ## Introduction
-The 6502.Net Macro Assembler is a simple cross-assembler targeting several 65xx-based CPUs, including the MOS 6502, WDC 65C02, and others. It is written for .Net (Version 4.5.1). It can assemble both legal (published) and illegal (undocumented) 6502 instructions, as well instructions from successor CPUs, including the 65C02 and 65C816.
+
+The 6502.Net Macro Assembler is a simple cross-assembler targeting several CPUs from the 8-bit era of computing including the MOS 6502 and its variants, as well as the Zilog Z80. With the aim of cross-platform compatibility, it is targeted for .Net Core 3.1.
+
 ## Overview
+
 The 6502.Net assembler is simple to use. Invoke it from a command line with the assembly source and (optionally) the output filename in the parameters. For instance, a `/6502.Net.exe myprg.asm` command will output assembly listing in `myprgm.asm` to binary output. To specify output file name use the `-o <file>` or `--output=<file>` option, otherwise the default output filename will be `a.out`.
 You can specify as many source files as assembly input as needed. For instance, `6502.Net.exe mylib.asm myprg.asm` will assemble both the `mylib.asm` and `myprgm.asm` files sequentially to output. Be aware that if both files define the same symbol an assembler error will result.
-## General Features
-### Assembly Statements
-All assembly statements are composed of ASCII or Unicode text. Statements are terminated by a carriage return:
+
+### General Features
+
+#### Assembly Statements
+
+Source text is assumed to be ASCII- or Unicode-compliant. Normally, assembly statements are terminated by a new line:
+
+```asm
+        ldx #$00
 ```
-        ldx #$00                    
+
+A statement can span multiple lines if they cover one expression:
+
+```asm
+        .byte 1,2,3,4,5,
+              6,7,8,9,10,
+              11
+
+        .word 39 +
+              34
 ```
-Multiple statements per line are allowed; they are separated by a colon (`:`) character:
-```        
-        lda MESSAGE,x:jsr CHROUT    ; multiple statement line
+
+Multiple statements per line are separated by a colon (`:`) character:
+
+```asm
+        lda MESSAGE,x:jsr CHROUT:inx
 ```
-Semi-colons denote the beginning of line comments, and remaining line text will not be processed by the assembler.
-### Numeric constants
-Integral constants can be expressed as decimal, hexadecimal, and binary. Decimal numbers are written as is, while hex numbers are prefixed with a `$` and binary numbers are prefixed with a `%`.
-```
+
+Source is processed case insensitive by default, but this can be controlled using the `-C` option as described in the [command-line section](#Command-line%20options) below.
+
+#### Comments
+
+C/C++ style comments are recognized. Use `/* */` for block comments and `//` for line comments. For compatibility with traditional 6502 assemblers, semi-colons can be used to denote the beginning of line comments also.
+
+#### Numbers and Strings
+
+Numeric constants can be expressed as decimal, real, hexadecimal, octal and binary.
+
+```asm
             65490 = 65490
+          1.03E+5 = 0.0000103
+          0177722 = 65490
             $ffd2 = 65490
 %1111111111010010 = 65490
 ```
-Negative numbers are assembled according to two's complement rules, with the highest bits set. Binary strings can alternatively be expressed as `.` for `0` and `#` for `1`, which is helpful for laying out pixel data:
-```
+
+Negative numbers are assembled according to two's complement rules, with the highest bits set. Binary strings can alternatively be expressed as `.` for `0` and `#` for `1`, which is handy for laying out pixel data:
+
+```asm
 number1     .byte %...###..
             .byte %..####..
             .byte %.#####..
@@ -33,22 +124,31 @@ number1     .byte %...###..
             .byte %...###..
             .byte %...###..
             .byte %.#######
-```                
-### Labels, Symbols and Variables
-When writing assembly code, hand-coding branches, addresses and constants can be time-consuming and lead to errors. Labels take care of this work for you! There is no restriction on name size, but all labels must begin with an underscore or letter, and can only contain underscores, letters, and digits, and they cannot be re-assigned:
 ```
+
+Character literals are enclosed in single quotes, while string literals are enclosed in double quotes:
+
+```asm
+message     .string "HELLO", ' ', "WORLD"
+```
+
+### Symbols
+
+#### Labels
+
+Nearly every line of code can begin with a label, a named part of the program. Labels can also be assigned values to be used as constants.
+
+```asm
             black   =   0
 
-            lda #black      ; load black into acc.
-            beq setborder   ; now set the border color
+            lda #black      // load black into acc.
+            beq setborder   // now set the border color
             ...
-setborder:  sta $d020       ; poke border color with acc.
+setborder:  sta $d020       // poke border color with acc.
 ```
-Trailing colons for jump instructions are optional.
 
-Once labels are defined they cannot be redinfed in other parts of code. This gets tricky as source grows, since one must choose a unique name for each label. There are a few ways to avoid this problem.
+In general, once labels are defined they cannot be re-defined or have their values re-assigned in other parts of code. But there are some exceptions. One is to make a label a "cheap local" by appending an underscore at the beginning:
 
-The first is to append the label with an underscore, making it a local label.
 ```
 routine1    lda message,x
             beq _done
@@ -62,24 +162,28 @@ routine2    ldy flag
             jmp dosomething
 _done       rts
 ```
+
 In the routine above, there are two labels called `_done` but the assembler will differentiate between them, since the second `_done` follows a different non-local label from the first.
 
-In addition to local labels, scope blocks can be used. All source inside a pair of `.block` and `.endblock` directives are considered local to that block, but can also be nested, making them much like namespaces.
+#### Scoped Symbols
 
-A scope block looks like this:
-```
+Additionally, all symbols can be scoped by wrapping code inside `.block` and `.endblock` directives:
+
+```asm
             ...
-endloop     lda #$ff    
+endloop     lda #$ff
             rts
 
 myblock     .block
-            jsr endloop     ; accumulator will be 0
-            ...             ; since endloop is local to myblock
+            jsr endloop     // accumulator will be 0
+            ...             // since endloop is local to myblock
 endloop     lda #0
             rts
             .endblock
 ```
+
 Labels inside a named scope block can be referenced with dot notation from other places outside of the scope:
+
 ```
 kernal      .block
 
@@ -88,11 +192,13 @@ chrout      = $ffd2
 
             .endblock
 
-            jsr kernal.chrout   ; call the subroutine whose label        
-                                ; is defined in the kernal block
+            jsr kernal.chrout   // call the subroutine whose label
+                                // is defined in the kernal block
 ```
-Any block not preceded by a label is an anonymous block. All symbols inside an anonymous block are only visible within the block, and are unavailable outside:
-```
+
+All symbols inside blocks not preceded by a label are only visible within that block:
+
+```asm
             .block
             jsr increment
             ...
@@ -102,60 +208,103 @@ increment   inc mem
 done        rts
             .endblock
 
-            jsr increment ; will produce an assembler error
+            jsr increment // will produce an assembler error
 ```
-Anonymous labels allow one to do away with the need to think of unique label names altogether. There are two types of anonymous labels: forward and backward. Forward anonymous labels are declared with a `+`, while backward anonymous labels are declared using a `-`. They are forward or backward to the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
+
+#### Global Labels
+
+A label can be marked as global in scope regardless of which scope it is declared in:
+
+```asm
+someblock   .block
+
+            // stuff
+MYCONSTANT  .global 42
+            .endblock
+
+            .word MYCONSTANT // MYCONSTANT is not in someblock's scope.
 ```
-printmessage    
+
+#### Back and Forward References
+
+Back and forward references allow one to do away with the need to think of unique label names altogether. Forward references are declared with a `+`, while back reference labels are declared using a `-`. They are forward or backward to the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
+
+```
+printmessage
             ldx #0
 -           lda msg_ptr,x
-            beq +               ; jump to first forward anonymous from here
+            beq +               // jump to first forward reference from here
             jsr chrout
             inx
-            bne -               ; jump to first backward anonymous from here
+            bne -               // jump to first backward reference from here
 +           rts
 -           nop
-            jmp --              ; jump to the second backward anonymous from here
+            jmp --              // jump to the second backward reference from here
 ```
-As you can see anonymous labels, though convenient, would hinder readability if used too liberally. They are best for small branch jumps, though can be used in expressions:
+
+As you can see that, while convenient, back and forward references hinder readability if used too liberally. They are best for small branch jumps, though can be used in expressions:
+
 ```
 -           .byte $01, $02, $03
-            lda -,x           
-```            
-Another type of named symbol besides a label is a variable. Variables, like labels, are named references to values in operand expressions, but whose value can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name.
+            lda -,x
 ```
+
+#### Variables
+
+Variables are named symbols like labels, but whose values can be changed as often as required. A variable is declared with the `.let` directive, followed by an assignment expression. Variables and labels cannot share the same symbol name within the same scope.
+
+```asm
             .let myvar = 34
             lda #myvar
             .let myvar = myvar + 1
             ldx #myvar
 ```
+
 Unlike labels, variables cannot be referenced in other expressions before they are declared, since variables are not preserved between passes.
-```
+
+```asm
             .let y = x  
             .let x = 3
 ```
+
 In the above example, the assembler would error assuming `x` has never been declared before.
-### Comments
-Adding comments to source promotes readability, particularly in assembly. Comments can be added to source code in one of two ways, as single-line trailing source code, or as a block. Single-line comments start with a semi-colon. Any text written after the semi-colon is ignored, unless it is being expressed as a string or constant character.
-```
-            lda #0      ; 0 = color black
-            sta $d020   ; set border color to accumulator
-            lda #';'    ; the first semi-colon is a char literal so will be assembled
-            jsr $ffd2   
-```
-Block comments span multiple lines, enclosed in `.comment` and `.endcomment` directives. These are useful when you want to exclude unwanted code:
-```
-            .comment
 
-            this will set the cpu on fire do not assemble!
+#### Lists
 
-            lda #$ff
-            sta $5231
+Labels and variables can also be declared as lists:
 
-            .endcomment
+```asm
+HIGHSCORES  = [ 10000, 9000, 8000, 7000, 5000 ]
+
+initgame:
+            ld hl,curr_hs
+            ld bc,HIGHSCORES[1]
+            ld (hl),c
+            inc hl
+            ld (hl),b
 ```
+
+List variable elements can be updated accordingly using subscript notation:
+
+```asm
+            .let SCORES[0] = $0000
+```
+
+#### Value types
+
+Labels and variables can be assigned both numeric values as well as string literals:
+
+```asm
+WARNING     =   "DO NOT POKE THE LION!"
+
+            .string WARNING
+```
+
 ### Non-code (data) assembly
-In addition to 6502 assembly, data can also be assembled. Expressions evaluate internally as double-precision floating point numbers and are cast as 64-bit integers, but **must** fit to match the expected operand size; if the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
+
+#### Binary data
+
+In addition to 65xx and Z80 code, data can also be assembled. Expressions evaluate internally as double-precision floating point numbers before they are cast to an integral value of desired size. If the value given in the expression exceeds the data size, this will cause an illegal quantity error. The following pseudo-ops are available:
 
 | Directive | Size                      |
 | --------- | ------------------------- |
@@ -170,48 +319,51 @@ In addition to 6502 assembly, data can also be assembled. Expressions evaluate i
 | `.dint`   | Four bytes signed         |
 | `.dword`  | Four bytes unsigned       |
 | `.align`  | Zero or more bytes        |
-| `.fill`   | One or more bytes         |   
+| `.fill`   | One or more bytes         |
 
-Multi-byte directives assemble in little-endian order (the least significant byte first), which conforms to the 6502 architecture. Data is comma-separated, and each value can be a constant or expression:
-```
+Multi-byte directives assemble in little-endian order (the least significant byte first), since all targeted CPUs are little-endian architecture. Data is comma-separated, and each value can be a constant or expression:
+
+```asm
 sprite      .byte %......##,%########,%##......
 jump        .word sub1, sub2, sub3, sub4
 ```
-The `.addr` and `.rta` directives are the same as `.word`, but `.rta` is the expression minus one. This is useful for doing an "rts jump":
-```
-            lda #>jump  ; high byte ($07)
-            pha
-            lda #<jump  ; low byte ($ff)
-            pha
-            rts         ; do the jump
-jump        .rta $0800  ; = $07ff
-```
-For `.fill` and `.align`, the assembler accepts either one or two arguments. The first is the quantity, while the second is the value. If the second is not given then it is assumed to be uninitialized data (see below). For `.fill`, quantity is number of bytes, for `.align` it is the number of bytes by which the program counter can be divided with no remainder:
-```
-unused      .fill 256,0 ; Assemble 256 bytes with the value 0
 
-atpage      .align 256  ; The program counter is guaranteed to be at a page boundary
+The `.addr` and `.rta` directives are the same as `.word`, but `.rta` is the expression minus one. This is useful for doing an "rts jump" in 65xx-based code:
+
+```asm
+            lda #>jump  // high byte ($07)
+            pha
+            lda #<jump  // low byte ($ff)
+            pha
+            rts         // do the jump
+jump        .rta $0800  // = $07ff
 ```
+
+For `.fill` and `.align`, the assembler accepts either one or two arguments. The first is the quantity, while the second is the value. If the second is not given then it is assumed to be uninitialized data (see below). For `.fill`, quantity is number of bytes, for `.align` it is the number of bytes by which the program counter can be divided with no remainder:
+
+```asm
+unused      .fill 256,0 // Assemble 256 bytes with the value 0
+
+atpage      .align 256  // The program counter is guaranteed to be at a page boundary
+```
+
+#### Uninitialized data
+
 Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, for program variables. Use the `?` instead of an expression:
+
+```asm
+highscore   .dword ?    // set the symbol highscore to the program counter,
+                        // but do not output any bytes
 ```
-highscore   .dword ?    ; set the symbol highscore to the program counter,
-                        ; but do not output any bytes
-```                             
+
 Note that if uninitialized data is defined, but thereafter initialized data is defined, the output will fill bytes to the program counter from the occurrence of the uninitialized symbol:
+
+```asm
+highscore   .dword ?    // uninitialized highscore variables
+            lda #0      // The output is now 6 bytes in size
 ```
-highscore   .dword ?    ; uninitialized highscore variables
-            lda #0      ; The output is now 6 bytes in size
-```
-Use the `.typedef` directive to redefine a type name. This is useful for cross- and backward-compatibility with other assemblers. Each type can have more than one definition.
-```
-            .typedef    .byte,   db
-            .typedef    .byte,   defb    ; multiple okay
-            .typedef    .string, asc
-```
-Only pseudo operations can have their types redefined. For mnemonics or other assembler directives consider using macros instead.
-### Text processing and encoding
-#### Psuedo Ops
-In addition to integral values, 6502.Net can assemble Unicode text. Text strings are enclosed in double quotes, character literals in single quotes.
+
+#### Text data
 
 Strings can be assembled in a few different ways, according to the needs of the programmer.
 
@@ -219,32 +371,40 @@ Strings can be assembled in a few different ways, according to the needs of the 
 | ------------- | ----------------------------------------------------------------------------- |
 | `.string`     | A standard string literal                                                     |
 | `.cstring`    | A C-style null-terminated string                                              |
-| `.lsstring`   | A string with output bytes left-shifted and the low bit set on its final byte |
+| `.lstring`    | A string with output bytes left-shifted and the low bit set on its final byte |
 | `.nstring`    | A string with the negative (high) bit set on its final byte                   |
 | `.pstring`    | A Pascal-style string, its size in the first byte                             |
 
-Since `.pstring` strings use a single byte to denote size, no string can be greater than 255 bytes. Since `.nstring` and `.lsstring` make use of the high and low bits, bytes must not be greater in value than 127, nor less than 0.
-#### String Format function
-The special function `format()` function allows you to convert non-string data to string data using a .Net format string:
-```
+Since `.pstring` strings use a single byte to denote size, no string can be greater than 255 bytes. Since `.nstring` and `.lstring` make use of the high and low bits, bytes must not be greater in value than 127, nor less than 0.
+
+##### String Format function
+
+The string function `format()` allows you to convert non-string data to string data using a .Net format string:
+
+```asm
 stdout      = $ffd2
 stdstring   .string format("The stdout routine is at ${0:X4}", stdout)
-            ;; will assemble to:
-            ;; "The stdout routine is at $FFD2
+            /* will assemble to:
+              "The stdout routine is at $FFD2 */
 
 ```
-Many traditional assemblers allow programmers to use their character and value string pseudo-ops interchangeably, e.g. `.byte "HELLO"` and `.asc "HELLO"`. Note that 6502.Net treats character strings differently for `.byte` and the other value-based commands. For these pseudo-ops string characters are packed into single values, and the pseudo-op length is still enforced:
+
+Many traditional assemblers allow programmers to use their character and value string pseudo-ops interchangeably, e.g. `.byte "HELLO"` and `.asc "HELLO"`. Note that 6502.Net treats character strings differently for `.byte` and similar directives. For these pseudo-ops string characters are packed into single values, and the pseudo-op length is still enforced:
+
+```asm
+            .byte "H"       // okay
+            .dword "HELLO"  // also okay, .dword can accomodate 4 ASCII bytes
+            .byte 'H','I'   // still ok--two different literals
+            .byte "HELLO"   // will error out
 ```
-            .byte "H"       ; okay
-            .dword "HELLO"  ; also okay, .dword can accomodate 4 ASCII bytes
-            .byte 'H','I'   ; still ok--two different literals
-            .byte "HELLO"   ; will error out
-```
+
 Generally, therefore, it is best to use the string commands for processing character string literals.
-#### Encodings
-Assembly source text is processed as UTF-8, and by default strings and character literals are encoded as such. You can change how text output with the `.encoding` and `.map` directives. Use `.encoding` to select an encoding, either pre-defined or custom. The encoding name follows the same rules as labels. There are four pre-defined encodings:
 
-| Encoding      | Output bytes       |       
+##### Encodings
+
+Assembly source text is assumed to be ASCII/UTF-8, and by default strings and character literals are encoded as such. You can change how text is output with the `.encoding` and `.map` directives. Use `.encoding` to select an encoding, either pre-defined or custom. There are four pre-defined encodings:
+
+| Encoding      | Output bytes       |
 | ------------- |--------------------|
 | `none`        | UTF-8              |
 | `atascreen`   | Atari screen codes |
@@ -254,47 +414,53 @@ Assembly source text is processed as UTF-8, and by default strings and character
 The default encoding is `none`. It is worth noting that, for the Commodore-specific encodings, several of the glyphs in those platforms can be represented in Unicode counterparts. For instance, for Petscii encoding, ♥ outputs to `D3` as is expected.
 
 Text encodings are modified using the `.map` and `.unmap` directives. After selecting an encoding, you can map a Unicode character to a custom output code as follows:
-```
-            ;; select encoding
-            .encoding myencoding
 
-            ;; map A to output 0
+```asm
+            /* select encoding */
+            .encoding "myencoding"
+
+            // map A to output 0
             .map "A", 0
 
             .string "ABC"
-            ;; > 00 42 43
+            // > 00 42 43
 
-            ;; char literals are also affected
-            lda #'A'    ;; a9 00
+            // char literals are also affected
+            lda #'A'    // a9 00
 
             ;; emoji will assemble too!
-            .string "😁"    ;; f0 9f 98 81
+            .string "😁"    // f0 9f 98 81
 ```
-The output can be one to four bytes. Entire character sets can also be mapped, with the re-mapped code treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions.
-```
-            ;; output lower-case chars as uppercase
+
+The output for each text element can be one to four bytes. Entire character sets can also be mapped, with the re-mapped code treated as the first in the output range. The start and endpoints in the character set to be re-mapped can either be expressed as a two-character string literal or as expressions.
+
+```asm
+            // output lower-case chars as uppercase
             .map "az", "A"
 
-            ;; output digits as actual integral values
+            // output digits as actual integral values
             .map "0","9", 0
 
-            ;; alternatively:
+            // alternatively:
             .map 48, 48+9, 0
 
-            ;; escape sequences are acceptable too:
+            // escape sequences are acceptable too:
             .map "\u21d4", $9f
 ```
+
 **Caution:** Operand expressions containing a character literal mapped to a custom code will evaluate the character literal accordingly. This may produce unexpected results:
-```
+
+```asm
             .map 'A', 'a'
 
-            .map 'a', 'A' ;; this is now the same as .map 'a', 'a'
+            .map 'a', 'A' // this is now the same as .map 'a', 'a'
 ```
+
 Instead express character literals as one-character strings in double-quotes, which will resolve to UTF-8 values.
 
 A further note about encodings and source files. As mentioned, source files are read and processed as UTF-8. While it is true that the .Net StreamReader class can auto-detect other encodings, this cannot be guaranteed (for instance if the BOM is lacking in a UTF-16-encoded source). If the source does not assemble as expected, consider converting it to UTF-8 or at least ASCII. [This article](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/) offers a good overview on the issues concerning text encodings.
 
-#### Escape sequences
+##### Escape sequences
 
 Most [.Net escape sequences](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/#string-escape-sequences) will also output, including Unicode.
 
@@ -313,11 +479,12 @@ Here are a few recognized escape sequences:
 | `\"`            | Double quotation mark        |
 | `\unnnn`        | Unicode U+nnnn               |
 
-### File inclusions
+#### File inclusions
 
 Other files can be included in final assembly, either as 6502.Net-compatible source or as raw binary. Source files are included using the `.include` and `.binclude` directives. This is useful for libraries or other organized source you would not want to include in your main source file. The operand is the file name (and path) enclosed in quotes. `.include` simply inserts the source at the directive.
-```
-            ;; inside "../lib/library.s"
+
+```asm
+            // inside "../lib/library.s"
 
             .macro  inc16 mem
             inc \mem
@@ -326,46 +493,54 @@ Other files can be included in final assembly, either as 6502.Net-compatible sou
 +           .endmacro
             ...
 ```
-This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the [section below](#macros-and-segments) for more information about macros).
-```
+
+This file called `"library.s"` inside the path `../lib` contains a macro definition called `inc16` (See the [section below](#macros) for more information about macros).
+
+```asm
             .include "../lib/library.s"
 
-            .inc16 $033c    ; 16-bit increment value at $033c and $033d
+            .inc16 $033c    // 16-bit increment value at $033c and $033d
 ```
+
 If the included library file also contained its own symbols, caution would be required to ensure no symbol clashes. An alternative to `.include` is `.binclude`, which resolves this problem by enclosing the included source in its own scoped block.
-```
-lib         .binclude "../lib/library.s"    ; all symbols in "library.s"
-                                        ; are in the "lib" scope
+
+```asm
+lib         .binclude "../lib/library.s" /* all symbols in "library.s"
+                                            are in the "lib" scope */
 
             jsr lib.memcopy
 ```
+
 If no label is prefixed to the `.binclude` directive then the block is anonymous and labels are not visible to your code.
 
 External files containing raw binary that will be needed to be included in your final output, such as `.sid` files or sprite data, can be assembled using the `.binary` directive.
-```
+
+```asm
             * = $1000
 
             .binary "../rsrc/sprites.raw"
 
             ...
 
-            lda #64     ; pointer to first sprite in "./rsrc/sprites.raw"
-            sta 2040    ; set first sprite to that sprite shape
+            lda #64     // pointer to first sprite in "./rsrc/sprites.raw"
+            sta 2040    // set first sprite to that sprite shape
 ```
+
 You can also control how the binary will be included by specifying the offset (number of bytes from the start) and size to include.
-```
+
+```asm
             * = $1000
 
-            .binary "../rsrc/music.sid", $7e    ; skip first 126 bytes
-                                                ; (SID header)
+            .binary "../rsrc/music.sid", $7e    // skip first 126 bytes
+                                                // (SID header)
 
-            .binary "../lib/compiledlib.bin", 2, 256    ; skip load header
-                                                        ; and take 256 bytes
+            .binary "../lib/compiledlib.bin", 2, 256    // skip load header
+                                                        // and take 256 bytes
 ```
 
-### Mathematical and Conditional Expressions
+### Mathematical and Conditional Operations
 
-All non-string operands are treated as math or conditional expressions. Compound expressions are nested in paranetheses. There are several available operators for both binary and unary expressions. The order of operation generally follows that the .Net languages for matching operators, with the byte extractors taking highest precedence.
+All non-string operands are treated as math or conditional expressions.The order of operation generally follows that the .Net languages for matching operators.
 
 #### Binary Operations
 
@@ -376,7 +551,7 @@ All non-string operands are treated as math or conditional expressions. Compound
 | *             | Multiply                       |
 | /             | Divide                         |
 | %             | Modulo (remainder)             |
-| **            | Raise to the power of          |
+| ^^            | Raise to the power of          |
 | &             | Bitwise AND                    |
 | &#124;        | Bitwise OR                     |
 | ^             | Bitwise XOR                    |
@@ -390,15 +565,18 @@ All non-string operands are treated as math or conditional expressions. Compound
 | >             | Greater than                   |
 | &&            | Logical AND                    |
 | &#124;&#124;  | Logical OR                     |
-```
-            .addr   HIGHSCORE + 3 * 2 ; the third address from HIGHSCORE
-            .byte   * > $f000         ; if program counter > $f000, assemble as 1
-                                      ; else 0
 
-            ;; bounds check START_ADDR                          
+```asm
+            .addr   HIGHSCORE + 3 * 2 // the third address from HIGHSCORE
+            .byte   * > $f000         // if program counter > $f000, assemble as 1
+                                      // else 0
+
+            // bounds check START_ADDR
             .assert START_ADDR >= MIN && START_ADDR <= MAX
 ```
+
 #### Unary Operations
+
 | Operator      | Meaning                                |
 | :-----------: | -------------------------------------- |
 | ~             | Bitwise complementary                  |
@@ -407,54 +585,73 @@ All non-string operands are treated as math or conditional expressions. Compound
 | &             | Extract Word (first two bytes) value   |
 | ^             | Extract Bank (third) byte              |
 | !             | Logical NOT                            |
-```
 
-            lda #>routine-1     ; routine MSB
+```asm
+
+            lda #>routine-1     // routine MSB
             pha
-            lda #<routine-1     ; routine LSB
-            pha                 
-            rts                 ; RTS jump to "routine"
+            lda #<routine-1     // routine LSB
+            pha
+            rts                 // RTS jump to "routine"
 
-routine     lda &long_address   ; load the absolute value of long_address
-                                ; (truncate bank byte) into accummulator
+routine     lda &long_address   // load the absolute value of long_address
+                                // (truncate bank byte) into accummulator
 ```
-#### Math functions
+
+#### Built-in functions
+
 Several built-in math functions that can also be called as part of the expressions.
-```
+
+```asm
             lda #sqrt(25)
 ```
-See the section below on functions for a full list of available functions.
 
-#### Math constants
-The math constants π and _e_ are defined as `MATH_PI` and `MATH_E`, respectively, and can be referenced in expressions as follows:
+See the section below on functions for a full list of available functions, as well as how to define custom funcctions.
+
+#### Math and Logical Constants
+
+The math constants π and _e_ are defined as `math_pi` and `math_e`, respectively, and can be referenced in expressions as follows:
+
+```asm
+            .dword sin(math_pi/3) * 10  // > 08
+            .dword pow(math_e,2)        // > 07
 ```
-            .dword sin(MATH_PI/3) * 10  ; > 08
-            .dword pow(MATH_E,2)        ; > 07
+
+The logical constants `true` and `false` are available to conditional expressions:
+
+```asm
+            .if (i > 3) == false
+                .goto end
+            .endif
 ```
-Not that no labels or variables can share these two names as they are reserved.
+
+Note that no labels or variables can share these names as they are considered reserved.
 
 ## Addressing model
 
 By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter. The assignment can be either a constant or expression:
+
+```asm
+            * = ZP + 1000       // program counter now 1000 bytes offset from
+                                // the value of the constant ZP
 ```
-            * = ZP + 1000       ; program counter now 1000 bytes offset from
-                                ; the value of the constant ZP
-```                
-(Be aware of the pesky trap of trying to square the program counter using the `**` operator, i.e. `***`. This produces unexpected results. Instead consider the `pow()` function as described in the section on math functions below.)
 
 As assembly continues, the program counter advances automatically. You can manually move the program counter forward, but keep in mind doing so will create a gap that will be filled if any bytes are added to the assembly from that point forward. For instance, consider:
-```
+
+```asm
             * = $1000
-            lda #0
-            jsr $1234
+            ld a,0
+            call $1234
 
             * = $2004
-            brk
-```                
+            rst $00
+```
+
 This will output 4096 bytes, with 4091 zeros. So this generally is not recommended unless this is the desired result.
 
 To move the program counter forward for the purposes having the symbols use an address space that code will be relocated to later, you can use the `.relocate` directive:
-```
+
+```asm
             * = $0200
             newlocation = $a000
 
@@ -470,16 +667,18 @@ To move the program counter forward for the purposes having the symbols use an a
             lda ($02),y
             sta ($04),y
             ....
-torelocate:                                 
-            .relocate newlocation   ; no gap created
+torelocate:
+            .relocate newlocation   // no gap created
 
-            jsr relocatedsub    ; now in the "newlocation" address space
+            jsr relocatedsub    // now in the "newlocation" address space
             ...
 relocatedsub    lda #0
                 ...
-```                
-To reset the program counter back to its regular position use the `.endrelocate` directive:
 ```
+
+To reset the program counter back to its regular position use the `.endrelocate` directive:
+
+```asm
             jsr relocatedsub
             ...
             jmp finish
@@ -490,136 +689,168 @@ torelocate:
             ;; done with movable code, do final cleanup
 finish      rts
 ```
-Because the 65xx architecture uses differing addressing modes for the same mnemonics, by default 6502.Net selects the appropriate instruction based on the minimum required size to express the operand. For instance `lda 42` can either be interpreted to be zero-page or absolute addressing, but 6502.Net will choose zero-page. Similarly, for the 65C816 `lda $c000` could either be an absolute or long address, but 6502.Net will again choose the shorter (and faster!) instruction to assemble. You can, however, force the assembler to choose the larger mode explicitly by pre-fixing the operand with the bit-size enclosed in square brackets.
-```
-            $c000
 
-            ;; zero-page loadA
-            lda 42          ; > .c000 a5 2a
+## Macros and Custom Functions
 
-            ;; absolute loadA
-            lda [16] 42     ; > .c002 ad 2a 00
+### Macros
 
-            ;; long jsr to bank 0 $ffd2
-            jsr [24] $ffd2  ; > .c005 22 d2 ff 00
-```
-## Macros and segments
-One of the more powerful features of the 6502.Net cross assembler is the ability to re-use code segments in multiple places in your source. You define a macro or segment once, and then can invoke it multiple times later in your source; the assembler simply expands the definition where it is invoked as if it is part of the source. Macros have the additional benefit of allowing you to pass parameters, so that the final outputted code can be easily modified for different contexts, behaving much like a function call in a high level language. For instance, one of the more common operations in 6502 assembly is to do a 16-bit increment. You could use a macro for this purpose like this:
-```
+One of the more powerful features of the 6502.Net cross assembler is the ability to re-use code segments in multiple places in your source. Macros are text substitutions that are defined once, then expanded wherever invoked. Macros can accept parameters, so that the final outputted code can be easily modified for different contexts. For instance, one of the more common operations in 6502 assembly is to do a 16-bit increment. You could use a macro for this purpose like this:
+
+```asm
 inc16       .macro  address
             inc \address
             bne +
             inc \address+1
 +           .endmacro
 ```
-The macro is called `inc16` and takes a parameter called `address`. The code inside the macro references the parameter with a backslash `\` followed by the parameter name. The parameter is a textual substitution; whatever you pass will be expanded at the reference point. Note the anonymous forward symbol at the branch instruction will be local to the block, as would any symbols inside the macro definition when expanded. To invoke a macro simply reference the name with a `.` in front:
-```
+
+The macro is called `inc16` and takes a parameter called `address`. The code inside the macro references the parameter with a backslash `\` followed by the parameter name. The parameter is a textual substitution; whatever you pass will be expanded at the reference point. Note the anonymous forward symbol at the branch instruction will be local to the block, as would any symbols inside the macro definition when expanded. To invoke a macro simply reference the name with a `.` in front, like any pseudo-op or directive:
+
+```asm
 myvariable  .word ?
 
             .inc16 myvariable
-```        
-This macro expands to:
 ```
+
+Once assembly on source happens, the line above expands to:
+
+```asm
             inc myvariable
             bne +
             inc myvariable+1
 +           ...
 ```
+
 Parameter insertions also work in string literals, but the parameter formatting is more like a .Net string format with a `@` symbol in front:
-```
+
+```asm
 hello       .macro name
             .string "Hello, @{name}."
             .endmacro
 ```
+
 Parameters can be referenced by number in this way:
-```         
+
+```asm
 today       .macro
             .string "Today is @{1}"
             .endmacro
 
-        ;; Expansion of ".today Tuesday""
+        // Expansion of ".today Tuesday""
             .string "Today is Tuesday"
 ```
-Segments are conceptually identical to macros, except they do not accept parameters and are usually used as larger segments of relocatable code. Segments are defined between `.segment`/`.endsegment` blocks with the segment name after each closure directive, then
-are declared into the source using the `.dsegment` directive, followed by the segment name. Unlike macros, segments can be declared before they are defined.
-```
-            .segment zp
 
-zpvar1      .word ?
-zpvar2      .word ?
-            ...
-            .endsegment zp
+If the string insertion contains whitespaces, enclose the expression in double quotes.
 
-            .segment code
-            ldx #0
-+           lda message,x
-            jsr chrout
-            inx
-            cpx #msgsize
-            bne +
-            ...
-            .endsegment code
-```        
-Then you would assemble defined segments as follows:
-```
-            * = $02
-            .dsegment zp
-            .errorif * > $ff, ".zp segment outside of zero-page!"
+### Functions
 
-            * = $c000
-            .dsegment code
-```        
-You can also define segments within other segment definitions. Note that doing this does not make them "nested." The above example would be re-written as:
-```
-            .segment program
-            .segment zp
-zpvar1      .word ?
-zpvar2      .word ?
-txtbuffer   .fill 80
-            .endsegment zp
-            .segment code
-            ldx #0
-            ...
-            .segment bss
-variables   .byte ?
-            ...
-            .endsegment bss
-            .endsegment code
-            .endsegment program
+Custom functions are similar to macros in that they are composed of several lines and accept parameters:
 
-            * = $02
-            .dsegment zp
-            * = $033c
-            .dsegment bss
-            * = $c000
-            .dsegment code
+```asm
+area            .function r=1
+                    .errorif r < 0, "Radius cannot be negative."
+                    .return math_pi * pow(r,2)
+                .endfunction
 ```
+
+Since the above function returns a value, it can be used as part of any math expression, just like any other function:
+
+```asm
+                .word area(32)+5
+```
+
+Functions can even be invoked stand-alone with the `.invoke` directive:
+
+```asm
+                .invoke myfunnyfunction()
+```
+
+All variables declared inside functions are considered local in scope to that function.
+
+One critical difference between a function and a macro is that the pseudo ops and 65xx/Z80 mnemonics are not available to function definitions, since output of code this way is not allowed.
+
 ## Flow Control
+
 In cases where you want to control the flow of assembly, either based on certain conditions (environmental or target architecture) or in certain iterations, 6502.Net provides certain directives to handle this.
-### Conditional Assembly
-Conditional assembly is available using the `.if` and related directive.  Conditions can be nested, but expressions will be evaluated on first pass only.
+
+### Assembly Termination
+
+Assembly can be stopped on the current pass with the `.end` directive. But be careful not to use this directive inside a block such as `.if`, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
+
+### Goto Statement
+
+The `.goto` directive will set the assembler to the labeled line specified in the operand:
+
+```asm
+        .goto code_end
+        ... // stuff that won't be assembled
+code_end    rts
 ```
-            lda #$41
-            .ifdef APPLE2   ; is the symbol APPLE2 defined?
-                jsr $fbfd
-            .else
-                jsr $ffd2
+
+### Conditional Assembly
+
+#### If Statement Blocks
+
+Conditional assembly is available using the `.if` and related directive.  Conditions can be nested, but expressions will be evaluated on first pass only.
+
+```asm
+            ld a,$42
+            .ifdef SPECCY   // is the SPECCY symbol defined?
+                call $10a8
             .endif
 ```
-**Caution:** Be careful not to use the `.end` directive inside a conditional block, which terminates assembly, otherwise the `.endif` closure will never be reached, and the assembler will report an error.
-### Basic Repetitions
+
+#### Switch Blocks
+
+Switch blocks can also be used for more compact conditional branching:
+
+```asm
+            .switch CPU_NAME
+                .case "65816"
+                    brl long
+                    .break
+                .case "65CE02"
+                    bcs long
+                    .break
+                .default
+                    bcc next
+                    jmp long
+                    .break
+            .endswitch
+```
+
+Multiple cases can also fall through to the same branch:
+
+```asm
+            .switch *
+                .case $100
+                .case $200
+                .case $300
+                    .echo "At page break!"
+                    .break
+                .default
+                    // do something else
+                    .break
+            .endswitch
+```
+
+### Loop Assembly
+
+#### Simple Repetitions
+
 On occasions where certain instructions will be repeatedly assembled, it is convenient to repeat their output in a loop. For instance, if you want to pad a series of `nop` instructions. The `.repeat` directive does just that.
 
-```
-            ;; will assemble $ea ten times
+```asm
+            // will assemble $ea ten times
             .repeat 10
             nop
             .endrepeat
+```
 
-```
 These repetitions can also be nested, as shown below.
-```
-            ;; print each letter of the alphabet 3 times
+
+```asm
+            // print each letter of the alphabet 3 times
             * = $c000
 
             lda #$41
@@ -636,77 +867,133 @@ These repetitions can also be nested, as shown below.
             .endrepeat
             rts
 ```
-### Loop Assembly
-Repetitions can also be handled in for/next loops, where source can be emitted repeatedly until a condition is met. An iteration variable can optionally be initialized, with the advantage is the variable itself can be referenced inside the loop.
-```
+
+#### For/Next
+
+Repetitions can also be handled in while and for/next loops, where source can be emitted repeatedly until a condition is met.  iteration variable can optionally be initialized, with the advantage is the variable itself can be referenced inside the loop.
+
+```asm
             lda #0
             .for i = $0400, i < $0800, i = i + 1
                 sta i
             .next
 ```
-A minimum two operands are required: The initial expression and the condition expression. A third iteration expression is option. The iteration expression can be blank, however.
-```
-            .let a = 0;
+
+Initialization nor conditional operands are not required, but the iteration is.
+
+```asm
+            .let c = 0;
             .let n = 1;
-            .for , n < 10
-                .if a == 3
-                    .let n = n + 1;
-                .else
+            .for , n < 10 , n = n + 1
+                .if c == 3
                     .let n = n + 5;
                 .endif
                 .echo format("{0}",n);
             .next
-
-            .comment
-
+            /*
             outputs:
 
             6
             11
+            */
+```
 
-            .endcomment
-```
-If required, loops can be broken out of using the `.break` directive
-```
+If required, loops can be broken out of using the `.break` directive, or continue to the next iteration using the `.continue` directive:
+
+```asm
             .for i = 0, i < 256, i = i + 1
                 .if * >= $1000
-                    .break          ; make sure assembly does not go past $1000
+                    .break          // make sure assembly does not go past $1000
+                .elseif * >= $900 && * <= $980
+                    .continue       // skip lower 128 iterations.
                 .endif
                 lda #'A'
                 jsr $ffd2
             .next
 ```
-All expressions, including the condition, are only evaluated on the first pass.
 
-**Caution:** Changing the value of the iteration variable inside the loop can cause the application to hang. 6502.Net does not restrict re-assigning the iteration variable inside its own or nested loops.
+#### While
 
-## Illegal operations and support for 6502-variants
+Similarly, `.while` loops continue until a condition is met:
+
+```asm
+            .while * < $100
+                .byte 2
+            .endwhile
+```
+
+## CPU-Specific Assembly
+
+### 65xx Family generally
 
 By default, 6502.Net "thinks" like a 6502 assembler, compiling only the published 56 mnemonics and 151 instructions of that microprocessor. 6502.Net can also compile illegal instructions as well as those of the successor WDC 65C02, CSG 65CE02, and W65C816S processors. The `.cpu` directive tells the assembler the type of source and instruction set it is to assemble.
-```
-            .cpu "6502i"    ; enable illegal instructions
+
+```asm
+            .cpu "6502i"    // enable illegal instructions
 
             ldx #0
             slo (zpvar,x)
 ```
-There are six options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `R65C02`, `65CE02` and `65816`. `6502` is default. You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are  in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
+
+There are eight options for the `.cpu` directive: `6502`, `6502i`, `65C02`, `65CS02`, `R65C02`, `W65C02`, `65CE02` and `65816`. `6502` is default. (NOTE: `Z80` is not an available option, nor will the `.cpu` directive work if the assembler is in Z80 mode.) You can also select the cpu in the command line by passing the `--cpu` option (detailed below). Note that only one CPU target can be selected at a time, though the 65C02 and 65CE02 are supersets of the 6502, and the 65816 and 65CE02 are in turn supersets of both the 65C02 and 6502, so those CPUs will recognize the base 6502 mnemonics.
+
+### Addressing Mode Sizes
+
+Because the 65xx architecture uses differing addressing modes for the same mnemonics, by default 6502.Net selects the appropriate instruction based on the minimum required size to express the operand. For instance `lda 42` can either be interpreted to be zero-page or absolute addressing, but 6502.Net will choose zero-page. Similarly, for the 65C816 `lda $c000` could either be an absolute or long address, but 6502.Net will again choose the shorter (and faster!) instruction to assemble. You can, however, force the assembler to choose the larger mode explicitly by pre-fixing the operand with the bit-size enclosed in square brackets.
+
+```asm
+            $c000
+
+            // zero-page loadA
+            lda 42          ; > .c000 a5 2a
+
+            // absolute loadA
+            lda [16] 42     ; > .c002 ad 2a 00
+
+            // long jsr to bank 0 $ffd2
+            jsr [24] $ffd2  ; > .c005 22 d2 ff 00
+```
+
+### Pseudo Branch Instructions
+
+For convenience, long branch instructions are available to the programmer, where the distance is calculated to the offset relative to the current instruction before assembly, and if necessary an absolute jump is inserted. The pseudo-ops for these long branches are `jcc`, `jcs`, `jeq`, `jmi`, `jne`, `jpl`, `jvc`, and `jvs`:
+
+```asm
+            * = $c000
+            lda ($19),y
+            jne $c100
+            ldx #0
+            ...
+            /* gets assembled as =>
+            .C000  f0 03        beq $c005
+            .c002  4c 00 c1     jmp $c100
+            .c005  a2 00
+            */
+```
+
+Naturally, these instructions break compatibility with nearly all other assemblers.
+
+### 65816 Specific Directives
 
 Immediate mode on the 65816 can emit different output based on the expected size. 6502.Net must be told which size to use for which register in order to assemble the correct number of bytes for immediate mode operations. Use `.m8` for 8-bit accumulator and `.m16` for 16-bit accumulator; `.x8` for 8-bit index registers and `.x16` for 16-bit index registers.
-```
+
+```asm
             rep #%00110000
 
             .m16
-            lda #$c000      
+            lda #$c000
             ldx #$03
 
             .x16
             ldy #$1000
             jml $1012000
 ```
+
 Eight-bit modes for registers are default.
 
 You can also set all registers to the same size with `.mx8` and `.mx16` respectively.
-```
+
+```asm
             sep #%00110000
 
             .mx8
@@ -715,39 +1002,12 @@ You can also set all registers to the same size with `.mx8` and `.mx16` respecti
             ldx #$01
             ldy #$02
 ```
+
 ## Reference
-### Instruction set
-By default, the 6502.Net only recognizes the 151 published instructions of the original MOS Technology 6502. The following mnemonics are recognized:
-```
-adc,and,asl,bcc,bcs,beq,bit,bmi,bne,bpl,brk,bvc,bvs,clc,
-cld,cli,clv,cmp,cpx,cpy,dec,dex,dey,eor,inc,inx,iny,jmp,
-jsr,lda,ldx,ldy,lsr,nop,ora,pha,php,pla,plp,rol,ror,rti,
-rts,sbc,sec,sed,sei,sta,stx,sty,tax,tay,tsx,txa,txs,tya
-```
-65C02 support adds the following additional mnemonics:
-```
-bra,phx,phy,plx,ply,trb,tsb
-```
-The R65C02 (Rockwell) extensions come with bit-condition branching and bit flipping for zero-page variables:
-```
-bbr,bbs,rmb,smb
-```
-The mnemonics of the 65CE02, an enhanced R65C02, are:
-```
-asr,asw,bge,blt,bsr,cle,cpz,dew,dez,inw,inz,ldz,neg,phw,
-phz,plw,plz,row,rtn,see,tab,taz,tba,tsy,tys,tza
-```
-The Hudson Soft HuC6280 is, like the 65CE02, an improved version of the Rockwell architecture, and includes:
-```
-cla,clx,cly,sax,say,set,st1,st2,sxy,tai,tam,tdd,tia,tin,
-tma,tst
-```
-For 65816 compatibility the following mnemonics are recognized:
-```
-brl,cop,jml,jsl,mvn,mvp,pea,pei,per,phb,phd,phk,plb,pld,
-rep,rtl,sep,stp,tcd,tcs,tdc,tsc,txy,tyx,wai,wdm,xba,xce
-```
-Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by [VICE](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
+
+### 6502 Illegal Mnemonics
+
+When setting the `.cpu` directive to `"6502i"`, the various unpublished and so-called illegal instructions can be assembled. Since they are technically undocumented, mnemonics for illegal instructions vary among assemblers. 6502.Net closely follows those used by [VICE](http://vice-emu.sourceforge.net/), a popular Commodore 64 emulator. Illegal mnemonics, operations and opcodes are as follows:
 
 <table>
 <tr>
@@ -764,7 +1024,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>DCP</td><td>Indirect Indexed      </td><td>D3</td></tr>
 <tr><td>DCP</td><td>Zero-Page Indexed X   </td><td>D7</td></tr>
 <tr><td>DCP</td><td>Absolute Indexed Y    </td><td>DB</td></tr>
-<tr><td>DCP</td><td>Absolute Indexed X    </td><td>DF</td></tr>    
+<tr><td>DCP</td><td>Absolute Indexed X    </td><td>DF</td></tr>
 <tr><td>DOP</td><td>Implied/Immediate     </td><td>80</td></tr>
 <tr><td>ISB</td><td>Indexed Indirect      </td><td>E3</td></tr>
 <tr><td>ISB</td><td>Zero-Page             </td><td>E7</td></tr>
@@ -772,7 +1032,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>ISB</td><td>Indirect Indexed      </td><td>F3</td></tr>
 <tr><td>ISB</td><td>Zero-Page Indexed X   </td><td>F7</td></tr>
 <tr><td>ISB</td><td>Absolute Indexed Y    </td><td>FB</td></tr>
-<tr><td>ISB</td><td>Absolute Indexed X    </td><td>FF</td></tr>    
+<tr><td>ISB</td><td>Absolute Indexed X    </td><td>FF</td></tr>
 <tr><td>JAM*</td><td>Implied               </td><td>02</td></tr>
 <tr><td>LAS</td><td>Absolute Indexed Y    </td><td>BB</td></tr>
 <tr><td>LAX</td><td>Indexed Indirect      </td><td>A3</td></tr>
@@ -786,7 +1046,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>RLA</td><td>Absolute              </td><td>2F</td></tr>
 <tr><td>RLA</td><td>Indirect Indexed      </td><td>33</td></tr>
 <tr><td>RLA</td><td>Zero-Page Indexed X   </td><td>37</td></tr>
-<tr><td>RLA</td><td>Absolute Indexed Y    </td><td>3B</td></tr>   
+<tr><td>RLA</td><td>Absolute Indexed Y    </td><td>3B</td></tr>
 </table>
 </td>
 <td>
@@ -799,7 +1059,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>RRA</td><td>Indirect Indexed      </td><td>73</td></tr>
 <tr><td>RRA</td><td>Zero-Page Indexed X   </td><td>77</td></tr>
 <tr><td>RRA</td><td>Absolute Indexed Y    </td><td>7B</td></tr>
-<tr><td>RRA</td><td>Absolute Indexed X    </td><td>7F</td></tr>    
+<tr><td>RRA</td><td>Absolute Indexed X    </td><td>7F</td></tr>
 <tr><td>SAX</td><td>Indexed Indirect      </td><td>83</td></tr>
 <tr><td>SAX</td><td>Zero-Page             </td><td>87</td></tr>
 <tr><td>SAX</td><td>Absolute              </td><td>8F</td></tr>
@@ -813,7 +1073,7 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 <tr><td>SLO</td><td>Indirect Indexed      </td><td>13</td></tr>
 <tr><td>SLO</td><td>Zero-Page Indexed X   </td><td>17</td></tr>
 <tr><td>SLO</td><td>Absolute Indexed Y    </td><td>1B</td></tr>
-<tr><td>SLO</td><td>Absolute Indexed X    </td><td>1F</td></tr>    
+<tr><td>SLO</td><td>Absolute Indexed X    </td><td>1F</td></tr>
 <tr><td>SRE</td><td>Indexed Indirect      </td><td>43</td></tr>
 <tr><td>SRE</td><td>Zero-Page             </td><td>47</td></tr>
 <tr><td>SRE</td><td>Absolute              </td><td>4F</td></tr>
@@ -832,14 +1092,12 @@ Since they are technically undocumented, mnemonics for illegal instructions vary
 
 *-`JAM` and `STP` are essentially the same command; they both halt the CPU.
 
-**Note:** Illegal mnemonics are only available if the `6502i` option is specified in the `--cpu` commandline or `.cpu` directive.
-
 ### Pseudo-Ops
-Following is the detail of each of the 6502.Net pseudo operations, or psuedo-ops. A pseudo-op is similar to a mnemonic in that it tells the assembler to output some number of bytes, but different in that it is not part of the CPU's instruction set. For each pseudo-op description is its name, any aliases, a definition, arguments, and examples of usage. Optional arguments are in square brackets (`[` and `]`).
+
+Following is the detail of each of the 6502.Net pseudo operations. Optional arguments are in square brackets (`[` and `]`).
 
 Note that every argument, unless specified, is a legal mathematical expression, and can include symbols such as labels (anonymous and named) and the program counter. If the expression evaluates to a value greater than the maximum value allowed by the pseudo-op, the assembler will issue an illegal quantity error.
 
-<p align="center"><b>Data/text insertions</b></p>
 <table>
 <tr><td><b>Name</b></td><td><code>.addr</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>.word</code></td></tr>
@@ -848,10 +1106,10 @@ Note that every argument, unless specified, is a legal mathematical expression, 
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c000
-mysub   lda #13                 ; output newline
+mysub   lda #13                 // output newline
         jsr chrout
         rts
-        .addr mysub             ; >c006 00 c0
+        .addr mysub             // >c006 00 c0
 </pre>
 </td></tr></table>
 <table>
@@ -863,9 +1121,9 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
       * = $c023
-      .align $10,$ff ; >c023 ff ff ff ff ff ff ff ff
-                     ; >c02b ff ff ff ff ff
-      .byte $23      ; >c030 23
+      .align $10,$ff // >c023 ff ff ff ff ff ff ff ff
+                     // >c02b ff ff ff ff ff
+      .byte $23      // >c030 23
 </pre>
 </td></tr></table>
 <table>
@@ -875,12 +1133,12 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Arguments</b></td><td><code>filename[, offset[, size]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-      .binary     "subroutines.prg",2  ; strip off start address
-      .binary     "mybin.bin"          ; include all of 'mybin.bin'
-      .binary     "soundtrack.sid",$7e ; skip SID-header
+      .binary     "subroutines.prg",2  // strip off start address
+      .binary     "mybin.bin"          // include all of 'mybin.bin'
+      .binary     "soundtrack.sid",$7e // skip SID-header
       .binary     "subroutines.prg",2,1000
-                  ;; strip off start address, only take first
-                  ;; 1000 bytes thereafter.
+                  // strip off start address, only take first
+                  // 1000 bytes thereafter.
 </pre>
 </td></tr></table>
 <table>
@@ -892,8 +1150,8 @@ expressed bytes will be assembled until the point the program counter reaches it
 <pre>
       * = $033c
       .byte $39, $38, $37, $36, $35, $34, $33, $32, $31
-      ;; >033c 39 38 37 36 35 34 33 32
-      ;; >0344 31
+      // >033c 39 38 37 36 35 34 33 32
+      // >0344 31
 </pre>
 </td></tr></table>
 <table>
@@ -904,11 +1162,11 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = 1000
-        .cstring "hello, world!"    ; >1000 68 65 6c 6c 6f 2c 20 77
-                                    ; >1008 6f 72 6c 64 21 00
-        .cstring $93,"ALL CLEAR"    ; >100e 93 41 4c 4c 20 43 4c 45
-                                    ; >1016 41 52 00
-        .cstring $ffd2              ; >1019 d2 ff 00
+        .cstring "hello, world!"    // >1000 68 65 6c 6c 6f 2c 20 77
+                                    // >1008 6f 72 6c 64 21 00
+        .cstring $93,"ALL CLEAR"    // >100e 93 41 4c 4c 20 43 4c 45
+                                    // >1016 41 52 00
+        .cstring $ffd2              // >1019 d2 ff 00
 </pre>
 </td></tr>
 </table>
@@ -920,7 +1178,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0801
-        .dint   18000000      ; &gt;0801 80 a8 12 01
+        .dint   18000000      // &gt;0801 80 a8 12 01
 </pre>
 </td></tr></table>
 <table>
@@ -931,7 +1189,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $0801
-        .dword  $deadfeed     ; &gt;0801 ed fe ad de
+        .dword  $deadfeed     // &gt;0801 ed fe ad de
 </pre>
 </td></tr></table>
 <table>
@@ -943,8 +1201,8 @@ expressed bytes will be assembled until the point the program counter reaches it
 <pre>
         .fill   23  ; reserve 23 bytes
         * = $1000
-        .fill 11,$ffd2 ; >1000 d2 ff d2 ff d2 ff d2 ff
-                       ; >1008 d2 ff d2
+        .fill 11,$ffd2 // >1000 d2 ff d2 ff d2 ff d2 ff
+                       // >1008 d2 ff d2
 </pre>
 </td></tr></table>
 <table>
@@ -955,7 +1213,7 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c100
-        .lint   -80000    ; >c100 80 c7 fe
+        .lint   -80000    // >c100 80 c7 fe
 </pre>
 </td></tr></table>
 <table>
@@ -966,63 +1224,62 @@ expressed bytes will be assembled until the point the program counter reaches it
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c100
-        .long   $ffdd22   ; >c100 22 dd ff
+        .long   $ffdd22   // >c100 22 dd ff
 </pre>
 </td></tr></table>
 <table>
-<tr><td><b>Name</b></td><td><code>.lsstring</code></td></tr>
+<tr><td><b>Name</b></td><td><code>.lstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the last byte. See example of how this format can be used. If the highest bit of any output byte is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly, each byte shifted to the left, with the lowest bit set on the final byte of the statement. See example of how this format can be used. If the highest bit of any output byte is set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-        ldx #0
--       lda message,x
-        lsr a               ; shift right
-        php                 ; save carry flag
-        jsr chrout          ; print
-        plp                 ; restore carry flag
-        bcs done            ; if set we printed last char
-        inx                 ; increment pointer
-        jmp -               ; get next
-        ...
-        * = $c100
-message .lsstring "HELLO"   ; >c100 90 8a 98 98 9f
+        and a               // clear carry
+        ld  de,screenbuf
+        ld  hl,message
+-       ld  a,(hl)          // next char
+        rrca                // shift right
+        ld  (de),a          // save in buffer
+        jr  c,done          // carry set on shift? done
+        inc hl              // else next char
+        inc de              // and buff
+        jr  -               // get next
+done    ret
+message .lstring "HELLO"   // >c100 90 8a 98 98 9f
 </pre>
 </td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.nstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the last byte. See example of how this format can be used. If the highest bit of the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a string into the assembly, the negative (highest) bit set on the final byte of the statement. See example of how this format can be used. If the highest bit of the last byte is already set, the assembler will error. Multiple arguments can be passed, with a null only inserted at the end of the argument list. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-        ldx #0
--       lda message,x
-        php                 ; save negative flag
-        and #%01111111      ; turn off high bit...
-        jsr chrout          ; and print
-        plp                 ; restore negative flag
-        bmi done            ; if set we printed last char
-        inx                 ; else increment pointer
-        jmp -               ; get next
-        ...
-        * = $c100
-message .nstring "hello"    ; >c100 68 65 6c 6c ef
+        ld  de,screenbuf
+        ld  hl,message
+-       ld  a,(hl)          // next char
+        ld  b,a             // copy to .b to test high bit
+        and #%01111111      // turn off high bit...
+        ld  (de),a          // and print
+        rlc b               // high bit into carry
+        jr  c,done          // if set we printed final char
+        inc hl:inc de       // else increment pointers
+        jr -                // get next
+message .nstring "hello"    // >68 65 6c 6c ef
 </pre>
 </td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.pstring</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Insert a Pascal-style string into the assembly, the first byte indicating the full string size. Note this size includes all arguments in the expression. If the size is greater than 255, the assembler will error. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
+<tr><td><b>Definition</b></td><td>Insert a Pascal-style string into the assembly, the first byte of the statement indicating the full string size. Note this size includes all arguments in the expression. If the size is greater than 255, the assembler will error. If <code>?</code> is passed then the data is an uninitialized byte. Enclosed text is assembled as string-literal while expressions are assembled to the minimum number of bytes required for storage, in little-endian byte order.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value[, value[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $4000
-        .pstring $23,$24,$25,$26,1024 ; >4000 06 23 24 25 26 00 04
-        .pstring "hello"              ; >4007 05 68 65 6c 6c 6f
+        .pstring $23,$24,$25,$26,1024 // >4000 06 23 24 25 26 00 04
+        .pstring "hello"              // >4007 05 68 65 6c 6c 6f
 </pre>
 </td></tr>
 </table>
@@ -1036,16 +1293,16 @@ message .nstring "hello"    ; >c100 68 65 6c 6c ef
 chrin   = $ffcf
 chrout  = $ffd2
         * = $c000
-rtsjmp  txa                 ; .x := index of jump
-        asl a               ; double it
-        tax                 
-        lda jumptable+1,x   ; push high byte
+rtsjmp  txa                 // .x := index of jump
+        asl a               // double it
+        tax
+        lda jumptable+1,x   // push high byte
         pha
-        lda jumptable,x     ; push low byte
+        lda jumptable,x     // push low byte
         pha
-        rts                 ; do the jump
+        rts                 // do the jump
 jumptable
-        .rta chrout, chrin  ; >c00b d1 ff ce ff
+        .rta chrout, chrin  // >c00b d1 ff ce ff
 </pre></td>
 </tr>
 </table>
@@ -1057,7 +1314,7 @@ jumptable
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $033c
-        .sbyte 127, -3  ; >033c 7f fd
+        .sbyte 127, -3  // >033c 7f fd
 </pre>
 </td></tr></table>
 <table>
@@ -1068,10 +1325,10 @@ jumptable
 <tr><td><b>Example</b></td><td>
 <pre>
         * = $c000
-mysub   lda #13             ; output newline
+mysub   lda #13             // output newline
         jsr chrout
         rts
-        .sint -16384        ; >c006 00 c0
+        .sint -16384        // >c006 00 c0
 </pre>
 </td></tr></table>
 <table>
@@ -1082,12 +1339,16 @@ mysub   lda #13             ; output newline
 <tr><td><b>Example</b></td><td>
 <pre>
         * = 1000
-        .string "hello, world!"   ; >1000 68 65 6c 6c 6f 2c 20 77
-                                  ; >1008 6f 72 6c 64 21
+        .string "hello, world!"   // >1000 68 65 6c 6c 6f 2c 20 77
+                                  // >1008 6f 72 6c 64 21
 </pre>
 </td></tr>
 </table>
-<p align="center"><b>Assembler directives</b></p>
+
+### Other Assembler Directives
+
+The directives below do not directly emit output but are responsible for other useful tasks, such as control of assembly flow execution and macro definitions.
+
 <table>
 <tr><td><b>Name</b></td><td><code>.assert</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
@@ -1097,8 +1358,8 @@ mysub   lda #13             ; output newline
 <pre>
         * = $0800
         nop
-        .assert 5 == 6              ; standard assertion error thrown
-        .assert * < $0801, "Uh oh!" ; custom error output
+        .assert 5 == 6              // standard assertion error thrown
+        .assert * < $0801, "Uh oh!" // custom error output
 </pre>
 </td></tr>
 </table>
@@ -1110,13 +1371,13 @@ mysub   lda #13             ; output newline
 <tr><td><b>Example</b></td><td>
 <pre>
 soundlib    .binclude "sound.s"
-            jsr soundlib.play   ; Invoke the
-                                ; play subroutine
-                                ; inside the
-                                ; sound.s source
+            jsr soundlib.play   // Invoke the
+                                // play subroutine
+                                // inside the
+                                // sound.s source
             ;; whereas...
             .binclude "sound.s"
-            jsr play            ; will not assemble!
+            jsr play            // will not assemble!
 </pre>
 </td></tr>
 </table>
@@ -1132,16 +1393,16 @@ kernal .block
         chrin  = $ffcf
         .endblock
         ...
-chrout  lda message,x       
-        jsr kernal.chrout   ; this is a different
-                            ; chrout!
-done    rts                 ; this is not the done
-                            ; below!                
+chrout  lda message,x
+        jsr kernal.chrout   // this is a different
+                            // chrout!
+done    rts                 // this is not the done
+                            // below!
         .block
-        beq done            ; the done below!
+        beq done            // the done below!
         nop
         nop
-done    rts                 
+done    rts
         .endblock
 </pre>
 </td></tr>
@@ -1149,23 +1410,70 @@ done    rts
 <table>
 <tr><td><b>Name</b></td><td><code>.break</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Break out of the current for-next loop.</td></tr>
+<tr><td><b>Definition</b></td><td>In a for/next or while loop, it breaks out of the loop block. In a switch statement it sends control to the next or default case.</td></tr>
 <tr><td><b>Arguments</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         .for n = 0, n < 1000, n = n + 1
-            .if * > $7fff   ; unless address >= $8000
-                .break     
+            .if * > $7fff   // unless address >= $8000
+                .break
             .endif
-            nop             ; do 1000 nops
+            nop             // do 1000 nops
         .next
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.case</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Used in switch blocks for cases. A corresponding <code>.break</code> is required.</td></tr>
+<tr><td><b>Arguments</b></td><td>Expression to compare.</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        .switch *
+            .case $100
+                .echo "Program Counter is now at $100"
+                .break
+            .case $1000
+                .echo "Program Counter is now at $1000"
+                .break
+        .endswitch
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.continue</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Continue the next iteration in a for-next or while loop.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        .for n = 0, n < 1000, n = n + 1
+            .if (* % $100) == 0 // skip page poundaries
+                .continue
+            .endif
+            .byte 42
+        .next
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.comment</code>/<code>.endcomment</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Set a multi-line comment block. NOTE: This directive is deprecated. /* and */ should be used for multi-line comments instead.</td></tr>
+<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+    .comment
+    My code pre-amble
+    .endcomment
 </pre>
 </td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.cpu</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Set the assembler to target the supported CPU. See the <code>--cpu</code> option in the command-line notes below for the available options.</td></tr>
+<tr><td><b>Definition</b></td><td>Set the assembler to target the supported CPU. See the <code>--cpu</code> option in the command-line notes below for the available options. NOTE: If set in Z80 mode, this directive will error.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>cpu</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1177,30 +1485,20 @@ done    rts
 </td></tr>
 </table>
 <table>
-<tr><td><b>Name</b></td><td><code>.comment</code>/<code>.endcomment</code></td></tr>
+<tr><td><b>Name</b></td><td><code>.default</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Set a multi-line comment block.</td></tr>
-<tr><td><b>Arguments</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Used in switch blocks for the default case. A corresponding <code>.break</code> is required. Note that default cases are optional.</td></tr>
+<tr><td><b>Arguments</b></td><td>None.</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-    .comment
-    My code pre-amble
-    .endcomment
-</pre>
-</td></tr>
-</table>
-<table>
-<tr><td><b>Name</b></td><td><code>.dsegment</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Declare a segment to be used in code. The segment declaration can precede its definition in the <code>.segment</code>/<code>.endsegment</code> block.
-</td></tr>
-<tr><td><b>Arguments</b></td><td>Segment name</td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-      .dsegment code    ; >> a2 0f
-      .segment code
-            ldx #$0f
-      .endsegment
+        .switch *
+            .case $100
+                .echo "Program Counter is now at $100"
+                .break
+            .default
+                .echo "Program Counter is some value other than $100"
+                .break
+        .endswitch
 </pre>
 </td></tr>
 </table>
@@ -1208,12 +1506,12 @@ done    rts
 <tr><td><b>Name</b></td><td><code>.echo</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Send a message to the console output. Note if the assembler
-is in quiet mode, no output will be given.</td></tr>
+is in quiet mode, no output will be seen.</td></tr>
 <tr><td><b>Arguments</b></td><td>message</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
     .echo "hi there!"
-    ;; console will output "hi there!"
+    // console will output "hi there!"
 </pre>
 </td></tr>
 </table>
@@ -1232,8 +1530,8 @@ Note: <code>none</code> is default and will not be affected by <code>.map</code>
 <tr><td><b>Arguments</b></td><td><code>encoding</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-      .encoding petscii
-      .string "hello"       ; >> 45 48 4c 4c 4f
+      .encoding "petscii"
+      .string "hello"       // >> 45 48 4c 4c 4f
 </pre>
 </td></tr>
 </table>
@@ -1245,11 +1543,11 @@ Note: <code>none</code> is default and will not be affected by <code>.map</code>
 <tr><td><b>Example</b></td><td>
 <pre>
         jsr $ffd2
-        beq done            ; oops!
+        beq done            // oops!
         rts
-        .end                ; stop everything
-done    ...                 ; assembly will never
-                            ; reach here!
+        .end                // stop everything
+done    ...                 // assembly will never
+                            // reach here!
 </pre>
 </td></tr>
 </table>
@@ -1261,7 +1559,7 @@ done    ...                 ; assembly will never
 <tr><td><b>Example</b></td><td>
 <pre>
       .eor $ff
-      .byte 0,1,2,3       ; > ff fe fd fc
+      .byte 0,1,2,3       // > ff fe fd fc
 </pre>
 </td></tr>
 </table>
@@ -1299,23 +1597,25 @@ start       ; same as start .equ *
 <pre>
         * = $0800
         nop
-        .errorif * > $0801, "Uh oh!" ; if program counter
-                                     ; is greater than 2049,
-                                     ; raise a custom error
+        .errorif * > $0801, "Uh oh!" /*
+                                       if program counter
+                                       is greater than 2049,
+                                       raise a custom error
+                                     */
 </pre>
 </td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.[el]if[[n]def]</code>/<code>.endif</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>All source inside condition blocks are assembled if evaluated to true on the first pass. Conditional expressions follow C-style conventions. The following directives are available:
+<tr><td><b>Definition</b></td><td>All source inside condition blocks are assembled if evaluated to true. The "non-definition" conditions are evaluated on each pass:
     <ul>
         <li><code>.if &lt;expression&gt;</code>   - Assemble if the expression is true</li>
-        <li><code>.ifdef &lt;symbol&gt;</code>    - Assemble if the symbol is defined</li>
-        <li><code>.ifndef &lt;symbol&gt;</code>   - Assemble if the symbol is not defined</li>
+        <li><code>.ifdef &lt;symbol&gt;</code>    - Assemble if the symbol is defined on first pass</li>
+        <li><code>.ifndef &lt;symbol&gt;</code>   - Assemble if the symbol is not defined on first pass</li>
         <li><code>.elif &lt;expression&gt;</code> - Assemble if expression is true and previous conditions are false</li>
-        <li><code>.elifdef &lt;symbol&gt;</code>  - Assemble if symbol is defined and previous conditions are false</li>
-        <li><code>.elifndef &lt;symbol&gt;</code> - Assemble if symbol is not defined and previous conditions are false</li>
+        <li><code>.elifdef &lt;symbol&gt;</code>  - Assemble if symbol is defined on first pass and previous conditions are false</li>
+        <li><code>.elifndef &lt;symbol&gt;</code> - Assemble if symbol is not defined on first pass and previous conditions are false</li>
         <li><code>.else</code>                    - Assemble if previous conditions are false</li>
         <li><code>.endif</code>                   - End of condition block
     </ul>
@@ -1331,23 +1631,69 @@ start       ; same as start .equ *
             nop
             nop
         .endif
-        ;; will result as:
-        ;;
-        ;; nop
+        /*
+        will result as:
+          nop
+        */
 </pre>
 </td></tr></table>
 <table>
 <tr><td><b>Name</b></td><td><code>.for</code>/<code>.next</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. The initialization expression can be blank. Multiple iteration expressions can be specified. This operation is only performed on first pass.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>[init_expression], condition[, iteration_expression[, ...]</code></td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. The iteration variable can be used in source like any other variable. The initialization and conditional expression can both be blank, and multiple iteration expressions can be specified, but at least one is required.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>[init_expression[, condition, ],iteration_expression[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
         .let x = 0
-        .for pages = $100, pages < $800, pages = pages + $100, x = x + 1
+        .for , pages = $100, pages < $800, pages = pages + $100, x = x + 1
             ldx #x
             stx pages
         .next
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.function</code>/<code>.endfunction</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Defines a custom function. Must be named. If the function is expected to be used in a math expression, a return value is required, otherwise it can only be used with <code>.invoke</code>. No assembly output is allowed inside a function. All symbols declared within a function are considered local to it, including its parameters. Parameters can be given default values to make them optional upon invocation.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>parameter[=default, parameter[, ...]</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+factorial   .function n
+            .if n == 0
+                .return 1
+            .endif
+                .return n * factorial(n - 1)
+            .endfunction
+            .word factorial(6) // > D0 02
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.global</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Make the specified label global, irrespective of the current scope it in which it is defined.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>expression</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+                .block
+GLOBAL_LABEL    .global 33
+                .endblock
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.goto</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Go to the specified label and resume assembly there.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>label</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+                .if V > 0
+                    .goto INIT
+                .endif
+                pop bc     // will not assemble if V > 0
+INIT            xor a,a
 </pre>
 </td></tr>
 </table>
@@ -1359,14 +1705,28 @@ start       ; same as start .equ *
 <tr><td><b>Example</b></td><td>
 <pre>
       .include "mylib.s"
-      ;; mylib is now part of source
+      // mylib is now part of source
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.invoke</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Invokes a function. Useful for changing assembly run-time state, or accomplishing some repeated task.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>filename</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+boundscheck .function amount, bound
+                .errorif amount > bound, "Out of bounds!"
+            .endfunction
+            .invoke boundscheck(*+variable, $1000)
 </pre>
 </td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.let</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Declares and assigns or re-assigns a variable to the given expression. Labels cannot be redefined as variables, and vice versa. In addition, variables cannot be forward-referenced, as they are reset each pass.</td></tr>
+<tr><td><b>Definition</b></td><td>Declares and assigns or re-assigns a variable to the given expression. Labels cannot be redefined as variables, and vice versa. In addition, variables cannot be forward-referenced, as the variable table is reset each pass.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>expression</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1406,8 +1766,8 @@ start       ; same as start .equ *
 <table>
 <tr><td><b>Name</b></td><td><code>.macro</code>/<code>.endmacro</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading either a backslash <code>\</code> or as <code>@{param}</code> from within a string, either by name or by number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are invoked with a leading <code>.</code>. All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>parameter[, parameter[, ...]</code></td></tr>
+<tr><td><b>Definition</b></td><td>Define a macro that when invoked will expand into source before assembly. Must be named. Optional arguments are treated as parameters to pass as text substitutions in the macro source where referenced, with a leading either a backslash <code>\</code> or as <code>@{param}</code> from within a string, either by name or by number in the parameter list. Parameters can be given default values to make them optional upon invocation. Macros are invoked with a leading <code>.</code>. All symbols in the macro definition are local, so macros can be re-used with no symbol clashes.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>parameter[=default, parameter[, ...]</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
 inc16       .macro
@@ -1416,26 +1776,30 @@ inc16       .macro
             inc \1+1
 &#43;          .endmacro
             .inc16 $c000
-            ;; expands to =>
+            /* 
+            expands to =>
             inc $c000
             bne +
             inc $c001
-&#43;         
+            */
+&#43;
 print       .macro  value = 13, printsub = $ffd2
-            lda #\value     ; or lda #\1
-            jsr \printsub   ; or jsr \2
+            lda #\value     // or lda #\1
+            jsr \printsub   // or jsr \2
             rts
             .endmacro
             .print
-            ;; expands to =>
-            ;; lda #$0d
-            ;; jsr $ffd2
-            ;; rts
+            /*
+             expands to =>
+             lda #$0d
+             jsr $ffd2
+             rts
             .print 'E',$fded
-            ;; expands to =>
-            ;; lda #$45
-            ;; jsr $fded
-            ;; rts
+             expands to =>
+             lda #$45
+             jsr $fded
+              rts
+            */
 </pre>
 </td></tr>
 </table>
@@ -1488,7 +1852,6 @@ print       .macro  value = 13, printsub = $ffd2
 </td></tr>
 </table>
 <table>
-<table>
 <tr><td><b>Name</b></td><td><code>.relocate</code>/<code>.endrelocate</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>.pseudopc</code>/<code>.realpc</code></td></tr>
 <tr><td><b>Definition</b></td><td>Sets the logical program counter to the specified address with the offset of the assembled output not changing. Useful for programs that relocate parts of themselves to different memory spaces.</td></tr>
@@ -1496,8 +1859,8 @@ print       .macro  value = 13, printsub = $ffd2
 <tr><td><b>Example</b></td><td>
 <pre>
             * = $0801
-            ;; create a Commodore BASIC stub
-            ;; 10 SYS2061
+            // create a Commodore BASIC stub
+            // 10 SYS2061
 SYS         = $9e
             .word eob, 10
             .cstring SYS, format("{0}", start)
@@ -1508,7 +1871,7 @@ start       ldx #0
             inx
             bne -
             jmp $c000
-highcode    
+highcode
             .relocate $c000
             ldx #0
 printloop   lda message,x
@@ -1519,36 +1882,35 @@ printloop   lda message,x
 done        rts
 message     .cstring "HELLO, HIGH CODE!"
             .endrelocate
-            ;; outputs the following =>
-            .comment
-            &gt;0801 0b 08 0a 00           
-            &gt;0805 9e 32 30 36 31 00         
-            &gt;080b 00 00             
-            &gt;080d a2 00     ;           ldx #0
-            &gt;080f bd 1b 08  ; -         lda highcode,x
-            &gt;0812 9d 00 c0  ;           sta $c000,x
-            &gt;0815 e8        ;           inx
-            &gt;0816 d0 f7     ;           bne -
-            &gt;0818 4c 00 c0  ;           jmp $c000
-            &gt;081b a2 00     ;           ldx #$00        
-            &gt;081d bd 0f c0  ; printloop lda message,x
-            &gt;0820 f0 07     ;           beq done        
-            &gt;0822 20 d2 ff  ;           jsr $ffd2         
-            &gt;0825 e8        ;           inx               
-            &gt;0826 4c 02 c0  ;           jmp printloop             
-            &gt;0829 60        ; done      rts      
+            /* outputs the following =>
+            &gt;0801 0b 08 0a 00
+            &gt;0805 9e 32 30 36 31 00
+            &gt;080b 00 00
+            &gt;080d a2 00                 ldx #0
+            &gt;080f bd 1b 08    -         lda highcode,x
+            &gt;0812 9d 00 c0              sta $c000,x
+            &gt;0815 e8                    inx
+            &gt;0816 d0 f7                 bne -
+            &gt;0818 4c 00 c0              jmp $c000
+            &gt;081b a2 00                 ldx #$00
+            &gt;081d bd 0f c0    printloop lda message,x
+            &gt;0820 f0 07                 beq done
+            &gt;0822 20 d2 ff              jsr $ffd2
+            &gt;0825 e8                    inx
+            &gt;0826 4c 02 c0              jmp printloop
+            &gt;0829 60          done      rts
             ;; message
-            &gt;082a 48 45 4c 4c 4f 2c 20 48       
-            &gt;0832 49 47 48 20 43 4f 44 45     
+            &gt;082a 48 45 4c 4c 4f 2c 20 48
+            &gt;0832 49 47 48 20 43 4f 44 45
             &gt;083a 21 00  
-            .endcomment
+            */
 </pre>
 </td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>.repeat</code>/<code>.endrepeat</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Repeat the specified source the specified number of times. Can be nested, but must be terminated with an <code>.endrepeat</code>. This operation is only performed on first pass.</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat the specified source the specified number of times. Can be nested, but must be terminated with an <code>.endrepeat</code>.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>repeatvalue</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -1558,58 +1920,33 @@ message     .cstring "HELLO, HIGH CODE!"
         inx
         .endrepeat
         rts
-        ;; will assemble as:
-        ;;
-        ;; ldx #$00
-        ;; inx
-        ;; inx
-        ;; inx
-        ;; rts
-</pre>
-</td></tr></table>
-<table>
-<tr><td><b>Name</b></td><td><code>.segment</code>/<code>.endsegment</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Defines a block of code as a segment, to be declared into source with the <code>.dsegment</code> directive. Segments are similar to macros, but take no parameters and symbols are not local. Useful for building a large mix of source code and data without needing to relocate code manually. Segments can be defined within other segment block definitions, but are not considered "nested." Segment closures require the segment name after the directive.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>segmentname</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-            .segment zp
-zpvar1      .word ?
-zpvar2      .word ?
-txtbuf      .fill 80
-            .endsegment zp
-            .segment bss
-variables   .dword ?, ?, ?, ?
-            .endsegment bss
-            .segment code
-            .segment data
-glyph             ;12345678
-            .byte %....####
-            .byte %..#####.
-            .byte %.#####..
-            .byte %#####...
-            .byte %#####...
-            .byte %.#####..
-            .byte %..#####.
-            .byte %....####
-            .endsegment data
-            .basic      ; macro that creates BASIC stub
-            sei
-            cld
-            jsr init
-            .endsegment code
-            * = $80
-            .dsegment zp
-            * = $0100
-            .dsegment bss
-            * = $0801
-            .dsegment code
-            * = $0900
-            .dsegment data
+        /* will assemble as:
+         ldx #$00
+         inx
+         inx
+         inx
+         rts
+        */
 </pre>
 </td></tr>
 </table>
+<table>
+<tr><td><b>Name</b></td><td><code>.switch</code>/<code>.endswitch</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Perform a switch operation for program execution control, similar to <code>.if</code>/<code>.endif</code>. A switch must have at least one case or default specified.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>The symbol or constant expression to compare.</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        .switch true
+            .case 1 > 0
+                .echo "One IS greater than zero!"
+                .break
+            .case 1 < 0
+                .echo "One is less than zero?! #mindblown"
+                .break
+        .endswitch
+</pre>
+</td></tr></table>
 <table>
 <tr><td><b>Name</b></td><td><code>.target</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
@@ -1618,21 +1955,8 @@ glyph             ;12345678
 <tr><td><b>Example</b></td><td>
 <pre>
       .target "apple2"
-      ;; the output binary will have an Apple DOS header
+      // the output binary will have an Apple DOS header
       ...
-</pre>
-</td></tr>
-</table>
-<table>
-<tr><td><b>Name</b></td><td><code>.typedef</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Define an existing Pseudo-Op to a user-defined type. The type name adheres to the same rules as labels and variables and cannot be an existing symbol or instruction.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>type, typename</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-            .typedef   .byte, defb
-            * = $c000
-            defb 0,1,2,3 ; >c000 00 01 02 03
 </pre>
 </td></tr>
 </table>
@@ -1645,12 +1969,12 @@ glyph             ;12345678
 <code>"&lt;start&gt;&lt;end&gt;"</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-      .encoding myencoding
+      .encoding "myencoding"
       .unmap "A"
-      .unmap "π"        ;; revert to UTF-8 encoding
-      .byte 'A', 'π'    ;; >> 41 cf 80
+      .unmap "π"        // revert to UTF-8 encoding
+      .byte 'A', 'π'    // >> 41 cf 80
       .unmap "09"
-      .string "2017"    ;; >> 32 30 31 37
+      .string "2017"    // >> 32 30 31 37
 </pre>
 </td></tr>
 </table>
@@ -1673,9 +1997,26 @@ glyph             ;12345678
     * = $0800
     nop
     .warnif   * > $0801, "Check bound"
-    ;; if program counter
-    ;; is greater than 2049,
-    ;; raise a custom warning
+    /* if program counter
+       is greater than 2049,
+       raise a custom warning */
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.while</code>/<code>.endwhile</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Repeat until codition is met. Similar to <code>.for</code>/<code>.next</code>, but without explicit condition checking and loop variable iterations.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>condition</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+        .let n = 0
+        .while n &lt; 256
+            ld b,n
+            ld (hl),b
+            .let n = n +1
+            inc hl
+        .endwhile
 </pre>
 </td></tr>
 </table>
@@ -1708,67 +2049,67 @@ glyph             ;12345678
 </td></tr>
 </table>
 
-## Appendix
 ### Built-In functions
+
 <table>
 <tr><td><b>Name</b></td><td><code>abs</code></td></tr>
 <tr><td><b>Definition</b></td><td>The absolute (positive sign) value of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.word abs(-2234)     ; > ba 08</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.word abs(-2234)     // > ba 08</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>acos</code></td></tr>
 <tr><td><b>Definition</b></td><td>The arc cosine of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte acos(1.0)      ; > 00</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte acos(1.0)      // > 00</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>atan</code></td></tr>
 <tr><td><b>Definition</b></td><td>The arc tangent of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte atan(0.0)      ; > 00</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte atan(0.0)      // > 00</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>cbrt</code></td></tr>
 <tr><td><b>Definition</b></td><td>The cubed root of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.long cbrt(2048383)   ; > 7f 00 00</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.long cbrt(2048383)   // > 7f 00 00</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>ceil</code></td></tr>
 <tr><td><b>Definition</b></td><td>Round up expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte ceil(1.1)       ; > 02</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte ceil(1.1)       // > 02</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>cos</code></td></tr>
 <tr><td><b>Definition</b></td><td>The cosine of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte cos(0.0)        ; > 01</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte cos(0.0)        // > 01</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>cosh</code></td></tr>
 <tr><td><b>Definition</b></td><td>The hyperbolic cosine of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte cosh(0.0)       ; > 01</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte cosh(0.0)       // > 01</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>deg</code></td></tr>
 <tr><td><b>Definition</b></td><td>Degrees from radians.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>radian</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte deg(1.0)        ; > 39</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte deg(1.0)        // > 39</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>exp</code></td></tr>
-<tr><td><b>Definition</b></td><td>Exponential of e.</td></tr>
+<tr><td><b>Definition</b></td><td>Exponential of <i>e</i>.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>power</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.dint exp(16.0)       ; > 5e 97 87 00</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.dint exp(16.0)       // > 5e 97 87 00</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>floor</code></td></tr>
 <tr><td><b>Definition</b></td><td>Round down expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.sbyte floor(-4.8)     ; > fb</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.sbyte floor(-4.8)     // > fb</code></td></tr>
 </table>
 <table>
 <table>
@@ -1781,37 +2122,49 @@ glyph             ;12345678
 <tr><td><b>Name</b></td><td><code>frac</code></td></tr>
 <tr><td><b>Definition</b></td><td>The fractional part.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte frac(5.18)*100  ; > 12</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte frac(5.18)*100  // > 12</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>hypot</code></td></tr>
 <tr><td><b>Definition</b></td><td>Polar distance.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>pole1, pole2</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte hypot(4.0, 3.0) ; > 05</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte hypot(4.0, 3.0) // > 05</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>ln</code></td></tr>
 <tr><td><b>Definition</b></td><td>Natural logarithm.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte ln(2048.0)      ; > 07</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte ln(2048.0)      // > 07</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>log10</code></td></tr>
 <tr><td><b>Definition</b></td><td>Common logarithm.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte log($7fffff)    ; > 06</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte log($7fffff)    // > 06</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>peek</code></td></tr>
+<tr><td><b>Definition</b></td><td>Lookup address. The address can only be in the range of assembled bytes.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>address</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.assert peek($c000) == $a2</code></td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>poke</code></td></tr>
+<tr><td><b>Definition</b></td><td>Set address. The address can only be in the range of assembled bytes.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>address, value</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.invoke poke($c000,$a9)</td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>pow</code></td></tr>
 <tr><td><b>Definition</b></td><td>Exponentiation.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>base, power</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.lint pow(2,16)       ; > 00 00 01</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.lint pow(2,16)       // > 00 00 01</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>rad</code></td></tr>
 <tr><td><b>Definition</b></td><td>Radians from degrees.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>degree</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.word rad(79999.9)    ; > 74 05</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.word rad(79999.9)    // > 74 05</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>random</code></td></tr>
@@ -1819,8 +2172,8 @@ glyph             ;12345678
 <tr><td><b>Arguments</b></td><td><code>range1, range2</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
- .word random(251,255)   ; generate a random # between
-                         ; 251 and 255.
+ .word random(251,255)   // generate a random # between
+                         // 251 and 255.
 </pre>
 </td></tr>
 </table>
@@ -1828,7 +2181,7 @@ glyph             ;12345678
 <tr><td><b>Name</b></td><td><code>round</code></td></tr>
 <tr><td><b>Definition</b></td><td>Round number.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte round(18.21) ; > 12</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte round(18.21) // > 12</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>sgn</code></td></tr>
@@ -1837,7 +2190,7 @@ glyph             ;12345678
 <tr><td><b>Example</b></td><td>
 <pre>
  .sbyte sgn(-8.0), sgn(14.0), sgn(0)
- ;; > ff 01 00
+ // > ff 01 00
 </pre>
 </td></tr>
 </table>
@@ -1845,31 +2198,31 @@ glyph             ;12345678
 <tr><td><b>Name</b></td><td><code>sin</code></td></tr>
 <tr><td><b>Definition</b></td><td>The sine of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.sbyte sin(1003.9) * 14 ; > f2</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.sbyte sin(1003.9) * 14 // > f2</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>sinh</code></td></tr>
 <tr><td><b>Definition</b></td><td>The hyperbolic sine of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte sinh(0.0)        ; > f2</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte sinh(0.0)        // > f2</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>sqrt</code></td></tr>
 <tr><td><b>Definition</b></td><td>The square root of the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte sqrt(65536) - 1  ; > ff</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte sqrt(65536) - 1  // > ff</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>tan</code></td></tr>
 <tr><td><b>Definition</b></td><td>The tangent the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte tan(444.0)*5.0   ; > 08</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte tan(444.0)*5.0   // > 08</code></td></tr>
 </table>
 <table>
 <tr><td><b>Name</b></td><td><code>tanh</code></td></tr>
 <tr><td><b>Definition</b></td><td>The hyperbolic tangent the expression.</td></tr>
 <tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
-<tr><td><b>Example</b></td><td><code>.byte tanh(0.0)        ; > 00</code></td></tr>
+<tr><td><b>Example</b></td><td><code>.byte tanh(0.0)        // > 00</code></td></tr>
 </table>
 
 ### Command-line options
@@ -1891,12 +2244,25 @@ glyph             ;12345678
 <table>
 <tr><td><b>Option</b></td><td><code>--arch</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Specify the target architecture of the binary output. Four options are available. If architecture not specified, the default is <code>cbm</code>. The options:
+<tr><td><b>Definition</b></td><td>Specify the target machine architecture of the binary output. Different options are available depending on the CPU being targeted. The default is <code>cbm</code> for 6502 and flat for Z80. The options:
     <ul>
-        <li><code>apple2</code>    - Apple ][ binary with Apple DOS header</li>
-        <li><code>atari-xex</code> - Atari 8-bit binary with XEX header</li>
-        <li><code>cbm</code>       - Commodore DOS binary with load address header (default)</li>
-        <li><code>flat</code>      - Flat binary with no header</li>
+        <li>65xx
+            <ul>
+                <li><code>apple2</code>    - Apple ][ binary with Apple DOS header</li>
+                <li><code>atari-xex</code> - Atari 8-bit binary with XEX header</li>
+                <li><code>cbm</code>       - Commodore DOS binary with load address header (default)</li>
+                <li><code>flat</code>      - Flat binary with no header</li>
+            </ul>
+        </li>
+        <li>Z80
+            <ul>
+                <li><code>amsdos</code>  - Amstrad CPC DOS (disk)</li>
+                <li><code>amstap</code>  - Amstrad CPC DOS (tape)</li>
+                <li><code>msx</code> - MSx</li>
+                <li><code>zx</code>       - ZX Spectrum</li>
+                <li><code>flat</code>      - Flat binary with no header</li>
+            </ul>
+        </li>
     </ul>
 </td></tr>
 <tr><td><b>Parameter</b></td><td><code>architecture</code></td></tr>
@@ -1933,16 +2299,19 @@ glyph             ;12345678
         <li><code>6502</code>        - Legal 6502 instructions only (default)</li>
         <li><code>6502i</code>       - Legal and illegal 6502 instructions</li>
         <li><code>65C02</code>       - Legal 6502 and 65C02 instructions</li>
+        <li><code>65CS02</code>      - Legal 6502, 65C02 and W65C02 instructions</li>
         <li><code>R65C02</code>      - Legal 6502, 65C02 and RC6502 instructions</li>
+        <li><code>W65C02</code>      - Legal 6502, 65C02, RC6502 and W65C02 instructions</li>
         <li><code>65CE02</code>      - Legal 6502, 65C02, RC6502 and 65CE02 instructions</li>
 		<li><code>HuC6280</code>     - Legal 6502, 65C02, RC6502 and Hudson C6280 instructions</li>
         <li><code>65816</code>       - Legal 6502, 65C02 and W65C816 instructions</li>
+        <li><code>z80</code>         - Z80 instructions</li>
 </ul>
 </td></tr>
 <tr><td><b>Parameter</b></td><td><code>cpu</code></td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-6502.Net.exe myillegalasm.asm --cpu=6502i
+6502.Net.exe myspeccyproggy.asm --cpu=z80
 </pre>
 </td></tr>
 </table>
@@ -2095,112 +2464,26 @@ glyph             ;12345678
 </td></tr>
 </table>
 
-### Error messages
+### Reserved Words
 
-`Addressing mode is not supported for instruction` - The instruction does not support the addressing mode of the operand expression.
+All directives and mnemonics are reserved, and cannot be used for symbol names, such as variables or functions. In addition, the following are considered reserved if the assembler is in 6502 mode:
 
-`Assertion failed` - An assertion failed due to the condition evaluating as false.
+```
+x,s,y
+```
 
-`Attempted to divide by zero.` - The expression attempted a division by zero.
+In Z80 mode, the following are reserved:
 
-`Cannot redefine type to <type> because it is already a type` - The type definition is already a type.
+```
+af,b,bc,c,d,de,e,h,hl,i,ix,ixh,ixl,iy,iyh,iyl,l,m,nc,nz,p,e,po,r
+```
 
-`Cannot resolve anonymous label` - The assembler cannot find the reference to the anonymous label.
+In either mode, the following are reserved:
 
-`Closure does not close a block` - A block closure is present but no block opening.
+```
+a,false,int8_min,int8_max,int16_min,int16_max,int24_min,int24_max,int32_min,int32_max,math_e,math_pi,sp,true,uint8_min,uint8_max,uint16_min,uint16_max,uint24_min,uint24_max,uint32_min,uint32_max,z
+```
 
-`Closure does not close a macro` - A macro closure is present but no macro definition.
+## Licensing and Legal
 
-`Closure does not close a segment` - A segment closure is present but no segment definition.
-
-`Could not process binary file` - The binary file could not be opened or processed.
-
-`Default parameter assignment error` - The parameter in the macro definition could not be a default value.
-
-`Directive takes no arguments` - An argument is present for a pseudo-op or directive that takes no arguments.
-
-`Duplicate paramater name found` - The macro definition contains one or more parameters that have already been defined.
-
-`Encoding is not a name or option` - The encoding selected is not a valid name.
-
-`error: invalid option` - An invalid option was passed to the command-line.
-
-`error: option requires a value` -  An option was passed in the command-line that expected an argument that was not supplied.
-
-`<Feature> is depricated` - The instruction or feature is depricated (this is a warning by default).
-
-`Filename not specified` - A directive expected a filename that was not provided.
-
-`Format is invalid.` - The format string passed to `format()` is not valid
-
-`General syntax error` - A general syntax error.
-
-`Illegal quantity` - The expression value is larger than the allowable size.
-
-`Invalid constant assignment` - The constant could not be assigned to the expression.
-
-`Invalid CPU specified` - An invalid CPU option was given at the command line or in the directive
-
-`Invalid parameter reference` - The macro reference does not reference a defined parameter.
-
-`Invalid parameter(s)` - The parameters defined for the macro are not valid.
-
-`Invalid Program Counter assignment` - An attempt was made to set the program counter to an invalid value.
-
-`Label is not the leftmost character` - The label is not the leftmost character in the line (this is a warning by default).
-
-`Macro expects a value for parameter; no default value defined` - The macro expects a parameter that was not supplied.
-
-`Macro or segment is being called recursively` - A macro or segment is being invoked in its own definition.
-
-`Macro parameter not specified` - The macro expected a parameter that was not specified.
-
-`Macro parameter reference must be a letter or digit` - The macro parameter was in an invalid format.
-
-`Missing closure for block` - A block does not have a closure.
-
-`Missing closure for macro` - The macro does not have a closure.
-
-`Missing closure for segment` - A segment does not have a closure.
-
-`Parameter name invalid` - The parameter for the macro definition has an invalid name.
-
-`Program Counter overflow` - The program counter overflowed passed the allowable limit.
-
-`Pstring size too large` - The P-String size is more than the maximum 255 bytes.
-
-`Quote string not enclosed` - The quote string was not enclosed.
-
-`Redefinition of label` - A label is redefined or being re-assigned to a new value, which is not allowed.
-
-`Redefinition of macro` - An attempt was made to redefine a macro.
-
-`<Symbol> is not a valid symbol name` - The label or variable has one or more invalid characters.
-
-`Symbol not found` - The expression referenced a symbol that was not defined.
-
-`Index (zero based) must be greater than or equal to zero and less than the size of the argument list.` - A format item in the format string passed to `format()` does not match the parameter.
-
-`The current CPU supports only 8-bit immediate mode instructions. The directive will not affect assembly` - Attempted use of the 65816-specific directives (this is a warning by default).
-
-`The instruction is not supported for the selected CPU`- A mnemonic was used that the currently selected CPU does not support.
-
-`Too few arguments for directive` - The assembler directive expected more arguments than were provided.
-
-`Too many arguments for directive` - More arguments were provided to the directive than expected.
-
-`Too many characters in character literal` - The character literal has too many characters.
-
-`Type is unknown or not redefinable` - An attempt was made to define an unknown or non-definable type.
-
-`Type name is a reserved symbol name` - A type definition failed because the definition is a reserved name.
-
-`Unable to find binary file` - A directive was given to include a binary file, but the binary file was not found, either due to filesystem error or file not found.
-
-`Unable to open source file` - A source file could not be opened, either due to filesystem error or file not found.
-
-`Unknown architecture specified` - An invalid or unknown parameter was supplied to the `--arch` option in the command-line.
-
-`Unknown instruction or incorrect parameters for instruction` - An directive or instruction was encountered that was unknown, or the operand provided is incorrect.
-
-`Unknown or invalid expression` - There was an error evaluating the expression.
+(C) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>. Licensed under the MIT license. See LICENSE for full license information.

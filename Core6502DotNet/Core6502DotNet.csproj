@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <PackageId>6502.Net</PackageId>
+    <Version>2.0.1</Version>
+    <Authors>informedcitizenry</Authors>
+    <Company>informedcitizenry</Company>
+    <Product>6502.Net</Product>
+    <Description>6502.Net, A simple .Net 6502 and z80 Cross Assembler</Description>
+    <Copyright>(C) Copyright 2017-2020 informedcitizenry</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Examples\General\evaluation.a65" />
+    <None Remove="Examples\General\factorial.a65" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Examples\General\evaluation.a65" />
+    <Compile Include="Examples\General\factorial.a65" />
+  </ItemGroup>
+
+</Project>

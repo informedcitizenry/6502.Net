@@ -1,0 +1,21 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+factorial	.function num
+				.if num == 0
+					.return 1
+				.endif
+					.return num * factorial(num - 1)
+			.endfunction
+
+			.for num = 0, num < 16, num = num + 1
+				.let value = factorial(num)
+				.if value >= UINT24_MAX
+					.break
+				.endif
+				.long value
+			.next

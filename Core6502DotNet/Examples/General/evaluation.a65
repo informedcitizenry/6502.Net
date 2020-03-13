@@ -1,0 +1,45 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+			
+			.let eval = $100 + %11110000
+			.assert eval == 496
+
+			.let eval = -(6.34-2) * 5+ 3
+			.assert eval == -18.7
+
+			.let eval = 523 > <+32
+			.assert eval == true
+			
+			.let eval = (3*(3+4))/9
+			.assert eval == 2.33333333333333333333
+
+			.let eval = pow(pow(2,1),pow(2,2))+pow((3+1)*2,abs(-3)-1)
+			.assert eval == 80
+
+			.let eval = frac(5.25)*100
+			.assert eval == 25
+
+			.let eval = log10($7fffff) + log10(3*4) + (12*3)
+			.assert eval == 44.002871094547253
+
+			.let eval = rad(79999.9)
+			.assert eval == 1396.2616562662115
+
+			.let eval = >65490*<32768
+			.assert eval == 0
+
+			.let eval = ~(548*2)%256
+			.assert eval == -73
+
+			.let eval = 25*<548+>$2456*2
+			.assert eval == 972
+
+			.let eval = ~(35*2) + ~(22*6) + (12*2)
+			.assert eval == -180
+
+			.let eval = ((1<3)||!(4>6)&&(13*2!=4||8>0))
+			.assert eval == true

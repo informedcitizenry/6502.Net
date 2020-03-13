@@ -1,0 +1,18 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+fibonacci	.function num
+				.if num == 0
+					.return 0
+				.elseif num == 1
+					.return 1
+				.else
+					.return fibonacci(num - 1) + fibonacci(num - 2)
+				.endif
+			.endfunction
+			.byte fibonacci(0), fibonacci(1), fibonacci(2), fibonacci(3),
+				  fibonacci(4), fibonacci(5), fibonacci(6), fibonacci(7)

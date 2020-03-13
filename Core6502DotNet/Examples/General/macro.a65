@@ -1,0 +1,30 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+setlfs			= $ffba
+setnam			= $ffbd
+open			= $ffc0
+chkin			= $ffc6
+
+				* = $c000
+openfile		.macro	filename,device
+				lda #fname_end-fname
+				ldx #<fname
+				ldy #>fname
+				jsr setnam
+				lda #2
+				tay
+				ldx #\device
+				jsr setlfs
+				jsr open
+				ldx #2
+				jsr chkin
+				jmp fname_end
+fname			.string "@{filename}"
+fname_end
+				.endmacro
+				.openfile "myprogram",8
