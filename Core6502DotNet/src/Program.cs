@@ -228,7 +228,6 @@ namespace Core6502DotNet
             catch (Exception ex)
             {
                 Console.Error.WriteLine(ex.Message);
-                Console.Error.WriteLine(ex.StackTrace);
             }
         }
     }
