@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-//using DotNetAsm;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -80,7 +79,7 @@ namespace Core6502DotNet.m6502
 
             Reserved.DefineType("Branches",
                     "bcc", "bcs", "beq", "bmi", "bne", "bpl", "bra", "bvc",
-                    "bvs", "brl", "per", "blt", "bge"
+                    "bvs", "brl", "per", "blt", "bge", "bbr", "bbs"
                 );
 
             Reserved.DefineType("Branches16",
@@ -89,10 +88,6 @@ namespace Core6502DotNet.m6502
 
             Reserved.DefineType("Rockwell",
                     "bbr", "bbs", "rmb", "smb"
-                );
-
-            Reserved.DefineType("RockwellBranches",
-                    "bbr", "bbs"
                 );
 
             Reserved.DefineType("MoveMemory16",
@@ -403,11 +398,9 @@ namespace Core6502DotNet.m6502
             var mode = Modes.Implied;
             var instruction = line.InstructionName;
 
-            // we are setting these as variables because they can change
-
-
             if (line.OperandHasToken)
             {
+                // we are setting these variables because they can change
                 var operand = line.Operand;
                 var operandChildren = operand.Children;
                 var firstDelim = operandChildren[0];
@@ -570,26 +563,38 @@ namespace Core6502DotNet.m6502
                             mode |= Evaluate(operandChildren[2].Children, 2);
                         }
                     }
-                    if (Reserved.IsOneOf("Rockwell", instruction))
-                    {
-                        if (double.IsNaN(_evaled[0]) ||
-                            _evaled[0] < 0 || _evaled[0] > 7)
-                        {
-                            throw new ExpressionException(line.Operand.Position, $"First operand for \"{instruction}\" must be 0 to 7.");
-                        }
-
-                        mode |= (Modes)((int)_evaled[0] << 13);
-                        _evaled[0] = _evaled[1];
-                        _evaled[1] = _evaled[2];
-                        _evaled[2] = double.NaN;
-                    }
                 }
-            }
-            if (Reserved.IsOneOf("Branches", instruction))
-            {
-                mode = (mode & ~Modes.Absolute) | Modes.Relative;
-                if (Reserved.IsOneOf("Branches16", instruction))
-                    mode |= Modes.Absolute;
+                if (Reserved.IsOneOf("Rockwell", instruction))
+                {
+                    if (double.IsNaN(_evaled[0]) ||
+                        _evaled[0] < 0 || _evaled[0] > 7)
+                        throw new ExpressionException(line.Operand.Position, $"First operand for \"{instruction}\" must be 0 to 7.");
+
+                    mode |= (Modes)((int)_evaled[0] << 13);
+                    if (double.IsNaN(_evaled[1]))
+                        throw new ExpressionException(line.Operand.Position, "Missing direct page operand.");
+
+                    _evaled[0] = _evaled[1];
+
+                    if (Reserved.IsOneOf("Branches", instruction))
+                    {
+                        if (double.IsNaN(_evaled[2]))
+                            throw new ExpressionException(line.Operand.Position, "Missing branch address.");
+                        _evaled[1] = _evaled[2];
+                    }
+                    else
+                    {
+                        _evaled[1] = double.NaN;
+                    }
+                    _evaled[2] = double.NaN;
+
+                }
+                if (Reserved.IsOneOf("Branches", instruction))
+                {
+                    mode = (mode & ~Modes.Absolute) | Modes.Relative;
+                    if (Reserved.IsOneOf("Branches16", instruction))
+                        mode |= Modes.Absolute;
+                }
             }
             return mode;
         }
@@ -672,7 +677,7 @@ namespace Core6502DotNet.m6502
                 maxValue = sbyte.MaxValue;
                 mode |= Modes.ZeroPage;
             }
-            relative = Assembler.Output.GetRelativeOffset((int)offset, Assembler.Output.LogicalPC + addrOffs);
+            relative = Assembler.Output.GetRelativeOffset((int)offset, addrOffs);
             var mnemonic = line.InstructionName;
             if (relative < minValue || relative > maxValue)
             {
@@ -773,16 +778,18 @@ namespace Core6502DotNet.m6502
                     try
                     {
                         _evaled[offsIx] = modeInstruction.mode == Modes.RelativeAbs
-                            ? Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)_evaled[offsIx],
-                                                                Assembler.Output.LogicalPC + 3))
-                            : Convert.ToSByte(Assembler.Output.GetRelativeOffset((int)_evaled[offsIx],
-                                                                Assembler.Output.LogicalPC + 2));
+                            ? Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)_evaled[offsIx], 3))
+                            : Convert.ToSByte(Assembler.Output.GetRelativeOffset((int)_evaled[offsIx], 2 + offsIx));
                     }
                     catch (OverflowException)
                     {
-                        // don't worry about overflows for relative offsets on pass 0
-                        if (Assembler.CurrentPass > 0)
-                            throw new ExpressionException(line.Operand, "Relative offset for branch was too far. Consider using a pseudo branch directive.");
+                        // don't worry about overflows for relative offsets if passes are still needed
+                        if (!Assembler.PassNeeded)
+                        {
+                            Assembler.Log.LogEntry(line, line.Operand,
+                                "Relative offset for branch was too far. Consider using a pseudo branch directive.");
+                            return string.Empty;
+                        }
                         _evaled[offsIx] = 0;
                     }
                 }
@@ -801,13 +808,22 @@ namespace Core6502DotNet.m6502
                 if (size > 0)
                 {
                     // add operand bytes
-                    var nonNans = _evaled.Where(d => !double.IsNaN(d));
-                    if (nonNans.Count() > 1 && Reserved.IsOneOf("MoveMemory", line.InstructionName))
-                        nonNans = nonNans.Reverse();
-                    foreach (var result in nonNans)
-                        line.Assembly.AddRange(Assembler.Output.Add(result, size));
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (double.IsNaN(_evaled[i]))
+                            break;
+                        if ((modeInstruction.mode & Modes.TestBitFlag) != 0 && i == 0)
+                        {
+                            if (_evaled[i] >= sbyte.MinValue && _evaled[i] <= byte.MaxValue)
+                                line.Assembly.AddRange(Assembler.Output.Add(_evaled[i], 1));
+                        }
+                        else
+                        {
+                            line.Assembly.AddRange(Assembler.Output.Add(_evaled[i], size));
+                        }
+                    }
                 }
-                if (line.Assembly.Count > modeInstruction.instruction.Size)
+                if (!Assembler.PassNeeded && line.Assembly.Count != modeInstruction.instruction.Size)
                     Assembler.Log.LogEntry(line, line.Instruction, $"Mode not supporter for \"{line.Instruction}\" in selected CPU.");
             }
             else
@@ -834,6 +850,8 @@ namespace Core6502DotNet.m6502
             var disSb = new StringBuilder();
             if (!Assembler.Options.NoDissasembly)
             {
+                if (sb.Length > 29)
+                    disSb.Append(' ');
                 disSb.Append(line.Instruction);
                 if (modeInstruction.mode != Modes.Implied)
                 {
@@ -853,8 +871,17 @@ namespace Core6502DotNet.m6502
                     {
                         if (memoryMode.HasFlag(Modes.RelativeBit))
                         {
-                            eval1 = Assembler.Output.LogicalPC + (int)_evaled[0];
-                            eval1 &= 0xFFFF;
+                            if (Reserved.IsOneOf("Rockwell", instruction))
+                            {
+                                eval1 = (int)_evaled[0] & 0xFF;
+                                eval2 = Assembler.Output.LogicalPC + (int)_evaled[1];
+                                eval2 &= 0xFFFF;
+                            }
+                            else
+                            {
+                                eval1 = Assembler.Output.LogicalPC + (int)_evaled[0];
+                                eval1 &= 0xFFFF;
+                            }
                         }
                         else
                         {
@@ -869,9 +896,13 @@ namespace Core6502DotNet.m6502
                     {
                         eval1 = (int)_evaled[0] & 0xFF;
                         if (!double.IsNaN(_evaled[1]))
+                        {
                             eval2 = (int)_evaled[1] & 0xFF;
+                        }
                         if (!double.IsNaN(_evaled[2]))
+                        {
                             eval3 = (int)_evaled[2] & 0xFF;
+                        }
                     }
                     if (modeInstruction.mode == Modes.Zp0 && Reserved.IsOneOf("Rockwell", line.InstructionName))
                         disSb.Append($"0,{eval1:x2}");

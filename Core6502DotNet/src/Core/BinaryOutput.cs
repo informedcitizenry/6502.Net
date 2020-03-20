@@ -23,6 +23,7 @@ namespace Core6502DotNet
         readonly int _pc;
 
         public InvalidPCAssignmentException(int value) => _pc = value;
+
         public override string Message => _pc.ToString();
     }
 
@@ -34,7 +35,7 @@ namespace Core6502DotNet
     {
         #region Members
 
-        List<byte> _bytes;
+        byte[] _bytes;
         int _logicalPc;
         int _pc;
 
@@ -114,10 +115,23 @@ namespace Core6502DotNet
         /// </summary>
         public void Reset()
         {
-            _bytes = new List<byte>();
+            _bytes = new byte[0x10000];
             PreviousPC = _pc = _logicalPc = 0;
             MaxAddress = ushort.MaxValue;
             PCOverflow = false;
+            SetBank(0);
+        }
+
+        /// <summary>
+        /// Sets the current bank.
+        /// </summary>
+        /// <param name="bank"></param>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        public void SetBank(int bank)
+        {
+            if (bank < 0)
+                throw new ArgumentOutOfRangeException();
+            CurrentBank = bank;
         }
 
         /// <summary>
@@ -259,7 +273,7 @@ namespace Core6502DotNet
             else
                 fillbytes = BitConverter.GetBytes(value).Take(size).ToArray();
 
-            var repeated = new List<byte>();
+            var repeated = new List<byte>(amount);
             for (var i = 0; i < amount; i++)
                 repeated.AddRange(fillbytes);
 
@@ -313,20 +327,11 @@ namespace Core6502DotNet
         {
             if (CompilingHasStarted == false)
             {
+                CompilingHasStarted = true;
                 ProgramStart = ProgramCounter;
             }
-            else
-            {
-                var diff = ProgramCounter - (ProgramStart + _bytes.Count);
-                if (diff > 0)
-                    _bytes.AddRange(new byte[diff]);
-            }
-
             if (updateProgramCounter)
-            {
-                ProgramCounter += size;
                 LogicalPC += size;
-            }
 
             if (ignoreEndian == false && BitConverter.IsLittleEndian != IsLittleEndian)
                 bytes = bytes.Reverse();
@@ -334,8 +339,15 @@ namespace Core6502DotNet
             if (Transform != null)
                 bytes = bytes.Select(b => Transform(b));
 
-            List<byte> bytesAdded = bytes.ToList().GetRange(0, size);
-            _bytes.AddRange(bytesAdded);
+            var bytesAdded = bytes.ToList().GetRange(0, size);
+            foreach (var b in bytesAdded)
+                _bytes[ProgramCounter++] = b;
+
+            if (PCOverflow)
+                ProgramEnd = 0x10000 + ProgramCounter;
+            else if (ProgramEnd < ProgramCounter)
+                ProgramEnd = ProgramCounter;
+
             return bytesAdded;
         }
 
@@ -375,17 +387,18 @@ namespace Core6502DotNet
         /// Get the compilation bytes.
         /// </summary>
         /// <returns>The bytes of the compilation.</returns>
-        public ReadOnlyCollection<byte> GetCompilation() => _bytes.AsReadOnly();
+        public ReadOnlyCollection<byte> GetCompilation()
+            => new ReadOnlyCollection<byte>(_bytes.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
 
         /// <summary>
-        /// Get the relative offset between two addresses. Useful for calculating short jumps.
+        /// Get the relative offset between an address and the Program Counter. Useful for calculating short jumps.
         /// </summary>
-        /// <param name="address1">Current address.</param>
-        /// <param name="address2">Destination address.</param>
+        /// <param name="address1">An address to offset from.</param>
+        /// <param name="offsetfromPc">Additional offset from the Program Counter.</param>
         /// <returns>Returns the relative offset between the two addresses.</returns>
-        public int GetRelativeOffset(int address1, int address2)
+        public int GetRelativeOffset(int address1, int offsetfromPc)
         {
-            address2 = address2 & MaxAddress;
+            var address2 = LogicalPC + offsetfromPc;
             var offset = address1 - address2;
             if (Math.Abs(offset) > (MaxAddress / 2))
             {
@@ -398,6 +411,17 @@ namespace Core6502DotNet
                     offset = -offset;
             }
             return offset;
+        }
+
+        /// <summary>
+        /// Initialize memory from Program Start to the specified value.
+        /// </summary>
+        /// <param name="value">The value to initialize memory.</param>
+        public void InitMemory(byte value)
+        {
+            var i = ProgramCounter;
+            while (i < 0x10000)
+                _bytes[i++] = value;
         }
 
         public bool EvaluatesFunction(Token function) =>
@@ -415,9 +439,9 @@ namespace Core6502DotNet
                     if (parameters.Children.Count != 1)
                         throw new ExpressionException(parameters.Position, "Too many arguments passed for function \"peek\".");
 
-                    if (index < 0 || index >= _bytes.Count)
+                    if (address < ProgramStart || address >= ProgramCounter)
                         throw new ExpressionException(parameters.Position, $"Cannot read address ${address:x4}.");
-                    return _bytes[index];
+                    return _bytes[address];
                 }
                 else
                 {
@@ -425,25 +449,13 @@ namespace Core6502DotNet
                         throw new ExpressionException(parameters.Position, "Too many arguments passed for function \"poke\".");
                     var value = (byte)Evaluator.Evaluate(parameters.Children[1], sbyte.MinValue, byte.MaxValue);
 
-                    if (index < 0)
-                    {
-                        index = Math.Abs(index);
-                        _bytes.Insert(0, value);
-                        for (int i = 1; i < index; i++)
-                            _bytes.Insert(i, 0);
+                    _bytes[address] = value;
+                    if (address < ProgramStart)
                         ProgramStart = address;
-                    }
-                    else if (index >= _bytes.Count)
-                    {
-                        index -= _bytes.Count;
-                        for (int i = 0; i < index; i++)
-                            _bytes.Add(0);
-                        _bytes.Add(value);
-                    }
+                    else if (address > ProgramCounter)
+                        ProgramEnd = address;
                     else
-                    {
                         _bytes[index] = value;
-                    }
                     return value;
                 }
             }
@@ -458,7 +470,7 @@ namespace Core6502DotNet
         {
             var sha1 = SHA1.Create();
             var sha1Sb = new StringBuilder();
-            var bytes = sha1.ComputeHash(_bytes.ToArray());
+            var bytes = sha1.ComputeHash(_bytes.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
             foreach (var b in bytes)
                 sha1Sb.Append($"{b:x2}");
             return sha1Sb.ToString();
@@ -478,15 +490,7 @@ namespace Core6502DotNet
         /// Gets the program end address, which is the address of the final assembled byte
         /// from the program start.
         /// </summary>
-        public int ProgramEnd
-        {
-            get
-            {
-                if (_bytes.Count > 0)
-                    return (ProgramStart + _bytes.Count) & MaxAddress;
-                return 0;
-            }
-        }
+        public int ProgramEnd { get; private set; }
 
         /// <summary>
         /// Gets the previous Program Counter value before the most recent 
@@ -503,7 +507,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the status of the compilation, if it is currently compiling
         /// </summary>
-        public bool CompilingHasStarted => _bytes.Count > 0;
+        public bool CompilingHasStarted { get; private set; }//=> _bytes.Count > 0;
 
         /// <summary>
         /// Gets the real Program Counter
@@ -518,6 +522,11 @@ namespace Core6502DotNet
                 _pc = value & MaxAddress;
             }
         }
+
+        /// <summary>
+        /// Gets the current memory bank.
+        /// </summary>
+        public int CurrentBank { get; private set; }
 
         /// <summary>
         /// Gets the endianness of the compilation

@@ -1,0 +1,22 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Core6502DotNet
+{
+    public interface IBinaryFormatProvider
+    {
+        /// <summary>
+        /// Converts the assembly output to a custom binary format.
+        /// </summary>
+        /// <returns>A custom-formatted byte collection.</returns>
+        IEnumerable<byte> GetFormat();
+    }
+}

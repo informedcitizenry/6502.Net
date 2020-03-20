@@ -28,6 +28,7 @@ namespace Core6502DotNet
         ConditionalNdef,
         ForNext,
         Functional,
+        Page,
         Repeat,
         Switch,
         While,
@@ -44,6 +45,7 @@ namespace Core6502DotNet
                 { BlockType.ConditionalNdef, new BlockDirective(".ifndef",  ".endif"        ) },
                 { BlockType.ForNext,         new BlockDirective(".for",     ".next"         ) },
                 { BlockType.Functional,      new BlockDirective(".function",".endfunction"  ) },
+                { BlockType.Page,            new BlockDirective(".page",    ".endpage"      ) },
                 { BlockType.Repeat,          new BlockDirective(".repeat",  ".endrepeat"    ) },
                 { BlockType.Switch,          new BlockDirective(".switch",  ".endswitch"    ) },
                 { BlockType.While,           new BlockDirective(".while",   ".endwhile"     ) }
@@ -179,6 +181,12 @@ namespace Core6502DotNet
         /// inside this block. Inherited class must define this flag.
         /// </summary>
         public abstract bool AllowBreak { get; }
+
+        /// <summary>
+        /// Gets the flag indicating whether a .continue directive is allowed
+        /// inside this block. Inherited class must define this flag.
+        /// </summary>
+        public abstract bool AllowContinue { get; }
 
         /// <summary>
         /// Gets a flag indicating whether the block's symbols should be

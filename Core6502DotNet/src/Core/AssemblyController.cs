@@ -131,7 +131,7 @@ namespace Core6502DotNet
                     if (!string.IsNullOrEmpty(Assembler.Options.ListingFile))
                         disassembly = new StringBuilder(disasmHeader);
 
-                    foreach (SourceLine line in Assembler.LineIterator)
+                    foreach (var line in Assembler.LineIterator)
                     {
                         try
                         {
@@ -151,14 +151,11 @@ namespace Core6502DotNet
                                     else
                                         Assembler.Log.LogEntry(line, $"Program overflow: ${Assembler.Output.LogicalPC}");
                                 }
-                                else
+                                else if (asm != null)
                                 {
-                                    if (asm != null)
-                                    {
-                                        var disasm = asm.AssembleLine(line);
-                                        if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff)
-                                            disassembly.AppendLine(disasm);
-                                    }
+                                    var disasm = asm.AssembleLine(line);
+                                    if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff)
+                                        disassembly.AppendLine(disasm);
                                 }
                             }
                             else if (Assembler.Options.VerboseList)
@@ -202,6 +199,7 @@ namespace Core6502DotNet
                                 else
                                 {
                                     Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
+                                    Assembler.Log.LogEntry(line, ex.StackTrace);
                                 }
                             }
                             else
@@ -257,15 +255,10 @@ namespace Core6502DotNet
                 if (!string.IsNullOrEmpty(Assembler.Options.OutputFile))
                     outputFile = Assembler.Options.OutputFile;
 
-                var outputBytes = new List<byte>();
-
-                // write header bytes
-                if (Assembler.HeaderWriter != null)
-                    outputBytes.AddRange(Assembler.HeaderWriter());
-
-                outputBytes.AddRange(Assembler.Output.GetCompilation());
-
-                File.WriteAllBytes(outputFile, outputBytes.ToArray());
+                if (Assembler.BinaryFormatProvider != null)
+                    File.WriteAllBytes(outputFile, Assembler.BinaryFormatProvider.GetFormat().ToArray());
+                else
+                    File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
             }
             // write disassembly
             if (disassembly != null)

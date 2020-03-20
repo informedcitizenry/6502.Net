@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+//using DotNetAsm;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -12,97 +13,97 @@ using System.Linq;
 
 namespace Core6502DotNet.z80
 {
-	public sealed partial class Z80Asm : AssemblerBase
-	{
-		enum Mode : uint
-		{
-			Implied		= 0b00000000000000000000000000000000,
-			Bit1		= 0b00000000000000000000000000000001,
-			Bit2		= 0b00000000000000000000000000000010,
-			Bit3		= 0b00000000000000000000000000000011,
-			Bit4		= 0b00000000000000000000000000000100,
-			Bit5		= 0b00000000000000000000000000000101,
-			Bit6		= 0b00000000000000000000000000000110,
-			Bit7		= 0b00000000000000000000000000000111,
-			BitOp		= 0b00000000000000000000000000001000,
-			Immediate	= 0b00000000000000000000000000010000,
-			Indirect	= 0b00000000000000000000000000100000,
-			Indexed		= 0b00000000000000000000000001000000,
-			PageZero	= 0b00000000000000000000000010000000,
-			Extended	= 0b00000000000000000000000110000000,
-			A			= 0b00000000000000000000001000000000,
-			AF			= 0b00000000000000000000010000000000,
-			B			= 0b00000000000000000000100000000000,
-			C			= 0b00000000000000000001000000000000,
-			D			= 0b00000000000000000010000000000000,
-			E			= 0b00000000000000000100000000000000,
-			H			= 0b00000000000000001000000000000000,
-			L			= 0b00000000000000010000000000000000,
-			XH			= 0b00000000000000100000000000000000,
-			XL			= 0b00000000000001000000000000000000,
-			YH			= 0b00000000000010000000000000000000,
-			YL			= 0b00000000000100000000000000000000,
-			SP			= 0b00000000001000000000000000000000,
-			ShadowAF	= 0b00000000010000000000000000000000,
-			M			= 0b00000000100000000000000000000000,
-			NC			= 0b00000001000000000000000000000000,
-			NZ			= 0b00000010000000000000000000000000,
-			P			= 0b00000100000000000000000000000000,
-			PE			= 0b00001000000000000000000000000000,
-			PO			= 0b00010000000000000000000000000000,
-			Z			= 0b00100000000000000000000000000000,
-			I			= 0b01000000000000000000000000000000,
-			R			= 0b10000000000000000000000000000000,
+    public sealed partial class Z80Asm : AssemblerBase
+    {
+        enum Mode : uint
+        {
+            Implied     = 0b00000000000000000000000000000000,
+            Bit1        = 0b00000000000000000000000000000001,
+            Bit2        = 0b00000000000000000000000000000010,
+            Bit3        = 0b00000000000000000000000000000011,
+            Bit4        = 0b00000000000000000000000000000100,
+            Bit5        = 0b00000000000000000000000000000101,
+            Bit6        = 0b00000000000000000000000000000110,
+            Bit7        = 0b00000000000000000000000000000111,
+            BitOp       = 0b00000000000000000000000000001000,
+            Immediate   = 0b00000000000000000000000000010000,
+            Indirect    = 0b00000000000000000000000000100000,
+            Indexed     = 0b00000000000000000000000001000000,
+            PageZero    = 0b00000000000000000000000010000000,
+            Extended    = 0b00000000000000000000000110000000,
+            A           = 0b00000000000000000000001000000000,
+            AF          = 0b00000000000000000000010000000000,
+            B           = 0b00000000000000000000100000000000,
+            C           = 0b00000000000000000001000000000000,
+            D           = 0b00000000000000000010000000000000,
+            E           = 0b00000000000000000100000000000000,
+            H           = 0b00000000000000001000000000000000,
+            L           = 0b00000000000000010000000000000000,
+            XH          = 0b00000000000000100000000000000000,
+            XL          = 0b00000000000001000000000000000000,
+            YH          = 0b00000000000010000000000000000000,
+            YL          = 0b00000000000100000000000000000000,
+            SP          = 0b00000000001000000000000000000000,
+            ShadowAF    = 0b00000000010000000000000000000000,
+            M           = 0b00000000100000000000000000000000,
+            NC          = 0b00000001000000000000000000000000,
+            NZ          = 0b00000010000000000000000000000000,
+            P           = 0b00000100000000000000000000000000,
+            PE          = 0b00001000000000000000000000000000,
+            PO          = 0b00010000000000000000000000000000,
+            Z           = 0b00100000000000000000000000000000,
+            I           = 0b01000000000000000000000000000000,
+            R           = 0b10000000000000000000000000000000,
 			SizeMask	= 0b00000000000000000000000110000000,
-			BC			= B			| C,
-			DE			= D			| E,
-			HL			= H			| L,
-			IX			= XH		| XL,
-			IY			= YH		| YL,
-			IndBC		= Indirect	| BC,
-			IndC		= Indirect	| C,
-			IndDE		= Indirect	| DE,
-			IndHL		= Indirect	| HL,
-			IndIX		= Indirect	| IX,
-			IndIY		= Indirect	| IY,
-			IndSp		= Indirect	| SP,
-			IndIndIx	= Indirect	| IX		| Indexed | PageZero,
-			IndIndIy	= Indirect	| IY		| Indexed | PageZero,
-			IndPZ		= Indirect	| PageZero,
-			IndExt		= Indirect	| Extended,
-			BitOp0		= Implied	| BitOp,
-			BitOp1		= Bit1		| BitOp,
-			BitOp2		= Bit2		| BitOp,
-			BitOp3		= Bit3		| BitOp,
-			BitOp4		= Bit4		| BitOp,
-			BitOp5		= Bit5		| BitOp,
-			BitOp6		= Bit6		| BitOp,
-			BitOp7		= Bit7		| BitOp
-		}
+			BC          = B         | C,
+            DE          = D         | E,
+            HL          = H         | L,
+            IX          = XH        | XL,
+            IY          = YH        | YL,
+            IndBC       = Indirect  | BC,
+            IndC        = Indirect  | C,
+            IndDE       = Indirect  | DE,
+            IndHL       = Indirect  | HL,
+            IndIX       = Indirect  | IX,
+            IndIY       = Indirect  | IY,
+            IndSp       = Indirect  | SP,
+            IndIndIx    = Indirect  | IX        | Indexed | PageZero,
+            IndIndIy    = Indirect  | IY        | Indexed | PageZero,
+            IndPZ       = Indirect  | PageZero,
+            IndExt      = Indirect  | Extended,
+            BitOp0      = Implied   | BitOp,
+            BitOp1      = Bit1      | BitOp,
+            BitOp2      = Bit2      | BitOp,
+            BitOp3      = Bit3      | BitOp,
+            BitOp4      = Bit4      | BitOp,
+            BitOp5      = Bit5      | BitOp,
+            BitOp6      = Bit6      | BitOp,
+            BitOp7      = Bit7      | BitOp
+        }
 
-		class MnemMode : IEquatable<MnemMode>
-		{
-			public MnemMode()
-			{
-				Mnemonic = string.Empty;
-				Operands = new Mode[3];
-			}
+        class MnemMode : IEquatable<MnemMode>
+        {
+            public MnemMode()
+            {
+                Mnemonic = string.Empty;
+                Operands = new Mode[3];
+            }
 
-			public MnemMode(string mnemonic, Mode[] modes)
-			{
-				Mnemonic = mnemonic;
-				Operands = modes;
-			}
+            public MnemMode(string mnemonic, Mode[] modes)
+            {
+                Mnemonic = mnemonic;
+                Operands = modes;
+            }
 
-			public string Mnemonic { get; set; }
+            public string Mnemonic { get; set; }
 
-			public Mode[] Operands { get; set; }
+            public Mode[] Operands { get; set; }
 
-			public bool Equals([AllowNull] MnemMode other)
-				=> Mnemonic.Equals(other.Mnemonic) &&
-				   Operands.SequenceEqual(other.Operands);
+            public bool Equals([AllowNull] MnemMode other)
+                => Mnemonic.Equals(other.Mnemonic) &&
+                   Operands.SequenceEqual(other.Operands);
 
-			public override int GetHashCode()
+            public override int GetHashCode()
 			{
 				var hash = 17;
 				if (!string.IsNullOrEmpty(Mnemonic))
@@ -114,16 +115,16 @@ namespace Core6502DotNet.z80
 				}
 				return hash;
 			}
+                
 
-
-			public override bool Equals(object obj)
-			{
-				var other = obj as MnemMode;
-				if (other != null)
-					return Equals(other);
-				return false;
-			}
-		}
+            public override bool Equals(object obj)
+            {
+                var other = obj as MnemMode;
+                if (other != null)
+                    return Equals(other);
+                return false;
+            }
+        }
 
 		static readonly Dictionary<string, Mode> _namedModes = new Dictionary<string, Mode>
 		{
@@ -154,53 +155,53 @@ namespace Core6502DotNet.z80
 			{ "po",  Mode.PO        },
 			{ "r",   Mode.R         },
 			{ "sp",  Mode.SP        },
-			{ "z",   Mode.Z         }
+			{ "z",   Mode.Z			}	
 		};
 
 		static readonly Dictionary<Mode, string> _disassemblyFormats = new Dictionary<Mode, string>
-		{
-			{ Mode.Implied, string.Empty    },
-			{ Mode.A,       "a"             },
-			{ Mode.AF,      "af"            },
-			{ Mode.B,       "b"             },
-			{ Mode.BC,      "bc"            },
-			{ Mode.C,       "c"             },
-			{ Mode.D,       "d"             },
-			{ Mode.DE,      "de"            },
-			{ Mode.E,       "e"             },
-			{ Mode.Extended,"${0:x4}"       },
-			{ Mode.H,       "h"             },
-			{ Mode.HL,      "hl"            },
-			{ Mode.I,       "i"             },
-			{ Mode.IndBC,   "(bc)"          },
-			{ Mode.IndC,    "(c)"           },
-			{ Mode.IndDE,   "(de)"          },
-			{ Mode.IndExt,  "(${0:x4})"     },
-			{ Mode.IndHL,   "(hl)"          },
-			{ Mode.IndIndIx,"(ix+${0:x2})"  },
-			{ Mode.IndIndIy,"(iy+${0:x2})"  },
-			{ Mode.IndIX,   "(ix)"          },
-			{ Mode.IndIY,   "(iy)"          },
-			{ Mode.IndPZ,   "(${0:x2})"     },
-			{ Mode.IndSp,   "(sp)"          },
-			{ Mode.IX,      "ix"            },
-			{ Mode.IY,      "iy"            },
-			{ Mode.L,       "l"             },
-			{ Mode.M,       "m"             },
-			{ Mode.NC,      "nc"            },
-			{ Mode.NZ,      "nz"            },
-			{ Mode.P,       "p"             },
-			{ Mode.PageZero,"${0:x2}"       },
-			{ Mode.PE,      "pe"            },
-			{ Mode.PO,      "po"            },
-			{ Mode.R,       "r"             },
-			{ Mode.ShadowAF,"af'"           },
-			{ Mode.SP,      "sp"            },
-			{ Mode.XH,      "ixh"           },
-			{ Mode.XL,      "ixl"           },
-			{ Mode.YH,      "iyh"           },
-			{ Mode.YL,      "iyl"           },
-			{ Mode.Z,       "z"             }
+		{     
+			{ Mode.Implied, string.Empty	},
+			{ Mode.A,		"a"				},
+			{ Mode.AF,		"af"			},
+			{ Mode.B,		"b"				},
+			{ Mode.BC,      "bc"			},
+			{ Mode.C,       "c"				},		
+			{ Mode.D,		"d"				},
+			{ Mode.DE,		"de"			},
+			{ Mode.E,		"e"  			},
+			{ Mode.Extended,"${0:x4}"		},
+			{ Mode.H,		"h"				},
+			{ Mode.HL,		"hl"			},
+			{ Mode.I,		"i"				},
+			{ Mode.IndBC,	"(bc)"			},
+			{ Mode.IndC,	"(c)"			},
+			{ Mode.IndDE,	"(de)"			},
+			{ Mode.IndExt,	"(${0:x4})"		},
+			{ Mode.IndHL,	"(hl)"			},
+			{ Mode.IndIndIx,"(ix+${0:x2})"	},
+			{ Mode.IndIndIy,"(iy+${0:x2})"	},
+			{ Mode.IndIX,	"(ix)"			},
+			{ Mode.IndIY,	"(iy)"			},
+			{ Mode.IndPZ,	"(${0:x2})"		},
+			{ Mode.IndSp,	"(sp)"			},
+			{ Mode.IX,		"ix"			},
+			{ Mode.IY,		"iy"			},
+			{ Mode.L,		"l"				},
+			{ Mode.M,		"m"				},
+			{ Mode.NC,		"nc"			},
+			{ Mode.NZ,		"nz"			},
+			{ Mode.P,		"p"				},
+			{ Mode.PageZero,"${0:x2}"		},
+			{ Mode.PE,		"pe"			},
+			{ Mode.PO,		"po"			},
+			{ Mode.R,		"r"				},
+			{ Mode.ShadowAF,"af'"			},
+			{ Mode.SP,		"sp"			},
+			{ Mode.XH,		"ixh"			},
+			{ Mode.XL,		"ixl"			},
+			{ Mode.YH,		"iyh"			},
+			{ Mode.YL,		"iyl"			},
+			{ Mode.Z,		"z"				}
 		};
 
 		static readonly Dictionary<MnemMode, CpuInstruction> _z80Instructions = new Dictionary<MnemMode, CpuInstruction>
@@ -245,6 +246,7 @@ namespace Core6502DotNet.z80
 			{ new MnemMode("dec",  new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x25,    1) },
 			{ new MnemMode("ld",   new Mode[]{ Mode.H,       Mode.PageZero,Mode.Implied }), new CpuInstruction("z80", 0x26,    2) },
 			{ new MnemMode("daa",  new Mode[]{ Mode.Implied, Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x27,    1) },
+			{ new MnemMode("daa",  new Mode[]{ Mode.A,		 Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x27,    1) },
 			{ new MnemMode("jr",   new Mode[]{ Mode.Z,       Mode.Extended,Mode.Implied }), new CpuInstruction("z80", 0x28,    2) },
 			{ new MnemMode("add",  new Mode[]{ Mode.HL,      Mode.HL,      Mode.Implied }), new CpuInstruction("z80", 0x29,    1) },
 			{ new MnemMode("ld",   new Mode[]{ Mode.HL,      Mode.IndExt,  Mode.Implied }), new CpuInstruction("z80", 0x2a,    3) },
@@ -253,6 +255,7 @@ namespace Core6502DotNet.z80
 			{ new MnemMode("dec",  new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x2d,    1) },
 			{ new MnemMode("ld",   new Mode[]{ Mode.L,       Mode.PageZero,Mode.Implied }), new CpuInstruction("z80", 0x2e,    2) },
 			{ new MnemMode("cpl",  new Mode[]{ Mode.Implied, Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x2f,    1) },
+			{ new MnemMode("cpl",  new Mode[]{ Mode.A,		 Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x2f,    1) },
 			{ new MnemMode("jr",   new Mode[]{ Mode.NC,      Mode.Extended,Mode.Implied }), new CpuInstruction("z80", 0x30,    2) },
 			{ new MnemMode("ld",   new Mode[]{ Mode.SP,      Mode.Extended,Mode.Implied }), new CpuInstruction("z80", 0x31,    3) },
 			{ new MnemMode("ld",   new Mode[]{ Mode.IndExt,  Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0x32,    3) },
@@ -341,6 +344,14 @@ namespace Core6502DotNet.z80
 			{ new MnemMode("add",  new Mode[]{ Mode.A,       Mode.L,       Mode.Implied }), new CpuInstruction("z80", 0x85,    1) },
 			{ new MnemMode("add",  new Mode[]{ Mode.A,       Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0x86,    1) },
 			{ new MnemMode("add",  new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0x87,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x80,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x81,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x82,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x83,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x84,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x85,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.IndHL,   Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x86,    1) },
+			{ new MnemMode("add",  new Mode[]{ Mode.A,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x87,    1) },
 			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.B,       Mode.Implied }), new CpuInstruction("z80", 0x88,    1) },
 			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.C,       Mode.Implied }), new CpuInstruction("z80", 0x89,    1) },
 			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.D,       Mode.Implied }), new CpuInstruction("z80", 0x8a,    1) },
@@ -349,6 +360,22 @@ namespace Core6502DotNet.z80
 			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.L,       Mode.Implied }), new CpuInstruction("z80", 0x8d,    1) },
 			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0x8e,    1) },
 			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0x8f,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x88,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x89,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x8a,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x8b,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x8c,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x8d,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.IndHL,   Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x8e,    1) },
+			{ new MnemMode("adc",  new Mode[]{ Mode.A,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x8f,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.B,       Mode.Implied }), new CpuInstruction("z80", 0x88,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.C,       Mode.Implied }), new CpuInstruction("z80", 0x89,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.D,       Mode.Implied }), new CpuInstruction("z80", 0x8a,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.E,       Mode.Implied }), new CpuInstruction("z80", 0x8b,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.H,       Mode.Implied }), new CpuInstruction("z80", 0x8c,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.L,       Mode.Implied }), new CpuInstruction("z80", 0x8d,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0x8e,    1) },
+			{ new MnemMode("sub",  new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0x8f,    1) },
 			{ new MnemMode("sub",  new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x90,    1) },
 			{ new MnemMode("sub",  new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x91,    1) },
 			{ new MnemMode("sub",  new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x92,    1) },
@@ -365,41 +392,75 @@ namespace Core6502DotNet.z80
 			{ new MnemMode("sbc",  new Mode[]{ Mode.A,       Mode.L,       Mode.Implied }), new CpuInstruction("z80", 0x9d,    1) },
 			{ new MnemMode("sbc",  new Mode[]{ Mode.A,       Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0x9e,    1) },
 			{ new MnemMode("sbc",  new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0x9f,    1) },
+			{ new MnemMode("sbc",  new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x98,    1) },
+			{ new MnemMode("sbc",  new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x99,    1) },
+			{ new MnemMode("sbc",  new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x9a,    1) },
+			{ new MnemMode("sbc",  new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x9b,    1) },
+			{ new MnemMode("sbc",  new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x9c,    1) },
+			{ new MnemMode("sbc",  new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0x9d,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa0,    1) },
+			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.B,       Mode.Implied }), new CpuInstruction("z80", 0xa0,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa1,    1) },
+			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.C,	   Mode.Implied }), new CpuInstruction("z80", 0xa1,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa2,    1) },
+			{ new MnemMode("and",  new Mode[]{ Mode.D,       Mode.A,	   Mode.Implied }), new CpuInstruction("z80", 0xa2,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa3,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa4,    1) },
+			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.H,	   Mode.Implied }), new CpuInstruction("z80", 0xa4,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa5,    1) },
+			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.L,	   Mode.Implied }), new CpuInstruction("z80", 0xa5,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.IndHL,   Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa6,    1) },
+			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0xa6,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa7,    1) },
 			{ new MnemMode("and",  new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0xa7,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa8,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.B,	   Mode.Implied }), new CpuInstruction("z80", 0xa8,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xa9,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.C,	   Mode.Implied }), new CpuInstruction("z80", 0xa9,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xaa,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.D,	   Mode.Implied }), new CpuInstruction("z80", 0xaa,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xab,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.E,	   Mode.Implied }), new CpuInstruction("z80", 0xab,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xac,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.H,	   Mode.Implied }), new CpuInstruction("z80", 0xac,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xad,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.L,	   Mode.Implied }), new CpuInstruction("z80", 0xad,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.IndHL,   Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xae,    1) },
+			{ new MnemMode("xor",  new Mode[]{ Mode.A,		 Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0xae,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xAF,    1) },
 			{ new MnemMode("xor",  new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0xAF,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb0,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.B,	   Mode.Implied }), new CpuInstruction("z80", 0xb0,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb1,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.C,	   Mode.Implied }), new CpuInstruction("z80", 0xb1,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb2,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.D,	   Mode.Implied }), new CpuInstruction("z80", 0xb2,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb3,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.E,	   Mode.Implied }), new CpuInstruction("z80", 0xb3,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb4,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.H,	   Mode.Implied }), new CpuInstruction("z80", 0xb4,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb5,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.L,	   Mode.Implied }), new CpuInstruction("z80", 0xb5,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.IndHL,   Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb6,    1) },
+			{ new MnemMode("or",   new Mode[]{ Mode.A,		 Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0xb6,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb7,    1) },
 			{ new MnemMode("or",   new Mode[]{ Mode.A,       Mode.A,       Mode.Implied }), new CpuInstruction("z80", 0xb7,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.B,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb8,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.B,	   Mode.Implied }), new CpuInstruction("z80", 0xb8,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.C,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xb9,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.C,	   Mode.Implied }), new CpuInstruction("z80", 0xb9,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.D,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xba,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.D,	   Mode.Implied }), new CpuInstruction("z80", 0xba,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.E,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xbb,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.E,	   Mode.Implied }), new CpuInstruction("z80", 0xbb,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.H,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xbc,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.H,	   Mode.Implied }), new CpuInstruction("z80", 0xbc,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.L,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xbd,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.L,	   Mode.Implied }), new CpuInstruction("z80", 0xbd,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.IndHL,   Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xbe,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,		 Mode.IndHL,   Mode.Implied }), new CpuInstruction("z80", 0xbe,    1) },
 			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xbf,    1) },
+			{ new MnemMode("cp",   new Mode[]{ Mode.A,       Mode.A,	   Mode.Implied }), new CpuInstruction("z80", 0xbf,    1) },
 			{ new MnemMode("ret",  new Mode[]{ Mode.NZ,      Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xc0,    1) },
 			{ new MnemMode("pop",  new Mode[]{ Mode.BC,      Mode.Implied, Mode.Implied }), new CpuInstruction("z80", 0xc1,    1) },
 			{ new MnemMode("jp",   new Mode[]{ Mode.NZ,      Mode.Extended,Mode.Implied }), new CpuInstruction("z80", 0xc2,    3) },

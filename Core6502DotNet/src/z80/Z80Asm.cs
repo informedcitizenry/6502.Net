@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+//using DotNetAsm;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -230,7 +231,7 @@ namespace Core6502DotNet.z80
                             displayEvals[i] = (int)_evals[i] & 0xFF;
                         if (Reserved.IsOneOf("Relatives", line.InstructionName))
                         {
-                            _evals[i] = Convert.ToSByte(Assembler.Output.GetRelativeOffset((int)_evals[i], Assembler.Output.LogicalPC));
+                            _evals[i] = Convert.ToSByte(Assembler.Output.GetRelativeOffset((int)_evals[i], 0));
                             line.Assembly.AddRange(Assembler.Output.Add(_evals[i], 1));
                         }
                         else

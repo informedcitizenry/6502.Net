@@ -1,6 +1,6 @@
 ﻿# 6502.Net, A Simple .Net-Based 65xx and Z80 Cross-Assembler
 
-Version 2.0.1
+Version 2.1.0
 
 ## Table of Contents
 
@@ -31,7 +31,7 @@ Version 2.0.1
   - [Unary Operations](#unary-operations)
   - [Built-in functions](#built-in-functions)
   - [Math and Logical Constants](#math-and-logical-constants)
-- [Addressing model](#addressing-model)
+- [Addressing Model](#addressing-model)
 - [Macros and Custom Functions](#macros-and-custom-functions)
   - [Macros](#macros)
   - [Functions](#functions)
@@ -50,6 +50,7 @@ Version 2.0.1
   - [Addressing Mode Sizes](#addressing-mode-sizes)
   - [Pseudo Branch Instructions](#pseudo-branch-instructions)
   - [65816 Specific Directives](#65816-specific-directives)
+  - [Z80 Implied Accumulator Instructions](#z80-implied-accumulator-instructions)
 - [Reference](#reference)
   - [Pseudo-Ops](#pseudo-ops)
   - [Other Assembler Directives](#other-assembler-directives)
@@ -72,13 +73,19 @@ You can specify as many source files as assembly input as needed. For instance, 
 
 #### Assembly Statements
 
+As with other assemblers, source statements are typically in the format:
+
+```asm
+label   mnemonic    operands
+```
+
 Source text is assumed to be ASCII- or Unicode-compliant. Normally, assembly statements are terminated by a new line:
 
 ```asm
         ldx #$00
 ```
 
-A statement can span multiple lines if they cover one expression:
+However, a statement can span multiple lines if they comprise a single expression:
 
 ```asm
         .byte 1,2,3,4,5,
@@ -99,18 +106,21 @@ Source is processed case insensitive by default, but this can be controlled usin
 
 #### Comments
 
-C/C++ style comments are recognized. Use `/* */` for block comments and `//` for line comments. For compatibility with traditional 6502 assemblers, semi-colons can be used to denote the beginning of line comments also.
+C/C++ style comments are recognized. Use `/* */` for block comments and `//` for line comments. For compatibility with traditional 6502 assemblers, semi-colons can be used to denote the beginning of line comments also. If a colon follows a semi-colon, it is considered a new line.
 
 #### Numbers and Strings
 
-Numeric constants can be expressed as decimal, real, hexadecimal, octal and binary.
+Numeric constants can be expressed as decimal, real, hexadecimal, octal and binary, using the following notation schemes:
 
 ```asm
-            65490 = 65490
-          1.03E+5 = 0.0000103
-          0177722 = 65490
-            $ffd2 = 65490
-%1111111111010010 = 65490
+             65490 = 65490
+           1.03E+5 = 0.0000103
+           0177722 = 65490
+          0o177722 = 65490
+             $ffd2 = 65490
+            0xffd2 = 65490
+ %1111111111010010 = 65490
+0b1111111111010010 = 65490
 ```
 
 Negative numbers are assembled according to two's complement rules, with the highest bits set. Binary strings can alternatively be expressed as `.` for `0` and `#` for `1`, which is handy for laying out pixel data:
@@ -269,6 +279,16 @@ Unlike labels, variables cannot be referenced in other expressions before they a
 
 In the above example, the assembler would error assuming `x` has never been declared before.
 
+#### Value types
+
+Labels and variables can be assigned both numeric values as well as string literals:
+
+```asm
+WARNING     =   "DO NOT POKE THE LION!"
+
+            .string WARNING
+```
+
 #### Lists
 
 Labels and variables can also be declared as lists:
@@ -288,16 +308,6 @@ List variable elements can be updated accordingly using subscript notation:
 
 ```asm
             .let SCORES[0] = $0000
-```
-
-#### Value types
-
-Labels and variables can be assigned both numeric values as well as string literals:
-
-```asm
-WARNING     =   "DO NOT POKE THE LION!"
-
-            .string WARNING
 ```
 
 ### Non-code (data) assembly
@@ -321,7 +331,7 @@ In addition to 65xx and Z80 code, data can also be assembled. Expressions evalua
 | `.align`  | Zero or more bytes        |
 | `.fill`   | One or more bytes         |
 
-Multi-byte directives assemble in little-endian order (the least significant byte first), since all targeted CPUs are little-endian architecture. Data is comma-separated, and each value can be a constant or expression:
+Data is assembled in little-endian order (the least significant byte first), since all targeted CPUs are little-endian architecture. Each value can be a constant or expression:
 
 ```asm
 sprite      .byte %......##,%########,%##......
@@ -349,7 +359,7 @@ atpage      .align 256  // The program counter is guaranteed to be at a page bou
 
 #### Uninitialized data
 
-Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, for program variables. Use the `?` instead of an expression:
+Sometimes it is desirable to direct the assembler to make a label reference an address, but without assembling bytes at that address. For instance, variables used by the program. Use the `?` instead of an expression:
 
 ```asm
 highscore   .dword ?    // set the symbol highscore to the program counter,
@@ -587,7 +597,6 @@ All non-string operands are treated as math or conditional expressions.The order
 | !             | Logical NOT                            |
 
 ```asm
-
             lda #>routine-1     // routine MSB
             pha
             lda #<routine-1     // routine LSB
@@ -627,9 +636,9 @@ The logical constants `true` and `false` are available to conditional expression
 
 Note that no labels or variables can share these names as they are considered reserved.
 
-## Addressing model
+## Addressing Model
 
-By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter. The assignment can be either a constant or expression:
+By default, programs start at address 0, but you can change this by setting the program counter before the first assembled byte. 6502.Net uses the `*` symbol for the program counter, the current address at which the instruction is evaluated. The assignment can be either a constant or expression:
 
 ```asm
             * = ZP + 1000       // program counter now 1000 bytes offset from
@@ -689,6 +698,8 @@ torelocate:
             ;; done with movable code, do final cleanup
 finish      rts
 ```
+
+For better support for systems that can access memory outside the 64K space, the `.bank` directive can be used to specify the current program bank. See the 65816-specific section [below](#65816-specific-directives) for more information.
 
 ## Macros and Custom Functions
 
@@ -1003,6 +1014,23 @@ You can also set all registers to the same size with `.mx8` and `.mx16` respecti
             ldy #$02
 ```
 
+As a convenience, the assembler can be told how to calculate the long address of symbols by their current bank, since the Program Counter itself cannot go past 65535. Use the `.bank` instruction for this:
+
+```asm
+            mvn here,there
+            jsl bank1_addr  // > 22 00 10 01
+            ...
+            .bank 1
+            *= $1000
+bank1_addr  jmp bank1_addr  // > 4c 00 10
+```
+
+Note that if a symbol pointing to an address is in the same bank as the Program Counter, it will be treated like a "regular" zeropage/absolute address, but also that relative branches are not allowed if the symbol is in a different bank from the Program Counter.
+
+### Z80 Implied Accumulator Instructions
+
+All of the Z80 instructions that are implied to work on the accumulator, such as `sub b`, can also be written as `sub a,b`. Similarly, the logical operations, such as `xor a` can also be written as `xor a,a`.
+
 ## Reference
 
 ### Pseudo-Ops
@@ -1273,6 +1301,23 @@ The directives below do not directly emit output but are responsible for other u
         nop
         .assert 5 == 6              // standard assertion error thrown
         .assert * < $0801, "Uh oh!" // custom error output
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.bank</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Sets the current bank for calculating symbols in long address mode instructions. By default the current bank is 0. Note that this instruction will affect the assembler's behavior even for non-65816 CPUs.
+</td></tr>
+<tr><td><b>Arguments</b></td><td><code>bank</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+             .cpu "65816"
+             jmp somewherefar  // > 5c 00 f0 ff 
+             ...
+             .bank $ff
+             * = $f000  
+somewherefar jmp somewherefar   // > 4c 00 f0
 </pre>
 </td></tr>
 </table>
@@ -1623,6 +1668,20 @@ INIT            xor a,a
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.initmem</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Initialize the output memory. Gaps will assemble to the value.
+</td></tr>
+<tr><td><b>Arguments</b></td><td><code>value</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      .initmem $ea
+      .fill 10 
+      lda #0   // 10 nops before here
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.invoke</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Invokes a function. Useful for changing assembly run-time state, or accomplishing some repeated task.</td></tr>
@@ -1761,6 +1820,23 @@ print       .macro  value = 13, printsub = $ffd2
       lda #$1234
       ldx #$5678
       ldy #$9abc
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Name</b></td><td><code>.page</code>/<code>.endpage</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Ensures that the block of code resides within the same page. Useful for time-sensitive code. If code crosses the page an error is issued.
+</td></tr>
+<tr><td><b>Arguments</b></td><td>None</d></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      .page
+-     ldx #0
+      nop
+      nop
+      jmp - 
+      .endpage
 </pre>
 </td></tr>
 </table>
@@ -2164,6 +2240,7 @@ message     .cstring "HELLO, HIGH CODE!"
                 <li><code>apple2</code>    - Apple ][ binary with Apple DOS header</li>
                 <li><code>atari-xex</code> - Atari 8-bit binary with XEX header</li>
                 <li><code>cbm</code>       - Commodore DOS binary with load address header (default)</li>
+                <li><code>d64</code>       - Commodore emulator D64 disk image format</li>
                 <li><code>flat</code>      - Flat binary with no header</li>
             </ul>
         </li>
@@ -2226,6 +2303,14 @@ message     .cstring "HELLO, HIGH CODE!"
 <pre>
 6502.Net.exe myspeccyproggy.asm --cpu=z80
 </pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--checksum</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Display SHA1 hash for output file after successful assembly.</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>6502.Net.exe myasm.asm --checksum</pre>
 </td></tr>
 </table>
 <table>

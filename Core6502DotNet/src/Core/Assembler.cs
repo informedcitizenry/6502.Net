@@ -53,7 +53,6 @@ namespace Core6502DotNet
             _pass = -1;
             PrintOff = false;
             PassNeeded = true;
-            HeaderWriter = null;
         }
 
         #endregion
@@ -195,15 +194,16 @@ namespace Core6502DotNet
         public static List<Func<string, bool>> InstructionLookupRules { get; set; }
 
         /// <summary>
-        /// Gets or sets the function resposible for writing header data to output.
-        /// </summary>
-        public static HeaderWriter HeaderWriter { get; set; }
-
-        /// <summary>
         /// Gets or sets the <see cref="SourceLine"/> iterator associated with the assembler session.
         /// </summary>
         public static RandomAccessIterator<SourceLine> LineIterator { get; set; }
 
+
+        /// <summary>
+        /// Gets or sets a custom binary format provider to convert the output before 
+        /// assembling to disk.
+        /// </summary>
+        public static IBinaryFormatProvider BinaryFormatProvider { get; set; }
 
         /// <summary>
         /// Gets the current <see cref="SourceLine"/> from the iterator.
@@ -261,24 +261,24 @@ namespace Core6502DotNet
 
         public string AssembleLine(SourceLine line)
         {
-            bool isAnonymous = false;
+            bool isReference = false;
             if (!string.IsNullOrEmpty(line.LabelName) && (line.Instruction == null ||
-                (!line.InstructionName.Equals(".equ") && line.InstructionName[^1] != '=' && !line.InstructionName.Equals(".function"))))
+                (!line.InstructionName.Equals(".equ") && !line.InstructionName.Equals("=") && !line.InstructionName.Equals(".function"))))
             {
                 if (line.LabelName.Equals("+") || line.LabelName.Equals("-"))
                 {
-                    isAnonymous = true;
+                    isReference = true;
                     Assembler.SymbolManager.DefineLineReference(line.LabelName,
                                                                   Assembler.Output.LogicalPC);
                 }
                 else if (!line.LabelName.Equals("*"))
                 {
-                    Assembler.SymbolManager.Define(line.LabelName, Assembler.Output.LogicalPC, false);
+                    Assembler.SymbolManager.DefineSymbolicAddress(line.LabelName);
                 }
             }
             if (line.Instruction != null)
                 return OnAssembleLine(line);
-            if (line.Label != null && !isAnonymous && !line.LabelName.Equals("*"))
+            if (line.Label != null && !isReference && !line.LabelName.Equals("*"))
             {
                 var labelValue = Assembler.SymbolManager.GetNumericValue(line.LabelName);
                 if (!double.IsNaN(labelValue))

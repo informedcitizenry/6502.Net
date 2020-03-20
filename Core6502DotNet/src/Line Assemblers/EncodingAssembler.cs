@@ -32,7 +32,7 @@ namespace Core6502DotNet
 
         static string EvalEncodingParam(Token p)
         {
-            if (!p.ToString().EnclosedInQuotes())
+            if (!p.ToString().EnclosedInDoubleQuotes())
             {
                 var result = (int)Evaluator.Evaluate(p, 0, 0x10FFFF);
                 try

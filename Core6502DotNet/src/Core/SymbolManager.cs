@@ -111,13 +111,13 @@ namespace Core6502DotNet
 
         class Symbol : SymbolBase
         {
-            public double FloatValue { get; set; }
+            public double NumericValue { get; set; }
 
             public string StringValue { get; set; }
 
             public SymbolType SymbolType { get; set; }
 
-            public Dictionary<int, double> FloatVector { get; set; }
+            public Dictionary<int, double> NumericVector { get; set; }
 
             public Dictionary<int, string> StringVector { get; set; }
 
@@ -129,6 +129,8 @@ namespace Core6502DotNet
 
             public Dictionary<string, Symbol> SymbolHash { get; set; }
 
+            public int DefinedAtBank { get; private set; }
+
             public bool IsMutable { get; set; }
 
             public int DefinedAtIndex { get; private set; }
@@ -138,8 +140,9 @@ namespace Core6502DotNet
                 DataType = DataType.None;
                 SymbolType = SymbolType.Scalar;
                 IsMutable = false;
-                FloatValue = 0D;
+                NumericValue = 0D;
                 StringValue = string.Empty;
+                DefinedAtBank = 0;
                 if (Assembler.LineIterator == null)
                     DefinedAtIndex = -1;
                 else
@@ -151,6 +154,9 @@ namespace Core6502DotNet
 
             public Symbol(string name, bool mutable)
                 : this(name) => IsMutable = mutable;
+
+            public Symbol(string name, int address)
+                : this(name) => SetValue(address);
 
             public Symbol(string name, bool mutable, double value)
                 : this(name, mutable) => SetValue(value);
@@ -171,11 +177,18 @@ namespace Core6502DotNet
                 StringValue = value;
             }
 
+            public void SetValue(int address)
+            {
+                DataType = DataType.Address;
+                DefinedAtBank = Assembler.Output.CurrentBank;
+                NumericValue = address;
+            }
+
             public void SetValue(double value)
             {
                 SymbolType = SymbolType.Scalar;
-                DataType = DataType.Float;
-                FloatValue = value;
+                DataType = DataType.Numeric;
+                NumericValue = value;
             }
 
             public void SetValue(IEnumerable<string> values)
@@ -188,14 +201,24 @@ namespace Core6502DotNet
                     StringVector[i++] = value;
             }
 
+            public void SetValue(IEnumerable<int> addresses)
+            {
+                SymbolType = SymbolType.Vector;
+                DataType = DataType.Address;
+                NumericVector = new Dictionary<int, double>();
+                int i = 0;
+                foreach (var addr in addresses)
+                    NumericVector[i++] = addr;
+            }
+
             public void SetValue(IEnumerable<double> values)
             {
                 SymbolType = SymbolType.Vector;
-                DataType = DataType.Float;
-                FloatVector = new Dictionary<int, double>();
+                DataType = DataType.Numeric;
+                NumericVector = new Dictionary<int, double>();
                 int i = 0;
                 foreach (var value in values)
-                    FloatVector[i++] = value;
+                    NumericVector[i++] = value;
             }
 
             public void SetValue(IDictionary<string, string> values)
@@ -208,14 +231,14 @@ namespace Core6502DotNet
             public void SetValue(IDictionary<string, double> values)
             {
                 SymbolType = SymbolType.Hash;
-                DataType = DataType.Float;
+                DataType = DataType.Numeric;
                 FloatHash = new Dictionary<string, double>(values);
             }
 
             public void SetValueFromSymbol(Symbol other)
             {
                 DataType = other.DataType;
-                FloatValue = other.FloatValue;
+                NumericValue = other.NumericValue;
                 StringValue = other.StringValue;
                 SymbolType = other.SymbolType;
 
@@ -233,11 +256,14 @@ namespace Core6502DotNet
                     {
                         switch (DataType)
                         {
-                            case DataType.Float:
+                            case DataType.Address:
+                            case DataType.Numeric:
                                 if (SymbolType == SymbolType.Vector)
-                                    FloatVector = new Dictionary<int, double>(other.FloatVector);
+                                    NumericVector = new Dictionary<int, double>(other.NumericVector);
                                 else
                                     FloatHash = new Dictionary<string, double>(other.FloatHash);
+                                if (DataType == DataType.Address)
+                                    DefinedAtBank = other.DefinedAtBank;
                                 break;
                             default:
                                 if (SymbolType == SymbolType.Vector)
@@ -250,12 +276,13 @@ namespace Core6502DotNet
                 }
             }
 
+
             public void SetValue(double value, int index)
             {
                 SymbolType = SymbolType.Vector;
-                if (FloatVector == null)
-                    FloatVector = new Dictionary<int, double>();
-                FloatVector[index] = value;
+                if (NumericVector == null)
+                    NumericVector = new Dictionary<int, double>();
+                NumericVector[index] = value;
             }
 
             public void SetValue(string value, int index)
@@ -302,9 +329,9 @@ namespace Core6502DotNet
             {
                 if (SymbolType != SymbolType.Vector)
                     return double.NaN;
-                if (index < 0 || FloatVector == null || index >= FloatVector.Count)
+                if (index < 0 || NumericVector == null || index >= NumericVector.Count)
                     return double.NegativeInfinity;
-                return FloatVector[index];
+                return NumericVector[index];
             }
 
             public string GetStringValueAtIndex(int index)
@@ -322,8 +349,12 @@ namespace Core6502DotNet
                 {
                     case DataType.String:
                         return double.NaN;
+                    case DataType.Address:
+                        if (Assembler.Output.CurrentBank == DefinedAtBank)
+                            return NumericValue;
+                        return (int)NumericValue | (DefinedAtBank * 0x10000);
                     default:
-                        return FloatValue;
+                        return NumericValue;
                 }
             }
 
@@ -333,7 +364,7 @@ namespace Core6502DotNet
                     return "[Object]";
                 switch (DataType)
                 {
-                    case DataType.Float: return FloatValue.ToString();
+                    case DataType.Numeric: return NumericValue.ToString();
                     default: return StringValue;
                 }
             }
@@ -348,8 +379,12 @@ namespace Core6502DotNet
                 {
                     switch (DataType)
                     {
-                        case DataType.Float: return FloatValue == other.FloatValue;
-                        default: return StringValue.Equals(other.StringValue);
+                        case DataType.Address:
+                            return GetNumericValue() == other.GetNumericValue();
+                        case DataType.Numeric:
+                            return NumericValue == other.NumericValue;
+                        default:
+                            return StringValue.Equals(other.StringValue);
                     }
                 }
                 return false;
@@ -408,18 +443,18 @@ namespace Core6502DotNet
                     else
                         places--;
                 }
-                return anonymous.FloatValue;
+                return anonymous.NumericValue;
             }
 
             public void DefineLineReferenceValue(string name, double value)
             {
-                var anonymous = _lineReferences.FirstOrDefault(s => s.Name[0] == name[0] &&
+                var reference = _lineReferences.FirstOrDefault(s => s.Name[0] == name[0] &&
                                                                  s.DefinedAtIndex == Assembler.LineIterator.Index);
-                if (anonymous != null)
+                if (reference != null)
                 {
-                    if (anonymous.GetNumericValue() != value)
+                    if (reference.GetNumericValue() != value)
                     {
-                        anonymous.SetValue(value);
+                        reference.SetValue(value);
                         Assembler.PassNeeded = true;
                     }
                 }
@@ -523,8 +558,6 @@ namespace Core6502DotNet
 
             if (_criteria.Any(f => !f(symbol.Name)))
                 throw new SymbolException(symbol.Name, 0, SymbolException.ExceptionReason.NotValid);
-
-
             var fqdn = GetScopedName(symbol.Name);
             var exists = _symbols.ContainsKey(fqdn);
 
@@ -533,7 +566,7 @@ namespace Core6502DotNet
 
             if (exists)
             {
-                Symbol sym = _symbols[fqdn];
+                var sym = _symbols[fqdn];
                 if ((!sym.IsMutable &&
                     ((sym.DefinedAtIndex == -1 && Assembler.LineIterator == null) || sym.DefinedAtIndex != Assembler.LineIterator.Index)) ||
                     sym.DataType != symbol.DataType)
@@ -625,7 +658,7 @@ namespace Core6502DotNet
                         value.Add(Evaluator.Evaluate(f));
                     if (arrayElementToUpdate != null)
                     {
-                        if (arrayElementToUpdate.DataType != DataType.Float)
+                        if (arrayElementToUpdate.DataType != DataType.Numeric)
                         {
                             Assembler.Log.LogEntry(Assembler.CurrentLine, firstInAray.Position,
                                 $"Type mismatch.");
@@ -659,7 +692,7 @@ namespace Core6502DotNet
                     var value = Evaluator.Evaluate(tokenList);
                     if (arrayElementToUpdate != null)
                     {
-                        if (arrayElementToUpdate.DataType != DataType.Float)
+                        if (arrayElementToUpdate.DataType != DataType.Numeric)
                         {
                             Assembler.Log.LogEntry(Assembler.CurrentLine, tokenList[0].Position,
                                 $"Type mismatch.");
@@ -931,7 +964,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="token">The symbol as a parsed token.</param>
         /// <returns>The symbol's numeric value.</returns>
-        public double GetAnonymousSymbol(Token token)
+        public double GetLineReference(Token token)
         {
             var name = token.Name;
             var topFrameIndex = _referenceFrameIndexStack.Peek();
@@ -949,6 +982,8 @@ namespace Core6502DotNet
             _lineReferenceFrames[topFrameIndex].DefineLineReferenceValue(name, value);
         }
 
+        public void DefineSymbolicAddress(string addressName)
+            => DefineSymbol(new Symbol(addressName, Assembler.Output.LogicalPC), false);
 
         /// <summary>
         /// Gets the vector element value.
@@ -1026,9 +1061,10 @@ namespace Core6502DotNet
         /// <exception cref="SymbolException"></exception>
         public double GetNumericValue(Token token)
         {
-            Symbol symbol = Lookup(token);
+            var symbol = Lookup(token);
             if (!symbol.IsScalar())
                 throw new SymbolException(token, SymbolException.ExceptionReason.NonScalar);
+
             return symbol.GetNumericValue();
         }
 

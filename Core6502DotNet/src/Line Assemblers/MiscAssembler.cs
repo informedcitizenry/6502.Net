@@ -23,7 +23,9 @@ namespace Core6502DotNet
         public MiscAssembler()
         {
             Reserved.DefineType("Directives",
-                    ".assert", ".eor", ".echo", ".target",
+                    ".assert", ".bank",
+                    ".eor", ".echo",
+                    ".initmem", ".target",
                     ".error", ".errorif",
                     ".pron", ".proff",
                     ".warnif", ".warn"
@@ -59,7 +61,7 @@ namespace Core6502DotNet
         {
             if (!line.OperandHasToken)
             {
-                Assembler.Log.LogEntry(line, line.Instruction, $"Too few arguments for directive \"{line.InstructionName}\".");
+                Assembler.Log.LogEntry(line, line.Instruction, "Too few arguments for directive \".eor\".");
                 return;
             }
             var eor = Evaluator.Evaluate(line.Operand.Children, sbyte.MinValue, byte.MaxValue);
@@ -71,6 +73,14 @@ namespace Core6502DotNet
             });
         }
 
+        void SetBank(SourceLine line)
+        {
+            if (!line.OperandHasToken)
+                Assembler.Log.LogEntry(line, "Too few arguments for directive \".bankmode\".");
+            else
+                Assembler.Output.SetBank((int)Evaluator.Evaluate(line.Operand, sbyte.MinValue, byte.MaxValue));
+        }
+
         protected override string OnAssembleLine(SourceLine line)
         {
             var instruction = line.InstructionName;
@@ -78,6 +88,9 @@ namespace Core6502DotNet
             {
                 case ".assert":
                     DoAssert(line);
+                    break;
+                case ".bank":
+                    SetBank(line);
                     break;
                 case ".warnif":
                 case ".errorif":
@@ -101,13 +114,33 @@ namespace Core6502DotNet
                     Assembler.PrintOff = true;
                     break;
                 case ".target":
-                    if (string.IsNullOrEmpty(line.OperandExpression) || !line.OperandExpression.EnclosedInQuotes())
+                    if (!line.OperandHasToken || !line.OperandExpression.EnclosedInQuotes())
                         Assembler.Log.LogEntry(line, line.Operand, "Expression must be a string.");
                     else
                         Assembler.Options.Architecture = line.OperandExpression.TrimOnce('"');
                     break;
+                default:
+                    InitMem(line);
+                    break;
             }
             return string.Empty;
+        }
+
+        void InitMem(SourceLine line)
+        {
+            if (!line.OperandHasToken)
+            {
+                Assembler.Log.LogEntry(line, line.Instruction, "Expected expression.");
+            }
+            else if (line.Operand.Children.Count > 1)
+            {
+                Assembler.Log.LogEntry(line, line.Operand.Children[1].Position, "Too many arguments for instruction.");
+            }
+            else
+            {
+                var amount = Evaluator.Evaluate(line.Operand.Children, sbyte.MinValue, byte.MaxValue);
+                Assembler.Output.InitMemory(Convert.ToByte((int)amount & 0xFF));
+            }
         }
 
         void Output(SourceLine line, string output)

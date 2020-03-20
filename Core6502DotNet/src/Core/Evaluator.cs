@@ -269,7 +269,26 @@ namespace Core6502DotNet
                 }
                 else if (token.Name[0].IsSpecialOperator())
                 {    // get the special character value
-                    converted = Assembler.SymbolManager.GetAnonymousSymbol(token);
+                    converted = Assembler.SymbolManager.GetLineReference(token);
+                }
+                else if (token.Name[0] == '0' && token.Name.Length > 2)
+                {
+                    // try to convert non-base 10 literals in 0x/0b/0o notation.
+                    try
+                    {
+                        if (token.Name[1] == 'b' || token.Name[1] == 'B')
+                            converted = Convert.ToInt32(token.Name.Substring(2), 2);
+                        else if (token.Name[1] == 'o' || token.Name[1] == 'O')
+                            converted = Convert.ToInt32(token.Name.Substring(2), 8);
+                        else if (token.Name[1] == 'x' || token.Name[1] == 'X')
+                            converted = Convert.ToInt32(token.Name.Substring(2), 16);
+                        else
+                            throw new ExpressionException(token.Position, $"\"{token}\" is not a valid numeric constant.");
+                    }
+                    catch
+                    {
+                        throw new ExpressionException(token.Position, $"\"{token}\" is not a valid numeric constant.");
+                    }
                 }
                 else
                 {

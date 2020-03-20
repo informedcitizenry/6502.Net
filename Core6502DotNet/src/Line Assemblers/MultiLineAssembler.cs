@@ -78,6 +78,8 @@ namespace Core6502DotNet
 
             Reserved.DefineType("BreakContinue", ".break", ".continue");
 
+            Reserved.DefineType("Page", ".page", ".endpage");
+
             Reserved.DefineType("GotoEnd", ".goto", ".end");
 
             Evaluator.AddFunctionEvaluator(this);
@@ -183,6 +185,9 @@ namespace Core6502DotNet
                     case BlockType.Goto:
                         DoGoto(line);
                         return string.Empty;
+                    case BlockType.Page:
+                        block = new PageBlockProcessor(line, type);
+                        break;
                     case BlockType.Switch:
                         block = new SwitchBlock(line, type);
                         break;
@@ -195,23 +200,19 @@ namespace Core6502DotNet
             }
             if (_currentBlock != null)
             {
+
                 if (Assembler.CurrentLine.InstructionName.Equals(".break") ||
                     Assembler.CurrentLine.InstructionName.Equals(".continue"))
                 {
-                    SourceLine contBreakLine = Assembler.LineIterator.Current;
-                    if (!_currentBlock.AllowBreak)
+                    var contBreakLine = Assembler.LineIterator.Current;
+                    if (!_currentBlock.AllowContinue && contBreakLine.InstructionName.Equals(".continue"))
                     {
                         _currentBlock.SeekBlockEnd();
                         while (_currentBlock != null)
                         {
                             _currentBlock.SeekBlockEnd();
-                            if (_currentBlock.AllowBreak)
+                            if (_currentBlock.AllowContinue)
                             {
-                                if (contBreakLine.InstructionName.Equals(".break"))
-                                {
-                                    PopBlock();
-                                    return string.Empty;
-                                }
                                 break;
                             }
                             else
@@ -222,7 +223,30 @@ namespace Core6502DotNet
                         if (_currentBlock == null)
                         {
                             Assembler.Log.LogEntry(contBreakLine, contBreakLine.Instruction,
-                               "No enclosing loop out of which to break or continue.");
+                               "No enclosing loop out of which to continue.");
+                            return string.Empty;
+                        }
+                    }
+                    else if (!_currentBlock.AllowBreak && contBreakLine.InstructionName.Equals(".break"))
+                    {
+                        _currentBlock.SeekBlockEnd();
+                        while (_currentBlock != null)
+                        {
+                            _currentBlock.SeekBlockEnd();
+                            if (_currentBlock.AllowBreak)
+                            {
+                                PopBlock();
+                                return string.Empty;
+                            }
+                            else
+                            {
+                                PopBlock();
+                            }
+                        }
+                        if (_currentBlock == null)
+                        {
+                            Assembler.Log.LogEntry(contBreakLine, contBreakLine.Instruction,
+                               "No enclosing loop out of which to break.");
                             return string.Empty;
                         }
                     }

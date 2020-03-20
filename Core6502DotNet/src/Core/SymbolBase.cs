@@ -13,8 +13,8 @@ namespace Core6502DotNet
     public enum DataType
     {
         None = 0,
-        Integer,
-        Float,
+        Address,
+        Numeric,
         String,
         Boolean
     };

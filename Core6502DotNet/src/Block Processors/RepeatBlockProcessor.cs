@@ -52,6 +52,8 @@ namespace Core6502DotNet
 
         public override bool AllowBreak => true;
 
+        public override bool AllowContinue => true;
+
         #endregion
     }
 }

@@ -28,6 +28,9 @@ namespace Core6502DotNet
             "[",  "]", "%",  "^", "^^", "`", "~", "*", "-", "+", "/", ",", ":", "$"
         };
 
+        static bool IsHex(char c)
+            => char.IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+
         static bool IsNotOperand(char c) => !char.IsLetterOrDigit(c) &&
                                             c != '.' &&
                                             c != '_' &&
@@ -60,13 +63,24 @@ namespace Core6502DotNet
         }
 
         static bool FirstNonHex(char prev, char current, char next)
+            => !IsHex(current);
+
+
+
+        static bool FirstNonBase10(char prev, char current, char next)
         {
-            if (char.IsDigit(current) ||
-                (current >= 'a' && current <= 'f') ||
-                (current >= 'A' && current <= 'F'))
-            {
+            if (char.IsDigit(current))
                 return false;
-            }
+            if (prev == '0' &&
+                (current == 'b' || current == 'B' ||
+                 current == 'o' || current == 'O') && char.IsDigit(next))
+                return false;
+            if (prev == '0' &&
+                (current == 'x' || current == 'X') && IsHex(next))
+                return false;
+            if ((prev == 'x' || prev == 'X' || IsHex(prev)) && IsHex(current))
+                return false;
+
             return true;
         }
 
@@ -125,13 +139,16 @@ namespace Core6502DotNet
             char c = iterator.Current;
             while (char.IsWhiteSpace(c))
             {
-                if (c == NewLine || c == EOF)
+                if (c == NewLine)
                 {
                     iterator.Rewind(iterator.Index - 1);
                     return null;
                 }
                 c = iterator.GetNext();
             }
+            if (c == ';' || c == EOF)
+                return null;
+
             var token = new Token();
 
             //first case, simplest
@@ -147,9 +164,17 @@ namespace Core6502DotNet
                 if (char.IsDigit(c) || (c == '.' && char.IsDigit(nextChar)))
                 {
                     if (char.IsDigit(c) && previousChar == '$')
+                    {
                         token.Name = ScanTo(previousChar, iterator, FirstNonHex, false);
+                    }
+                    else if (c == '0' && char.IsLetter(nextChar))
+                    {
+                        token.Name = ScanTo(previousChar, iterator, FirstNonBase10, false);
+                    }
                     else
+                    {
                         token.Name = ScanTo(previousChar, iterator, FirstNonNumeric, false);
+                    }
                 }
                 else if (c == '\\')
                 {
@@ -381,7 +406,7 @@ namespace Core6502DotNet
 
             while (iterator.GetNext() != EOF)
             {
-                if (iterator.Current != NewLine && iterator.Current != ':')
+                if (iterator.Current != NewLine && iterator.Current != ':' && iterator.Current != ';')
                 {
                     token = ParseToken(previousChar, token, iterator);
                     if (token != null)
@@ -438,6 +463,10 @@ namespace Core6502DotNet
                     if (iterator.PeekNext() == NewLine)
                         iterator.MoveNext();
                 }
+                if (iterator.Current == ';')
+                    _ = iterator.Skip(c => c != NewLine && c != ':' && c != EOF);
+
+
                 if (iterator.Current == NewLine || iterator.Current == ':' || iterator.Current == EOF)
                 {
                     previousChar = iterator.Current;

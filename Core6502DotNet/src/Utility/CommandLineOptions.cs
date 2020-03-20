@@ -61,7 +61,6 @@ namespace Core6502DotNet
             "    -s, --no-source          Suppress original source from assembly\r\n" +
             "                             listing\r\n" +
             "    -V, --version            Print current version\r\n" +
-            "                             messages)\r\n" +
             "    --verbose-asm            Expand listing to include all directives\r\n" +
             "                             and comments\r\n" +
             "    -w, --no-warn            Suppress all warnings\r\n" +

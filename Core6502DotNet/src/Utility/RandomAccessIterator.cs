@@ -20,7 +20,8 @@ namespace Core6502DotNet
     {
         #region Members
 
-        readonly List<T> _list;
+        readonly T[] _list;
+        readonly int _length;
         readonly int _firstIndex;
 
         #endregion
@@ -38,7 +39,8 @@ namespace Core6502DotNet
                 throw new ArgumentNullException();
             _firstIndex = 0;
             Index = -1;
-            _list = collection.ToList();
+            _list = collection.ToArray();
+            _length = _list.Length;
         }
 
         /// <summary>
@@ -50,8 +52,8 @@ namespace Core6502DotNet
         {
             if (collection == null)
                 throw new ArgumentNullException();
-            _list = collection.ToList();
-            if (firstIndex < 0 || firstIndex >= _list.Count)
+            _list = collection.ToArray();
+            if (firstIndex < 0 || firstIndex >= _length)
                 throw new ArgumentOutOfRangeException();
             _firstIndex = firstIndex;
             Index = firstIndex - 1;
@@ -86,7 +88,7 @@ namespace Core6502DotNet
             if (amount == 0)
                 throw new ArgumentException();
 
-            if (amount < Index || amount >= _list.Count)
+            if (amount < Index || amount >= _length)
                 throw new ArgumentOutOfRangeException();
             Index = amount - 1;
         }
@@ -97,7 +99,7 @@ namespace Core6502DotNet
         /// <returns>The next object.</returns>
         public T GetNext()
         {
-            if (++Index < _list.Count)
+            if (++Index < _length)
                 return _list[Index];
             return default;
         }
@@ -109,11 +111,11 @@ namespace Core6502DotNet
         /// <returns></returns>
         public T Skip(Predicate<T> predicate)
         {
-            while (MoveNext() && predicate.Invoke(Current)) { }
+            while (MoveNext() && predicate(Current)) { }
             return Current;
         }
 
-        public bool MoveNext() => ++Index < _list.Count;
+        public bool MoveNext() => ++Index < _length;
 
         /// <summary>
         /// Looks at the next element in the collection without advancing the iterator.
@@ -121,7 +123,7 @@ namespace Core6502DotNet
         /// <returns>The next element, or the default value if the iteration is completing.</returns>
         public T PeekNext()
         {
-            if (Index < _list.Count - 1)
+            if (Index < _length - 1)
                 return _list[Index + 1];
             return default;
         }
@@ -135,8 +137,8 @@ namespace Core6502DotNet
         public T PeekNextSkipping(Predicate<T> predicate)
         {
             var i = Index + 1;
-            while (i < _list.Count && predicate.Invoke(_list[i])) { i++; }
-            return i < _list.Count ? _list[i] : default;
+            while (i < _length && predicate.Invoke(_list[i])) { i++; }
+            return i < _length ? _list[i] : default;
         }
 
         public void Reset() => Index = _firstIndex - 1;
@@ -162,7 +164,7 @@ namespace Core6502DotNet
         {
             if (index < Index)
                 Rewind(index);
-            else if (index >= _list.Count)
+            else if (index >= _length)
                 throw new ArgumentOutOfRangeException();
 
             Index = index;
@@ -184,7 +186,7 @@ namespace Core6502DotNet
         {
             get
             {
-                if (Index < _firstIndex || Index >= _list.Count)
+                if (Index < _firstIndex || Index >= _length)
                     return default;
                 return _list[Index];
             }

@@ -77,20 +77,27 @@ namespace Core6502DotNet
         {
             char c;
             int lineNumber = 1;
-            RandomAccessIterator<char> iterator = source.GetIterator();
+            var iterator = source.GetIterator();
             var uncommentedBuilder = new StringBuilder();
-
+            int openindex = 0; // note for testing only feel free to delete 
             while ((c = iterator.GetNext()) != char.MinValue)
             {
                 var peekNext = iterator.PeekNext();
                 if (c == '/' && peekNext == '*')
                 {
                     iterator.MoveNext();
-                    while ((c = iterator.Skip(c => c != '\n' && c != '*')) != char.MinValue &&
-                           (peekNext = iterator.PeekNext()) != char.MinValue && peekNext != '/')
+                    while ((c = iterator.Skip(c => c != '\n' && c != '*')) != char.MinValue/* &&
+                           (peekNext = iterator.PeekNext()) != char.MinValue && peekNext != '/'*/)
                     {
                         if (c == '\n')
+                        {
+                            lineNumber++;
                             uncommentedBuilder.Append(c);
+                        }
+                        if ((peekNext = iterator.PeekNext()) == '/')
+                        {
+                            break;
+                        }
                     }
                     if (!iterator.MoveNext())
                         break;
@@ -99,12 +106,21 @@ namespace Core6502DotNet
                 {
                     if (c == ';' || (c == '/' && peekNext == '/'))
                     {
-                        if ((c = iterator.Skip(c => c != '\n' && c != char.MinValue)) == char.MinValue)
+                        var isSemi = c == ';';
+
+                        while (c != '\n' && c != char.MinValue)
+                        {
+                            if (isSemi)
+                                uncommentedBuilder.Append(c);
+                            c = iterator.GetNext();
+                        }
+                        if (c == char.MinValue)
                             break;
                     }
                     uncommentedBuilder.Append(c);
                     if (c == '"' || c == '\'')
                     {
+                        openindex = iterator.Index;
                         var close = c;
                         while ((c = iterator.GetNext()) != char.MinValue)
                         {
@@ -112,10 +128,7 @@ namespace Core6502DotNet
                             if (c == '\\')
                             {
                                 if ((c = iterator.GetNext()) == char.MinValue)
-                                {
-                                    Assembler.Log.LogEntry(fileName, lineNumber, "Quote string not enclosed.");
-                                    return string.Empty;
-                                }
+                                    break;
                                 uncommentedBuilder.Append(c);
                             }
                             else if (c == close)
@@ -123,7 +136,11 @@ namespace Core6502DotNet
                                 break;
                             }
                         }
-
+                        if (c != close)
+                        {
+                            Assembler.Log.LogEntry(fileName, lineNumber, "Quote string not enclosed.");
+                            return string.Empty;
+                        }
                     }
                     else if (c == '\n')
                         lineNumber++;
@@ -296,7 +313,15 @@ namespace Core6502DotNet
             {
                 if (_includedFiles.Contains(fullPath))
                     throw new FileLoadException($"File \"{fullPath}\" already included in source.");
-                _includedFiles.Add(fullPath);
+
+                // truncate path info if executing path is same as source path.
+                var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
+                var asmPath = new FileInfo(location.AbsolutePath).Directory.FullName;
+                var exePath = Path.GetDirectoryName(fullPath);
+                if (asmPath.Equals(exePath))
+                    _includedFiles.Add(fileName);
+                else
+                    _includedFiles.Add(fullPath);
             }
             source = source.Replace("\r", string.Empty); // remove Windows CR
             IEnumerable<SourceLine> uncommented;

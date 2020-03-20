@@ -177,6 +177,8 @@ namespace Core6502DotNet
 
         public override bool AllowBreak => false;
 
+        public override bool AllowContinue => false;
+
         public override void ExecuteDirective() => throw new NotImplementedException();
     }
 }
