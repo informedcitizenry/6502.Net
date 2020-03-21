@@ -154,13 +154,13 @@ namespace Core6502DotNet
                                 else if (asm != null)
                                 {
                                     var disasm = asm.AssembleLine(line);
-                                    if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff)
+                                    if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff && disassembly != null)
                                         disassembly.AppendLine(disasm);
                                 }
                             }
                             else if (Assembler.Options.VerboseList)
                             {
-                                disassembly.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
+                                disassembly?.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
                             }
                         }
                         catch (Exception ex)
@@ -222,7 +222,7 @@ namespace Core6502DotNet
                 if (Assembler.Log.HasErrors)
                     Assembler.Log.DumpErrors();
                 else
-                    WriteOutput(disassembly.ToString());
+                    WriteOutput(disassembly?.ToString());
 
                 Console.WriteLine($"Number of errors: {Assembler.Log.ErrorCount}");
                 Console.WriteLine($"Number of warnings: {Assembler.Log.WarningCount}");
@@ -261,7 +261,7 @@ namespace Core6502DotNet
                     File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
             }
             // write disassembly
-            if (disassembly != null)
+            if (!string.IsNullOrEmpty(disassembly))
                 File.WriteAllText(Assembler.Options.ListingFile, disassembly);
 
             // write listings
