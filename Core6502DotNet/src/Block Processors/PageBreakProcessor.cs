@@ -25,7 +25,8 @@ namespace Core6502DotNet
         public override void ExecuteDirective()
         {
             var line = Assembler.LineIterator.Current;
-            if (line.InstructionName.Equals(".endpage") && !Assembler.PassNeeded && GetPage(Assembler.Output.LogicalPC - 1) != _page)
+            if (line.InstructionName.Equals(".endpage") && 
+                !Assembler.PassNeeded && GetPage(Assembler.Output.LogicalPC - 1) != _page)
                 Assembler.Log.LogEntry(line, "Page boundary crossed.");
         }
     }
