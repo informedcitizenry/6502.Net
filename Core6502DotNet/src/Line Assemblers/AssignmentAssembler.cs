@@ -115,7 +115,6 @@ namespace Core6502DotNet
                    ((int)Assembler.SymbolManager.GetNumericValue(symbol)).ToString("x").PadRight(41),
                    line.UnparsedSource);
                 }
-                return symbol;
             }
             return string.Empty;
         }

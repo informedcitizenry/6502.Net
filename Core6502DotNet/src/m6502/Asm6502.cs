@@ -701,7 +701,7 @@ namespace Core6502DotNet.m6502
                 line.Assembly.AddRange(Assembler.Output.Add((byte)0x4c));
                 line.Assembly.AddRange(Assembler.Output.Add(offset, 2));
             }
-            if (Assembler.PassNeeded)
+            if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
                 return string.Empty;
             var sb = new StringBuilder();
 
@@ -797,10 +797,10 @@ namespace Core6502DotNet.m6502
                 var modeSize = (modeInstruction.mode & Modes.SizeMask);
                 var size = modeSize switch
                 {
-                    Modes.Implied => 0,
-                    Modes.ZeroPage => 1,
-                    Modes.Absolute => 2,
-                    Modes.Long => 3,
+                    Modes.Implied   => 0,
+                    Modes.ZeroPage  => 1,
+                    Modes.Absolute  => 2,
+                    Modes.Long      => 3
                 };
                 // start adding to the output
                 line.Assembly = new List<byte>(Assembler.Output.Add(modeInstruction.instruction.Opcode, 1));
@@ -834,7 +834,7 @@ namespace Core6502DotNet.m6502
                     Assembler.Log.LogEntry(line, line.Instruction, $"Mnemonic \"{line.InstructionName}\" not supported for selected CPU.");
                 return string.Empty;
             }
-            if (Assembler.PassNeeded)
+            if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
                 return string.Empty;
             var sb = new StringBuilder();
             if (!Assembler.Options.NoAssembly)

@@ -16,6 +16,8 @@ namespace Core6502DotNet
 
         int GetPage() => Assembler.Output.LogicalPC & 0xF00;
 
+        int GetPage(int address) => address & 0xF00;
+
         public override bool AllowBreak => false;
 
         public override bool AllowContinue => false;
@@ -23,7 +25,7 @@ namespace Core6502DotNet
         public override void ExecuteDirective()
         {
             var line = Assembler.LineIterator.Current;
-            if (line.InstructionName.Equals(".endpage") && !Assembler.PassNeeded && GetPage() != _page)
+            if (line.InstructionName.Equals(".endpage") && !Assembler.PassNeeded && GetPage(Assembler.Output.LogicalPC - 1) != _page)
                 Assembler.Log.LogEntry(line, "Page boundary crossed.");
         }
     }

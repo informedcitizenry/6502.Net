@@ -127,10 +127,7 @@ namespace Core6502DotNet
                 {
                     if (Assembler.CurrentPass++ == 4)
                         throw new Exception("Too many passes attempted.");
-
-                    if (!string.IsNullOrEmpty(Assembler.Options.ListingFile))
-                        disassembly = new StringBuilder(disasmHeader);
-
+                    disassembly = new StringBuilder(disasmHeader);
                     foreach (var line in Assembler.LineIterator)
                     {
                         try
@@ -154,13 +151,13 @@ namespace Core6502DotNet
                                 else if (asm != null)
                                 {
                                     var disasm = asm.AssembleLine(line);
-                                    if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff && disassembly != null)
+                                    if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff)
                                         disassembly.AppendLine(disasm);
                                 }
                             }
                             else if (Assembler.Options.VerboseList)
                             {
-                                disassembly?.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
+                                disassembly.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
                             }
                         }
                         catch (Exception ex)
@@ -261,7 +258,7 @@ namespace Core6502DotNet
                     File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
             }
             // write disassembly
-            if (!string.IsNullOrEmpty(disassembly))
+            if (!string.IsNullOrEmpty(Assembler.Options.ListingFile) && !string.IsNullOrEmpty(disassembly))
                 File.WriteAllText(Assembler.Options.ListingFile, disassembly);
 
             // write listings

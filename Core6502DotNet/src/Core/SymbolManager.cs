@@ -46,13 +46,13 @@ namespace Core6502DotNet
 
         static readonly Dictionary<ExceptionReason, string> _reasonMessages = new Dictionary<ExceptionReason, string>
         {
-            { ExceptionReason.Redefined,                "Cannot assign \"{0}\" after it has been assigned." },
-            { ExceptionReason.NonScalar,                "Symbol \"{0}\" is a non-scalar value."             },
-            { ExceptionReason.NotDefined,               "Symbol \"{0}\" is not defined."                    },
-            { ExceptionReason.NotValid,                 "\"{0}\" is not a valid symbol name."               },
-            { ExceptionReason.InvalidBackReference,     "Invalid back reference."                           },
-            { ExceptionReason.InvalidForwardReference,  "Invalid forward reference."                        },
-            { ExceptionReason.Scalar, "Symbol is a \"{0}\" scalar value but is being used as a non-scalar." }
+            { ExceptionReason.Redefined,                "Cannot assign \"{0}\" after it has been assigned."           },
+            { ExceptionReason.NonScalar,                "Symbol \"{0}\" is non-scalar but is being used as a scalar." },
+            { ExceptionReason.NotDefined,               "Symbol \"{0}\" is not defined."                              },
+            { ExceptionReason.NotValid,                 "\"{0}\" is not a valid symbol name."                         },
+            { ExceptionReason.InvalidBackReference,     "Invalid back reference."                                     },
+            { ExceptionReason.InvalidForwardReference,  "Invalid forward reference."                                  },
+            { ExceptionReason.Scalar,                   "Symbol \"{0}\" is scalar but is being used as a non-scalar." }
         };
 
         /// <summary>
@@ -374,6 +374,7 @@ namespace Core6502DotNet
             public bool IsValueEqual(Symbol other)
             {
                 if (SymbolType == SymbolType.Scalar &&
+                    other.SymbolType == SymbolType.Scalar &&
                     SymbolType == other.SymbolType &&
                     DataType == other.DataType)
                 {
@@ -576,6 +577,10 @@ namespace Core6502DotNet
                 if (!sym.IsValueEqual(symbol))
                 {
                     // update the existing symbol
+                    if (symbol.IsScalar() && !sym.IsScalar())
+                        throw new SymbolException(symbol.Name, 0, SymbolException.ExceptionReason.NonScalar);
+                    else if (!symbol.IsScalar() && sym.IsScalar())
+                        throw new SymbolException(symbol.Name, 0, SymbolException.ExceptionReason.Scalar);
                     sym.SetValueFromSymbol(symbol);
 
                     // signal to the assembler another pass is needed.
@@ -595,11 +600,32 @@ namespace Core6502DotNet
             var tokenList = rhs.ToList();
 
             var symbolName = lhs.Name;
-            if (arrayElementToUpdate != null && !arrayElementToUpdate.IsMutable)
+            if (arrayElementToUpdate != null)
             {
-                Assembler.Log.LogEntry(Assembler.CurrentLine, tokenList[0].Position,
-                    $"Symbol \"{symbolName}\" cannot be re-defined.");
-                return false;
+                if (!arrayElementToUpdate.IsMutable)
+                {
+                    Assembler.Log.LogEntry(Assembler.CurrentLine, tokenList[0].Position,
+                      $"Symbol \"{symbolName}\" cannot be re-defined.");
+                    return false;
+                }
+                if (subscriptix > -1)
+                {
+                    if (arrayElementToUpdate.IsScalar())
+                        throw new SymbolException(lhs, SymbolException.ExceptionReason.Scalar);
+                    if (
+                        (arrayElementToUpdate.DataType == DataType.String &&
+                         !arrayElementToUpdate.StringVector.ContainsKey(subscriptix)
+                        ) ||
+                        (arrayElementToUpdate.DataType == DataType.Numeric &&
+                         !arrayElementToUpdate.NumericVector.ContainsKey(subscriptix)
+                        )
+                       )
+                    {
+                        Assembler.Log.LogEntry(Assembler.CurrentLine, tokenList[0].Position,
+                            "Argument out of range.");
+                        return false;
+                    }
+                }
             }
             bool valueIsArray = tokenList[0].Name.Equals("[");
             if (valueIsArray)
@@ -628,7 +654,7 @@ namespace Core6502DotNet
                         {
                             if (child.Children.Count > 1 || !child.Children[0].Name.EnclosedInDoubleQuotes())
                             {
-                                Assembler.Log.LogEntry(Assembler.CurrentLine, child.Children[1].Position,
+                                Assembler.Log.LogEntry(Assembler.CurrentLine, child.Children[0].Position,
                                     "Expected string literal.");
                                 return false;
                             }
@@ -721,18 +747,10 @@ namespace Core6502DotNet
 
 
             var isSubscript = tokenList[1].Name.Equals("[");
-            Symbol arrayElementToUpdate = isSubscript ? Lookup(tokenList[0]) : null;
-            if (arrayElementToUpdate != null && !arrayElementToUpdate.IsMutable)
-            {
-                Assembler.Log.LogEntry(Assembler.CurrentLine, tokenList[0].Position,
-                    $"Symbol \"{tokenList[0].Name}\" cannot be re-defined.");
-                return false;
-            }
-
-
-            int subscriptix = isSubscript ? (int)Evaluator.Evaluate(tokenList[1].Children, uint.MinValue, int.MaxValue) : -1;
-            int assignIx = isSubscript ? 2 : 1;
-            Token assignment = tokenList[assignIx];
+            var arrayElementToUpdate = isSubscript ? Lookup(tokenList[0]) : null;
+            var subscriptix = isSubscript ? (int)Evaluator.Evaluate(tokenList[1].Children, uint.MinValue, int.MaxValue) : -1;
+            var assignIx = isSubscript ? 2 : 1;
+            var assignment = tokenList[assignIx];
 
             if (assignment.OperatorType != OperatorType.Binary ||
                 (!assignment.Name.Equals("=")))
@@ -747,7 +765,7 @@ namespace Core6502DotNet
                     "Missing rhs in assignment.");
                 return false;
             }
-            return DefineFromTokens(tokenList[0], tokenList.Skip(2), isMutable, isGlobal, arrayElementToUpdate, subscriptix);
+            return DefineFromTokens(tokenList[0], tokenList.Skip(assignIx + 1), isMutable, isGlobal, arrayElementToUpdate, subscriptix);
         }
 
         string GetFullyQualifiedName(string name)

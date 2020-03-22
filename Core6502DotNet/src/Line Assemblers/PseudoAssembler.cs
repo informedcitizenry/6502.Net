@@ -281,7 +281,7 @@ namespace Core6502DotNet
                     AssembleStrings(line);
                     break;
             }
-            if (Assembler.PassNeeded)
+            if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
                 return string.Empty;
             return StringHelper.GetByteDisassembly(line, startPc);
         }

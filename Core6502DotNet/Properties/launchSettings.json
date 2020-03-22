@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Core6502DotNet": {
+      "commandName": "Project",
+      "commandLineArgs": "pacmanhi.z80 -o pacman.bin --list=pacmanhi_list.z80 --cpu z80"
+    }
+  }
+}

@@ -29,6 +29,7 @@ namespace Core6502DotNet
             { ".ifndef",    BlockType.ConditionalNdef },
             { ".for",       BlockType.ForNext         },
             { ".function",  BlockType.Functional      },
+            { ".page",      BlockType.Page            },
             { ".repeat",    BlockType.Repeat          },
             { ".switch",    BlockType.Switch          },
             { ".while",     BlockType.While           },
