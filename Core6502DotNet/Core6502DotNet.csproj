@@ -14,4 +14,12 @@
     <StartupObject>Core6502DotNet.Core6502DotNet</StartupObject>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Properties\launchSettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
 </Project>
