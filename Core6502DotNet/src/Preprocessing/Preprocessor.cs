@@ -11,7 +11,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -25,7 +24,6 @@ namespace Core6502DotNet
 
         readonly Dictionary<string, Macro> _macros;
         readonly HashSet<string> _includedFiles;
-        static Regex _altBinary = new Regex(@"(?:^|\b)%([.#]+)", RegexOptions.Compiled);
 
         #endregion
 
@@ -78,21 +76,19 @@ namespace Core6502DotNet
             char c;
             int lineNumber = 1;
             var iterator = source.GetIterator();
-            var uncommentedBuilder = new StringBuilder();
-            int openindex = 0; // note for testing only feel free to delete 
+            var uncommented = new StringBuilder();
             while ((c = iterator.GetNext()) != char.MinValue)
             {
                 var peekNext = iterator.PeekNext();
                 if (c == '/' && peekNext == '*')
                 {
                     iterator.MoveNext();
-                    while ((c = iterator.Skip(c => c != '\n' && c != '*')) != char.MinValue/* &&
-                           (peekNext = iterator.PeekNext()) != char.MinValue && peekNext != '/'*/)
+                    while ((c = iterator.Skip(c => c != '\n' && c != '*')) != char.MinValue)
                     {
                         if (c == '\n')
                         {
                             lineNumber++;
-                            uncommentedBuilder.Append(c);
+                            uncommented.Append(c);
                         }
                         if ((peekNext = iterator.PeekNext()) == '/')
                         {
@@ -111,49 +107,36 @@ namespace Core6502DotNet
                         while (c != '\n' && c != char.MinValue)
                         {
                             if (isSemi)
-                                uncommentedBuilder.Append(c);
+                                uncommented.Append(c);
                             c = iterator.GetNext();
                         }
                         if (c == char.MinValue)
                             break;
                     }
-                    uncommentedBuilder.Append(c);
+                    uncommented.Append(c);
                     if (c == '"' || c == '\'')
                     {
-                        openindex = iterator.Index;
                         var close = c;
                         while ((c = iterator.GetNext()) != char.MinValue)
                         {
-                            uncommentedBuilder.Append(c);
+                            uncommented.Append(c);
                             if (c == '\\')
                             {
                                 if ((c = iterator.GetNext()) == char.MinValue)
                                     break;
-                                uncommentedBuilder.Append(c);
+                                uncommented.Append(c);
                             }
                             else if (c == close)
                             {
                                 break;
                             }
                         }
-                        if (c != close)
-                        {
-                            Assembler.Log.LogEntry(fileName, lineNumber, "Quote string not enclosed.");
-                            return string.Empty;
-                        }
                     }
                     else if (c == '\n')
                         lineNumber++;
                 }
             }
-            var uncommented = uncommentedBuilder.ToString();
-            foreach (var match in _altBinary.Matches(uncommented))
-            {
-                var m = match.ToString();
-                uncommented = uncommented.Replace(m, m.Replace('.', '0')
-                                                      .Replace('#', '1'));
-            }
-            return uncommented;
+            return uncommented.ToString(); ;
         }
 
         IEnumerable<SourceLine> ProcessMacros(IEnumerable<SourceLine> uncommented)
@@ -187,8 +170,8 @@ namespace Core6502DotNet
                         Assembler.Log.LogEntry(line, line.Label, $"Macro name \"{line.LabelName}\" is not valid.");
                         continue;
                     }
-                    //Assembler.SymbolManager.DefineGlobal(line.LabelName, double.NaN);
-                    Reserved.AddWord("MacroNames", line.Label.Name);
+                    Reserved.AddWord("MacroNames", macroName);
+
                     var macro = new Macro(line.Operand, line.ParsedSource);
                     _macros[macroName] = macro;
                     SourceLine instr = line;

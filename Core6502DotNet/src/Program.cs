@@ -16,7 +16,7 @@ namespace Core6502DotNet
             Assembler.Initialize(args);
 
             AssemblerBase cpuAssembler;
-            if (Assembler.Options.CPU.Equals("z80"))
+            if (Assembler.Options.CPU.ToLower().Equals("z80"))
             {
                 Assembler.BinaryFormatProvider = new z80.Z80FormatProvider();
                 cpuAssembler = new z80.Z80Asm();

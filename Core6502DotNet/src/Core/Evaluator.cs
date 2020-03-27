@@ -301,7 +301,7 @@ namespace Core6502DotNet
                 if (double.IsNaN(converted))
                     throw new ExpressionException(token.Position, $"\"{token}\" is not a expression.");
             }
-            else if (token.Name[0] == '0')
+            else if (token.Name[0] == '0' && token.Name.Length > 1 && token.Name[1] != 'e' && token.Name[1] != 'E')
             {
                 // all leading zeros treated as octal
                 try

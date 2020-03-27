@@ -39,8 +39,7 @@ namespace Core6502DotNet
 
         static string ScanTo(char previousChar,
                              RandomAccessIterator<char> iterator,
-                             Func<char, char, char, bool> terminal,
-                             bool ignoreWhitespace)
+                             Func<char, char, char, bool> terminal)
         {
             var tokenNameBuilder = new StringBuilder();
             char c = iterator.Current;
@@ -52,7 +51,7 @@ namespace Core6502DotNet
                 while (!terminal(previousChar, c, iterator.PeekNext()))
                 {
                     tokenNameBuilder.Append(c);
-                    if (!ignoreWhitespace && char.IsWhiteSpace(c))
+                    if (char.IsWhiteSpace(c))
                         break;
                     previousChar = c;
                     c = iterator.GetNext();
@@ -112,6 +111,9 @@ namespace Core6502DotNet
             }
         }
 
+        static bool FirstNonAltBin(char prev, char current, char next)
+            => !(current == '.' || current == '#');
+
         static bool FirstNonSymbol(char prev, char current, char next) =>
             !char.IsLetterOrDigit(current) && current != '_' && current != '.' && current != SingleQuote;
 
@@ -165,21 +167,26 @@ namespace Core6502DotNet
                 {
                     if (char.IsDigit(c) && previousChar == '$')
                     {
-                        token.Name = ScanTo(previousChar, iterator, FirstNonHex, false);
+                        token.Name = ScanTo(previousChar, iterator, FirstNonHex);
                     }
-                    else if (c == '0' && char.IsLetter(nextChar))
+                    else if (c == '0' && (nextChar == 'b' ||
+                                          nextChar == 'B' ||
+                                          nextChar == 'o' ||
+                                          nextChar == 'O' ||
+                                          nextChar == 'x' ||
+                                          nextChar == 'X'))
                     {
-                        token.Name = ScanTo(previousChar, iterator, FirstNonBase10, false);
+                        token.Name = ScanTo(previousChar, iterator, FirstNonBase10);
                     }
                     else
                     {
-                        token.Name = ScanTo(previousChar, iterator, FirstNonNumeric, false);
+                        token.Name = ScanTo(previousChar, iterator, FirstNonNumeric);
                     }
                 }
                 else if (c == '\\')
                 {
                     iterator.MoveNext();
-                    token.Name = c + ScanTo(previousChar, iterator, FirstNonLetterOrDigit, false);
+                    token.Name = c + ScanTo(previousChar, iterator, FirstNonLetterOrDigit);
                 }
                 else if (c == '?')
                 {
@@ -190,7 +197,7 @@ namespace Core6502DotNet
                 else
                 {
                     token.UnparsedName =
-                    token.Name = ScanTo(previousChar, iterator, FirstNonSymbol, false);
+                    token.Name = ScanTo(previousChar, iterator, FirstNonSymbol);
                     if (!Assembler.Options.CaseSensitive)
                         token.Name = token.Name.ToLower();
 
@@ -211,20 +218,34 @@ namespace Core6502DotNet
                     }
                 }
             }
+            else if (previousToken != null &&
+                     previousToken.Name.Equals("%") &&
+                     previousToken.OperatorType == OperatorType.Unary &&
+                     (c == '.' || c == '#'))
+            {
+                // alternative binary string parsing
+                token.Type = TokenType.Operand;
+                token.Name = ScanTo(previousChar, iterator, FirstNonAltBin).Replace('.', '0')
+                                                                           .Replace('#', '1');
+            }
             else if (c == '"' || c == SingleQuote)
             {
                 var open = c;
                 var quoteBuilder = new StringBuilder(c.ToString());
+                var escaped = false;
                 while ((c = iterator.GetNext()) != open && c != char.MinValue)
                 {
                     quoteBuilder.Append(c);
                     if (c == '\\')
+                    {
+                        escaped = true;
                         c = iterator.GetNext();
+                    }
                 }
                 if (c == char.MinValue)
                     throw new ExpressionException(token.Position, $"Quote string not enclosed.");
                 quoteBuilder.Append(c);
-                var unescaped = Regex.Unescape(quoteBuilder.ToString());
+                var unescaped = escaped ? Regex.Unescape(quoteBuilder.ToString()) : quoteBuilder.ToString();
                 if (c == '\'' && unescaped.Length > 3)
                     throw new ExpressionException(token.Parent, "Too many characters in character literal.");
                 token.Name = unescaped;
@@ -263,7 +284,7 @@ namespace Core6502DotNet
                          b. ++, +++, ++++, etc. => Treat as one.
                      */
                     // Get the full string
-                    token.Name = ScanTo(previousChar, iterator, FirstNonPlusMinus, false);
+                    token.Name = ScanTo(previousChar, iterator, FirstNonPlusMinus);
                     if (previousToken != null && (previousToken.Type == TokenType.Operand || previousToken.Name.Equals(")")))
                     {
                         // looking backward at the previous token, if it's an operand or grouping then we 
@@ -271,7 +292,10 @@ namespace Core6502DotNet
                         token.Type = TokenType.Operator;
                         token.OperatorType = OperatorType.Binary;
                         if (token.Name.Length > 1) // we need to split off the rest of the string so we have a single char '+'
-                            iterator.Rewind(token.Position);
+                        {
+                            token.Name = c.ToString();
+                            iterator.Rewind(iterator.Index - token.Position - 1);
+                        }
                     }
                     else if (!IsNotOperand(nextChar) || nextChar == '(')
                     {
@@ -282,7 +306,8 @@ namespace Core6502DotNet
                             // If the string is greater than one character,
                             // then it's not a unary, it's an operand AND a unary. So we split off the 
                             // rest of the string.
-                            iterator.Rewind(token.Position);
+                            token.Name = c.ToString();
+                            iterator.Rewind(iterator.Index - token.Position - 1);
                             token.Type = TokenType.Operand;
                         }
                         else
@@ -294,8 +319,6 @@ namespace Core6502DotNet
                     else
                     {
                         token.Type = TokenType.Operand;
-                        //if (token.Name.Length > 1)
-                        //  iterator.Rewind(iterator.Index - 1);
                     }
                 }
                 else if (c == '*')
@@ -331,7 +354,7 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        token.Name = ScanTo(previousChar, iterator, FirstNonMatchingOperator, false);
+                        token.Name = ScanTo(previousChar, iterator, FirstNonMatchingOperator);
                         token.UnparsedName = token.Name;
                         /* The general strategy to determine whether an operator is unary or binary:
                             1. Is it actually one of the defined unary types?
@@ -355,6 +378,9 @@ namespace Core6502DotNet
                              ) ||
                              (
                               c.IsRadixOperator() && char.IsLetterOrDigit(nextChar)
+                             ) ||
+                             (
+                              c == '%' && (nextChar == '.' || nextChar == '#')
                              )
                             ) &&
                              (previousToken == null ||
@@ -488,7 +514,7 @@ namespace Core6502DotNet
                         currentLine++;
                     if (newLine)
                     {
-                        var newSourceLine = new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0], true);
+                        var newSourceLine = new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0]);
                         lines.Add(newSourceLine);
                         if (Assembler.Options.WarnLeft && newSourceLine.Label.Position != 1)
                             Assembler.Log.LogEntry(newSourceLine, newSourceLine.Label, "Label is not at the beginning of the line.", false);
@@ -508,7 +534,7 @@ namespace Core6502DotNet
                 throw new ExpressionException(currentOpen.LastChild.Position, $"End of source reached without finding closing \"{Evaluator.Groups[currentOpen.Name]}\".");
 
             if (token != null)
-                lines.Add(new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0], true));
+                lines.Add(new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0]));
 
             return lines;
 

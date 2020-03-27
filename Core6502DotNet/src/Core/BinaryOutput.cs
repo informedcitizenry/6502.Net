@@ -34,7 +34,6 @@ namespace Core6502DotNet
     public sealed class BinaryOutput : IFunctionEvaluator
     {
         #region Members
-
         byte[] _bytes;
         int _logicalPc;
         int _pc;
@@ -116,6 +115,7 @@ namespace Core6502DotNet
         public void Reset()
         {
             _bytes = new byte[0x10000];
+            CurrentBank = 0;
             PreviousPC = _pc = _logicalPc = 0;
             MaxAddress = ushort.MaxValue;
             PCOverflow = false;

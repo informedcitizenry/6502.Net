@@ -39,19 +39,19 @@ namespace Core6502DotNet
             Assembly = new List<byte>();
         }
 
-        public SourceLine(string fileName, int lineNumber, string originalSource, Token parent, bool ignoreErrors)
+        /// <summary>
+        /// Constructs a new instance of the source line class.
+        /// </summary>
+        /// <param name="fileName">The source file name.</param>
+        /// <param name="lineNumber">The source line number.</param>
+        /// <param name="originalSource">The original (unprocessed) source.</param>
+        /// <param name="head">The head token used to parse down to label, instruction, and operand tokens.</param>
+        public SourceLine(string fileName, int lineNumber, string originalSource, Token head)
             : this(fileName, lineNumber)
         {
             UnparsedSource = originalSource;
             ParsedSource = Assembler.Options.CaseSensitive ? originalSource : originalSource.ToLower();
-            ParseOne(parent, ignoreErrors);
-        }
-
-        SourceLine(string originalSource, Token parentSep, bool ignoreErrors)
-        {
-            UnparsedSource = originalSource.Substring(parentSep.Position);
-            ParsedSource = string.Join(' ', parentSep.Children);
-            ParseOne(parentSep, ignoreErrors);
+            ParseOne(head);
         }
 
         #endregion
@@ -78,7 +78,7 @@ namespace Core6502DotNet
             return copy;
         }
 
-        void ParseOne(Token parentSep, bool ignoreErrors)
+        void ParseOne(Token parentSep)
         {
             IsParsed = true;
             Token firstChild = parentSep.Children[0];
@@ -110,16 +110,6 @@ namespace Core6502DotNet
             }
             if (parentSep.Children.Count > 1)
             {
-                // second child should either be an instruction or nothing
-                if (parentSep.Children.Count(t => t.Type == TokenType.Instruction) != 1)
-                {
-                    if (!ignoreErrors)
-                    {
-                        Token secondInstruction = parentSep.Children.Skip(2).First(t => t.Type == TokenType.Instruction);
-                        throw new ExpressionException(secondInstruction.Position,
-                         $"Additional instruction \"{secondInstruction.Name}\" found in statement. Use the \":\" operator for compound statements.");
-                    }
-                }
                 Instruction = parentSep.Children[1];
 
                 if (parentSep.Children.Count > 2)

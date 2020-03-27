@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>6502.Net</PackageId>
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
@@ -12,6 +12,7 @@
     <Copyright>(C) Copyright 2017-2020 informedcitizenry</Copyright>
     <ReleaseVersion>1.21.1.0</ReleaseVersion>
     <StartupObject>Core6502DotNet.Core6502DotNet</StartupObject>
+    <AssemblyName>6502.Net</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

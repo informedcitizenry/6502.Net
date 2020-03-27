@@ -1,6 +1,6 @@
 ﻿# 6502.Net, A Simple .Net-Based 65xx and Z80 Cross-Assembler
 
-Version 2.1.1
+Version 2.1.2
 
 ## Table of Contents
 
@@ -114,7 +114,7 @@ Numeric constants can be expressed as decimal, real, hexadecimal, octal and bina
 
 ```asm
              65490 = 65490
-           1.03E+5 = 0.0000103
+           1.03E+5 = 103000
            0177722 = 65490
           0o177722 = 65490
              $ffd2 = 65490
@@ -279,16 +279,6 @@ Unlike labels, variables cannot be referenced in other expressions before they a
 
 In the above example, the assembler would error assuming `x` has never been declared before.
 
-#### Value types
-
-Labels and variables can be assigned both numeric values as well as string literals:
-
-```asm
-WARNING     =   "DO NOT POKE THE LION!"
-
-            .string WARNING
-```
-
 #### Lists
 
 Labels and variables can also be declared as lists:
@@ -308,6 +298,16 @@ List variable elements can be updated accordingly using subscript notation:
 
 ```asm
             .let SCORES[0] = $0000
+```
+
+#### Value types
+
+Labels and variables can be assigned both numeric values as well as string literals:
+
+```asm
+WARNING     =   "DO NOT POKE THE LION!"
+
+            .string WARNING
 ```
 
 ### Non-code (data) assembly
