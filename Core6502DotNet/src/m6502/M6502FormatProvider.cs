@@ -21,8 +21,8 @@ namespace Core6502DotNet.m6502
         public IEnumerable<byte> GetFormat()
         {
             var arch = Assembler.Options.Architecture.ToLower();
-            var progstart = System.Convert.ToUInt16(Assembler.Output.ProgramStart);
-            var progend = System.Convert.ToUInt16(Assembler.Output.ProgramCounter);
+            var progstart = (ushort)Assembler.Output.ProgramStart;
+            var progend = (ushort)Assembler.Output.ProgramCounter;
             var progsize = Assembler.Output.GetCompilation().Count;
 
             using (var ms = new MemoryStream())

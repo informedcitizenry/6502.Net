@@ -21,8 +21,8 @@ namespace Core6502DotNet.z80
         public IEnumerable<byte> GetFormat()
         {
             var arch = Assembler.Options.Architecture.ToLower();
-            var progstart = Convert.ToUInt16(Assembler.Output.ProgramStart);
-            var progend = Convert.ToUInt16(Assembler.Output.ProgramCounter);
+            var progstart = (ushort)Assembler.Output.ProgramStart;
+            var progend = (ushort)Assembler.Output.ProgramCounter;
             var size = Assembler.Output.GetCompilation().Count;
             var name = Assembler.Options.OutputFile;
 

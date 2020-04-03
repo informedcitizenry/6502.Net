@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -54,26 +55,44 @@ namespace Core6502DotNet
         /// <summary>
         /// Dumps all logged messages to console output.
         /// </summary>
-        public void DumpAll() => _errors.ForEach(e => Console.WriteLine(e.message));
+        public void DumpAll() => DumpAll(Console.Error);
+
+        /// <summary>
+        /// Dumps all logged messages to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="TextWriter"/> to dump log messages to.</param>
+        public void DumpAll(TextWriter writer) =>
+            _errors.ForEach(e => writer.WriteLine(e.message));
 
         /// <summary>
         /// Dumps all logged errors to console output.
         /// </summary>
-        public void DumpErrors()
+        public void DumpErrors() => DumpErrors(Console.Error);
+
+        /// <summary>
+        /// Dumps all logged errors to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="TextWriter"/> to dump errors to.</param>
+        public void DumpErrors(TextWriter writer)
         {
             _errors.Where(e => e.isError).ToList()
-                   .ForEach(error => Console.WriteLine(error.message));
+                   .ForEach(error => writer.WriteLine(error.message));
         }
 
         /// <summary>
         /// Dumps all logged warnings to console output.
         /// </summary>
-        public void DumpWarnings()
+        public void DumpWarnings() => DumpWarnings(Console.Out);
+
+        /// <summary>
+        /// Dumps all logged warnings to a <see cref="TextWriter"/>.
+        /// </summary>
+        /// <param name="writer">The <see cref="TextWriter"/> to dump warnings to.</param>
+        public void DumpWarnings(TextWriter writer)
         {
             _errors.Where(e => !e.isError).ToList()
-                   .ForEach(warning => Console.WriteLine(warning.message));
+                   .ForEach(warning => writer.WriteLine(warning.message));
         }
-
 
         public void LogEntry(string filename, int linenumber, string message, params object[] source)
             => LogEntry(filename, linenumber, message, true, source);
@@ -100,6 +119,7 @@ namespace Core6502DotNet
             }
             else
             {
+                filename = Path.GetFileName(filename);
                 sb.Append($"{filename}({linenumber}");
                 if (position > 0)
                     sb.Append($",{position}");

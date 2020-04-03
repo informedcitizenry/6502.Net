@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>6502.Net</PackageId>
-    <Version>2.1.2</Version>
+    <Version>2.1.3</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
@@ -17,10 +17,6 @@
 
   <ItemGroup>
     <None Remove="Properties\launchSettings.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>

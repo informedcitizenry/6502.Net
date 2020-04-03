@@ -61,9 +61,7 @@ namespace Core6502DotNet
 
             if (line.InstructionName[1] == 'b')
                 expanded.Add(Macro.GetBlockDirectiveLine(include, line.LineNumber, line.LabelName, ".block"));
-            var fileName = Path.GetFileName(include);
-            var includePath = Path.GetFullPath(include);
-            expanded.AddRange(Preprocess(includePath, fileName, File.ReadAllText(includePath)));
+            expanded.AddRange(PreprocessFile(include));
 
             if (line.InstructionName[1] == 'b')
                 expanded.Add(Macro.GetBlockDirectiveLine(include, line.LineNumber, ".endblock"));
@@ -284,28 +282,37 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Perform preprocessing of the source string, including
-        /// comment scrubbing and macro creation and expansion.
+        /// Perform preprocessing of the source text, 
+        /// including comment scrubbing and macro creation and expansion.
         /// </summary>
-        /// <param name="fileName">The source file name.</param>
-        /// <param name="source">The source as a string.</param>
-        /// <returns></returns>
-        public IEnumerable<SourceLine> Preprocess(string fullPath, string fileName, string source)
-        {
-            if (!string.IsNullOrWhiteSpace(fullPath))
-            {
-                if (_includedFiles.Contains(fullPath))
-                    throw new FileLoadException($"File \"{fullPath}\" already included in source.");
+        /// <param name="source">The source text.</param>
 
-                // truncate path info if executing path is same as source path.
-                var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
-                var asmPath = new FileInfo(location.AbsolutePath).Directory.FullName;
-                var exePath = Path.GetDirectoryName(fullPath);
-                if (asmPath.Equals(exePath))
-                    _includedFiles.Add(fileName);
-                else
-                    _includedFiles.Add(fullPath);
-            }
+        public IEnumerable<SourceLine> PreprocessSource(string source)
+            => Preprocess(string.Empty, source);
+
+        /// <summary>
+        /// Perform preprocessing of the source text within the source file, 
+        /// including comment scrubbing and macro creation and expansion.
+        /// </summary>
+        /// <param name="fileName">The source file.</param>
+        /// <returns>A collection of parsed <see cref="SourceLine"/>s.</returns>
+        public IEnumerable<SourceLine> PreprocessFile(string fileName)
+        {
+
+            var source = SourceHelper.ReadSource(fileName, out string fullPath);
+            var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
+            var dirInfo = new DirectoryInfo(location.AbsolutePath);
+            if (dirInfo.FullName.Equals(Path.GetDirectoryName(fullPath)))
+                fullPath = fileName;
+            if (_includedFiles.Contains(fullPath))
+                throw new FileLoadException($"File \"{fullPath}\" already included in source.");
+            _includedFiles.Add(fullPath);
+
+            return Preprocess(fileName, source);
+        }
+
+        IEnumerable<SourceLine> Preprocess(string fileName, string source)
+        {
             source = source.Replace("\r", string.Empty); // remove Windows CR
             IEnumerable<SourceLine> uncommented;
             source = ProcessComments(fileName, source);
@@ -327,6 +334,7 @@ namespace Core6502DotNet
             }
             return ProcessMacros(uncommented);
         }
+
 
         /// <summary>
         /// Gets the input filenames that were processed by the preprocessor.

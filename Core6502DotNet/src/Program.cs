@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using Core6502DotNet.m6502;
+using Core6502DotNet.z80;
 using System;
 
 namespace Core6502DotNet
@@ -18,16 +20,16 @@ namespace Core6502DotNet
             AssemblerBase cpuAssembler;
             if (Assembler.Options.CPU.ToLower().Equals("z80"))
             {
-                Assembler.BinaryFormatProvider = new z80.Z80FormatProvider();
-                cpuAssembler = new z80.Z80Asm();
+                Assembler.BinaryFormatProvider = new Z80FormatProvider();
+                cpuAssembler = new Z80Asm();
             }
             else
             {
                 if (Assembler.Options.Architecture.ToLower().Equals("d64"))
-                    Assembler.BinaryFormatProvider = new m6502.D64FormatProvider();
+                    Assembler.BinaryFormatProvider = new D64FormatProvider();
                 else
-                    Assembler.BinaryFormatProvider = new m6502.M6502FormatProvider();
-                cpuAssembler = new m6502.Asm6502();
+                    Assembler.BinaryFormatProvider = new M6502FormatProvider();
+                cpuAssembler = new Asm6502();
             }
             var controller = new AssemblyController(cpuAssembler);
             try

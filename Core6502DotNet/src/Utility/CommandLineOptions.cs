@@ -24,6 +24,7 @@ namespace Core6502DotNet
         readonly List<string> _defines;
         string _arch;
         string _cpu;
+        string _includePath;
         string _listingFile;
         string _labelFile;
         string _outputFile;
@@ -39,6 +40,8 @@ namespace Core6502DotNet
         bool _noDisassembly;
         bool _warnLeft;
         bool _showChecksums;
+        bool _srec;
+        bool _srec_mos_tech;
 
         #endregion
 
@@ -60,6 +63,8 @@ namespace Core6502DotNet
             "    -q, --quiet              Assemble in quiet mode (no console\r\n" +
             "    -s, --no-source          Suppress original source from assembly\r\n" +
             "                             listing\r\n" +
+            "    --srec                   Output as a Motorola S-record\r\n" +
+            "    --srecmos                Ouput as a MOS Tech file format\r\n" +
             "    -V, --version            Print current version\r\n" +
             "    --verbose-asm            Expand listing to include all directives\r\n" +
             "                             and comments\r\n" +
@@ -80,6 +85,7 @@ namespace Core6502DotNet
             _defines = new List<string>();
             _arch =
             _cpu =
+            _includePath =
             _listingFile =
             _labelFile =
             _outputFile = string.Empty;
@@ -94,6 +100,8 @@ namespace Core6502DotNet
             _noAssembly =
             _quiet =
             _printVersion =
+            _srec =
+            _srec_mos_tech =
             _caseSensitive = false;
         }
 
@@ -203,6 +211,16 @@ namespace Core6502DotNet
                             case "--no-source":
                                 SetFlag(ref _noSource);
                                 break;
+                            case "--srec":
+                                SetFlag(ref _srec);
+                                if (_srec)
+                                    _srec_mos_tech = false;
+                                break;
+                            case "--srecmos":
+                                SetFlag(ref _srec_mos_tech);
+                                if (_srec_mos_tech)
+                                    _srec = false;
+                                break;
                             case "-V":
                             case "--version":
                                 SetFlag(ref _printVersion);
@@ -274,32 +292,32 @@ namespace Core6502DotNet
                     throw new ArgumentException();
                 return i - 1;
             }
+        }
 
-            string GetOptionName(string argument)
+        static string GetOptionName(string argument)
+        {
+            int index = 0, length = 0;
+            foreach (var c in argument)
             {
-                int index = 0, length = 0;
-                foreach (var c in argument)
+                if (c == '-')
                 {
-                    if (c == '-')
-                    {
-                        if (length == 0) // is it a -OPTION
-                            index++;
-                        else
-                            length++;    // must be a --OPT-ION
-                    }
-                    else if (char.IsLetterOrDigit(c))
-                    {
-                        length++;
-                    }
+                    if (length == 0) // is it a -OPTION
+                        index++;
                     else
-                    {
-                        break;
-                    }
+                        length++;    // must be a --OPT-ION
                 }
-                if (length > 0)
-                    return argument.Substring(0, index + length);
-                return string.Empty;
+                else if (c != '=')
+                {
+                    length++;
+                }
+                else
+                {
+                    break;
+                }
             }
+            if (length > 0)
+                return argument.Substring(0, index + length);
+            return string.Empty;
         }
 
         #endregion
@@ -332,6 +350,11 @@ namespace Core6502DotNet
                       !string.IsNullOrEmpty(_outputFile) ||
                       (string.IsNullOrEmpty(_labelFile) && string.IsNullOrEmpty(_listingFile))
                      );
+
+        /// <summary>
+        /// Gets the path to search to include in sources.
+        /// </summary>
+        public string IncludePath => _includePath;
 
         /// <summary>
         /// Gets the read-only list of input filenames.
@@ -424,6 +447,16 @@ namespace Core6502DotNet
         /// assembly.
         /// </summary>
         public bool ShowChecksums => _showChecksums;
+
+        /// <summary>
+        /// Gets a flag indicating whether output is in the Motorola S-record format.
+        /// </summary>
+        public bool SRecordOutput => _srec;
+
+        /// <summary>
+        /// Gets a flag indicating whether output is in the MOS Technology file format.
+        /// </summary>
+        public bool SRecMosTechOutput => _srec_mos_tech;
 
         #endregion
     }

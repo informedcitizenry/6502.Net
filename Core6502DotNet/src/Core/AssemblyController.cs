@@ -95,7 +95,6 @@ namespace Core6502DotNet
                 _assemblers.Add(new PseudoAssembler());
                 _assemblers.Add(new MiscAssembler());
 
-
                 // preprocess all input files 
                 var preprocessor = new Preprocessor();
                 var processed = new List<SourceLine>();
@@ -104,14 +103,10 @@ namespace Core6502DotNet
                 if (Assembler.Options.LabelDefines.Count > 0)
                 {
                     foreach (var define in Assembler.Options.LabelDefines)
-                        processed.AddRange(preprocessor.Preprocess(string.Empty, string.Empty, define));
+                        processed.AddRange(preprocessor.PreprocessSource(define));
                 }
                 foreach (var path in Assembler.Options.InputFiles)
-                {
-                    var srcFile = Path.GetFileName(path);
-                    var srcPath = Path.GetFullPath(path);
-                    processed.AddRange(preprocessor.Preprocess(srcPath, srcFile, File.ReadAllText(srcPath)));
-                }
+                    processed.AddRange(preprocessor.PreprocessFile(path));
 
                 // set the iterator
                 Assembler.LineIterator = processed.GetIterator();
@@ -135,24 +130,17 @@ namespace Core6502DotNet
                             if (!string.IsNullOrEmpty(line.ParsedSource))
                             {
                                 var asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
-                                if (asm == null && line.Instruction != null)
-                                {
-                                    Assembler.Log.LogEntry(line,
-                                                           line.Instruction.Position,
-                                                           $"Unknown instruction \"{line.InstructionName}\".");
-                                }
-                                else if (Assembler.Output.PCOverflow)
-                                {
-                                    if (Assembler.CurrentPass == 0)
-                                        Assembler.PassNeeded = true;
-                                    else
-                                        Assembler.Log.LogEntry(line, $"Program overflow: ${Assembler.Output.LogicalPC}");
-                                }
-                                else if (asm != null)
+                                if (asm != null)
                                 {
                                     var disasm = asm.AssembleLine(line);
                                     if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff)
                                         disassembly.AppendLine(disasm);
+                                }
+                                else if (line.Instruction != null)
+                                {
+                                    Assembler.Log.LogEntry(line,
+                                                           line.Instruction.Position,
+                                                           $"Unknown instruction \"{line.InstructionName}\".");
                                 }
                             }
                             else if (Assembler.Options.VerboseList)
@@ -193,10 +181,14 @@ namespace Core6502DotNet
                                     Assembler.Log.LogEntry(line, line.Instruction,
                                             $"Invalid Program Counter assignment in expression \"{line.Operand}\".");
                                 }
+                                else if (ex is ProgramOverflowException prgEx)
+                                {
+                                    Assembler.Log.LogEntry(line, line.Instruction,
+                                            "Program Overflow.");
+                                }
                                 else
                                 {
                                     Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
-                                    Assembler.Log.LogEntry(line, ex.StackTrace);
                                 }
                             }
                             else
@@ -251,6 +243,14 @@ namespace Core6502DotNet
                 var outputFile = "a.out";
                 if (!string.IsNullOrEmpty(Assembler.Options.OutputFile))
                     outputFile = Assembler.Options.OutputFile;
+
+                if (Assembler.Options.SRecordOutput || Assembler.Options.SRecMosTechOutput)
+                {
+                    if (!string.IsNullOrEmpty(Assembler.Options.Architecture))
+                        Assembler.Log.LogEntry(string.Empty, -1, 
+                            "Architecture flag is ignored for options --srec and --srecmos.", false);
+                    Assembler.BinaryFormatProvider = new SRecordFormatProvider();
+                }
 
                 if (Assembler.BinaryFormatProvider != null)
                     File.WriteAllBytes(outputFile, Assembler.BinaryFormatProvider.GetFormat().ToArray());

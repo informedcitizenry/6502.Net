@@ -570,7 +570,7 @@ namespace Core6502DotNet.m6502
                         _evaled[0] < 0 || _evaled[0] > 7)
                         throw new ExpressionException(line.Operand.Position, $"First operand for \"{instruction}\" must be 0 to 7.");
 
-                    mode |= (Modes)((int)_evaled[0] << 13);
+                    mode |= (Modes)((int)_evaled[0] << 14) | Modes.Bit0;
                     if (double.IsNaN(_evaled[1]))
                         throw new ExpressionException(line.Operand.Position, "Missing direct page operand.");
 
@@ -808,10 +808,8 @@ namespace Core6502DotNet.m6502
                 if (size > 0)
                 {
                     // add operand bytes
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 3 && !double.IsNaN(_evaled[i]); i++)
                     {
-                        if (double.IsNaN(_evaled[i]))
-                            break;
                         if ((modeInstruction.mode & Modes.TestBitFlag) != 0 && i == 0)
                         {
                             if (_evaled[i] >= sbyte.MinValue && _evaled[i] <= byte.MaxValue)
@@ -829,9 +827,9 @@ namespace Core6502DotNet.m6502
             else
             {
                 if (_selectedInstructions.Keys.Any(k => k.Mnem.Equals(line.InstructionName)))
-                    Assembler.Log.LogEntry(line, line.Instruction, $"Mode not supported for \"{line.InstructionName}\" in selected CPU.");
+                    Assembler.Log.LogEntry(line, line.Instruction, $"Mode not supported for \"{line.Instruction}\" in selected CPU.");
                 else
-                    Assembler.Log.LogEntry(line, line.Instruction, $"Mnemonic \"{line.InstructionName}\" not supported for selected CPU.");
+                    Assembler.Log.LogEntry(line, line.Instruction, $"Mnemonic \"{line.Instruction}\" not supported for selected CPU.");
                 return string.Empty;
             }
             if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
@@ -885,7 +883,7 @@ namespace Core6502DotNet.m6502
                         }
                         else
                         {
-                            eval1 = (int)_evaled[0] & 0xFFFF;
+                                eval1 = (int)_evaled[0] & 0xFFFF;
                             if (!double.IsNaN(_evaled[1]))
                                 eval2 = (int)_evaled[1] & 0xFFFF;
                             if (!double.IsNaN(_evaled[2]))
@@ -896,13 +894,9 @@ namespace Core6502DotNet.m6502
                     {
                         eval1 = (int)_evaled[0] & 0xFF;
                         if (!double.IsNaN(_evaled[1]))
-                        {
                             eval2 = (int)_evaled[1] & 0xFF;
-                        }
                         if (!double.IsNaN(_evaled[2]))
-                        {
                             eval3 = (int)_evaled[2] & 0xFF;
-                        }
                     }
                     if (modeInstruction.mode == Modes.Zp0 && Reserved.IsOneOf("Rockwell", line.InstructionName))
                         disSb.Append($"0,{eval1:x2}");
@@ -913,7 +907,6 @@ namespace Core6502DotNet.m6502
             }
             else
             {
-
                 sb.Append("                  ");
             }
             if (!Assembler.Options.NoSource)

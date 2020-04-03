@@ -27,6 +27,11 @@ namespace Core6502DotNet
         public override string Message => _pc.ToString();
     }
 
+    public class ProgramOverflowException : Exception
+    {
+        
+    }
+
     /// <summary>
     /// A class that manages the internal state of a compiled assembly, including
     /// Program Counters and binary data.
@@ -281,14 +286,6 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Offset the compilation by a specified amount without updating the logical Program Counter. 
-        /// This can be used to create re-locatable code.
-        /// </summary>
-        /// <param name="amount">The offset amount.</param>
-        /// <returns>A <see cref="List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
-        public List<byte> Offset(int amount) => AddBytes(new List<byte>(amount), amount, true, false);
-
-        /// <summary>
         /// Align the compilation to the specified boundary and fill with the specified values.
         /// For instance, to align the next byte(s) in the compilation to a page boundary you would
         /// set the align amount to 256.
@@ -321,17 +318,16 @@ namespace Core6502DotNet
         /// <param name="bytes">The collection of bytes to add.</param>
         /// <param name="size">The number of bytes in the collection to add.</param>
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
-        /// <param name="updateProgramCounter">Update the Program Counter automatically.</param>
         /// <returns>A <see cref="List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
-        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian, bool updateProgramCounter)
-        {
+        /// <exception cref="ProgramOverflowException"/>
+        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
+        {    
             if (CompilingHasStarted == false)
             {
                 CompilingHasStarted = true;
                 ProgramStart = ProgramCounter;
             }
-            if (updateProgramCounter)
-                LogicalPC += size;
+            LogicalPC += size;
 
             if (ignoreEndian == false && BitConverter.IsLittleEndian != IsLittleEndian)
                 bytes = bytes.Reverse();
@@ -341,24 +337,17 @@ namespace Core6502DotNet
 
             var bytesAdded = bytes.ToList().GetRange(0, size);
             foreach (var b in bytesAdded)
+            {
+                if (ProgramCounter > MaxAddress)
+                    throw new ProgramOverflowException();
                 _bytes[ProgramCounter++] = b;
+            }
 
-            if (PCOverflow)
-                ProgramEnd = 0x10000 + ProgramCounter;
-            else if (ProgramEnd < ProgramCounter)
+           if (ProgramEnd < ProgramCounter)
                 ProgramEnd = ProgramCounter;
 
             return bytesAdded;
         }
-
-        /// <summary>
-        /// Add a range of bytes to the compilation.
-        /// </summary>
-        /// <param name="bytes">The collection of bytes to add.</param>
-        /// <param name="size">The number of bytes in the collection to add.</param>
-        /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
-        /// <returns>A <see cref="List&lt;byte&gt;"/> of the bytes added to the compilation.</returns>
-        public List<byte> AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian) => AddBytes(bytes, size, ignoreEndian, true);
 
         /// <summary>
         /// Add a range of bytes to the compilation.
@@ -484,7 +473,8 @@ namespace Core6502DotNet
         /// Gets the program start addressed based on the value of the Program Counter
         /// when compilation first occurred.
         /// </summary>
-        public int ProgramStart { get; private set; }
+        public int ProgramStart 
+        { get; private set; }
 
         /// <summary>
         /// Gets the program end address, which is the address of the final assembled byte
@@ -519,7 +509,7 @@ namespace Core6502DotNet
             {
                 if (value < 0 || value < _pc)
                     throw new InvalidPCAssignmentException(value);
-                _pc = value & MaxAddress;
+                _pc = value;
             }
         }
 

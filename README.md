@@ -1,6 +1,6 @@
 ﻿# 6502.Net, A Simple .Net-Based 65xx and Z80 Cross-Assembler
 
-Version 2.1.2
+Version 2.1.3
 
 ## Table of Contents
 
@@ -2338,6 +2338,30 @@ message     .cstring "HELLO, HIGH CODE!"
 <tr><td><b>Option</b></td><td><code>-q</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--quiet</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assemble in quiet mode, with no messages sent to console output, including errors and warnings.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+6502.Net.exe -q myasm.asm
+6502.Net.exe --quiet myasm.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--srec</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Output as a Motorola S-record file. NOTE: Setting this option will cause the assembler to ignore the <code>--arch</code> option.</td></tr>
+<tr><td><b>Parameter</b></td><td>None</td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+6502.Net.exe -q myasm.asm
+6502.Net.exe --quiet myasm.asm
+</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--srecmos</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Output as a <a href="http://srecord.sourceforge.net/man/man5/srec_mos_tech.html">MOS Technology formatted file</a>. NOTE: Setting this option will cause the assembler to ignore the <code>--arch</code> option.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>

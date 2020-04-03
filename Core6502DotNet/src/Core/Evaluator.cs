@@ -310,7 +310,7 @@ namespace Core6502DotNet
                 }
                 catch
                 {
-                    throw new ExpressionException(token.Position, $"\"{token}\" is not a valid octal number.");
+                    throw new ExpressionException(token.Position, $"\"{token}\" is not a valid numeric constant.");
                 }
             }
             return converted;

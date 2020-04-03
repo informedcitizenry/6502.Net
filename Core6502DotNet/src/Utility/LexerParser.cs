@@ -66,7 +66,7 @@ namespace Core6502DotNet
 
 
 
-        static bool FirstNonBase10(char prev, char current, char next)
+        static bool FirstNonNonBase10(char prev, char current, char next)
         {
             if (char.IsDigit(current))
                 return false;
@@ -176,7 +176,7 @@ namespace Core6502DotNet
                                           nextChar == 'x' ||
                                           nextChar == 'X'))
                     {
-                        token.Name = ScanTo(previousChar, iterator, FirstNonBase10);
+                        token.Name = ScanTo(previousChar, iterator, FirstNonNonBase10);
                     }
                     else
                     {
