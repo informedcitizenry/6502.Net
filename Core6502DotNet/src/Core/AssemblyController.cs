@@ -57,29 +57,14 @@ namespace Core6502DotNet
         /// <summary>
         /// Begin the assembly process.
         /// </summary>
-        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="Exception"></exception>
         public void Assemble()
         {
-            if (Assembler.Options.ArgsPassed == 0)
-            {
-                throw new OperationCanceledException("Arguments must be parsed before assembly can continue. " +
-                    "Call Assembler.Initialize(string[] args) first.");
-            }
-
             var stopWatch = new Stopwatch();
             stopWatch.Start();
             try
             {
                 // process cmd line args
-                if (Assembler.Options.PrintVersion || Assembler.Options.InputFiles.Count == 0)
-                {
-                    if (Assembler.Options.PrintVersion)
-                    {
-                        Console.WriteLine(Assembler.AssemblerNameSimple);
-                        Console.WriteLine(Assembler.AssemblerVersion);
-                    }
-                    return;
-                }
                 if (Assembler.Options.Quiet)
                     Console.SetOut(TextWriter.Null);
 
@@ -127,7 +112,7 @@ namespace Core6502DotNet
                     {
                         try
                         {
-                            if (!string.IsNullOrEmpty(line.ParsedSource))
+                            if (line.Label != null || line.Instruction != null)
                             {
                                 var asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
                                 if (asm != null)
@@ -237,28 +222,19 @@ namespace Core6502DotNet
         static void WriteOutput(string disassembly)
         {
             // no errors finish up
-            if (Assembler.Options.GenerateOutput)
-            {
-                // save to disk
-                var outputFile = "a.out";
-                if (!string.IsNullOrEmpty(Assembler.Options.OutputFile))
-                    outputFile = Assembler.Options.OutputFile;
+            // save to disk
+            var outputFile = Assembler.Options.OutputFile;
 
-                if (Assembler.Options.SRecordOutput || Assembler.Options.SRecMosTechOutput)
-                {
-                    if (!string.IsNullOrEmpty(Assembler.Options.Architecture))
-                        Assembler.Log.LogEntry(string.Empty, -1, 
-                            "Architecture flag is ignored for options --srec and --srecmos.", false);
-                    Assembler.BinaryFormatProvider = new SRecordFormatProvider();
-                }
+            var fmt = Assembler.Options.Format;
+            if (fmt.Equals("srec") || fmt.Equals("srecmos")) // set the binary format provider if srec/srecmos
+                Assembler.BinaryFormatProvider = new SRecordFormatProvider();
 
-                if (Assembler.BinaryFormatProvider != null)
-                    File.WriteAllBytes(outputFile, Assembler.BinaryFormatProvider.GetFormat().ToArray());
-                else
-                    File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
-            }
+            if (Assembler.BinaryFormatProvider != null)
+                File.WriteAllBytes(outputFile, Assembler.BinaryFormatProvider.GetFormat().ToArray());
+            else
+                File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
             // write disassembly
-            if (!string.IsNullOrEmpty(Assembler.Options.ListingFile) && !string.IsNullOrEmpty(disassembly))
+            if (disassembly != null)
                 File.WriteAllText(Assembler.Options.ListingFile, disassembly);
 
             // write listings

@@ -20,7 +20,7 @@ namespace Core6502DotNet.z80
     {
         public IEnumerable<byte> GetFormat()
         {
-            var arch = Assembler.Options.Architecture.ToLower();
+            var fmt = Assembler.Options.Format;
             var progstart = (ushort)Assembler.Output.ProgramStart;
             var progend = (ushort)Assembler.Output.ProgramCounter;
             var size = Assembler.Output.GetCompilation().Count;
@@ -30,7 +30,7 @@ namespace Core6502DotNet.z80
             {
                 using (var writer = new BinaryWriter(ms))
                 {
-                    if (arch.Equals("zx"))
+                    if (fmt.Equals("zx"))
                     {
                         if (name.Length > 10)
                             name = name.Substring(0, 10);
@@ -63,10 +63,10 @@ namespace Core6502DotNet.z80
                         // write the buffer
                         writer.Write(buffer.ToArray());
                     }
-                    else if (arch.Equals("amsdos") || arch.Equals("amstap"))
+                    else if (fmt.Equals("amsdos") || fmt.Equals("amstap"))
                     {
                         var buffer = new List<byte>();
-                        if (arch.Equals("amsdos"))
+                        if (fmt.Equals("amsdos"))
                         {
                             if (name.Length > 8)
                                 name = name.Substring(0, 8);
@@ -90,7 +90,7 @@ namespace Core6502DotNet.z80
                         // name
                         buffer.AddRange(Encoding.ASCII.GetBytes(name));
 
-                        if (arch.Equals("amsdos"))
+                        if (fmt.Equals("amsdos"))
                         {
                             // block
                             buffer.Add(0);
@@ -125,7 +125,7 @@ namespace Core6502DotNet.z80
                         // unallocated
                         buffer.AddRange(new byte[36]);
 
-                        if (arch.Equals("amsdos"))
+                        if (fmt.Equals("amsdos"))
                         {
                             // file size (24-bit number)
                             buffer.AddRange(BitConverter.GetBytes(size));
@@ -143,7 +143,7 @@ namespace Core6502DotNet.z80
                         }
                         writer.Write(buffer.ToArray());
                     }
-                    else if (arch.Equals("msx"))
+                    else if (fmt.Equals("msx"))
                     {
                         // ID byte
                         writer.Write(0xfe);
@@ -157,13 +157,13 @@ namespace Core6502DotNet.z80
                         // start address
                         writer.Write(BitConverter.GetBytes(progstart));
                     }
-                    else if (string.IsNullOrEmpty(arch) || arch.Equals("flat"))
+                    else if (string.IsNullOrEmpty(fmt) || fmt.Equals("flat"))
                     {
                         // do nothing
                     }
                     else
                     {
-                        throw new Exception($"Unknown architecture specified \"{arch}\".");
+                        throw new Exception($"Format \"{fmt}\" not supported with targetted CPU.");
                     }
                     writer.Write(Assembler.Output.GetCompilation().ToArray());
                     return ms.ToArray();

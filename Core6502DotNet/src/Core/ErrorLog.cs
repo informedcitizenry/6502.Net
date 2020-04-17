@@ -108,37 +108,37 @@ namespace Core6502DotNet
         /// <param name="source">The message source.</param>
         public void LogEntry(string filename, int linenumber, int position, string message, bool isError, params object[] source)
         {
-            var sb = new StringBuilder();
+            var errorBuilder = new StringBuilder();
 
             if (string.IsNullOrEmpty(filename))
             {
                 if (isError)
-                    sb.Append("Error");
+                    errorBuilder.Append("Error");
                 else
-                    sb.Append("Warning");
+                    errorBuilder.Append("Warning");
             }
             else
             {
                 filename = Path.GetFileName(filename);
-                sb.Append($"{filename}({linenumber}");
+                errorBuilder.Append($"{filename}({linenumber}");
                 if (position > 0)
-                    sb.Append($",{position}");
-                sb.Append("): ");
+                    errorBuilder.Append($",{position}");
+                errorBuilder.Append("): ");
                 if (isError)
-                    sb.Append("error");
+                    errorBuilder.Append("error");
                 else
-                    sb.Append("warning");
+                    errorBuilder.Append("warning");
             }
             if (!string.IsNullOrEmpty(message))
             {
-                sb.Append(": ");
+                errorBuilder.Append(": ");
                 if (source == null || !message.Contains("{0}"))
-                    sb.Append(Regex.Replace(message, @"\s?\{\d+\}\s?", string.Empty));
+                    errorBuilder.Append(Regex.Replace(message, @"\s?\{\d+\}\s?", string.Empty));
                 else
-                    sb.AppendFormat(message, source);
+                    errorBuilder.AppendFormat(message, source);
             }
             isError = isError || Assembler.Options.WarningsAsErrors;
-            _errors.Add((sb.ToString(), isError));
+            _errors.Add((errorBuilder.ToString(), isError));
             if (_errors.Count > 1000)
             {
                 DumpAll();

@@ -34,7 +34,7 @@ namespace Core6502DotNet
 
             string recHeader;
             int recordBytes;
-            if (Assembler.Options.SRecordOutput)
+            if (Assembler.Options.Format.Equals("srec"))
             {
                 recHeader = "S1";
                 recordBytes = RecordSize;
@@ -71,17 +71,17 @@ namespace Core6502DotNet
                 }
                 pc += lineBytes;
                 bytesLeft -= lineBytes;
-                sRecBuilder.AppendLine();
+                sRecBuilder.Append('\n');
                 lineCount++;
             }
             if (recHeader[0] == 'S')
             {
                 var checkSum = GetSRecordchecksum(3 + GetPcCheckSum(Assembler.Output.ProgramStart));
-                sRecBuilder.AppendLine($"S903{Assembler.Output.ProgramStart:X4}{checkSum:X2}");
+                sRecBuilder.Append($"S903{Assembler.Output.ProgramStart:X4}{checkSum:X2}\n");
             }
             else
             {
-                sRecBuilder.AppendLine($";00{lineCount:X4}{lineCount:X4}");
+                sRecBuilder.Append($";00{lineCount:X4}{lineCount:X4}\n");
             }
             return Encoding.ASCII.GetBytes(sRecBuilder.ToString());
         }

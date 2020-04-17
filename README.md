@@ -1,6 +1,6 @@
 ﻿# 6502.Net, A Simple .Net-Based 65xx and Z80 Cross-Assembler
 
-Version 2.1.3
+Version 2.1.4
 
 ## Table of Contents
 
@@ -56,6 +56,7 @@ Version 2.1.3
   - [Other Assembler Directives](#other-assembler-directives)
   - [Built-In functions](#built-in-functions)
   - [Command-line options](#command-line-options)
+  - [Building from a Configuration File](#building-from-a-configuration-file)
   - [6502 Illegal Mnemonics](#6502-illegal-mnemonics)  
   - [Reserved Words](#reserved-words)
 - [Licensing and Legal](#licensing-and-legal)
@@ -102,7 +103,7 @@ Multiple statements per line are separated by a colon (`:`) character:
         lda MESSAGE,x:jsr CHROUT:inx
 ```
 
-Source is processed case insensitive by default, but this can be controlled using the `-C` option as described in the [command-line section](#Command-line%20options) below.
+Source is processed case insensitive by default, but this can be controlled using the `-C` option as described in the [command-line section](##command-line-options) below.
 
 #### Comments
 
@@ -607,7 +608,7 @@ routine     lda &long_address   // load the absolute value of long_address
                                 // (truncate bank byte) into accummulator
 ```
 
-#### Built-in functions
+#### Built-in Functions
 
 Several built-in math functions that can also be called as part of the expressions.
 
@@ -619,11 +620,11 @@ See the section below on functions for a full list of available functions, as we
 
 #### Math and Logical Constants
 
-The math constants π and _e_ are defined as `math_pi` and `math_e`, respectively, and can be referenced in expressions as follows:
+The math constants π and _e_ are defined as `MATH_PI` and `MATH_E`, respectively, and can be referenced in expressions as follows:
 
 ```asm
-            .dword sin(math_pi/3) * 10  // > 08
-            .dword pow(math_e,2)        // > 07
+            .dword sin(MATH_PI/3) * 10  // > 08
+            .dword pow(MATH_E,2)        // > 07
 ```
 
 The logical constants `true` and `false` are available to conditional expressions:
@@ -760,7 +761,7 @@ Custom functions are similar to macros in that they are composed of several line
 ```asm
 area            .function r=1
                     .errorif r < 0, "Radius cannot be negative."
-                    .return math_pi * pow(r,2)
+                    .return MATH_PI * pow(r,2)
                 .endfunction
 ```
 
@@ -1611,6 +1612,19 @@ start       ; same as start .equ *
 </td></tr>
 </table>
 <table>
+<tr><td><b>Name</b></td><td><code>.format</code></td></tr>
+<tr><td><b>Alias</b></td><td><code>target</code> (deprecated)</td></tr>
+<tr><td><b>Definition</b></td><td>Set the format of the assembly output. See the <code>--format</code> option in the command-line notes below for the available formats.</td></tr>
+<tr><td><b>Arguments</b></td><td><code>format</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>
+      .format "apple2"
+      // the output binary will have an Apple DOS header
+      ...
+</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Name</b></td><td><code>.function</code>/<code>.endfunction</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Defines a custom function. Must be named. If the function is expected to be used in a math expression, a return value is required, otherwise it can only be used with <code>.invoke</code>. No assembly output is allowed inside a function. All symbols declared within a function are considered local to it, including its parameters. Parameters can be given default values to make them optional upon invocation.</td></tr>
@@ -1937,19 +1951,6 @@ message     .cstring "HELLO, HIGH CODE!"
 </pre>
 </td></tr></table>
 <table>
-<tr><td><b>Name</b></td><td><code>.target</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Set the target architecture for the assembly output. See the <code>--arch</code> option in the command-line notes below for the available architectures.</td></tr>
-<tr><td><b>Arguments</b></td><td><code>architecture</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-      .target "apple2"
-      // the output binary will have an Apple DOS header
-      ...
-</pre>
-</td></tr>
-</table>
-<table>
 <tr><td><b>Name</b></td><td><code>.unmap</code></td></tr>
 <tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Unmaps a custom code for a character or range of characters in the selected encoding and reverts to UTF-8. Note: <code>none</code> is not affected by <code>.map</code> and <code>.unmap</code> directives. It is recommended to represent individual char literals as strings.
@@ -2231,36 +2232,6 @@ message     .cstring "HELLO, HIGH CODE!"
 </td></tr>
 </table>
 <table>
-<tr><td><b>Option</b></td><td><code>--arch</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Specify the target machine architecture of the binary output. Different options are available depending on the CPU being targeted. The default is <code>cbm</code> for 6502 and flat for Z80. The options:
-    <ul>
-        <li>65xx
-            <ul>
-                <li><code>apple2</code>    - Apple ][ binary with Apple DOS header</li>
-                <li><code>atari-xex</code> - Atari 8-bit binary with XEX header</li>
-                <li><code>cbm</code>       - Commodore DOS binary with load address header (default)</li>
-                <li><code>d64</code>       - Commodore emulator D64 disk image format</li>
-                <li><code>flat</code>      - Flat binary with no header</li>
-            </ul>
-        </li>
-        <li>Z80
-            <ul>
-                <li><code>amsdos</code>  - Amstrad CPC DOS (disk)</li>
-                <li><code>amstap</code>  - Amstrad CPC DOS (tape)</li>
-                <li><code>msx</code> - MSX</li>
-                <li><code>zx</code>       - ZX Spectrum</li>
-                <li><code>flat</code>      - Flat binary with no header</li>
-            </ul>
-        </li>
-    </ul>
-</td></tr>
-<tr><td><b>Parameter</b></td><td><code>architecture</code></td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>6502.Net.exe myasm.asm -b --arch=flat flat.bin</pre>
-</td></tr>
-</table>
-<table>
 <tr><td><b>Option</b></td><td><code>-b</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--big-endian</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assemble multi-byte values in big-endian order (highest order magnitude first).</td></tr>
@@ -2314,6 +2285,15 @@ message     .cstring "HELLO, HIGH CODE!"
 </td></tr>
 </table>
 <table>
+<tr><td><b>Option</b></td><td><code>--config</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Set options from a JSON-formatted config file.</td></tr>
+<tr><td><b>Parameter</b></td><td><code>config file</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>6502.Net.exe --config make.json</pre>
+</td></tr>
+</table>
+<table>
 <tr><td><b>Option</b></td><td><code>-D</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--define</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assign a global label a value. Note that within the source the label cannot be redefined again. The value can be any expression 6502.Net can evaluate at assembly time. If no value is given the default value is 1.</td></tr>
@@ -2323,13 +2303,47 @@ message     .cstring "HELLO, HIGH CODE!"
 </td></tr>
 </table>
 <table>
-<tr><td><b>Option</b></td><td><code>-h</code></td></tr>
-<tr><td><b>Alias</b></td><td><code>-?, --help</code></td></tr>
+<tr><td><b>Option</b></td><td><code>--format</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
+<tr><td><b>Definition</b></td><td>Specify the format of the binary output. Different options are available depending on the CPU being targeted, while some are available to either. The default is <code>cbm</code> for 6502 and flat for Z80. The options:
+    <ul>
+        <li>65xx
+            <ul>
+                <li><code>apple2</code>    - Apple ][ binary with Apple DOS header</li>
+                <li><code>atari-xex</code> - Atari 8-bit binary with XEX header</li>
+                <li><code>cbm</code>       - Commodore DOS binary with load address header (default)</li>
+                <li><code>d64</code>       - Commodore emulator D64 disk image format</li>
+            </ul>
+        </li>
+        <li>Z80
+            <ul>
+                <li><code>amsdos</code>  - Amstrad CPC DOS (disk)</li>
+                <li><code>amstap</code>  - Amstrad CPC DOS (tape)</li>
+                <li><code>msx</code> - MSX</li>
+                <li><code>zx</code>       - ZX Spectrum</li>
+            </ul>
+        </li>
+        <li>Both
+            <ul>
+                <li><code>flat</code>      - Flat binary with no header
+                <li><code>srec</code> - Motorola S-record
+                <li><code>srecmos</code> - <a href="http://srecord.sourceforge.net/man/man5/srec_mos_tech.html">MOS Technology formatted file</a>
+            </ul>
+        </li>
+    </ul>
+</td></tr>
+<tr><td><b>Parameter</b></td><td><code>format</code></td></tr>
+<tr><td><b>Example</b></td><td>
+<pre>6502.Net.exe myasm.asm -b --format=flat flat.bin</pre>
+</td></tr>
+</table>
+<table>
+<tr><td><b>Option</b></td><td><code>--help</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Print all command-line options to console output.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-6502.Net.exe -h
 6502.Net.exe --help
 </pre>
 </td></tr>
@@ -2338,30 +2352,6 @@ message     .cstring "HELLO, HIGH CODE!"
 <tr><td><b>Option</b></td><td><code>-q</code></td></tr>
 <tr><td><b>Alias</b></td><td><code>--quiet</code></td></tr>
 <tr><td><b>Definition</b></td><td>Assemble in quiet mode, with no messages sent to console output, including errors and warnings.</td></tr>
-<tr><td><b>Parameter</b></td><td>None</td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-6502.Net.exe -q myasm.asm
-6502.Net.exe --quiet myasm.asm
-</pre>
-</td></tr>
-</table>
-<table>
-<tr><td><b>Option</b></td><td><code>--srec</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Output as a Motorola S-record file. NOTE: Setting this option will cause the assembler to ignore the <code>--arch</code> option.</td></tr>
-<tr><td><b>Parameter</b></td><td>None</td></tr>
-<tr><td><b>Example</b></td><td>
-<pre>
-6502.Net.exe -q myasm.asm
-6502.Net.exe --quiet myasm.asm
-</pre>
-</td></tr>
-</table>
-<table>
-<tr><td><b>Option</b></td><td><code>--srecmos</code></td></tr>
-<tr><td><b>Alias</b></td><td>None</td></tr>
-<tr><td><b>Definition</b></td><td>Output as a <a href="http://srecord.sourceforge.net/man/man5/srec_mos_tech.html">MOS Technology formatted file</a>. NOTE: Setting this option will cause the assembler to ignore the <code>--arch</code> option.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
@@ -2474,17 +2464,72 @@ message     .cstring "HELLO, HIGH CODE!"
 </td></tr>
 </table>
 <table>
-<tr><td><b>Option</b></td><td><code>-V</code></td></tr>
-<tr><td><b>Alias</b></td><td><code>--version</code></td></tr>
+<tr><td><b>Option</b></td><td><code>--version</code></td></tr>
+<tr><td><b>Alias</b></td><td>None</td></tr>
 <tr><td><b>Definition</b></td><td>Print the current version of 6502.Net to console output.</td></tr>
 <tr><td><b>Parameter</b></td><td>None</td></tr>
 <tr><td><b>Example</b></td><td>
 <pre>
-6502.Net.exe -V
 6502.Net.exe --version
 </pre>
 </td></tr>
 </table>
+
+### Building from a Configuration File
+
+To simplify handling of build options, using `--config` option allows to pre-configure the assembler so that options are set in a configuration file. The file format is a JSON string. A complete configuration looks like this:
+
+```json
+{
+    "caseSensitive":false,
+    "defines":[
+        "LABEL1=SOMETHING"
+    ],
+    "includePath":"/includes",
+    "listingOptions":{
+        "labelPath":"labeldump.asm",
+        "listPath":"source_list.asm",
+        "noAssembly":false,
+        "noDisassembly":false,
+        "noSource":false,
+        "verbose":false
+    },
+    "loggingOptions":{
+        "checksum":false,
+        "errorPath":"errors.txt",
+        "noWarnings":false,
+        "quietMode":false,
+        "warningsAsErrors":false,
+        "warnLeft":true
+    },
+    "outputFile":"program.bin",
+    "sources":[
+        "source.asm"
+    ],
+    "target":{
+        "binaryFormat":"cbm",
+        "cpu":"6502"
+    }
+}
+```
+
+A typical scenario though would probably like this:
+
+```json
+{
+    "target": {
+        "binaryFormat": "zx",
+        "cpu": "z80"
+	}
+    "sources": [
+        "zxlib.s",
+        "my_app.s"
+	],
+    "outputFile": "program.bin"
+}
+```
+
+
 
 ### 6502 Illegal Mnemonics
 
@@ -2590,10 +2635,12 @@ af,b,bc,c,d,de,e,h,hl,i,ix,ixh,ixl,iy,iyh,iyl,l,m,nc,nz,p,e,po,r
 In either mode, the following are reserved:
 
 ```
-a,false,int8_min,int8_max,int16_min,int16_max,int24_min,int24_max,int32_min,int32_max,math_e,
-math_pi,sp,true,uint8_min,uint8_max,uint16_min,uint16_max,uint24_min,uint24_max,uint32_min,uint32_max,z
+a,false,INT8_MIN,INT8_MAX,INT16_MIN,INT16_MAX,INT24_MIN,INT24_MAX,INT32_MIN,INT32_MAX,MATH_E,
+MATH_PI,sp,true,UINT8_MIN,UINT8_MAX,UINT16_MIN,UINT16_MAX,UINT24_MIN,UINT24_MAX,UINT32_MIN,UINT32_MAX,z
 ```
 
 ## Licensing and Legal
 
-(C) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>. Licensed under the MIT license. See LICENSE for full license information.
+See LICENSE for full license information. 
+
+6502.Net (C) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>. 

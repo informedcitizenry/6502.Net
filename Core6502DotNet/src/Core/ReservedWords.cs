@@ -26,25 +26,12 @@ namespace Core6502DotNet
         #region Constructor
 
         /// <summary>
-        /// Instantiates a new <see cref="T:DotNetAsm.ReservedWords"/> class object.
+        /// Instantiates a new <see cref="ReservedWords"/> class object.
         /// </summary>
-        /// <param name="comparer">A <see cref="T:System.StringComparison"/> object to indicate whether
+        /// <param name="comparer">A <see cref="StringComparer"/> object to indicate whether
         /// to enforce case-sensitivity.</param>
-        public ReservedWords(StringComparer comparer)
-        {
-            _types = new Dictionary<string, HashSet<string>>();
-            Comparer = comparer;
-            _values = new HashSet<string>(comparer);
-        }
-
-        /// <summary>
-        /// Instantiates a new <see cref="T:DotNetAsm.ReservedWords"/> class object.
-        /// </summary>
-        public ReservedWords() :
-            this(StringComparer.OrdinalIgnoreCase)
-        {
-
-        }
+        public ReservedWords(StringComparer comparer) 
+            => Comparer = comparer;
 
         #endregion
 
@@ -55,8 +42,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="type">The defined type</param>
         /// <param name="word">The reserved word to include</param>
-        /// <exception cref="T:System.Collections.Generic.KeyNotFoundException">System.Collections.Generic.KeyNotFoundException
-        /// </exception>
+        /// <exception cref="KeyNotFoundException"></exception>
         public void AddWord(string type, string word)
         {
             HashSet<string> t = _types[type];
@@ -68,7 +54,7 @@ namespace Core6502DotNet
         /// Defie a type of reserved words.
         /// </summary>
         /// <param name="type">The type name.</param>
-        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="ArgumentException"></exception>
         public void DefineType(string type) => _types.Add(type, new HashSet<string>(_comparer));
 
         /// <summary>
@@ -76,8 +62,8 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="type">The type name.</param>
         /// <param name="values">The collection of values that comprise the type. </param>
-        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         public void DefineType(string type, params string[] values)
         {
             _types.Add(type, new HashSet<string>(values, _comparer));
@@ -91,8 +77,8 @@ namespace Core6502DotNet
         /// <param name="type">The type (dictionary key).</param>
         /// <param name="token">The token or keyword.</param>
         /// <returns><c>True</c> if the specified token is one of the specified type, otherwise <c>false</c>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="T:System.ArgumentException">System.ArgumentException</exception>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         public bool IsOneOf(string type, string token) => _types[type].Contains(token);
 
         /// <summary>
@@ -101,7 +87,7 @@ namespace Core6502DotNet
         /// <param name="token">The token or keyword.</param>
         /// <returns><c>True</c> if the specified token is in the collection of reserved words,
         /// regardless of type, otherwise <c>false</c>.</returns>
-        public bool IsReserved(string token) => _values.Contains(token);
+        public bool IsReserved(string token) =>  _values.Contains(token);
 
 
         public IEnumerable<string> GetReserved() => _values;
@@ -111,8 +97,8 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// Sets the <see cref="T:System.StringComparer"/> for the 
-        /// <see cref="T:DotNetAsm.ReservedWords"/> collection. Setting this value
+        /// Sets the <see cref="StringComparer"/> for the 
+        /// <see cref="ReservedWords"/> collection. Setting this value
         /// will clear the collection values.
         /// </summary>
         public StringComparer Comparer
@@ -120,7 +106,7 @@ namespace Core6502DotNet
             set
             {
                 _comparer = value;
-                _types = new Dictionary<string, HashSet<string>>();
+                _types = new Dictionary<string, HashSet<string>>(_comparer);
                 _values = new HashSet<string>(_comparer);
             }
         }

@@ -298,11 +298,10 @@ namespace Core6502DotNet
         /// <returns>A collection of parsed <see cref="SourceLine"/>s.</returns>
         public IEnumerable<SourceLine> PreprocessFile(string fileName)
         {
-
             var source = SourceHelper.ReadSource(fileName, out string fullPath);
             var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
             var dirInfo = new DirectoryInfo(location.AbsolutePath);
-            if (dirInfo.FullName.Equals(Path.GetDirectoryName(fullPath)))
+            if (Path.GetDirectoryName(dirInfo.FullName).Equals(Path.GetDirectoryName(fullPath)))
                 fullPath = fileName;
             if (_includedFiles.Contains(fullPath))
                 throw new FileLoadException($"File \"{fullPath}\" already included in source.");
@@ -314,9 +313,8 @@ namespace Core6502DotNet
         IEnumerable<SourceLine> Preprocess(string fileName, string source)
         {
             source = source.Replace("\r", string.Empty); // remove Windows CR
-            IEnumerable<SourceLine> uncommented;
             source = ProcessComments(fileName, source);
-            uncommented = LexerParser.Parse(fileName, source);
+            var uncommented = LexerParser.Parse(fileName, source);
             // process older .comment/.endcomments
             var lineIterator = uncommented.GetIterator();
             SourceLine line;
@@ -335,14 +333,12 @@ namespace Core6502DotNet
             return ProcessMacros(uncommented);
         }
 
-
         /// <summary>
         /// Gets the input filenames that were processed by the preprocessor.
         /// </summary>
         /// <returns>A collection of input files.</returns>
         public ReadOnlyCollection<string> GetInputFiles()
             => new ReadOnlyCollection<string>(_includedFiles.ToList());
-
 
         protected override string OnAssembleLine(SourceLine line) => throw new NotImplementedException();
 

@@ -39,33 +39,7 @@ namespace Core6502DotNet
 
         #endregion
 
-        #region Constructors
-
-        static Assembler()
-        {
-            IsReserved = new List<Func<string, bool>>();
-            InstructionLookupRules = new List<Func<string, bool>>();
-            Log = new ErrorLog();
-            Encoding = new AsmEncoding();
-            SymbolManager = new SymbolManager();
-            Output = new BinaryOutput();
-            Options = new CommandLineOptions();
-            _pass = -1;
-            PrintOff = false;
-            PassNeeded = true;
-        }
-
-        #endregion
-
         #region Methods
-
-        /// <summary>
-        /// Initialize the <see cref="Assembler"/> class.
-        /// </summary>
-        public static void Initialize()
-        {
-
-        }
 
         /// <summary>
         /// Initialize the <see cref="Assembler"/> class.
@@ -74,8 +48,17 @@ namespace Core6502DotNet
         /// the user.</param>
         public static void Initialize(string[] args)
         {
+            Options = new CommandLineOptions();
             Options.ParseArgs(args);
-            Encoding.CaseSensitive = Options.CaseSensitive;
+            IsReserved = new List<Func<string, bool>>();
+            InstructionLookupRules = new List<Func<string, bool>>();
+            Log = new ErrorLog();
+            Encoding = new AsmEncoding(Options.CaseSensitive);
+            SymbolManager = new SymbolManager();
+            Output = new BinaryOutput();
+            _pass = -1;
+            PrintOff = false;
+            PassNeeded = true;
         }
 
         #endregion
@@ -210,6 +193,13 @@ namespace Core6502DotNet
         /// </summary>
         public static SourceLine CurrentLine => LineIterator.Current;
 
+        /// <summary>
+        /// Gets the <see cref="StringComparer"/> base on the case-sensitive flag of
+        /// the set <see cref="Options"/>.
+        /// </summary>
+        public static StringComparer StringComparer 
+            => Options.CaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
         #endregion
     }
 
@@ -226,15 +216,13 @@ namespace Core6502DotNet
         /// </summary>
         protected AssemblerBase()
         {
-            Reserved = new ReservedWords();
+            Reserved = new ReservedWords(Assembler.StringComparer);
 
             Assembler.IsReserved.Add(Reserved.IsReserved);
 
             Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !Reserved.IsReserved(s));
 
             Assembler.InstructionLookupRules.Add(s => Assembles(s));
-
-            Reserved = new ReservedWords();
         }
 
         #endregion

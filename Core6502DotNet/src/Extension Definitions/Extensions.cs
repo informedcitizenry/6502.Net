@@ -32,6 +32,14 @@ namespace Core6502DotNet
             => s[0] == '"' && s[^1] == '"';
 
         /// <summary>
+        /// Converts the string so that the first character is in uppercase.
+        /// </summary>
+        /// <param name="s">The string to convert.</param>
+        /// <returns>The case-converted string.</returns>
+        public static string ToFirstUpper(this string s)
+            => Char.ToUpper(s[0]) + s.Substring(1);
+
+        /// <summary>
         /// Trims one instance of the specified character at the start of the string.
         /// </summary>
         /// <returns>The modified string.</returns>

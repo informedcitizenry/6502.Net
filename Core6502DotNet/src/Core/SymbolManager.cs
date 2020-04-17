@@ -470,8 +470,8 @@ namespace Core6502DotNet
 
         #region Members
 
-        /*readonly*/
         Dictionary<string, Symbol> _symbols;
+        Dictionary<string, Symbol> _constants;
         readonly Stack<string> _scope;
         readonly Stack<int> _referenceFrameIndexStack;
         readonly List<Func<string, bool>> _criteria;
@@ -491,7 +491,8 @@ namespace Core6502DotNet
             Assembler.PassChanged += ProcessPassChange;
 
             _scope = new Stack<string>();
-            _symbols = new Dictionary<string, Symbol>();
+            _symbols = new Dictionary<string, Symbol>(Assembler.StringComparer);
+            _constants = new Dictionary<string, Symbol>(Assembler.StringComparer);
             _referenceFrameIndexStack = new Stack<int>();
             _referenceFrameIndexStack.Push(0);
 
@@ -510,7 +511,8 @@ namespace Core6502DotNet
                              s.Equals("-") ||
                               ((s[0] == '_' || char.IsLetter(s[0])) &&
                               ((char.IsLetterOrDigit(s[^1]) || s[^1] == '_') && !s.Contains('.')));
-                }
+                },
+                s =>!_constants.ContainsKey(s)
             };
             _referenceFramesCounter = 0;
         }
@@ -784,6 +786,8 @@ namespace Core6502DotNet
         Symbol Lookup(Token symbolToken)
         {
             var name = symbolToken.Name;
+            if (_constants.ContainsKey(name))
+                return _constants[name];
             var fqdn = GetFullyQualifiedName(name);
             if (_symbols.ContainsKey(fqdn))
                 return _symbols[fqdn];
@@ -845,6 +849,23 @@ namespace Core6502DotNet
                 }
             }
         }
+
+
+        /// <summary>
+        /// Define a global constant symbol whose name is unique for all scopes.
+        /// </summary>
+        /// <param name="name">Constant name.</param>
+        /// <param name="value">Constant value.</param>
+        public void DefineConstant(string name, string value)
+            => _constants.Add(name, new Symbol(name, false, value));
+
+        /// <summary>
+        /// Define a global constant symbol whose name is unique for all scopes.
+        /// </summary>
+        /// <param name="name">Constant name.</param>
+        /// <param name="value">Constant value.</param>
+        public void DefineConstant(string name, double value)
+            => _constants.Add(name, new Symbol(name, false, value));
 
         /// <summary>
         /// Define a globally scoped symbol.

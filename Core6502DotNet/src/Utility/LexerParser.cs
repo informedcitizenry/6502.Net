@@ -22,6 +22,13 @@ namespace Core6502DotNet
         const char SingleQuote = '\'';
         const char NewLine = '\n';
 
+        static public readonly Dictionary<string, string> Groups = new Dictionary<string, string>
+        {
+            ["("] = ")",
+            ["["] = "]",
+            ["{"] = "}"
+        };
+
         static readonly HashSet<string> _operators = new HashSet<string>
         {
             "|", "||", "&", "&&", "<<", ">>", "<", ">", ">=", "<=", "==", "!=", "(", ")",
@@ -64,8 +71,6 @@ namespace Core6502DotNet
         static bool FirstNonHex(char prev, char current, char next)
             => !IsHex(current);
 
-
-
         static bool FirstNonNonBase10(char prev, char current, char next)
         {
             if (char.IsDigit(current))
@@ -87,7 +92,7 @@ namespace Core6502DotNet
         {
             if (!char.IsDigit(current))
             {
-                if (current == '.') // 0.11
+                if (current == '.')
                 {
                     if (char.IsDigit(prev) || char.IsDigit(next))
                         return false;
@@ -120,10 +125,8 @@ namespace Core6502DotNet
         static bool FirstNonLetterOrDigit(char prev, char current, char next)
             => !char.IsLetterOrDigit(current);
 
-        static bool FirstNonPlusMinus(char prev, char current, char next)
-        {
-            return prev != current && next != current;
-        }
+        static bool FirstNonPlusMinus(char prev, char current, char next) 
+            => prev != current && next != current;
 
         static bool FirstNonMatchingOperator(char prev, char current, char next)
         {
@@ -136,19 +139,19 @@ namespace Core6502DotNet
 
         static bool NonNewLineWhiteSpace(char c) => c == ' ' || c == '\t';
 
-        static Token ParseToken(char previousChar, Token previousToken, RandomAccessIterator<char> iterator)
+        static Token ParseToken(char previousChar, Token previousToken, RandomAccessIterator<char> iterator, bool parsingAssembly = true)
         {
             char c = iterator.Current;
             while (char.IsWhiteSpace(c))
             {
-                if (c == NewLine)
+                if (c == NewLine && parsingAssembly)
                 {
                     iterator.Rewind(iterator.Index - 1);
                     return null;
                 }
                 c = iterator.GetNext();
             }
-            if (c == ';' || c == EOF)
+            if ((c == ';' && parsingAssembly) || c == EOF)
                 return null;
 
             var token = new Token();
@@ -198,16 +201,16 @@ namespace Core6502DotNet
                 {
                     token.UnparsedName =
                     token.Name = ScanTo(previousChar, iterator, FirstNonSymbol);
-                    if (!Assembler.Options.CaseSensitive)
+                    if (parsingAssembly && !Assembler.Options.CaseSensitive)
                         token.Name = token.Name.ToLower();
 
-                    if (Assembler.InstructionLookupRules.Any(rule => rule(token.Name)))
+                    if (parsingAssembly && Assembler.InstructionLookupRules.Any(rule => rule(token.Name)))
                     {
                         token.Type = TokenType.Instruction;
                     }
                     else if (iterator.Current == '(' ||
                         (iterator.Current != NewLine && char.IsWhiteSpace(iterator.Current) &&
-                        iterator.PeekNextSkipping(NonNewLineWhiteSpace) == '('))
+                         iterator.PeekNextSkipping(NonNewLineWhiteSpace) == '('))
                     {
                         token.Type = TokenType.Operator;
                         token.OperatorType = OperatorType.Function;
@@ -243,11 +246,11 @@ namespace Core6502DotNet
                     }
                 }
                 if (c == char.MinValue)
-                    throw new ExpressionException(token.Position, $"Quote string not enclosed.");
+                    throw new ExpressionException(iterator.Index, $"Quote string not enclosed.");
                 quoteBuilder.Append(c);
                 var unescaped = escaped ? Regex.Unescape(quoteBuilder.ToString()) : quoteBuilder.ToString();
                 if (c == '\'' && unescaped.Length > 3)
-                    throw new ExpressionException(token.Parent, "Too many characters in character literal.");
+                    throw new ExpressionException(iterator.Index, "Too many characters in character literal.");
                 token.Name = unescaped;
                 token.Type = TokenType.Operand;
             }
@@ -262,12 +265,12 @@ namespace Core6502DotNet
                         a. OPERAND+3 / ...)+(... => single '+' sandwiched between two operands/groupings
                         b. OPERAND++3 / ...)++(... => the first '+' is a binary operator since it is to the
                            right of an operand/grouping. We need to split off the single '++' to two 
-                           two separate '+'. What kind of thing is the second '+'? We worry about that later.
+                           separate '+' tokens. What kind of token is the second '+'? We worry about that later.
                         c. OPERAND+++3 / ...)+++(... => again, the first '+' is a binary operator. We need to split
                            it off from the rest of the string of '+' characters, and we worry about later.
                      2. The unary operator:
                         a. +3 / +(... => single '+' immediately preceding an operand/grouping.
-                        b. ++3 / ++(... => parser doesn't accept C-style prefix operators, so one of these is an
+                        b. ++3 / ++(... => parser doesn't accept C-style prefix (or postfix) operators, so one of these is an
                            anonymous label. Which one? Easy, the first. Split the '+' string.
                      3. A full expression mixing both:
                         a. OPERAND+++3 / ...)+++(... => From scenario 1.c, we know the first '+' is a binary operator,
@@ -279,7 +282,7 @@ namespace Core6502DotNet
                            * +       => operand
                            * +       => unary operator
                            * 3/(     => operand/grouping
-                      4. An anonymous label:
+                      4. A line reference:
                          a. + => Simplest scenario.
                          b. ++, +++, ++++, etc. => Treat as one.
                      */
@@ -402,6 +405,63 @@ namespace Core6502DotNet
             return token;
         }
 
+        // <summary>
+        ///  Parses the source JSON into a <see cref="Token"/>.
+        /// </summary>
+        /// <param name="json">The JSON-formatted string.</param>
+        /// <returns>A <see cref="Token"/> containing one or more child tokens representing the parsed JSON string.</returns>
+        /// <exception cref="ExpressionException"/>
+        public static Token TokenizeJson(string json)
+        {
+            var iterator = json.GetIterator();
+            var rootParent = new Token
+            {
+                Children = new List<Token>()
+            };
+            var currentParent = rootParent;
+            Token currentOpen = null;
+            Token token = null;
+            var opens = 0;
+            var previousChar = EOF;
+            char c;
+            while ((c = iterator.GetNext()) != EOF)
+            {
+                token = ParseToken(previousChar, token, iterator, false);
+                if (token != null)
+                {
+                    token.Position = iterator.Index - token.Name.Length + 2;
+                    if (token.OperatorType == OperatorType.Open && !token.Name.Equals("("))
+                    {
+                        currentParent.AddChild(token);
+                        currentOpen =
+                        currentParent = token;
+                        currentParent.Children = new List<Token>();
+                        opens++;
+                    }
+                    else if (token.OperatorType == OperatorType.Closed && !token.Name.Equals(")"))
+                    {
+                        if (currentOpen == null || !token.Name.Equals(Groups[currentOpen.Name]))
+                            throw new ExpressionException(token.Position, "wops");
+
+                        opens--;
+                        currentParent = currentParent.Parent;
+                        if (currentParent.OperatorType == OperatorType.Open)
+                            currentOpen = currentParent;
+                        else
+                            currentOpen = null;
+                    }
+                    else
+                    {
+                        currentParent.AddChild(token);
+                    }
+                }
+                previousChar = iterator.Current;
+            }
+            if (currentOpen != null && currentOpen.OperatorType == OperatorType.Open)
+                throw new ExpressionException(currentOpen.LastChild.Position, $"End of source reached without finding closing \"{Groups[currentOpen.Name]}\".");
+            return rootParent;
+        }
+
         /// <summary>
         /// Parses the source string into a tokenized <see cref="SourceLine"/> collection.
         /// </summary>
@@ -459,7 +519,7 @@ namespace Core6502DotNet
                                     throw new ExpressionException(token, $"Missing opening for closure \"{token.Name}\"");
 
                                 // check if matching ( to )
-                                if (!Evaluator.Groups[currentOpen.Name].Equals(token.Name))
+                                if (!Groups[currentOpen.Name].Equals(token.Name))
                                     throw new ExpressionException(token, $"Mismatch between \"{currentOpen.Name}\" in column {currentOpen.Position} and \"{token.Name}\"");
 
                                 // go up the ladder
@@ -516,7 +576,7 @@ namespace Core6502DotNet
                     {
                         var newSourceLine = new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0]);
                         lines.Add(newSourceLine);
-                        if (Assembler.Options.WarnLeft && newSourceLine.Label.Position != 1)
+                        if (Assembler.Options.WarnLeft && newSourceLine.Label != null && newSourceLine.Label.Position != 1)
                             Assembler.Log.LogEntry(newSourceLine, newSourceLine.Label, "Label is not at the beginning of the line.", false);
                         Reset();
                         lineNumber = currentLine;
@@ -531,7 +591,7 @@ namespace Core6502DotNet
                 }
             }
             if (currentOpen != null && currentOpen.OperatorType == OperatorType.Open)
-                throw new ExpressionException(currentOpen.LastChild.Position, $"End of source reached without finding closing \"{Evaluator.Groups[currentOpen.Name]}\".");
+                throw new ExpressionException(currentOpen.LastChild.Position, $"End of source reached without finding closing \"{Groups[currentOpen.Name]}\".");
 
             if (token != null)
                 lines.Add(new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0]));

@@ -148,7 +148,7 @@ namespace Core6502DotNet
                         if (child.HasChildren)
                             AppendChildren(child.Children);
                         if (child.OperatorType == OperatorType.Open)
-                            sb.Append(Evaluator.Groups[child.Name]);
+                            sb.Append(LexerParser.Groups[child.Name]);
                     }
                 }
             }

@@ -24,7 +24,7 @@ namespace Core6502DotNet
         {
             Reserved.DefineType("Directives",
                     ".assert", ".bank",
-                    ".eor", ".echo",
+                    ".eor", ".echo", ".format",
                     ".initmem", ".target",
                     ".error", ".errorif",
                     ".pron", ".proff",
@@ -113,11 +113,14 @@ namespace Core6502DotNet
                 case ".proff":
                     Assembler.PrintOff = true;
                     break;
+                case ".format":
                 case ".target":
                     if (!line.OperandHasToken || !line.OperandExpression.EnclosedInQuotes())
                         Assembler.Log.LogEntry(line, line.Operand, "Expression must be a string.");
                     else
-                        Assembler.Options.Architecture = line.OperandExpression.TrimOnce('"');
+                        Assembler.Options.Format = line.OperandExpression.TrimOnce('"');
+                    if (instruction.Equals(".target"))
+                        Assembler.Log.LogEntry(line, line.Instruction, "\".target\" is deprecated. Use \".format\" instead.", false);
                     break;
                 default:
                     InitMem(line);

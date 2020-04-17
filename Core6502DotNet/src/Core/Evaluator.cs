@@ -36,19 +36,13 @@ namespace Core6502DotNet
     {
         #region Members
 
-        static public readonly Dictionary<string, string> Groups = new Dictionary<string, string>
-        {
-            ["("] = ")",
-            ["["] = "]",
-            ["{"] = "}"
-        };
         static readonly HashSet<string> _restrictedWords = new HashSet<string>
         {
-            "true", "false", "math_pi", "math_e",
-            "uint32_max", "uint32_min", "int32_max", "int32_min",
-            "uint24_max", "uint24_min", "int24_max", "int24_min",
-            "uint16_max", "uint16_min", "int16_max", "int16_min",
-            "uint8_max", "uint8_min", "int8_max", "int8_min"
+            "true", "false", "MATH_PI", "MATH_E",
+            "UINT32_MAX", "UINT32_MIN", "INT32_MAX", "INT32_MIN",
+            "UINT24_MAX", "UINT24_MIN", "INT24_MAX", "INT24_MIN",
+            "UINT16_MAX", "UINT16_MIN", "INT16_MAX", "INT16_MIN",
+            "UINT8_MAX", "UINT8_MIN", "INT8_MAX", "INT8_MIN"
         };
 
         static readonly Dictionary<string, ConversionDef> _radixOperators = new Dictionary<string, ConversionDef>
@@ -221,26 +215,26 @@ namespace Core6502DotNet
 
             _functionEvaluators = new List<IFunctionEvaluator>();
 
-            Assembler.SymbolManager.DefineGlobal("true", 1);
-            Assembler.SymbolManager.DefineGlobal("false", 0);
-            Assembler.SymbolManager.DefineGlobal("math_pi", Math.PI);
-            Assembler.SymbolManager.DefineGlobal("math_e", Math.E);
-            Assembler.SymbolManager.DefineGlobal("uint32_max", uint.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("int32_max", int.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("uint32_min", uint.MinValue);
-            Assembler.SymbolManager.DefineGlobal("int32_min", int.MinValue);
-            Assembler.SymbolManager.DefineGlobal("uint24_max", UInt24.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("int24_max", Int24.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("uint24_min", UInt24.MinValue);
-            Assembler.SymbolManager.DefineGlobal("int24_min", Int24.MinValue);
-            Assembler.SymbolManager.DefineGlobal("uint16_max", ushort.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("int16_max", short.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("uint16_min", ushort.MinValue);
-            Assembler.SymbolManager.DefineGlobal("int16_min", short.MinValue);
-            Assembler.SymbolManager.DefineGlobal("uint8_max", byte.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("int8_max", sbyte.MaxValue);
-            Assembler.SymbolManager.DefineGlobal("uint8_min", byte.MinValue);
-            Assembler.SymbolManager.DefineGlobal("int8_min", sbyte.MinValue);
+            Assembler.SymbolManager.DefineConstant("true", 1);
+            Assembler.SymbolManager.DefineConstant("false", 0);
+            Assembler.SymbolManager.DefineConstant("MATH_PI", Math.PI);
+            Assembler.SymbolManager.DefineConstant("MATH_E", Math.E);
+            Assembler.SymbolManager.DefineConstant("UINT32_MAX", uint.MaxValue);
+            Assembler.SymbolManager.DefineConstant("INT32_MAX", int.MaxValue);
+            Assembler.SymbolManager.DefineConstant("UINT32_MIN", uint.MinValue);
+            Assembler.SymbolManager.DefineConstant("INT32_MIN", int.MinValue);
+            Assembler.SymbolManager.DefineConstant("UINT24_MAX", UInt24.MaxValue);
+            Assembler.SymbolManager.DefineConstant("INT24_MAX", Int24.MaxValue);
+            Assembler.SymbolManager.DefineConstant("UINT24_MIN", UInt24.MinValue);
+            Assembler.SymbolManager.DefineConstant("INT24_MIN", Int24.MinValue);
+            Assembler.SymbolManager.DefineConstant("UINT16_MAX", ushort.MaxValue);
+            Assembler.SymbolManager.DefineConstant("INT16_MAX", short.MaxValue);
+            Assembler.SymbolManager.DefineConstant("UINT16_MIN", ushort.MinValue);
+            Assembler.SymbolManager.DefineConstant("INT16_MIN", short.MinValue);
+            Assembler.SymbolManager.DefineConstant("UINT8_MAX", byte.MaxValue);
+            Assembler.SymbolManager.DefineConstant("INT8_MAX", sbyte.MaxValue);
+            Assembler.SymbolManager.DefineConstant("UINT8_MIN", byte.MinValue);
+            Assembler.SymbolManager.DefineConstant("INT8_MIN", sbyte.MinValue);
 
             Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !_restrictedWords.Contains(s) && !_functions.ContainsKey(s));
         }
