@@ -2520,7 +2520,7 @@ A typical scenario though would probably like this:
     "target": {
         "binaryFormat": "zx",
         "cpu": "z80"
-	}
+	},
     "sources": [
         "zxlib.s",
         "my_app.s"
