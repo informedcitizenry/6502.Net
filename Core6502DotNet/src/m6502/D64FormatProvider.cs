@@ -116,7 +116,7 @@ namespace Core6502DotNet.m6502
             if (fileName.Length > 16)
                 fileName = fileName.Substring(0, 16);
             else if (fileName.Length > 4 && fileName.EndsWith(".D64"))
-                fileName = fileName.Substring(0, fileName.Length - 4);
+                fileName = fileName[0..^4];
 
             var fileBytes = new List<byte>(Assembler.Output.GetCompilation().Count + 2)
             {
@@ -221,7 +221,7 @@ namespace Core6502DotNet.m6502
                         if (currentTrack < 0)
                             currentTrack = 35;
                         else if (currentTrack == 18)
-                            throw new ArgumentOutOfRangeException();
+                            throw new Exception("Unable to write to D64. Capacity exceeded.");
                     }
                     else
                     {

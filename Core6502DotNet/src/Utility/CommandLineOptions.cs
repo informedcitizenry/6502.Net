@@ -485,16 +485,16 @@ namespace Core6502DotNet
         {
             switch (option)
             {
-                case Options.CaseSensitive: _caseSensitive = value; break;
-                case Options.Checksum: _showChecksums = value; break;
-                case Options.NoAssembly: _noAssembly = value; break;
-                case Options.NoDisassembly: _noDisassembly = value; break;
-                case Options.NoSource: _noSource = value; break;
-                case Options.NoWarnings: _noWarn = value; break;
-                case Options.QuietMode: _quiet = value; break;
-                case Options.Verbose: _verboseDasm = value; break;
-                case Options.WarningsAsErrors: _werror = value; break;
-                case Options.WarnLeft: _warnLeft = value; break;
+                case Options.CaseSensitive:      _caseSensitive  = value; break;
+                case Options.Checksum:           _showChecksums  = value; break;
+                case Options.NoAssembly:         _noAssembly     = value; break;
+                case Options.NoDisassembly:      _noDisassembly  = value; break;
+                case Options.NoSource:           _noSource       = value; break;
+                case Options.NoWarnings:         _noWarn         = value; break;
+                case Options.QuietMode:          _quiet          = value; break;
+                case Options.Verbose:            _verboseDasm    = value; break;
+                case Options.WarningsAsErrors:   _werror         = value; break;
+                case Options.WarnLeft:           _warnLeft       = value; break;
             }
         }
 
@@ -502,16 +502,15 @@ namespace Core6502DotNet
         {
             switch (option)
             {
-                case Options.IncludePath: _includePath = value; break;
-                case Options.OutputFile: _outputFile = value; break;
-                case Options.LabelPath: _labelFile = value; break;
-                case Options.ListPath: _listingFile = value; break;
-                case Options.ErrorPath: _errorFile = value; break;
-                case Options.BinaryFormat: _format = value; break;
-                case Options.Cpu: _cpu = value; break;
+                case Options.IncludePath:        _includePath    = value; break;
+                case Options.OutputFile:         _outputFile     = value; break;
+                case Options.LabelPath:          _labelFile      = value; break;
+                case Options.ListPath:           _listingFile    = value; break;
+                case Options.ErrorPath:          _errorFile      = value; break;
+                case Options.BinaryFormat:       _format         = value; break;
+                case Options.Cpu:                _cpu            = value; break;
             }
         }
-
         void SetOptionValuesFromConfig(Options ident, IEnumerable<Token> array)
         {
             var type = _arrayTypes[ident];

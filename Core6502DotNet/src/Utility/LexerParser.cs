@@ -407,10 +407,10 @@ namespace Core6502DotNet
 
         // <summary>
         ///  Parses the source JSON into a <see cref="Token"/>.
-        /// </summary>
         /// <param name="json">The JSON-formatted string.</param>
         /// <returns>A <see cref="Token"/> containing one or more child tokens representing the parsed JSON string.</returns>
         /// <exception cref="ExpressionException"/>
+        /// </summary>
         public static Token TokenizeJson(string json)
         {
             var iterator = json.GetIterator();
@@ -421,7 +421,6 @@ namespace Core6502DotNet
             var currentParent = rootParent;
             Token currentOpen = null;
             Token token = null;
-            var opens = 0;
             var previousChar = EOF;
             char c;
             while ((c = iterator.GetNext()) != EOF)
@@ -436,14 +435,12 @@ namespace Core6502DotNet
                         currentOpen =
                         currentParent = token;
                         currentParent.Children = new List<Token>();
-                        opens++;
                     }
                     else if (token.OperatorType == OperatorType.Closed && !token.Name.Equals(")"))
                     {
                         if (currentOpen == null || !token.Name.Equals(Groups[currentOpen.Name]))
-                            throw new ExpressionException(token.Position, "wops");
+                            throw new ExpressionException(token.Position, $"Mismatched closure, '{Groups[currentOpen.Name]}' expected.");
 
-                        opens--;
                         currentParent = currentParent.Parent;
                         if (currentParent.OperatorType == OperatorType.Open)
                             currentOpen = currentParent;

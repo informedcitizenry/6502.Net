@@ -61,6 +61,7 @@ namespace Core6502DotNet
 
             if (line.InstructionName[1] == 'b')
                 expanded.Add(Macro.GetBlockDirectiveLine(include, line.LineNumber, line.LabelName, ".block"));
+
             expanded.AddRange(PreprocessFile(include));
 
             if (line.InstructionName[1] == 'b')
