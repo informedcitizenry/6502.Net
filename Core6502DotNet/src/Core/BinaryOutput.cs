@@ -121,6 +121,7 @@ namespace Core6502DotNet
         {
             _bytes = new byte[0x10000];
             CurrentBank = 0;
+            ProgramCounter = ProgramEnd = 
             PreviousPC = _pc = _logicalPc = 0;
             MaxAddress = ushort.MaxValue;
             PCOverflow = false;

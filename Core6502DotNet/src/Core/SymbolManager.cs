@@ -1238,7 +1238,7 @@ namespace Core6502DotNet
 
         public double EvaluateFunction(Token function, Token parameters)
         {
-            if (!parameters.HasChildren)
+            if (!parameters.HasChildren || !parameters.Children[0].HasChildren)
                 throw new ExpressionException(parameters.Position, "Expected argument not provided.");
             if (parameters.Children.Count > 1)
                 throw new ExpressionException(parameters.LastChild.Position, $"Unexpected argument \"{parameters.LastChild}\".");
