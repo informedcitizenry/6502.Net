@@ -169,8 +169,8 @@ namespace Core6502DotNet
         /// <returns>The new logical Program Counter.</returns>
         public int SynchPC()
         {
-            LogicalPC = ProgramCounter;
-            return LogicalPC;
+            _logicalPc = ProgramCounter;
+            return _logicalPc;
         }
 
         /// <summary>

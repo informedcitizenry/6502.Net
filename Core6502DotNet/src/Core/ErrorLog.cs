@@ -151,6 +151,16 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="filename">The source file.</param>
         /// <param name="linenumber">The source line number.</param>
+        /// <param name="position">The position in the source that raised the message.</param>
+        /// <param name="message">The custome string message.</param>
+        public void LogEntry(string filename, int linenumber, int position, string message)
+            => LogEntry(filename, linenumber, position, message, true, null);
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
+        /// <param name="filename">The source file.</param>
+        /// <param name="linenumber">The source line number.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="source">The message source.</param>
         /// <param name="isError">Indicate if the mesage is an error.</param>

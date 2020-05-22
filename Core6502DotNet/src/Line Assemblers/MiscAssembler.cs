@@ -99,7 +99,8 @@ namespace Core6502DotNet
                 case ".echo":
                 case ".error":
                 case ".warn":
-                    if (line.OperandHasToken)
+                    if (line.OperandHasToken && line.Operand.Children.Count == 1 && 
+                        StringHelper.ExpressionIsString(line.Operand.Children[0]))
                         Output(line, line.Operand.Children[0]);
                     else
                         Assembler.Log.LogEntry(line, line.Operand, "String expression expected.");
@@ -148,18 +149,21 @@ namespace Core6502DotNet
 
         void Output(SourceLine line, string output)
         {
-            var type = line.InstructionName.Substring(0, 5);
-            switch (type)
+            if (!Assembler.PassNeeded)
             {
-                case ".echo":
-                    Console.WriteLine(output);
-                    break;
-                case ".warn":
-                    Assembler.Log.LogEntry(line, line.Operand, output, false);
-                    break;
-                default:
-                    Assembler.Log.LogEntry(line, line.Operand, output);
-                    break;
+                var type = line.InstructionName.Substring(0, 5);
+                switch (type)
+                {
+                    case ".echo":
+                        Console.WriteLine(output);
+                        break;
+                    case ".warn":
+                        Assembler.Log.LogEntry(line, line.Operand, output, false);
+                        break;
+                    default:
+                        Assembler.Log.LogEntry(line, line.Operand, output);
+                        break;
+                }
             }
         }
 

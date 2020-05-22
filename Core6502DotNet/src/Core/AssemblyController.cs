@@ -146,7 +146,7 @@ namespace Core6502DotNet
                                                       $"There was a problem with the format string:\n{fmtEx.Message}.",
                                                       true);
                             }
-                            else if (Assembler.CurrentPass > 0)
+                            else if (Assembler.CurrentPass > 0 && !Assembler.PassNeeded)
                             {
                                 if (ex is ExpressionException expEx)
                                 {
@@ -234,7 +234,7 @@ namespace Core6502DotNet
             else
                 File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
             // write disassembly
-            if (disassembly != null)
+            if (disassembly != null && !string.IsNullOrEmpty(Assembler.Options.ListingFile))
                 File.WriteAllText(Assembler.Options.ListingFile, disassembly);
 
             // write listings

@@ -237,6 +237,8 @@ namespace Core6502DotNet
             Assembler.SymbolManager.DefineConstant("INT8_MIN", sbyte.MinValue);
 
             Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !_restrictedWords.Contains(s) && !_functions.ContainsKey(s));
+
+            AddFunctionEvaluator(Assembler.SymbolManager);
         }
 
         #endregion
@@ -330,7 +332,7 @@ namespace Core6502DotNet
                     }
                     else if (iterator.PeekNext() != null && iterator.PeekNext().Name == "[")
                     {
-                        var value = Assembler.SymbolManager.GetVectorElementValue(token, iterator.GetNext());
+                        var value = Assembler.SymbolManager.GetNumericVectorElementValue(token, iterator.GetNext());
                         if (double.IsNegativeInfinity(value))
                             throw new ExpressionException(iterator.Current, "Index is out of range.");
                         result.Push(value);
@@ -454,6 +456,7 @@ namespace Core6502DotNet
 
                 if (isMath)
                     return 0xFFFF;
+
                 return 0;
             }
 

@@ -74,7 +74,7 @@ namespace Core6502DotNet
                 first.Type == TokenType.Operand &&
                 expression.Children[1].Name.Equals("["))
             {
-                var symbol = Assembler.SymbolManager.GetVectorElementString(expression.Children[0],
+                var symbol = Assembler.SymbolManager.GetStringVectorElementValue(expression.Children[0],
                                                                             expression.Children[1]);
                 return !string.IsNullOrEmpty(symbol);
 
@@ -105,7 +105,7 @@ namespace Core6502DotNet
                 if (expression.Children[0].Type == TokenType.Operand &&
                     expression.Children[1].Name.Equals("["))
                 {
-                    var stringVal = Assembler.SymbolManager.GetVectorElementString(expression.Children[0], expression.Children[1]);
+                    var stringVal = Assembler.SymbolManager.GetStringVectorElementValue(expression.Children[0], expression.Children[1]);
                     if (stringVal == string.Empty)
                     {
                         Assembler.Log.LogEntry(Assembler.CurrentLine, expression.Children[0].Position,

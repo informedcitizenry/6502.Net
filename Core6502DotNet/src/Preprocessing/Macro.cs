@@ -64,7 +64,7 @@ namespace Core6502DotNet
                 var index = 0;
                 foreach (Token p in passedParams.Children)
                 {
-                    var parmName = p.ToString(useUnparsed: true);
+                    var parmName = p.ToString(useUnparsed: true); 
                     if (passedParams.Children.Count > 1)
                         parmName = parmName.TrimStartOnce(',');
                     if (string.IsNullOrEmpty(parmName))
@@ -88,7 +88,7 @@ namespace Core6502DotNet
             {
                 if (source.ParamPlaces.Count > 0)
                 {
-                    string expandedSource = string.Empty;
+                    string expandedSource = source.Line.UnparsedSource;
 
                     foreach ((int paramIndex, string reference, Token token) parmRef in source.ParamPlaces)
                     {
@@ -105,13 +105,12 @@ namespace Core6502DotNet
                         {
                             substitution = paramList[parmRef.paramIndex];
                         }
-                        replacement = parmRef.token.UnparsedName.Replace(parmRef.reference, substitution);//Name.Replace(parmRef.reference, substitution);
-                        expandedSource = source.Line.UnparsedSource.Replace(parmRef.token.Name, replacement);
+                        replacement = parmRef.token.UnparsedName.Replace(parmRef.reference, substitution);
+                        expandedSource = expandedSource.Replace(parmRef.token.Name, replacement);
                     }
                     var expandedLine = LexerParser.Parse(source.Line.Filename, expandedSource).First();
                     expandedLine.LineNumber = source.Line.LineNumber;
                     expanded.Add(expandedLine);
-                    //expanded.AddRange(LexerParser.Parse(source.Line.Filename, clone.UnparsedSource));
                 }
                 else
                 {

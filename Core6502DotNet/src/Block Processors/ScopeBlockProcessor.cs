@@ -25,7 +25,7 @@ namespace Core6502DotNet
 
         public override void ExecuteDirective()
         {
-            SourceLine line = Assembler.LineIterator.Current;
+            var line = Assembler.LineIterator.Current;
             var scopeName = line.LabelName;
             if (line.InstructionName.Equals(".block"))
             {

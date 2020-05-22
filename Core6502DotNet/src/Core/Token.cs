@@ -151,6 +151,8 @@ namespace Core6502DotNet
                 foreach (Token t in Children)
                     sb.Append(t.ToString(useUnparsed));
             }
+            if (useUnparsed && OperatorType == OperatorType.Open)
+                sb.Append(LexerParser.Groups[Name]);
             return sb.ToString();
         }
 

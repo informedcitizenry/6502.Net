@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 
@@ -105,7 +106,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class managing all valid assembly symbols, including their scope and values.
     /// </summary>
-    public class SymbolManager
+    public class SymbolManager : IFunctionEvaluator
     {
         #region Subclasses
 
@@ -169,6 +170,25 @@ namespace Core6502DotNet
 
             public Symbol(string name, bool mutable, IEnumerable<string> value)
                 : this(name, mutable) => SetValue(value);
+
+            public Symbol(string name, bool mutable, Symbol other)
+                : this(name, mutable)
+            {
+                DataType = other.DataType;
+                SymbolType = other.SymbolType;
+                if (IsScalar())
+                {
+                    StringValue = new string(other.StringValue);
+                    NumericValue = other.NumericValue;
+                }
+                else
+                {
+                    if (DataType == DataType.String)
+                        StringVector = new Dictionary<int, string>(other.StringVector);
+                    else
+                        NumericVector = new Dictionary<int, double>(other.NumericVector);
+                }
+            }
 
             public void SetValue(string value)
             {
@@ -364,8 +384,11 @@ namespace Core6502DotNet
                     return "[Object]";
                 switch (DataType)
                 {
-                    case DataType.Numeric: return NumericValue.ToString();
-                    default: return StringValue;
+                    case DataType.Numeric:
+                    case DataType.Address:
+                        return NumericValue.ToString();
+                    default: 
+                        return StringValue;
                 }
             }
 
@@ -373,22 +396,55 @@ namespace Core6502DotNet
 
             public bool IsValueEqual(Symbol other)
             {
-                if (SymbolType == SymbolType.Scalar &&
-                    other.SymbolType == SymbolType.Scalar &&
-                    SymbolType == other.SymbolType &&
+                if (SymbolType == other.SymbolType &&
                     DataType == other.DataType)
                 {
-                    switch (DataType)
+                    if (SymbolType == SymbolType.Scalar)
                     {
-                        case DataType.Address:
-                            return GetNumericValue() == other.GetNumericValue();
-                        case DataType.Numeric:
-                            return NumericValue == other.NumericValue;
-                        default:
-                            return StringValue.Equals(other.StringValue);
+                        switch (DataType)
+                        {
+                            case DataType.Address:
+                                return GetNumericValue() == other.GetNumericValue();
+                            case DataType.Numeric:
+                                return NumericValue == other.NumericValue;
+                            default:
+                                return StringValue.Equals(other.StringValue);
+                        }
+                    }
+                    else
+                    {
+                        if (!IsMutable)
+                            return true;
+                        switch (DataType)
+                        {
+                            case DataType.Numeric:
+                                if (NumericVector != null && other.NumericVector != null) 
+                                    return NumericVector.SequenceEqual(other.NumericVector);
+                                break;
+                            case DataType.String:
+                                if (StringVector != null && other.StringVector != null)
+                                    return StringVector.SequenceEqual(other.StringVector);
+                                break;
+                        }
                     }
                 }
                 return false;
+            }
+
+            public int Length
+            {
+                get
+                {
+                    if (IsScalar())
+                    {
+                        if (DataType == DataType.String)
+                            return StringValue.Length;
+                        return 1;
+                    }
+                    if (DataType == DataType.String)
+                        return StringVector.Count;
+                    return NumericVector.Count;
+                }
             }
         }
 
@@ -586,7 +642,7 @@ namespace Core6502DotNet
                     sym.SetValueFromSymbol(symbol);
 
                     // signal to the assembler another pass is needed.
-                    if (!sym.IsMutable)
+                    if (!sym.IsMutable && !Assembler.PassNeeded)
                         Assembler.PassNeeded = true;
                 }
             }
@@ -717,6 +773,12 @@ namespace Core6502DotNet
                 }
                 else
                 {
+                    if (tokenList.Count == 1 && (char.IsLetter(tokenList[0].Name[0]) || tokenList[0].Name[0] == '_'))
+                    {
+                        var symbolLookup = Lookup(tokenList[0], false);
+                        if (symbolLookup != null)
+                            return DefineSymbol(new Symbol(symbolName, isMutable, symbolLookup), isGlobal);
+                    }
                     var value = Evaluator.Evaluate(tokenList);
                     if (arrayElementToUpdate != null)
                     {
@@ -783,7 +845,7 @@ namespace Core6502DotNet
             return scopedName;
         }
 
-        Symbol Lookup(Token symbolToken)
+        Symbol Lookup(Token symbolToken, bool raiseExceptionIfNotFound)
         {
             var name = symbolToken.Name;
             if (_constants.ContainsKey(name))
@@ -792,8 +854,12 @@ namespace Core6502DotNet
             if (_symbols.ContainsKey(fqdn))
                 return _symbols[fqdn];
             Assembler.PassNeeded = true;
-            throw new SymbolException(symbolToken, SymbolException.ExceptionReason.NotDefined);
+            if (raiseExceptionIfNotFound)
+                throw new SymbolException(symbolToken, SymbolException.ExceptionReason.NotDefined);
+            return null;
         }
+
+        Symbol Lookup(Token symbolToken) => Lookup(symbolToken, true);
 
         /// <summary>
         /// Determines if the symbol has been defined.
@@ -1024,15 +1090,7 @@ namespace Core6502DotNet
         public void DefineSymbolicAddress(string addressName)
             => DefineSymbol(new Symbol(addressName, Assembler.Output.LogicalPC), false);
 
-        /// <summary>
-        /// Gets the vector element value.
-        /// </summary>
-        /// <param name="symbolToken">The symbol as a parsed token.</param>
-        /// <param name="subscriptToken">The symbol's subscript expression.</param>
-        /// <returns></returns>
-        /// <exception cref="ExpressionException"></exception>
-        /// <exception cref="SymbolException"></exception>
-        public double GetVectorElementValue(Token symbolToken, Token subscriptToken)
+        (Symbol symbol, int index)  GetVectorElementAtIndex(Token symbolToken, Token subscriptToken)
         {
             Symbol symbol = Lookup(symbolToken);
             if (symbol.IsScalar())
@@ -1044,8 +1102,30 @@ namespace Core6502DotNet
             if (index != (int)index)
                 throw new ExpressionException(subscriptToken.Position, "Subscript index must be an integral value.");
 
-            return symbol.GetNumericValueAtIndex((int)index);
+            return (symbol, (int)index);
         }
+
+        /// <summary>
+        /// Gets the vector element value.
+        /// </summary>
+        /// <param name="symbolToken">The symbol as a parsed token.</param>
+        /// <param name="subscriptToken">The symbol's subscript expression.</param>
+        /// <returns></returns>
+        /// <exception cref="ExpressionException"></exception>
+        /// <exception cref="SymbolException"></exception>
+        public double GetNumericVectorElementValue(Token symbolToken, Token subscriptToken)
+        {
+            var (symbol, index) = GetVectorElementAtIndex(symbolToken, subscriptToken);
+
+            if (symbol.DataType == DataType.String)
+            {
+                var value = symbol.GetStringValueAtIndex(index);
+                return Assembler.Encoding.GetEncodedValue(value);
+            }
+            
+            return symbol.GetNumericValueAtIndex(index);
+        }
+
 
         /// <summary>
         /// Gets the vector element string.
@@ -1055,19 +1135,11 @@ namespace Core6502DotNet
         /// <returns></returns>
         /// <exception cref="ExpressionException"></exception>
         /// <exception cref="SymbolException"></exception>
-        public string GetVectorElementString(Token symbolToken, Token subscriptToken)
+        public string GetStringVectorElementValue(Token symbolToken, Token subscriptToken)
         {
-            Symbol symbol = Lookup(symbolToken);
-            if (symbol.IsScalar())
-                throw new SymbolException(symbolToken, SymbolException.ExceptionReason.Scalar);
+            var (symbol, index) = GetVectorElementAtIndex(symbolToken, subscriptToken);
 
-            if (subscriptToken == null || !subscriptToken.Name.Equals("["))
-                throw new ExpressionException(subscriptToken.Position, "Array subscript expression expected.");
-            var index = Evaluator.Evaluate(subscriptToken.Children);
-            if (index != (int)index)
-                throw new ExpressionException(subscriptToken.Position, "Subscript index must be an integral value.");
-
-            return symbol.GetStringValueAtIndex((int)index);
+            return symbol.GetStringValueAtIndex(index);
         }
 
         /// <summary>
@@ -1160,6 +1232,18 @@ namespace Core6502DotNet
         {
             var sym = Lookup(new Token(symbol));
             return sym.IsScalar();
+        }
+
+        public bool EvaluatesFunction(Token function) => function.Name.Equals("len");
+
+        public double EvaluateFunction(Token function, Token parameters)
+        {
+            if (!parameters.HasChildren)
+                throw new ExpressionException(parameters.Position, "Expected argument not provided.");
+            if (parameters.Children.Count > 1)
+                throw new ExpressionException(parameters.LastChild.Position, $"Unexpected argument \"{parameters.LastChild}\".");
+            var symbolLookup = Lookup(parameters.LastChild);
+            return symbolLookup.Length;
         }
 
         #endregion

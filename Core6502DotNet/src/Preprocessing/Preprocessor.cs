@@ -158,6 +158,7 @@ namespace Core6502DotNet
                         continue;
                     }
                     var macroName = "." + line.LabelName;
+
                     if (_macros.ContainsKey(macroName))
                     {
                         Assembler.Log.LogEntry(line, line.Label, $"Macro named \"{line.LabelName}\" already defined.");

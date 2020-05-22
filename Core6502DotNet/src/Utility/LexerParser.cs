@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -126,7 +127,7 @@ namespace Core6502DotNet
             => !char.IsLetterOrDigit(current);
 
         static bool FirstNonPlusMinus(char prev, char current, char next) 
-            => prev != current && next != current;
+            => (current != '-' && current != '+') || (prev != current && next != current);
 
         static bool FirstNonMatchingOperator(char prev, char current, char next)
         {
@@ -242,7 +243,7 @@ namespace Core6502DotNet
                     if (c == '\\')
                     {
                         escaped = true;
-                        c = iterator.GetNext();
+                        quoteBuilder.Append(iterator.GetNext());
                     }
                 }
                 if (c == char.MinValue)
@@ -491,57 +492,64 @@ namespace Core6502DotNet
             {
                 if (iterator.Current != NewLine && iterator.Current != ':' && iterator.Current != ';')
                 {
-                    token = ParseToken(previousChar, token, iterator);
-                    if (token != null)
+                    try
                     {
-                        previousChar = iterator.Current;
-                        token.Parent = currentParent;
-                        token.Position = iterator.Index - lineIndex - token.Name.Length + 1;
-                        if (token.OperatorType == OperatorType.Open || token.OperatorType == OperatorType.Closed || token.OperatorType == OperatorType.Separator)
+                        token = ParseToken(previousChar, token, iterator);
+                        if (token != null)
                         {
-                            if (token.OperatorType == OperatorType.Open)
+                            previousChar = iterator.Current;
+                            token.Parent = currentParent;
+                            token.Position = iterator.Index - lineIndex - token.Name.Length + 1;
+                            if (token.OperatorType == OperatorType.Open || token.OperatorType == OperatorType.Closed || token.OperatorType == OperatorType.Separator)
                             {
-                                opens++;
-                                currentParent.AddChild(token);
-                                currentOpen =
-                                currentParent = token;
-                                AddBlankSeparator();
+                                if (token.OperatorType == OperatorType.Open) 
+                                {
+                                    opens++;
+                                    currentParent.AddChild(token);
+                                    currentOpen =
+                                    currentParent = token;
+                                    AddBlankSeparator();
+                                }
+                                else if (token.OperatorType == OperatorType.Closed)
+                                {    
+                                    if (currentOpen == null)
+                                        throw new ExpressionException(token, $"Missing opening for closure \"{token.Name}\"");
+
+                                    // check if matching ( to )
+                                    if (!Groups[currentOpen.Name].Equals(token.Name))
+                                        throw new ExpressionException(token, $"Mismatch between \"{currentOpen.Name}\" in column {currentOpen.Position} and \"{token.Name}\"");
+
+                                    // go up the ladder
+                                    currentOpen = currentParent = token.Parent = currentOpen.Parent;
+
+                                    while (currentOpen != null && currentOpen.OperatorType != OperatorType.Open)
+                                        currentOpen = currentOpen.Parent;
+                                    opens--;
+                                }
+                                else
+                                {
+                                    currentParent = currentParent.Parent;
+                                    currentParent.AddChild(token);
+                                    currentParent = token;
+                                }
                             }
-                            else if (token.OperatorType == OperatorType.Closed)
+                            else if (token.Type == TokenType.Instruction)
                             {
-                                while (currentOpen != null && currentOpen.OperatorType != OperatorType.Open)
-                                    currentOpen = currentOpen.Parent;
-
-                                if (currentOpen == null)
-                                    throw new ExpressionException(token, $"Missing opening for closure \"{token.Name}\"");
-
-                                // check if matching ( to )
-                                if (!Groups[currentOpen.Name].Equals(token.Name))
-                                    throw new ExpressionException(token, $"Mismatch between \"{currentOpen.Name}\" in column {currentOpen.Position} and \"{token.Name}\"");
-
-                                // go up the ladder
-                                currentOpen = currentParent = token.Parent = currentOpen.Parent;
-                                opens--;
+                                while (currentParent.Parent != rootParent)
+                                    currentParent = currentParent.Parent;
+                                currentParent.AddChild(token);
+                                AddBlankSeparator();
+                                AddBlankSeparator();
                             }
                             else
                             {
-                                currentParent = currentParent.Parent;
                                 currentParent.AddChild(token);
-                                currentParent = token;
                             }
                         }
-                        else if (token.Type == TokenType.Instruction)
-                        {
-                            while (currentParent.Parent != rootParent)
-                                currentParent = currentParent.Parent;
-                            currentParent.AddChild(token);
-                            AddBlankSeparator();
-                            AddBlankSeparator();
-                        }
-                        else
-                        {
-                            currentParent.AddChild(token);
-                        }
+                    }
+                    catch(ExpressionException ex)
+                    {
+                        Assembler.Log.LogEntry(fileName, lineNumber, ex.Position, ex.Message);
                     }
                     if (iterator.PeekNext() == NewLine)
                         iterator.MoveNext();
@@ -587,8 +595,8 @@ namespace Core6502DotNet
                         sourceLineIndex = iterator.Index;
                 }
             }
-            if (currentOpen != null && currentOpen.OperatorType == OperatorType.Open)
-                throw new ExpressionException(currentOpen.LastChild.Position, $"End of source reached without finding closing \"{Groups[currentOpen.Name]}\".");
+           if (currentOpen != null && currentOpen.OperatorType == OperatorType.Open)
+             Assembler.Log.LogEntry(fileName, 1, currentOpen.LastChild.Position, $"End of source reached without finding closing \"{Groups[currentOpen.Name]}\".");
 
             if (token != null)
                 lines.Add(new SourceLine(fileName, lineNumber, GetSourceLineSource(), rootParent.Children[0]));

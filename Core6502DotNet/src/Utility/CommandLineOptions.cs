@@ -201,24 +201,7 @@ namespace Core6502DotNet
 
         readonly List<string> _source;
         readonly List<string> _defines;
-        string _format;
-        string _cpu;
-        string _errorFile;
-        string _includePath;
-        string _listingFile;
-        string _labelFile;
-        string _outputFile;
-        bool _quiet;
-        bool _verboseDasm;
         bool _werror;
-        bool _noWarn;
-        bool _caseSensitive;
-        bool _noAssembly;
-        bool _noSource;
-        bool _printVersion;
-        bool _noDisassembly;
-        bool _warnLeft;
-        bool _showChecksums;
 
         #endregion
 
@@ -231,24 +214,24 @@ namespace Core6502DotNet
         {
             _source = new List<string>();
             _defines = new List<string>();
-            _format =
-            _cpu =
-            _errorFile =
-            _includePath =
-            _listingFile =
-            _labelFile = string.Empty;
-            _outputFile = "a.out";
-            _showChecksums =
-            _verboseDasm =
+            Format =
+            CPU =
+            ErrorFile =
+            IncludePath =
+            ListingFile =
+            LabelFile = string.Empty;
+            OutputFile = "a.out";
+            ShowChecksums =
+            VerboseList =
             _werror =
-            _noWarn =
-            _warnLeft =
-            _noDisassembly =
-            _noSource =
-            _noAssembly =
-            _quiet =
-            _printVersion =
-            _caseSensitive = false;
+            NoWarnings =
+            WarnLeft =
+            NoDissasembly =
+            NoSource =
+            NoAssembly =
+            Quiet =
+            PrintVersion =
+            CaseSensitive = false;
         }
 
         #endregion
@@ -485,16 +468,16 @@ namespace Core6502DotNet
         {
             switch (option)
             {
-                case Options.CaseSensitive:      _caseSensitive  = value; break;
-                case Options.Checksum:           _showChecksums  = value; break;
-                case Options.NoAssembly:         _noAssembly     = value; break;
-                case Options.NoDisassembly:      _noDisassembly  = value; break;
-                case Options.NoSource:           _noSource       = value; break;
-                case Options.NoWarnings:         _noWarn         = value; break;
-                case Options.QuietMode:          _quiet          = value; break;
-                case Options.Verbose:            _verboseDasm    = value; break;
-                case Options.WarningsAsErrors:   _werror         = value; break;
-                case Options.WarnLeft:           _warnLeft       = value; break;
+                case Options.CaseSensitive:      CaseSensitive  = value; break;
+                case Options.Checksum:           ShowChecksums  = value; break;
+                case Options.NoAssembly:         NoAssembly     = value; break;
+                case Options.NoDisassembly:      NoDissasembly  = value; break;
+                case Options.NoSource:           NoSource       = value; break;
+                case Options.NoWarnings:         NoWarnings     = value; break;
+                case Options.QuietMode:          Quiet          = value; break;
+                case Options.Verbose:            VerboseList    = value; break;
+                case Options.WarningsAsErrors:   _werror        = value; break;
+                case Options.WarnLeft:           WarnLeft       = value; break;
             }
         }
 
@@ -502,13 +485,13 @@ namespace Core6502DotNet
         {
             switch (option)
             {
-                case Options.IncludePath:        _includePath    = value; break;
-                case Options.OutputFile:         _outputFile     = value; break;
-                case Options.LabelPath:          _labelFile      = value; break;
-                case Options.ListPath:           _listingFile    = value; break;
-                case Options.ErrorPath:          _errorFile      = value; break;
-                case Options.BinaryFormat:       _format         = value; break;
-                case Options.Cpu:                _cpu            = value; break;
+                case Options.IncludePath:        IncludePath    = value; break;
+                case Options.OutputFile:         OutputFile     = value; break;
+                case Options.LabelPath:          LabelFile      = value; break;
+                case Options.ListPath:           ListingFile    = value; break;
+                case Options.ErrorPath:          ErrorFile      = value; break;
+                case Options.BinaryFormat:       Format         = value; break;
+                case Options.Cpu:                CPU            = value; break;
             }
         }
         void SetOptionValuesFromConfig(Options ident, IEnumerable<Token> array)
@@ -556,23 +539,23 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets or sets the target architecture information.
         /// </summary>
-        public string Format { get => _format; set => _format = value; }
+        public string Format { get; set; }
 
         /// <summary>
         /// Gets the selected CPU.
         /// </summary>
         /// <value>The cpu.</value>
-        public string CPU => _cpu;
+        public string CPU { get; private set; }
 
         /// <summary>
         /// Gets the error filename.
         /// </summary>
-        public string ErrorFile => _errorFile;
+        public string ErrorFile { get; private set; }
 
         /// <summary>
         /// Gets the path to search to include in sources.
         /// </summary>
-        public string IncludePath => _includePath;
+        public string IncludePath { get; private set; }
 
         /// <summary>
         /// Gets the read-only list of input filenames.
@@ -587,39 +570,39 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the output filename.
         /// </summary>
-        public string OutputFile => _outputFile;
+        public string OutputFile { get; private set; }
 
         /// <summary>
         /// The assembly listing filename.
         /// </summary>
-        public string ListingFile => _listingFile;
+        public string ListingFile { get; private set; }
 
         /// <summary>
         /// Gets the label listing filename.
         /// </summary>
-        public string LabelFile => _labelFile;
+        public string LabelFile { get; private set; }
 
         /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
-        public bool Quiet => _quiet;
+        public bool Quiet { get; private set; }
 
         /// <summary>
         /// Gets the flag that indicates warnings should be suppressed.
         /// </summary>
-        public bool NoWarnings => _noWarn;
+        public bool NoWarnings { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether to suppress warnings for whitespaces 
         /// before labels.
         /// </summary>
         /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
-        public bool WarnLeft => _warnLeft;
+        public bool WarnLeft { get; private set; }
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
         /// </summary>
-        public bool WarningsAsErrors => !_noWarn && _werror;
+        public bool WarningsAsErrors => !NoWarnings && _werror;
 
         /// <summary>
         /// Gets the number of arguments passed after the call to 
@@ -632,39 +615,39 @@ namespace Core6502DotNet
         /// Gets a flag indicating that assembly listing should be 
         /// verbose.
         /// </summary>
-        public bool VerboseList => _verboseDasm;
+        public bool VerboseList { get; private set; }
 
         /// <summary>
         /// Gets a flag that indicates the source should be processed as
         /// case-sensitive.
         /// </summary>
-        public bool CaseSensitive => _caseSensitive;
+        public bool CaseSensitive { get; private set; }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress original source.
         /// </summary>
-        public bool NoSource => _noSource;
+        public bool NoSource { get; private set; }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress 6502 disassembly.
         /// </summary>
-        public bool NoDissasembly => _noDisassembly;
+        public bool NoDissasembly { get; private set; }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress assembly bytes.
         /// </summary>
-        public bool NoAssembly => _noAssembly;
+        public bool NoAssembly { get; private set; }
 
         /// <summary>
         /// Gets a flag indicating the full version of the assembler should be printed.
         /// </summary>
-        public bool PrintVersion => _printVersion;
+        public bool PrintVersion { get; }
 
         /// <summary>
         /// Gets a flag indicating that checksum information should be printed after 
         /// assembly.
         /// </summary>
-        public bool ShowChecksums => _showChecksums;
+        public bool ShowChecksums { get; private set; }
 
         #endregion
     }
