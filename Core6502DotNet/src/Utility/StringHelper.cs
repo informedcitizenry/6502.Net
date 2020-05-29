@@ -62,7 +62,12 @@ namespace Core6502DotNet
             return string.Format(fmtString, objects.ToArray());
         }
 
-        public static bool ExpressionIsString(Token expression)
+        /// <summary>
+        /// Determines whether the tokenized expression is in fact a complete string.
+        /// </summary>
+        /// <param name="expression">The tokenized expression.</param>
+        /// <returns><c>True</c> if the expression is a string, otherwise <c>false</c>.</c></returns>
+        public static bool ExpressionIsAString(Token expression)
         {
             if (expression.Children.Count > 2)
                 return false;

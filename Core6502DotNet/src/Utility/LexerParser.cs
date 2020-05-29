@@ -106,7 +106,7 @@ namespace Core6502DotNet
                 else if (current == 'E' || current == 'e')
                 {
                     if (char.IsDigit(prev) &&
-                         (next == '+' || next == '-'))
+                         (next == '+' || next == '-' || char.IsDigit(next)))
                         return false;
                 }
                 return true;

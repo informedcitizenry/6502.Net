@@ -100,7 +100,7 @@ namespace Core6502DotNet
                 case ".error":
                 case ".warn":
                     if (line.OperandHasToken && line.Operand.Children.Count == 1 && 
-                        StringHelper.ExpressionIsString(line.Operand.Children[0]))
+                        StringHelper.ExpressionIsAString(line.Operand.Children[0]))
                         Output(line, line.Operand.Children[0]);
                     else
                         Assembler.Log.LogEntry(line, line.Operand, "String expression expected.");
@@ -169,7 +169,7 @@ namespace Core6502DotNet
 
         void Output(SourceLine line, Token operand)
         {
-            if (StringHelper.ExpressionIsString(operand))
+            if (StringHelper.ExpressionIsAString(operand))
                 Output(line, StringHelper.GetString(operand));
             else
                 Output(line, Evaluator.Evaluate(operand).ToString());

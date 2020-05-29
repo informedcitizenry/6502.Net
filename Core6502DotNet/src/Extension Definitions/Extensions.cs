@@ -222,8 +222,8 @@ namespace Core6502DotNet
                 sb.Append($"{startChar}{pc:x4}    ");
             var byteList = byteCollection.ToList();
             var rows = byteList.Count / 8;
-            if (rows == 0)
-                rows = 1;
+            if (byteList.Count % 8 != 0)
+                rows++;
             for (int y = 0; y < rows; y++)
             {
                 for (int x = 0; x < 8; x++)

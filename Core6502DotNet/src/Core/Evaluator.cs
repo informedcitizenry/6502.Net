@@ -273,11 +273,11 @@ namespace Core6502DotNet
                     try
                     {
                         if (token.Name[1] == 'b' || token.Name[1] == 'B')
-                            converted = Convert.ToInt32(token.Name.Substring(2), 2);
+                            converted = Convert.ToInt64(token.Name.Substring(2), 2);
                         else if (token.Name[1] == 'o' || token.Name[1] == 'O')
-                            converted = Convert.ToInt32(token.Name.Substring(2), 8);
+                            converted = Convert.ToInt64(token.Name.Substring(2), 8);
                         else if (token.Name[1] == 'x' || token.Name[1] == 'X')
-                            converted = Convert.ToInt32(token.Name.Substring(2), 16);
+                            converted = Convert.ToInt64(token.Name.Substring(2), 16);
                         else
                             throw new ExpressionException(token.Position, $"\"{token}\" is not a valid numeric constant.");
                     }
@@ -302,7 +302,7 @@ namespace Core6502DotNet
                 // all leading zeros treated as octal
                 try
                 {
-                    converted = Convert.ToInt32(token.Name, 8);
+                    converted = Convert.ToInt64(token.Name, 8);
                 }
                 catch
                 {
