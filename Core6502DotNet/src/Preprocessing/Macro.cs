@@ -49,13 +49,7 @@ namespace Core6502DotNet
 
         #region Methods
 
-        /// <summary>
-        /// Expands the macro into source from the invocation.
-        /// </summary>
-        /// <param name="passedParams">The parameters passed from the invocation.</param>
-        /// <returns>A string representation of the expanded macro, including all
-        /// substituted parameters.</returns>
-        public IEnumerable<SourceLine> Expand(Token passedParams)
+        List<string> GetParamListFromParameters(Token passedParams)
         {
             var paramList = new List<string>();
             // capture passed parameters to a simple string list
@@ -64,7 +58,7 @@ namespace Core6502DotNet
                 var index = 0;
                 foreach (Token p in passedParams.Children)
                 {
-                    var parmName = p.ToString(useUnparsed: true); 
+                    var parmName = p.ToString();
                     if (passedParams.Children.Count > 1)
                         parmName = parmName.TrimStartOnce(',');
                     if (string.IsNullOrEmpty(parmName))
@@ -83,6 +77,24 @@ namespace Core6502DotNet
                     index++;
                 }
             }
+            return paramList;
+        }
+
+        public SourceLine Define(Token passedParams)
+        {
+            var paramList = GetParamListFromParameters(passedParams);
+            return null;
+        }
+
+        /// <summary>
+        /// Expands the macro into source from the invocation.
+        /// </summary>
+        /// <param name="passedParams">The parameters passed from the invocation.</param>
+        /// <returns>A string representation of the expanded macro, including all
+        /// substituted parameters.</returns>
+        public IEnumerable<SourceLine> Expand(Token passedParams)
+        {
+            var paramList = GetParamListFromParameters(passedParams);
             var expanded = new List<SourceLine> { GetBlockDirectiveLine(string.Empty, 1, ".block") };
             foreach (MacroSource source in _sources)
             {

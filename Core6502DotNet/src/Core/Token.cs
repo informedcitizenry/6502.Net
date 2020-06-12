@@ -133,31 +133,18 @@ namespace Core6502DotNet
             return copy;
         }
 
-        /// <summary>
-        /// Returns a string that represents the current object.
-        /// </summary>
-        /// <param name="useUnparsed">Determines whether the ToString
-        /// method should be based on the Unparsed name.</param>
-        /// <returns>The string representation of the object.</returns>
-        public string ToString(bool useUnparsed)
+        public override string ToString()
         {
-            StringBuilder sb;
-            if (useUnparsed)
-                sb = new StringBuilder(UnparsedName);
-            else
-                sb = new StringBuilder(Name);
+            StringBuilder sb = new StringBuilder(Name);
             if (Children != null)
             {
                 foreach (Token t in Children)
-                    sb.Append(t.ToString(useUnparsed));
+                    sb.Append(t.ToString());
             }
-            if (useUnparsed && OperatorType == OperatorType.Open)
+            if (OperatorType == OperatorType.Open)
                 sb.Append(LexerParser.Groups[Name]);
             return sb.ToString();
         }
-
-        public override string ToString()
-            => ToString(false);
 
         #endregion
 
