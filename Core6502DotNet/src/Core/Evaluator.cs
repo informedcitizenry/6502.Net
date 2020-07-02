@@ -142,11 +142,11 @@ namespace Core6502DotNet
             },
             {
                 new Token{ Name = "&",  Type = TokenType.Operator, OperatorType = OperatorType.Unary  },
-                new OperationDef(parms => (long)parms[0]  % 65536,                            11)
+                new OperationDef(parms => (long)parms[0]  & 65535,                            11)
             },
             {
                 new Token{ Name = "^",  Type = TokenType.Operator, OperatorType = OperatorType.Unary  },
-                new OperationDef(parms => (long)(parms[0] / 0x10000) % 256,                   11)
+                new OperationDef(parms => ((long)parms[0] & UInt24.MaxValue) / 0x10000,       11)
             },
             {
                 new Token{ Name = "-",  Type = TokenType.Operator, OperatorType = OperatorType.Unary  },
@@ -158,11 +158,11 @@ namespace Core6502DotNet
             },
             {
                 new Token{ Name = ">",  Type = TokenType.Operator, OperatorType = OperatorType.Unary  },
-                new OperationDef(parms => (long)(parms[0] / 0x100) % 256,                     11)
+                new OperationDef(parms => ((long)parms[0] & 65535) / 0x100,                   11)
             },
             {
                 new Token{ Name = "<",  Type = TokenType.Operator, OperatorType = OperatorType.Unary  },
-                new OperationDef(parms => (long)parms[0]  % 256,                              11)
+                new OperationDef(parms => (long)parms[0]  & 255,                              11)
             },
             {
                 new Token{ Name = "$",  Type = TokenType.Operator, OperatorType = OperatorType.Unary  },

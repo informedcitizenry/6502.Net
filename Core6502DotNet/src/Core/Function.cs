@@ -75,7 +75,7 @@ namespace Core6502DotNet
         /// <returns>A <see cref="double"/> of the function return.</returns>
         public double Invoke(MultiLineAssembler mla, List<object> parameterList)
         {
-            SourceLine invokeLine = Assembler.LineIterator.Current;
+            var invokeLine = Assembler.LineIterator.Current;
             if (parameterList.Count > Params.Count)
             {
                 Assembler.Log.LogEntry(invokeLine, invokeLine.Instruction, "Unexpected argument passed to function.");

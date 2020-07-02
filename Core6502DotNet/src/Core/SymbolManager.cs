@@ -904,7 +904,7 @@ namespace Core6502DotNet
                 if (ephemeral)
                 {
                     _ephemeralCounter--;
-                    IEnumerable<string> ephemerals = _symbols.Keys.Where(k => k.Contains(sc, StringComparison.Ordinal));
+                    var ephemerals = new List<string>(_symbols.Keys.Where(k => k.Contains(sc, StringComparison.Ordinal)));
                     foreach (var key in ephemerals)
                         _symbols.Remove(key);
                 }
