@@ -317,10 +317,10 @@ namespace Core6502DotNet
             var result = new Stack<double>();
             var operands = new Stack<string>();
             var operators = new Stack<Token>();
-            OperatorType lastType = OperatorType.None;
+            var lastType = OperatorType.None;
             var lastToken = string.Empty;
             var nonBase10 = string.Empty;
-            RandomAccessIterator<Token> iterator = tokens.GetIterator();
+            var iterator = tokens.GetIterator();
             Token token;
             while ((token = iterator.GetNext()) != null)
             {

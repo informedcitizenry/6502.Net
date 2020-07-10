@@ -145,112 +145,121 @@ namespace Core6502DotNet
             SourceLine line = null;
             while ((line = lineIterator.GetNext()) != null)
             {
-                if (string.IsNullOrWhiteSpace(line.ParsedSource))
+                try
                 {
-                    macroProcessed.Add(line);
-                    continue;
-                }
-                if (line.InstructionName.Equals(".macro"))
-                {
-                    if (string.IsNullOrEmpty(line.LabelName))
+                    if (string.IsNullOrWhiteSpace(line.ParsedSource))
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction, "Macro name not specified.");
+                        macroProcessed.Add(line);
                         continue;
                     }
-                    var macroName = "." + line.LabelName;
-
-                    if (_macros.ContainsKey(macroName))
+                    if (line.InstructionName.Equals(".macro"))
                     {
-                        Assembler.Log.LogEntry(line, line.Label, $"Macro named \"{line.LabelName}\" already defined.");
-                        continue;
-                    }
-                    if (Assembler.IsReserved.Any(i => i.Invoke(macroName)) ||
-                        !char.IsLetter(line.LabelName[0]))
-                    {
-                        Assembler.Log.LogEntry(line, line.Label, $"Macro name \"{line.LabelName}\" is not valid.");
-                        continue;
-                    }
-                    Reserved.AddWord("MacroNames", macroName);
-
-                    var macro = new Macro(line.Operand, line.ParsedSource);
-                    _macros[macroName] = macro;
-                    SourceLine instr = line;
-                    while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endmacro"))
-                    {
-                        if (macroName.Equals(line.InstructionName))
+                        if (string.IsNullOrEmpty(line.LabelName))
                         {
-                            Assembler.Log.LogEntry(line, line.Instruction, "Recursive macro call not allowed.");
+                            Assembler.Log.LogEntry(line, line.Instruction, "Macro name not specified.");
                             continue;
                         }
-                        if (line.InstructionName.Equals(".macro"))
+                        var macroName = "." + line.LabelName;
+
+                        if (_macros.ContainsKey(macroName))
                         {
-                            Assembler.Log.LogEntry(line, line.Instruction, "Nested macro definitions not allowed.");
+                            Assembler.Log.LogEntry(line, line.Label, $"Macro named \"{line.LabelName}\" already defined.");
                             continue;
                         }
-                        if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
+                        if (Assembler.IsReserved.Any(i => i.Invoke(macroName)) ||
+                            !char.IsLetter(line.LabelName[0]))
                         {
-                            IEnumerable<SourceLine> includes = ExpandInclude(line);
-                            foreach (SourceLine incl in includes)
+                            Assembler.Log.LogEntry(line, line.Label, $"Macro name \"{line.LabelName}\" is not valid.");
+                            continue;
+                        }
+                        Reserved.AddWord("MacroNames", macroName);
+
+                        var compare = Assembler.Options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                        var macro = new Macro(line.Operand, line.ParsedSource, compare);
+                        _macros[macroName] = macro;
+                        var instr = line;
+                        while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endmacro"))
+                        {
+                            if (macroName.Equals(line.InstructionName))
                             {
-                                if (macroName.Equals(incl.InstructionName))
+                                Assembler.Log.LogEntry(line, line.Instruction, "Recursive macro call not allowed.");
+                                continue;
+                            }
+                            if (line.InstructionName.Equals(".macro"))
+                            {
+                                Assembler.Log.LogEntry(line, line.Instruction, "Nested macro definitions not allowed.");
+                                continue;
+                            }
+                            if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
+                            {
+                                var includes = ExpandInclude(line);
+                                foreach (var incl in includes)
                                 {
-                                    Assembler.Log.LogEntry(incl, incl.Instruction, "Recursive macro call not allowed.");
-                                    continue;
+                                    if (macroName.Equals(incl.InstructionName))
+                                    {
+                                        Assembler.Log.LogEntry(incl, incl.Instruction, "Recursive macro call not allowed.");
+                                        continue;
+                                    }
+                                    macro.AddSource(incl);
                                 }
-                                macro.AddSource(incl);
+                            }
+                            else
+                            {
+                                macro.AddSource(line);
                             }
                         }
-                        else
+                        if (!string.IsNullOrEmpty(line.LabelName))
                         {
+                            if (line.OperandHasToken)
+                            {
+                                Assembler.Log.LogEntry(line, line.Operand, "Unexpected argument found for macro definition closure.");
+                                continue;
+                            }
+                            line.Instruction = null;
+                            line.ParsedSource = line.ParsedSource.Replace(".endmacro", string.Empty);
                             macro.AddSource(line);
                         }
-                    }
-                    if (!string.IsNullOrEmpty(line.LabelName))
-                    {
-                        if (line.OperandHasToken)
+                        else if (line == null)
                         {
-                            Assembler.Log.LogEntry(line, line.Operand, "Unexpected argument found for macro definition closure.");
+                            line = instr;
+                            Assembler.Log.LogEntry(instr, instr.Instruction, "Missing closure for macro definition.");
                             continue;
                         }
-                        line.Instruction = null;
-                        line.ParsedSource = line.ParsedSource.Replace(".endmacro", string.Empty);
-                        macro.AddSource(line);
                     }
-                    else if (line == null)
+                    else if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
                     {
-                        line = instr;
-                        Assembler.Log.LogEntry(instr, instr.Instruction, "Missing closure for macro definition.");
+                        macroProcessed.AddRange(ExpandInclude(line));
+                    }
+                    else if (_macros.ContainsKey(line.InstructionName))
+                    {
+                        if (!string.IsNullOrEmpty(line.LabelName))
+                        {
+                            SourceLine clone = line.Clone();
+                            clone.Operand =
+                            clone.Instruction = null;
+                            clone.UnparsedSource =
+                            clone.ParsedSource = line.LabelName;
+                            macroProcessed.Add(clone);
+                        }
+                        Macro macro = _macros[line.InstructionName];
+                        macroProcessed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
+                    }
+                    else if (line.InstructionName.Equals(".endmacro"))
+                    {
+                        Assembler.Log.LogEntry(line, line.Instruction,
+                            "Directive \".endmacro\" does not close a macro definition.");
                         continue;
                     }
-                }
-                else if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
-                {
-                    macroProcessed.AddRange(ExpandInclude(line));
-                }
-                else if (_macros.ContainsKey(line.InstructionName))
-                {
-                    if (!string.IsNullOrEmpty(line.LabelName))
+                    else
                     {
-                        SourceLine clone = line.Clone();
-                        clone.Operand =
-                        clone.Instruction = null;
-                        clone.UnparsedSource =
-                        clone.ParsedSource = line.LabelName;
-                        macroProcessed.Add(clone);
+                        macroProcessed.Add(line);
                     }
-                    Macro macro = _macros[line.InstructionName];
-                    macroProcessed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
                 }
-                else if (line.InstructionName.Equals(".endmacro"))
+                catch (ExpressionException ex)
                 {
-                    Assembler.Log.LogEntry(line, line.Instruction,
-                        "Directive \".endmacro\" does not close a macro definition.");
-                    continue;
+                    Assembler.Log.LogEntry(line, ex.Position, ex.Message);
                 }
-                else
-                {
-                    macroProcessed.Add(line);
-                }
+                
             }
             return macroProcessed;
         }

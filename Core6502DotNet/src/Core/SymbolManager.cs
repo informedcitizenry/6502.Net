@@ -614,7 +614,6 @@ namespace Core6502DotNet
 
         bool DefineSymbol(Symbol symbol, bool isGlobal)
         {
-
             if (_criteria.Any(f => !f(symbol.Name)))
                 throw new SymbolException(symbol.Name, 0, SymbolException.ExceptionReason.NotValid);
             var fqdn = GetScopedName(symbol.Name);
@@ -626,6 +625,9 @@ namespace Core6502DotNet
             if (exists)
             {
                 var sym = _symbols[fqdn];
+                if (sym.DataType == DataType.Numeric && (symbol.DataType == DataType.Address || symbol.DataType == DataType.Boolean))
+                    sym.DataType = symbol.DataType;
+
                 if ((!sym.IsMutable &&
                     ((sym.DefinedAtIndex == -1 && Assembler.LineIterator == null) || sym.DefinedAtIndex != Assembler.LineIterator.Index)) ||
                     sym.DataType != symbol.DataType)

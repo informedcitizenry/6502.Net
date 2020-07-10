@@ -25,28 +25,29 @@ namespace Core6502DotNet
         enum Options
         {
             None,
-            CaseSensitive,
-            Defines,
-            IncludePath,
-            OutputFile,
-            Sources,
-            ListingOptions,
-            LabelPath,
-            ListPath,
-            NoAssembly,
-            NoDisassembly,
-            NoSource,
-            Verbose,
-            LoggingOptions,
-            Checksum,
-            ErrorPath,
-            NoWarnings,
-            QuietMode,
-            WarningsAsErrors,
-            WarnLeft,
-            Target,
-            BinaryFormat,
-            Cpu
+            caseSensitive,
+            defines,
+            includePath,
+            ignoreColons,
+            outputFile,
+            sources,
+            listingOptions,
+            labelPath,
+            listPath,
+            noAssembly,
+            noDisassembly,
+            noSource,
+            verbose,
+            loggingOptions,
+            checksum,
+            errorPath,
+            noWarnings,
+            quietMode,
+            warningsAsErrors,
+            warnLeft,
+            target,
+            binaryFormat,
+            cpu
         };
 
         enum OptionType
@@ -61,108 +62,112 @@ namespace Core6502DotNet
         {
             { "/",              new HashSet<Options>
                                 {
-                                    Options.CaseSensitive,
-                                    Options.Defines,
-                                    Options.IncludePath,
-                                    Options.ListingOptions,
-                                    Options.LoggingOptions,
-                                    Options.OutputFile,
-                                    Options.Sources,
-                                    Options.Target
+                                    Options.caseSensitive,
+                                    Options.ignoreColons,
+                                    Options.defines,
+                                    Options.includePath,
+                                    Options.listingOptions,
+                                    Options.loggingOptions,
+                                    Options.outputFile,
+                                    Options.sources,
+                                    Options.target
                                 }
             },
             { "listingOptions", new HashSet<Options>
                                 {
-                                    Options.LabelPath,
-                                    Options.ListPath,
-                                    Options.NoAssembly,
-                                    Options.NoDisassembly,
-                                    Options.NoSource,
-                                    Options.Verbose
+                                    Options.labelPath,
+                                    Options.listPath,
+                                    Options.noAssembly,
+                                    Options.noDisassembly,
+                                    Options.noSource,
+                                    Options.verbose
                                 }
             },
             { "loggingOptions", new HashSet<Options>
                                 {
-                                    Options.Checksum,
-                                    Options.ErrorPath,
-                                    Options.NoWarnings,
-                                    Options.QuietMode,
-                                    Options.WarningsAsErrors,
-                                    Options.WarnLeft
+                                    Options.checksum,
+                                    Options.errorPath,
+                                    Options.noWarnings,
+                                    Options.quietMode,
+                                    Options.warningsAsErrors,
+                                    Options.warnLeft
                                 }
             },
             { "target",         new HashSet<Options>
                                 {
-                                    Options.BinaryFormat,
-                                    Options.Cpu
+                                    Options.binaryFormat,
+                                    Options.cpu
                                 }
             }
         };
 
         static readonly Dictionary<Options, OptionType> _optionTypes = new Dictionary<Options, OptionType>
         {
-            { Options.CaseSensitive,      OptionType.Boolean },
-            { Options.Defines,            OptionType.Array   },
-            { Options.IncludePath,        OptionType.String  },
-            { Options.ListingOptions,     OptionType.Object  },
-            { Options.LoggingOptions,     OptionType.Object  },
-            { Options.OutputFile,         OptionType.String  },
-            { Options.Sources,            OptionType.Array   },
-            { Options.Target,             OptionType.Object  },
-            { Options.LabelPath,          OptionType.String  },
-            { Options.ListPath,           OptionType.String  },
-            { Options.NoAssembly,         OptionType.Boolean },
-            { Options.NoDisassembly,      OptionType.Boolean },
-            { Options.NoSource,           OptionType.Boolean },
-            { Options.Verbose,            OptionType.Boolean },
-            { Options.Checksum,           OptionType.Boolean },
-            { Options.ErrorPath,          OptionType.String  },
-            { Options.NoWarnings,         OptionType.Boolean },
-            { Options.QuietMode,          OptionType.Boolean },
-            { Options.WarningsAsErrors,   OptionType.Boolean },
-            { Options.WarnLeft,           OptionType.Boolean },
-            { Options.BinaryFormat,       OptionType.String  },
-            { Options.Cpu,                OptionType.String  }
+            { Options.caseSensitive,      OptionType.Boolean },
+            { Options.ignoreColons,       OptionType.Boolean },
+            { Options.defines,            OptionType.Array   },
+            { Options.includePath,        OptionType.String  },
+            { Options.listingOptions,     OptionType.Object  },
+            { Options.loggingOptions,     OptionType.Object  },
+            { Options.outputFile,         OptionType.String  },    
+            { Options.sources,            OptionType.Array   },
+            { Options.target,             OptionType.Object  },
+            { Options.labelPath,          OptionType.String  },
+            { Options.listPath,           OptionType.String  },
+            { Options.noAssembly,         OptionType.Boolean },
+            { Options.noDisassembly,      OptionType.Boolean },
+            { Options.noSource,           OptionType.Boolean },
+            { Options.verbose,            OptionType.Boolean },
+            { Options.checksum,           OptionType.Boolean },
+            { Options.errorPath,          OptionType.String  },
+            { Options.noWarnings,         OptionType.Boolean },
+            { Options.quietMode,          OptionType.Boolean },
+            { Options.warningsAsErrors,   OptionType.Boolean },
+            { Options.warnLeft,           OptionType.Boolean },
+            { Options.binaryFormat,       OptionType.String  },
+            { Options.cpu,                OptionType.String  }
         };
 
         static readonly Dictionary<Options, OptionType> _arrayTypes = new Dictionary<Options, OptionType>
         {
-            { Options.Defines, OptionType.String },
-            { Options.Sources, OptionType.String }
+            { Options.defines, OptionType.String },
+            { Options.sources, OptionType.String }
         };
 
         static readonly Dictionary<string, Options> _optionAlias = new Dictionary<string, Options>
         {
-            { "-a",               Options.NoAssembly },
-            { "--no-assembly",    Options.NoAssembly },
-            { "-C",               Options.CaseSensitive },
-            { "--case-sensitive", Options.CaseSensitive },
-            { "-c",               Options.Cpu },
-            { "--cpu",            Options.Cpu },
-            { "-D",               Options.Defines },
-            { "--define",         Options.Defines },
-            { "-d",               Options.NoDisassembly },
-            { "--no-disassembly", Options.NoDisassembly },
-            { "-E",               Options.ErrorPath },
-            { "--error",          Options.ErrorPath },
-            { "--format",         Options.BinaryFormat },
-            { "-I",               Options.IncludePath },
-            { "--include-path",   Options.IncludePath },
-            { "-L",               Options.ListPath },
-            { "--list",           Options.ListPath },
-            { "-l",               Options.LabelPath },
-            { "--labels",         Options.LabelPath },
-            { "-o",               Options.OutputFile },
-            { "--output",         Options.OutputFile },
-            { "-q",               Options.QuietMode },
-            { "--quiet",          Options.QuietMode },
-            { "-s",               Options.NoSource },
-            { "--no-source",      Options.NoSource },
-            { "--verbose-asm",    Options.Verbose },
-            { "-w",               Options.NoWarnings },
-            { "--no-warn",        Options.NoWarnings },
-            { "--werror",         Options.WarningsAsErrors },
-            { "--wleft",          Options.WarnLeft }
+            { "-a",               Options.noAssembly },
+            { "--no-assembly",    Options.noAssembly },
+            { "-C",               Options.caseSensitive },
+            { "--case-sensitive", Options.caseSensitive },
+            { "-c",               Options.cpu },
+            { "--cpu",            Options.cpu },
+            { "--checksum",       Options.checksum },
+            { "-D",               Options.defines },
+            { "--define",         Options.defines },
+            { "-d",               Options.noDisassembly },
+            { "--no-disassembly", Options.noDisassembly },
+            { "-E",               Options.errorPath },
+            { "--error",          Options.errorPath },
+            { "--format",         Options.binaryFormat },
+            { "-I",               Options.includePath },
+            { "--include-path",   Options.includePath },
+            { "--ignore-colons",  Options.ignoreColons },
+            { "-L",               Options.listPath },
+            { "--list",           Options.listPath },
+            { "-l",               Options.labelPath },
+            { "--labels",         Options.labelPath },
+            { "-o",               Options.outputFile },
+            { "--output",         Options.outputFile },
+            { "-q",               Options.quietMode },
+            { "--quiet",          Options.quietMode },
+            { "-s",               Options.noSource },
+            { "--no-source",      Options.noSource },
+            { "--verbose-asm",    Options.verbose },
+            { "-w",               Options.noWarnings },
+            { "--no-warn",        Options.noWarnings },
+            { "--werror",         Options.warningsAsErrors },
+            { "--wleft",          Options.warnLeft }
         };
 
         static readonly string _helpUsage = " Try '-?|-h|help' for usage.";
@@ -171,15 +176,16 @@ namespace Core6502DotNet
             "Usage: {0} [options...] <inputs> [output]\n\n" +
             "    -a, --no-assembly        Suppress assembled bytes from assembly\n" +
             "    -C, --case-sensitive     Treat all symbols as case-sensitive\n" +
-            "    --checksum               Display checksum information on assembly\n" +
             "    -c, --cpu <arg>          Specify the target CPU and instruction set\n" +
+            "    --checksum               Display checksum information on assembly\n" +
             "    --config <arg>           Load all settings from a configuration file\n" +
             "    -D, --define <args>      Assign value to a global symbol/label in\n" +
             "                             <args>\n" +
             "    -d, --no-dissassembly    Suppress disassembly from assembly listing\n" +
-            "    -E, --error              Dump errors to <arg>\n" +
+            "    -E, --error <arg>        Dump errors to <arg>\n" +
             "    --format, --arch <arg>   Specify binary output format\n" +
             "    -I, --include-path <arg> Include search path <arg>\n" +
+            "    --ignore-colons          Treat colons in semi-colon comments as comments\n" +
             "    -l, --labels <arg>       Output label definitions to <arg>\n" +
             "    -L, --list <arg>         Output listing to <arg>\n" +
             "    -o, --output <arg>       Output assembly to <arg>\n" +
@@ -219,8 +225,10 @@ namespace Core6502DotNet
             ErrorFile =
             IncludePath =
             ListingFile =
+            OutputPath = 
             LabelFile = string.Empty;
             OutputFile = "a.out";
+            IgnoreColons =
             ShowChecksums =
             VerboseList =
             _werror =
@@ -417,7 +425,7 @@ namespace Core6502DotNet
                     if (expectingcolon)
                         throw new ExpressionException(option.Position, "Expected ':'.");
                     ident = option.Name.TrimOnce(optionFirst);
-                    if (!Enum.TryParse<Options>(ident.ToFirstUpper(), out parsedOption) || !_optionSchema[parent].Contains(parsedOption))
+                    if (!Enum.TryParse<Options>(ident, out parsedOption) || !_optionSchema[parent].Contains(parsedOption))
                         throw new ExpressionException(option.Position, $"Option '{ident}' not valid.");
                     expectedType = _optionTypes[parsedOption];
                     atIdent = false;
@@ -468,16 +476,17 @@ namespace Core6502DotNet
         {
             switch (option)
             {
-                case Options.CaseSensitive:      CaseSensitive  = value; break;
-                case Options.Checksum:           ShowChecksums  = value; break;
-                case Options.NoAssembly:         NoAssembly     = value; break;
-                case Options.NoDisassembly:      NoDissasembly  = value; break;
-                case Options.NoSource:           NoSource       = value; break;
-                case Options.NoWarnings:         NoWarnings     = value; break;
-                case Options.QuietMode:          Quiet          = value; break;
-                case Options.Verbose:            VerboseList    = value; break;
-                case Options.WarningsAsErrors:   _werror        = value; break;
-                case Options.WarnLeft:           WarnLeft       = value; break;
+                case Options.caseSensitive:      CaseSensitive  = value; break;
+                case Options.checksum:           ShowChecksums  = value; break;
+                case Options.ignoreColons:       IgnoreColons   = value; break;
+                case Options.noAssembly:         NoAssembly     = value; break;
+                case Options.noDisassembly:      NoDissasembly  = value; break;
+                case Options.noSource:           NoSource       = value; break;
+                case Options.noWarnings:         NoWarnings     = value; break;
+                case Options.quietMode:          Quiet          = value; break;
+                case Options.verbose:            VerboseList    = value; break;
+                case Options.warningsAsErrors:   _werror        = value; break;
+                case Options.warnLeft:           WarnLeft       = value; break;
             }
         }
 
@@ -485,13 +494,13 @@ namespace Core6502DotNet
         {
             switch (option)
             {
-                case Options.IncludePath:        IncludePath    = value; break;
-                case Options.OutputFile:         OutputFile     = value; break;
-                case Options.LabelPath:          LabelFile      = value; break;
-                case Options.ListPath:           ListingFile    = value; break;
-                case Options.ErrorPath:          ErrorFile      = value; break;
-                case Options.BinaryFormat:       Format         = value; break;
-                case Options.Cpu:                CPU            = value; break;
+                case Options.includePath:        IncludePath    = value; break;
+                case Options.outputFile:         OutputFile     = value; break;
+                case Options.labelPath:          LabelFile      = value; break;
+                case Options.listPath:           ListingFile    = value; break;
+                case Options.errorPath:          ErrorFile      = value; break;
+                case Options.binaryFormat:       Format         = value; break;
+                case Options.cpu:                CPU            = value; break;
             }
         }
         void SetOptionValuesFromConfig(Options ident, IEnumerable<Token> array)
@@ -517,7 +526,7 @@ namespace Core6502DotNet
                                 throw new ExpressionException(option.Position, $"Invalid token \"{optionValue}\".");
                             throw new ExpressionException(option.Position, $"Value \"{optionValue}\" was not a string.");
                         }
-                        if (ident == Options.Defines)
+                        if (ident == Options.defines)
                             _defines.Add(optionValue.TrimOnce(optionValue[0]));
                         else
                             _source.Add(optionValue.TrimOnce(optionValue[0]));
@@ -571,6 +580,11 @@ namespace Core6502DotNet
         /// Gets the output filename.
         /// </summary>
         public string OutputFile { get; private set; }
+
+        /// <summary>
+        /// Gets the output file's path (directory).
+        /// </summary>
+        public string OutputPath { get; private set; }
 
         /// <summary>
         /// The assembly listing filename.
@@ -648,6 +662,12 @@ namespace Core6502DotNet
         /// assembly.
         /// </summary>
         public bool ShowChecksums { get; private set; }
+
+        /// <summary>
+        /// Gets a flag indicating that colons in semi-colon comments should be treated
+        /// as comments.
+        /// </summary>
+        public bool IgnoreColons { get; private set; }
 
         #endregion
     }

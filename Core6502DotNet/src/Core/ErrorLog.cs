@@ -156,6 +156,7 @@ namespace Core6502DotNet
         public void LogEntry(string filename, int linenumber, int position, string message)
             => LogEntry(filename, linenumber, position, message, true, null);
 
+
         /// <summary>
         /// Log a message.
         /// </summary>
@@ -222,6 +223,16 @@ namespace Core6502DotNet
         /// <param name="source">The message source.</param>
         public void LogEntry(SourceLine line, int position, string message, params object[] source)
             => LogEntry(line.Filename, line.LineNumber, position, message, true, source);
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/>.</param>
+        /// <param name="position">The position in the source that raised the message.</param>
+        /// <param name="message">The custom string message.</param>
+        public void LogEntry(SourceLine line, int position, string message)
+            => LogEntry(line.Filename, line.LineNumber, position, message, true);
+
 
         /// <summary>
         /// Log a message.

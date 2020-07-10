@@ -555,7 +555,7 @@ namespace Core6502DotNet
                         iterator.MoveNext();
                 }
                 if (iterator.Current == ';')
-                    _ = iterator.Skip(c => c != NewLine && c != ':' && c != EOF);
+                    _ = iterator.Skip(c => c != NewLine && (c != ':' || Assembler.Options.IgnoreColons) && c != EOF);
 
 
                 if (iterator.Current == NewLine || iterator.Current == ':' || iterator.Current == EOF)
@@ -585,7 +585,7 @@ namespace Core6502DotNet
                             Assembler.Log.LogEntry(newSourceLine, newSourceLine.Label, "Label is not at the beginning of the line.", false);
                         Reset();
                         lineNumber = currentLine;
-                    }
+                     }
                     else
                     {
                         token = null;

@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,7 +31,7 @@ namespace Core6502DotNet
 
         #region Members
 
-
+        StringComparison _stringCompare;
         readonly List<MacroSource> _sources;
 
         #endregion
@@ -42,8 +43,12 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="parms">The parameters token.</param>
         /// <param name="source">The original source string for the macro definition.</param>
-        public Macro(Token parms, string source)
-            : base(parms, source) => _sources = new List<MacroSource>();
+        public Macro(Token parms, string source, StringComparison stringComparison)
+            : base(parms, source)
+        {
+            _sources = new List<MacroSource>();
+            _stringCompare = stringComparison;
+        }
 
         #endregion
 
@@ -117,7 +122,7 @@ namespace Core6502DotNet
                         {
                             substitution = paramList[parmRef.paramIndex];
                         }
-                        replacement = parmRef.token.UnparsedName.Replace(parmRef.reference, substitution);
+                        replacement = parmRef.token.UnparsedName.Replace(parmRef.reference, substitution, _stringCompare);
                         expandedSource = expandedSource.Replace(parmRef.token.Name, replacement);
                     }
                     var expandedLine = LexerParser.Parse(source.Line.Filename, expandedSource).First();
@@ -230,7 +235,7 @@ namespace Core6502DotNet
                                 else
                                     reference = afterMark.Substring(0, length);
                                 if (!int.TryParse(reference, out var paramIx))
-                                    paramIx = Params.FindIndex(p => p.Name.Equals(reference));
+                                    paramIx = Params.FindIndex(p => p.Name.Equals(reference, _stringCompare));
                                 else
                                     paramIx--;
 
