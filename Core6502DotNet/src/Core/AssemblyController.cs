@@ -110,14 +110,6 @@ namespace Core6502DotNet
                     disassembly = new StringBuilder(disasmHeader);
                     foreach (var line in Assembler.LineIterator)
                     {
-                        if (line.LabelName.Equals("menu", StringComparison.OrdinalIgnoreCase))
-                        {
-                            int ray = 0;
-                        }
-                        if (line.LabelName.Equals("boot_menu", StringComparison.OrdinalIgnoreCase))
-                        {
-                            int bob = 0;
-                        }
                         try
                         {
                             if (line.Label != null || line.Instruction != null)

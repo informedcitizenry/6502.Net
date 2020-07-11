@@ -614,13 +614,13 @@ namespace Core6502DotNet.m6502
             CpuInstruction foundInstruction = null;
             if (!instructionExists && !forceWidth)
             {
-                var sizeModeBit = (int)Modes.Indirect;
+                var sizeModeBit = (int)(Modes.Indirect | Modes.SizeMask);
                 while (!(instructionExists = _selectedInstructions.ContainsKey(mnemmode)))
                 {
                     sizeModeBit >>= 1;
                     if (sizeModeBit == 0)
                         break;
-                    mnemmode.Mode = (mnemmode.Mode & Modes.MemModMask) | ((Modes)sizeModeBit | Modes.ZeroPage);
+                    mnemmode.Mode = (mnemmode.Mode & Modes.MemModMask) | (Modes)sizeModeBit;
                 }
             }
             if (instructionExists)
