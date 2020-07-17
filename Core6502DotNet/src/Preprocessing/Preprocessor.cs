@@ -309,7 +309,42 @@ namespace Core6502DotNet
         /// <returns>A collection of parsed <see cref="SourceLine"/>s.</returns>
         public IEnumerable<SourceLine> PreprocessFile(string fileName)
         {
-            var source = SourceHelper.ReadSource(fileName, out string fullPath);
+            string source = string.Empty;
+            string fullPath = string.Empty;
+            var fileInfo = new FileInfo(fileName);
+            if (fileInfo.Exists)
+            {
+                using (var fs = fileInfo.OpenText())
+                {
+                    fullPath = fileInfo.FullName;
+                    source = fs.ReadToEnd();
+                }
+            }
+            else if (!string.IsNullOrEmpty(Assembler.Options.IncludePath))
+            {
+                fullPath = Path.Combine(Assembler.Options.IncludePath, fileName);
+                if (File.Exists(fullPath))
+                    source = File.ReadAllText(fullPath);
+                else
+                    throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
+            }
+            else
+            {
+                throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
+            }
+            var sourceFileValid = false;
+            var len = source.Length < 5 ? source.Length : 5;
+            for(var i = 0; i < len; i++)
+            {
+                if (!char.IsControl(source[i]))
+                {
+                    sourceFileValid = true;
+                    break;
+                }
+            }
+            if (!sourceFileValid)
+                throw new Exception($"File \"{fileName}\" may be empty or in an unrecognized file format.");
+
             var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
             var dirInfo = new DirectoryInfo(location.AbsolutePath);
             if (Path.GetDirectoryName(dirInfo.FullName).Equals(Path.GetDirectoryName(fullPath)))
@@ -317,7 +352,6 @@ namespace Core6502DotNet
             if (_includedFiles.Contains(fullPath))
                 throw new FileLoadException($"File \"{fullPath}\" already included in source.");
             _includedFiles.Add(fullPath);
-
             return Preprocess(fileName, source);
         }
 

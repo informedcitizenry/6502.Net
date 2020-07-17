@@ -29,30 +29,39 @@ namespace Core6502DotNet
         #region Constructors
 
         /// <summary>
-        /// Constructs an instance of a <see cref="AssemblyController"/>, which controls the 
+        /// Constructs an instance of a <see cref="AssemblyController"/>, which controls the
         /// assembly process.
         /// </summary>
-        public AssemblyController() => _assemblers = new List<AssemblerBase>();
+        public AssemblyController()
+        {
+            Assembler.Initialize();
+            _assemblers = new List<AssemblerBase>();
+        }
 
         /// <summary>
         /// Constructs an instance of a <see cref="AssemblyController"/>, which controls the 
         /// assembly process.
         /// </summary>
-        /// <param name="lineAssembler">A <see cref="AssemblerBase"/> object responsible for
-        /// assembling directives not in the base assembler package.</param>
-        public AssemblyController(AssemblerBase lineAssembler)
-            : this() => _assemblers.Add(lineAssembler);
-
-        /// <summary>
-        /// Constructs an instance of a <see cref="AssemblyController"/>, which controls the 
-        /// assembly process.
-        /// </summary>
-        /// <param name="lineAssemblers">An <see cref="AssemblerBase"/> collection
-        /// responsible for assembling directives not in the base assembler package.</param>
-        public AssemblyController(IEnumerable<AssemblerBase> lineAssemblers)
-            : this() => _assemblers.AddRange(lineAssemblers);
+        /// <param name="args">The command line arguments.</param>
+        public AssemblyController(string[] args)
+        {
+            Assembler.Initialize(args);
+            _assemblers = new List<AssemblerBase>();
+        }
 
         #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Adds an <see cref="AssemblerBase"/> to the collection of assemblers that control
+        /// assembly.
+        /// </summary>
+        /// <param name="lineAssembler">An <see cref="AssemblerBase"/> responsible for assembling 
+        /// directives not in the base assembler package.</param>
+        public void AddAssembler(AssemblerBase lineAssembler)
+            => _assemblers.Add(lineAssembler);
+
 
         /// <summary>
         /// Begin the assembly process.
@@ -246,5 +255,6 @@ namespace Core6502DotNet
             Console.WriteLine($"Assembly end:   ${Assembler.Output.ProgramEnd:X4}");
             Console.WriteLine($"Passes: {Assembler.CurrentPass + 1}");
         }
+        #endregion
     }
 }

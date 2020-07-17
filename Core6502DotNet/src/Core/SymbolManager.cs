@@ -7,7 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Text;
 
@@ -526,8 +525,8 @@ namespace Core6502DotNet
 
         #region Members
 
-        Dictionary<string, Symbol> _symbols;
-        Dictionary<string, Symbol> _constants;
+        readonly Dictionary<string, Symbol> _symbols;
+        readonly Dictionary<string, Symbol> _constants;
         readonly Stack<string> _scope;
         readonly Stack<int> _referenceFrameIndexStack;
         readonly List<Func<string, bool>> _criteria;
@@ -541,14 +540,17 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of a symbol manager class.
         /// </summary>
-        public SymbolManager()
+        /// <param name="caseSensitive">Determines the case-sensitivity of lookups to the symbol tables.
+        /// </param>
+        public SymbolManager(bool caseSensitive)
         {
 
             Assembler.PassChanged += ProcessPassChange;
 
+            var stringCompare = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+            _constants = new Dictionary<string, Symbol>(stringCompare);
+            _symbols = new Dictionary<string, Symbol>(stringCompare);
             _scope = new Stack<string>();
-            _symbols = new Dictionary<string, Symbol>(Assembler.StringComparer);
-            _constants = new Dictionary<string, Symbol>(Assembler.StringComparer);
             _referenceFrameIndexStack = new Stack<int>();
             _referenceFrameIndexStack.Push(0);
 
@@ -558,19 +560,19 @@ namespace Core6502DotNet
             };
 
             Local = string.Empty;
+            _referenceFramesCounter = 0;
 
             _criteria = new List<Func<string, bool>>
             {
                 s =>
                 {
-                      return s.Equals("+") ||
-                             s.Equals("-") ||
-                              ((s[0] == '_' || char.IsLetter(s[0])) &&
-                              ((char.IsLetterOrDigit(s[^1]) || s[^1] == '_') && !s.Contains('.')));
+                        return s.Equals("+") ||
+                                s.Equals("-") ||
+                                ((s[0] == '_' || char.IsLetter(s[0])) &&
+                                ((char.IsLetterOrDigit(s[^1]) || s[^1] == '_') && !s.Contains('.')));
                 },
-                s =>!_constants.ContainsKey(s)
+                s => !_constants.ContainsKey(s)
             };
-            _referenceFramesCounter = 0;
         }
 
         #endregion
@@ -1246,6 +1248,16 @@ namespace Core6502DotNet
                 throw new ExpressionException(parameters.LastChild.Position, $"Unexpected argument \"{parameters.LastChild}\".");
             var symbolLookup = Lookup(parameters.LastChild);
             return symbolLookup.Length;
+        }
+
+        /// <summary>
+        /// Resets the labels and variables table.
+        /// </summary>
+        /// <param name="caseSensitive">Sets the case-sensitivity of lookups to the symbol tables. Calling this function resets the label and variables
+        /// tables, but not the constants table.</param>
+        public void ResetLabelsAndVariables(bool caseSensitive)
+        {
+             
         }
 
         #endregion

@@ -36,14 +36,6 @@ namespace Core6502DotNet
     {
         #region Members
 
-        static readonly HashSet<string> _restrictedWords = new HashSet<string>
-        {
-            "true", "false", "MATH_PI", "MATH_E",
-            "UINT32_MAX", "UINT32_MIN", "INT32_MAX", "INT32_MIN",
-            "UINT24_MAX", "UINT24_MIN", "INT24_MAX", "INT24_MIN",
-            "UINT16_MAX", "UINT16_MIN", "INT16_MAX", "INT16_MIN",
-            "UINT8_MAX", "UINT8_MIN", "INT8_MAX", "INT8_MIN"
-        };
 
         static readonly Dictionary<string, ConversionDef> _radixOperators = new Dictionary<string, ConversionDef>
         {
@@ -54,11 +46,11 @@ namespace Core6502DotNet
         {
             {
                 new Token{ Name = "||", Type = TokenType.Operator, OperatorType = OperatorType.Binary },
-                new OperationDef(parms => ((int)parms[1]!=0?1:0) | ((int)parms[0]!=0? 1 : 0),  0)
+                new OperationDef(parms => (!parms[1].AlmostEquals(0)?1:0) | (!parms[0].AlmostEquals(0)?1:0),  0)
             },
             {
                 new Token{ Name = "&&", Type = TokenType.Operator, OperatorType = OperatorType.Binary },
-                new OperationDef(parms => ((int)parms[1]!=0?1:0) & ((int)parms[0]!=0? 1 : 0),  1)
+                new OperationDef(parms => (!parms[1].AlmostEquals(0)?1:0) & (!parms[0].AlmostEquals(0)?1:0),  1)
             },
             {
                 new Token{ Name = "|",  Type = TokenType.Operator, OperatorType = OperatorType.Binary },
@@ -116,7 +108,7 @@ namespace Core6502DotNet
                 new Token{ Name = "/",  Type = TokenType.Operator, OperatorType = OperatorType.Binary },
                 new OperationDef(delegate(List<double> parms)
                 {
-                    if (parms[0] == 0) throw new DivideByZeroException();
+                    if (parms[0].AlmostEquals(0)) throw new DivideByZeroException();
                     return parms[1] / parms[0];
                 },                                                                             9)
             },
@@ -181,6 +173,9 @@ namespace Core6502DotNet
 
         #region Constructors
 
+        /// <summary>
+        /// Initialize the evaluator for use.
+        /// </summary>
         static Evaluator()
         {
             _rng = new Random();
@@ -214,6 +209,18 @@ namespace Core6502DotNet
             };
 
             _functionEvaluators = new List<IFunctionEvaluator>();
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Initialize the Evaluator for use.
+        /// </summary>
+        public static void Initialize()
+        {
+            _functionEvaluators.Clear();
 
             Assembler.SymbolManager.DefineConstant("true", 1);
             Assembler.SymbolManager.DefineConstant("false", 0);
@@ -236,14 +243,8 @@ namespace Core6502DotNet
             Assembler.SymbolManager.DefineConstant("UINT8_MIN", byte.MinValue);
             Assembler.SymbolManager.DefineConstant("INT8_MIN", sbyte.MinValue);
 
-            Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !_restrictedWords.Contains(s) && !_functions.ContainsKey(s));
-
-            AddFunctionEvaluator(Assembler.SymbolManager);
+            Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !_functions.ContainsKey(s));
         }
-
-        #endregion
-
-        #region Methods
 
         static double EvaluateAtomic(Token token)
         {

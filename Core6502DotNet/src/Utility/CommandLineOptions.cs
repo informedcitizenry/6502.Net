@@ -7,7 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -205,19 +204,30 @@ namespace Core6502DotNet
 
         #region Members
 
-        readonly List<string> _source;
-        readonly List<string> _defines;
+        List<string> _source;
+        List<string> _defines;
         bool _werror;
 
         #endregion
 
-        #region Constructors
+        #region Methods
+
+        static string GetHelpText() =>
+            string.Format(_helpList, Assembly.GetEntryAssembly().GetName().Name);
+
+        static string GetVersion() =>
+            $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
+
 
         /// <summary>
-        /// Constructs a new instance of the AsmCommandLineOptions.
+        /// Process the command-line arguments passed by the end-user.
         /// </summary>
-        public CommandLineOptions()
+        /// <param name="passedArgs">The argument array.</param>
+        public void ParseArgs(string[] passedArgs)
         {
+            if (passedArgs.Length == 0)
+                throw new Exception($"One or more arguments expected.{_helpUsage}");
+
             _source = new List<string>();
             _defines = new List<string>();
             Format =
@@ -225,7 +235,7 @@ namespace Core6502DotNet
             ErrorFile =
             IncludePath =
             ListingFile =
-            OutputPath = 
+            OutputPath =
             LabelFile = string.Empty;
             OutputFile = "a.out";
             IgnoreColons =
@@ -240,26 +250,6 @@ namespace Core6502DotNet
             Quiet =
             PrintVersion =
             CaseSensitive = false;
-        }
-
-        #endregion
-
-        #region Methods
-
-        static string GetHelpText() =>
-            string.Format(_helpList, Assembly.GetEntryAssembly().GetName().Name);
-
-        static string GetVersion() =>
-            $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
-
-        /// <summary>
-        /// Process the command-line arguments passed by the end-user.
-        /// </summary>
-        /// <param name="passedArgs">The argument array.</param>
-        public void ParseArgs(string[] passedArgs)
-        {
-            if (passedArgs.Length == 0)
-                throw new Exception($"One or more arguments expected.{_helpUsage}");
 
             // primarily we're interested in clubbing assignment arguments together, so 
             // { "<option>", "=", "<arg>" } => "<option>=<arg>"
@@ -413,8 +403,8 @@ namespace Core6502DotNet
             var expectingcolon = !atIdent;
             var expectedType = OptionType.Boolean;
             var childOptions = token.Children;
-            string ident = string.Empty;
-            Options parsedOption = Options.None;
+            var ident = string.Empty;
+            var parsedOption = Options.None;
             foreach (var option in childOptions)
             {
                 var optionFirst = option.Name[0];
@@ -655,7 +645,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets a flag indicating the full version of the assembler should be printed.
         /// </summary>
-        public bool PrintVersion { get; }
+        public bool PrintVersion { get; private set; }
 
         /// <summary>
         /// Gets a flag indicating that checksum information should be printed after 

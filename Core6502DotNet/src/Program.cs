@@ -8,6 +8,9 @@
 using Core6502DotNet.m6502;
 using Core6502DotNet.z80;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 
 namespace Core6502DotNet
 {
@@ -17,8 +20,7 @@ namespace Core6502DotNet
         {
             try
             {
-                Assembler.Initialize(args);
-
+                var controller = new AssemblyController(args);
                 AssemblerBase cpuAssembler;
                 if (Assembler.Options.CPU.Equals("z80"))
                 {
@@ -33,7 +35,7 @@ namespace Core6502DotNet
                         Assembler.BinaryFormatProvider = new M6502FormatProvider();
                     cpuAssembler = new Asm6502();
                 }
-                var controller = new AssemblyController(cpuAssembler);
+                controller.AddAssembler(cpuAssembler);
                 controller.Assemble();
             }
             catch (Exception ex)

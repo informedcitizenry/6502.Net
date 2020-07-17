@@ -310,7 +310,6 @@ namespace Core6502DotNet
             var align = GetAlignmentSize(LogicalPC, amount);
             LogicalPC += align;
             ProgramCounter += align;
-            //return align;
         }
 
         /// <summary>
