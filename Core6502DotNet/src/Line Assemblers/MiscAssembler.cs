@@ -116,7 +116,7 @@ namespace Core6502DotNet
                     break;
                 case ".format":
                 case ".target":
-                    if (!line.OperandHasToken || !line.OperandExpression.EnclosedInQuotes())
+                    if (!line.OperandHasToken || !line.OperandExpression.EnclosedInDoubleQuotes())
                         Assembler.Log.LogEntry(line, line.Operand, "Expression must be a string.");
                     else
                         Assembler.Options.Format = line.OperandExpression.TrimOnce('"');

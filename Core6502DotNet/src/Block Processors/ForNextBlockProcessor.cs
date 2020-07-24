@@ -48,7 +48,7 @@ namespace Core6502DotNet
 
         #region Methods
 
-        public override void ExecuteDirective()
+        public override bool ExecuteDirective()
         {
             if (Assembler.CurrentLine.InstructionName.Equals(".next"))
             {
@@ -68,8 +68,9 @@ namespace Core6502DotNet
 
                 if (_condition == null || Evaluator.EvaluateCondition(_condition))
                     Assembler.LineIterator.Rewind(Index);
+                return true;
             }
-
+            return Assembler.CurrentLine.InstructionName.Equals(".for");
         }
 
         #endregion

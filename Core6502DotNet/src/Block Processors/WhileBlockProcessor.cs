@@ -23,8 +23,10 @@ namespace Core6502DotNet
 
         #region Methods
 
-        public override void ExecuteDirective()
+        public override bool ExecuteDirective()
         {
+            if (!Assembler.LineIterator.Current.Equals(".while") && !Assembler.LineIterator.Current.Equals(".endwhile"))
+                return false;
             if (Evaluator.EvaluateCondition(Line.Operand.Children))
             {
                 if (Assembler.CurrentLine.InstructionName.Equals(".endwhile"))
@@ -34,6 +36,7 @@ namespace Core6502DotNet
             {
                 SeekBlockEnd();
             }
+            return true;
         }
 
         #endregion

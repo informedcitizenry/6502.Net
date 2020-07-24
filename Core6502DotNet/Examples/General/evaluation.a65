@@ -29,13 +29,13 @@
 			.let eval = rad(79999.9)
 			.assert eval == 1396.2616562662115
 
-			.let eval = >65490*<32768
+			.let eval = (>65490)*<32768
 			.assert eval == 0
 
 			.let eval = ~(548*2)%256
 			.assert eval == -73
 
-			.let eval = 25*<548+>$2456*2
+			.let eval = 25*(<548)+(>$2456)*2
 			.assert eval == 972
 
 			.let eval = ~(35*2) + ~(22*6) + (12*2)

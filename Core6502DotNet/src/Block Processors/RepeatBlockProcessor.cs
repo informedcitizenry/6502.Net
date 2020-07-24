@@ -32,7 +32,7 @@ namespace Core6502DotNet
 
         #region Methods
 
-        public override void ExecuteDirective()
+        public override bool ExecuteDirective()
         {
             SourceLine line = Assembler.LineIterator.Current;
             if (line.InstructionName.Equals(".endrepeat"))
@@ -44,6 +44,7 @@ namespace Core6502DotNet
                     Assembler.LineIterator.Rewind(Index);
 
             }
+            return line.InstructionName.Equals(".repeat");
         }
 
         #endregion

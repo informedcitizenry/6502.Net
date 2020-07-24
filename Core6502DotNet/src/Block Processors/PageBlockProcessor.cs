@@ -22,12 +22,16 @@ namespace Core6502DotNet
 
         public override bool AllowContinue => false;
 
-        public override void ExecuteDirective()
+        public override bool ExecuteDirective()
         {
             var line = Assembler.LineIterator.Current;
-            if (line.InstructionName.Equals(".endpage") && 
-                !Assembler.PassNeeded && GetPage(Assembler.Output.LogicalPC - 1) != _page)
-                Assembler.Log.LogEntry(line, "Page boundary crossed.");
+            if (line.InstructionName.Equals(".endpage"))
+            {
+                if (!Assembler.PassNeeded && GetPage(Assembler.Output.LogicalPC - 1) != _page)
+                    Assembler.Log.LogEntry(line, "Page boundary crossed.");
+                return true;
+            }
+            return line.InstructionName.Equals(".page");
         }
     }
 }

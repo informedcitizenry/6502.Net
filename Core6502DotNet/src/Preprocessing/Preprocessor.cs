@@ -336,7 +336,7 @@ namespace Core6502DotNet
             var len = source.Length < 5 ? source.Length : 5;
             for(var i = 0; i < len; i++)
             {
-                if (!char.IsControl(source[i]))
+                if (!char.IsControl(source[i]) || char.IsWhiteSpace(source[i]))
                 {
                     sourceFileValid = true;
                     break;

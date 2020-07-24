@@ -17,7 +17,7 @@ namespace Core6502DotNet
             : base($"Missing closure for \"{blockType}\" directive.")
         {
 
-        }
+        }  
     }
 
     public enum BlockType
@@ -94,7 +94,8 @@ namespace Core6502DotNet
         /// <summary>
         /// Executes the block directive. This method must be defined by the inherited class.
         /// </summary>
-        public abstract void ExecuteDirective();
+        /// <returns><c>True</c> if the block processor successfully executed the directive, <c>false</c> otherwise.</returns>
+        public abstract bool ExecuteDirective();
 
         /// <summary>
         /// Seeks the <see cref="SourceLine"/> containing the 

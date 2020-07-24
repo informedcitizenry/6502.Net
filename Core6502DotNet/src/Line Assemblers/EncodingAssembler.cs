@@ -83,9 +83,14 @@ namespace Core6502DotNet
                                 Array.Resize(ref translationBytes, 4);
                             translation = BitConverter.ToInt32(translationBytes, 0);
                         }
+                        else if (lastParam.Name.EnclosedInSingleQuotes())
+                        {  
+                            translation = char.ConvertToUtf32(EvalEncodingParam(lastParam), 0);
+                        }
                         else
                         {
-                            translation = char.ConvertToUtf32(EvalEncodingParam(lastParam), 0);
+                            Assembler.Log.LogEntry(line, lastParam, $"Argument \"{lastParam.Name}\" is not a char literal.");
+                            return string.Empty;
                         }
                     }
                     else

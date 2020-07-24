@@ -531,6 +531,7 @@ namespace Core6502DotNet
         readonly Stack<int> _referenceFrameIndexStack;
         readonly List<Func<string, bool>> _criteria;
         readonly List<LineReferenceStackFrame> _lineReferenceFrames;
+        readonly StringComparison _stringComparison;
         int _referenceFramesCounter, _ephemeralCounter;
 
         #endregion
@@ -547,7 +548,17 @@ namespace Core6502DotNet
 
             Assembler.PassChanged += ProcessPassChange;
 
-            var stringCompare = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+            StringComparer stringCompare;
+            if (caseSensitive)
+            {
+                stringCompare = StringComparer.Ordinal;
+                _stringComparison = StringComparison.Ordinal;
+            }
+            else
+            {
+                stringCompare = StringComparer.OrdinalIgnoreCase;
+                _stringComparison = StringComparison.OrdinalIgnoreCase;
+            }
             _constants = new Dictionary<string, Symbol>(stringCompare);
             _symbols = new Dictionary<string, Symbol>(stringCompare);
             _scope = new Stack<string>();
@@ -908,7 +919,7 @@ namespace Core6502DotNet
                 if (ephemeral)
                 {
                     _ephemeralCounter--;
-                    var ephemerals = new List<string>(_symbols.Keys.Where(k => k.Contains(sc, StringComparison.Ordinal)));
+                    var ephemerals = new List<string>(_symbols.Keys.Where(k => k.Contains(sc, _stringComparison)));
                     foreach (var key in ephemerals)
                         _symbols.Remove(key);
                 }

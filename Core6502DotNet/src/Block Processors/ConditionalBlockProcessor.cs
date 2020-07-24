@@ -82,15 +82,18 @@ namespace Core6502DotNet
             }
         }
 
-        public override void ExecuteDirective()
+        public override bool ExecuteDirective()
         {
+            SourceLine line = Assembler.LineIterator.Current;
+            if (!_keywords.Contains(line.InstructionName))
+                return false;
             if (_ifTrue)
             {
                 SeekBlockEnd();
             }
             else
             {
-                SourceLine line = Assembler.LineIterator.Current;
+                
                 while (line != null && !line.InstructionName.Equals(".endif") && !_ifTrue)
                 {
                     var instruction = Assembler.LineIterator.Current.InstructionName;
@@ -136,6 +139,7 @@ namespace Core6502DotNet
                 if (line == null)
                     throw new ExpressionException(line.Instruction.Position, $"Missing \".endif\" directive.");
             }
+            return true;
         }
 
         #endregion

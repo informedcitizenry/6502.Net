@@ -49,7 +49,7 @@ namespace Core6502DotNet
                              Func<char, char, char, bool> terminal)
         {
             var tokenNameBuilder = new StringBuilder();
-            char c = iterator.Current;
+            var c = iterator.Current;
             tokenNameBuilder.Append(c);
             if (!terminal(previousChar, c, iterator.PeekNext()))
             {
@@ -543,6 +543,9 @@ namespace Core6502DotNet
                             else
                             {
                                 currentParent.AddChild(token);
+
+                                if (token.OperatorType == OperatorType.Unary && token.Name.IsByteExtractor())
+                                    AddBlankSeparator();
                             }
                         }
                     }

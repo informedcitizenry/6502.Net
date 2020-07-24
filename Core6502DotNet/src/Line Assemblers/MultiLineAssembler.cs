@@ -12,14 +12,29 @@ using System.Linq;
 namespace Core6502DotNet
 {
     /// <summary>
+    /// An error handling class for the <see cref="MultiLineAssembler"/>.
+    /// </summary>
+    public class MultiLineAssemblerException : Exception
+    {
+        /// <summary>
+        /// Constructs a new instance of the <see cref="MultiLineAssemblerException"/>.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> that is the source of the exception.</param>
+        public MultiLineAssemblerException(SourceLine line) : base($"Illegal use of {line.InstructionName}.") { }
+
+        /// <summary>
+        /// The <see cref="SourceLine"/> that is the source of the exception.
+        /// </summary>
+        public SourceLine Line { get; }   
+    }
+
+    /// <summary>
     /// Responsible for handling directives that handle assembly over multiple lines, such as
     /// repetition and conditional directives.
     /// </summary>
     public sealed class MultiLineAssembler : AssemblerBase, IFunctionEvaluator
     {
         #region Subclasses
-
-
 
         static readonly Dictionary<string, BlockType> _blockOpenTypes = new Dictionary<string, BlockType>
         {
@@ -201,9 +216,8 @@ namespace Core6502DotNet
             }
             if (_currentBlock != null)
             {
-
-                if (Assembler.CurrentLine.InstructionName.Equals(".break") ||
-                    Assembler.CurrentLine.InstructionName.Equals(".continue"))
+                var isBreakCont = Assembler.CurrentLine.InstructionName.Equals(".break") || Assembler.CurrentLine.InstructionName.Equals(".continue");
+                if (isBreakCont)
                 {
                     var contBreakLine = Assembler.LineIterator.Current;
                     if (!_currentBlock.AllowContinue && contBreakLine.InstructionName.Equals(".continue"))
@@ -258,11 +272,14 @@ namespace Core6502DotNet
                             return string.Empty;
                     }
                 }
-                _currentBlock.ExecuteDirective();
-
+                var executeSuccess = _currentBlock.ExecuteDirective();
+                if (!executeSuccess && !isBreakCont)
+                    throw new MultiLineAssemblerException(line);
+                
                 if (Assembler.CurrentLine == null ||
                     Assembler.CurrentLine.InstructionName.Equals(BlockDirective.Directives[_currentBlock.Type].Closure))
                 {
+
                     if (Assembler.CurrentLine == null)
                     {
                         line = SourceLineHelper.GetLastInstructionLine();
@@ -270,7 +287,7 @@ namespace Core6502DotNet
                             $"Missing closure for \"{BlockDirective.Directives[_currentBlock.Type].Open}\" directive.", true);
                     }
                     DoPop();
-                }
+                }  
             }
             else
             {

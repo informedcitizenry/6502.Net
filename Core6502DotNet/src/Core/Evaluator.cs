@@ -329,6 +329,8 @@ namespace Core6502DotNet
                 {
                     if (lastType == OperatorType.Unary && _radixOperators.ContainsKey(lastToken))
                     {
+                        if (!string.IsNullOrEmpty(nonBase10))
+                            throw new ExpressionException(iterator.Current.Position, $"Unexpected token {token.Name}.");
                         nonBase10 = token.Name;
                     }
                     else if (iterator.PeekNext() != null && iterator.PeekNext().Name == "[")
@@ -346,19 +348,20 @@ namespace Core6502DotNet
                 else if (token.Type == TokenType.Operator)
                 {
                     lastType = token.OperatorType;
-                    lastToken = token.Name; // track for non-base 10 operands that may succeed this operation
-                    if ((token.OperatorType == OperatorType.Open && token.Name.Equals("(")) ||
-                         token.OperatorType == OperatorType.Separator)
+                    lastToken = token.Name;
+                    if (token.HasChildren)
                     {
-                        Stack<double> subResults = EvaluateInternal(token.Children);
+                        var subResults = EvaluateInternal(token.Children);
                         foreach (var sr in subResults)
                             result.Push(sr);
+                        if (lastToken.IsByteExtractor())
+                            operators.Push(token);
                     }
-                    else if (token.OperatorType == OperatorType.Function && !_functions.ContainsKey(token.Name))
+                    else if (token.OperatorType == OperatorType.Function && !_functions.ContainsKey(lastToken))
                     {
-                        IFunctionEvaluator fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(token));
+                        var fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(token));
                         if (fe == null)
-                            throw new ExpressionException(token.Position, $"Unknown function \"{token.Name}\".");
+                            throw new ExpressionException(token.Position, $"Unknown function \"{lastToken}\".");
                         result.Push(fe.EvaluateFunction(token, iterator.GetNext()));
                     }
                     else if (token.OperatorType == OperatorType.Unary)
@@ -369,8 +372,8 @@ namespace Core6502DotNet
                     {
                         if (operators.Count > 0)
                         {
-                            if (!_operators.ContainsKey(token) && !_functions.ContainsKey(token.Name))
-                                throw new ExpressionException(token.Position, $"Unknown operator \"{token.Name}\".");
+                            if (!_operators.ContainsKey(token) && !_functions.ContainsKey(lastToken))
+                                throw new ExpressionException(token.Position, $"Unknown operator \"{lastToken}\".");
 
                             Token top = operators.Peek();
                             var opOrder = token.OperatorType == OperatorType.Function ? int.MaxValue : _operators[token].Item2;
@@ -384,7 +387,7 @@ namespace Core6502DotNet
                             }
                         }
                         if (token.OperatorType != OperatorType.Function && !_operators.ContainsKey(token))
-                            throw new ExpressionException(token.Position, $"Invalid expression \"{token.Name}\".");
+                            throw new ExpressionException(token.Position, $"Invalid expression \"{lastToken}\".");
                         operators.Push(token);
                     }
                 }

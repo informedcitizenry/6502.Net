@@ -102,6 +102,14 @@ namespace Core6502DotNet
                 foreach (var path in Assembler.Options.InputFiles)
                     processed.AddRange(preprocessor.PreprocessFile(path));
 
+                /*
+                stopWatch.Stop();
+                var ts1 = stopWatch.Elapsed.TotalSeconds;
+
+                Console.WriteLine($"{ts1} sec."); return;
+                */
+
+
                 // set the iterator
                 Assembler.LineIterator = processed.GetIterator();
 
@@ -144,50 +152,55 @@ namespace Core6502DotNet
                         }
                         catch (Exception ex)
                         {
-                            if (ex is SymbolException symbEx)
+                            if (ex is SymbolException || ex is FormatException || ex is MultiLineAssemblerException)
                             {
-                                Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
-                            }
-                            else if (ex is FormatException fmtEx)
-                            {
-                                Assembler.Log.LogEntry(line,
+                                if (ex is SymbolException symbEx)
+                                    Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
+                                else if (ex is FormatException fmtEx)
+                                    Assembler.Log.LogEntry(line,
                                                       line.Operand,
                                                       $"There was a problem with the format string:\n{fmtEx.Message}.",
                                                       true);
-                            }
-                            else if (Assembler.CurrentPass > 0 && !Assembler.PassNeeded)
-                            {
-                                if (ex is ExpressionException expEx)
-                                {
-                                    if (ex is IllegalQuantityException)
-                                        Assembler.Log.LogEntry(line, expEx.Position,
-                                            $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
-                                    else
-                                        Assembler.Log.LogEntry(line, expEx.Position, ex.Message);
-                                }
-                                else if (ex is OverflowException)
-                                {
-                                    Assembler.Log.LogEntry(line, line.Operand.Position,
-                                                $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
-                                }
-                                else if (ex is InvalidPCAssignmentException pcEx)
-                                {
-                                    Assembler.Log.LogEntry(line, line.Instruction,
-                                            $"Invalid Program Counter assignment in expression \"{line.Operand}\".");
-                                }
-                                else if (ex is ProgramOverflowException prgEx)
-                                {
-                                    Assembler.Log.LogEntry(line, line.Instruction,
-                                            "Program Overflow.");
-                                }
                                 else
-                                {
-                                    Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
-                                }
+                                    Assembler.Log.LogEntry(line, line.Instruction.Position, ex.Message);
+                                break;
                             }
                             else
                             {
-                                Assembler.PassNeeded = true;
+                                if (Assembler.CurrentPass > 0 && !Assembler.PassNeeded)
+                                {
+                                    if (ex is ExpressionException expEx)
+                                    {
+                                        if (ex is IllegalQuantityException)
+                                            Assembler.Log.LogEntry(line, expEx.Position,
+                                                $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
+                                        else
+                                            Assembler.Log.LogEntry(line, expEx.Position, ex.Message);
+                                    }
+                                    else if (ex is OverflowException)
+                                    {
+                                        Assembler.Log.LogEntry(line, line.Operand.Position,
+                                                    $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
+                                    }
+                                    else if (ex is InvalidPCAssignmentException pcEx)
+                                    {
+                                        Assembler.Log.LogEntry(line, line.Instruction,
+                                                $"Invalid Program Counter assignment in expression \"{line.Operand}\".");
+                                    }
+                                    else if (ex is ProgramOverflowException prgEx)
+                                    {
+                                        Assembler.Log.LogEntry(line, line.Instruction,
+                                                "Program Overflow.");
+                                    }
+                                    else
+                                    {
+                                        Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
+                                    }
+                                }
+                                else
+                                {
+                                    Assembler.PassNeeded = true;
+                                }
                             }
                         }
                     }
@@ -214,7 +227,7 @@ namespace Core6502DotNet
                 {
                     stopWatch.Stop();
                     var ts = stopWatch.Elapsed.TotalSeconds;
-
+                    
                     Console.WriteLine($"{Assembler.Output.GetCompilation().Count} bytes, {ts} sec.");
                     if (Assembler.Options.ShowChecksums)
                         Console.WriteLine($"Checksum: {Assembler.Output.GetOutputHash()}");

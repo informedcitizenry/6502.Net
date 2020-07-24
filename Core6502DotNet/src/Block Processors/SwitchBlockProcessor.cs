@@ -144,11 +144,11 @@ namespace Core6502DotNet
 
         #region Methods
 
-        public override void ExecuteDirective()
+        public override bool ExecuteDirective()
         {
             var line = Assembler.LineIterator.Current;
             if (!line.InstructionName.Equals(".switch"))
-                return;
+                return false;
             SwitchContext context = null;
             CaseBlock<string> stringBlock = null;
             CaseBlock<double> numericBlock = null;
@@ -165,6 +165,10 @@ namespace Core6502DotNet
                         else
                             context = new SwitchContext(Evaluator.Evaluate(Line.Operand));
                     }
+                    else if (line.OperandExpression.Equals("*"))
+                    {
+                        context = new SwitchContext(Assembler.Output.LogicalPC);
+                    }
                 }
                 else
                 {
@@ -174,11 +178,13 @@ namespace Core6502DotNet
             if (context == null)
             {
                 Assembler.Log.LogEntry(Line, Line.Operand, "Expression must be a valid symbol or constant expression.");
-                return;
+                return true;
             }
             Token lastInstruction = null;
             if (!(line.OperandHasToken &&
-                (Assembler.SymbolManager.SymbolExists(line.Operand.Children[0].Children[0].Name) || line.Operand.Children[0].Name.Equals("("))))
+                (Assembler.SymbolManager.SymbolExists(line.Operand.Children[0].Children[0].Name) || 
+                line.OperandExpression.Equals("*") ||
+                line.Operand.Children[0].Name.Equals("("))))
             {
                 string error;
                 if (!line.OperandHasToken)
@@ -186,7 +192,7 @@ namespace Core6502DotNet
                 else
                     error = "Expression must be a valid symbol or an expression.";
                 Assembler.Log.LogEntry(line, line.Instruction.Position, error);
-                return;
+                return true;
             }
             var defaultIndex = -1;
             if (!string.IsNullOrEmpty(context.StringValue))
@@ -231,7 +237,6 @@ namespace Core6502DotNet
                         else
                             numericBlock = new CaseBlock<double>();
                     }
-
                 }
                 else if (line.InstructionName.Equals(".default"))
                 {
@@ -239,7 +244,7 @@ namespace Core6502DotNet
                         Assembler.Log.LogEntry(line, line.Instruction.Position,
                             "There can only be one \".default\" directive in a switch block.");
                     else
-                        defaultIndex = Assembler.LineIterator.Index;
+                        defaultIndex = Assembler.LineIterator.Index + 1;
                 }
                 else
                 {
@@ -278,20 +283,21 @@ namespace Core6502DotNet
                     else if (!context.AnyCaseDefined())
                     {
                         Assembler.Log.LogEntry(line, line.Instruction, "Switch statement did not encounter any cases to evaluate.");
-                        return;
+                        return true;
                     }
                     else
                     {
                         Assembler.Log.LogEntry(line, line.Instruction, "Switch statement does not have a default case.", false);
                     }
                 }
-                int fallthroughIndex = context.GetFallthroughIndex();
+                var fallthroughIndex = context.GetFallthroughIndex();
                 if (fallthroughIndex < 0)
                     fallthroughIndex = defaultIndex;
 
                 if (fallthroughIndex > -1)
                     Assembler.LineIterator.Rewind(fallthroughIndex - 1);
             }
+            return true;
         }
 
         #endregion

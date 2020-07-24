@@ -8,9 +8,6 @@
 using Core6502DotNet.m6502;
 using Core6502DotNet.z80;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 
 namespace Core6502DotNet
 {
