@@ -258,7 +258,7 @@ namespace Core6502DotNet.m6502
         {
             if (!SupportedCPUs.Contains(cpu))
             {
-                var error = string.Format($"Invalid CPU {cpu} specified");
+                var error = string.Format($"Invalid CPU \"{cpu}\" specified");
                 throw new ArgumentException(error);
             }
             _cpu = cpu;

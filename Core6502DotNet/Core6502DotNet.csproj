@@ -13,8 +13,8 @@
     <ReleaseVersion>2.1.6.1</ReleaseVersion>
     <StartupObject>Core6502DotNet.Core6502DotNet</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>2.1.8.0</AssemblyVersion>
-    <FileVersion>2.1.8.0</FileVersion>
+    <AssemblyVersion>2.1.8.1</AssemblyVersion>
+    <FileVersion>2.1.8.1</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

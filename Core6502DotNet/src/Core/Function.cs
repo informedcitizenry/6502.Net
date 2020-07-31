@@ -23,7 +23,9 @@ namespace Core6502DotNet
         /// definition and invocations.</param>
         /// <param name="parameterList">The list of parameters for the function.</param>
         public Function(Token parameterList)
-            : base(parameterList, Assembler.LineIterator.Current.ParsedSource)
+            : base(parameterList, 
+                   Assembler.LineIterator.Current.ParsedSource, 
+                   Assembler.Options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase)
         {
             StartIndex = EndIndex = -1;
             Define();

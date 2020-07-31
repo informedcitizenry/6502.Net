@@ -135,7 +135,7 @@ namespace Core6502DotNet
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(Name);
+            StringBuilder sb = new StringBuilder(UnparsedName);
             if (Children != null)
             {
                 foreach (Token t in Children)

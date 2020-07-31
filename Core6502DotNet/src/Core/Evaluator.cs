@@ -246,6 +246,32 @@ namespace Core6502DotNet
             Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !_functions.ContainsKey(s));
         }
 
+        /// <summary>
+        /// Determines if the tokenized expression is constant.
+        /// </summary>
+        /// <param name="token">The token expression.</param>
+        /// <returns><c>True</c> if the expression is a constant, otherwise <c>false</c>.</returns>
+        public static bool ExpressionIsConstant(Token token)
+        {
+            var tokenAsString = token.ToString();
+            if (string.IsNullOrEmpty(tokenAsString))
+                return false;
+            token.Name = tokenAsString.Replace("%", "0b")
+                                   .Replace("$", "0x")
+                                   .TrimStart('(')
+                                   .TrimEnd(')');
+            token.Type = TokenType.Operand;
+            try
+            {
+                _ = EvaluateAtomic(token);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+
         static double EvaluateAtomic(Token token)
         {
             if (token.Type != TokenType.Operand)

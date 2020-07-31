@@ -1233,7 +1233,6 @@ namespace Core6502DotNet
         /// <param name="symbol">The symbol name.</param>
         /// <returns><c>True</c> if valid, otherwise <c>false</c>.</returns>
         public bool SymbolIsValid(string symbol)
-        // => _criteria.Any(c => !c(symbol));
         {
             foreach (var f in _criteria)
             {

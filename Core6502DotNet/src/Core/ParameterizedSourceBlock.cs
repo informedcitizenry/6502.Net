@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -34,6 +35,12 @@ namespace Core6502DotNet
 
         #endregion
 
+        #region Members
+
+        protected StringComparison _stringCompare;
+
+        #endregion
+
         #region Constructors
 
         /// <summary>
@@ -41,9 +48,10 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="parms">The parameters the definition expects when invoked.</param>
         /// <param name="source">The associated source string.</param>
-        protected ParameterizedSourceBlock(Token parms, string source)
+        protected ParameterizedSourceBlock(Token parms, string source, StringComparison stringComparison)
         {
             Params = new List<Param>();
+            _stringCompare = stringComparison;
 
             if (parms != null && parms.HasChildren)
             {
@@ -53,19 +61,19 @@ namespace Core6502DotNet
                     if (parameter.Children.Count > 0)
                     {
                         Token definedParm = parameter.Children[0];
-                        if (Params.Any(p => p.Name.Equals(definedParm.Name)))
+                        if (Params.Any(p => p.Name.Equals(definedParm.UnparsedName, _stringCompare)))
                         {
                             throw new ExpressionException(definedParm.Position,
                                 $"Parameter \"{definedParm.Name}\" previously defined in parameter list.");
                         }
 
-                        if (string.IsNullOrEmpty(definedParm.Name))
+                        if (string.IsNullOrEmpty(definedParm.UnparsedName))
                             Params.Add(new Param());
-                        else if (!Assembler.SymbolManager.SymbolIsValid(definedParm.Name))
-                            throw new ExpressionException(definedParm.Position, $"Invalid parameter name \"{definedParm.Name}\".");
+                        else if (!Assembler.SymbolManager.SymbolIsValid(definedParm.UnparsedName))
+                            throw new ExpressionException(definedParm.Position, $"Invalid parameter name \"{definedParm.UnparsedName}\".");
 
 
-                        var parm = new Param(definedParm.Name);
+                        var parm = new Param(definedParm.UnparsedName);
                         if (parameter.Children.Count > 1)
                         {
                             Token assign = parameter.Children[1];

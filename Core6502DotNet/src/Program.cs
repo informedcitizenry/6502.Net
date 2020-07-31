@@ -11,13 +11,13 @@ using System;
 
 namespace Core6502DotNet
 {
-    class Core6502DotNet
+    static class Core6502DotNet
     {
-        static void Main(string[] args)
+        static void Main()
         {
             try
             {
-                var controller = new AssemblyController(args);
+                var controller = new AssemblyController();
                 AssemblerBase cpuAssembler;
                 if (Assembler.Options.CPU.Equals("z80"))
                 {

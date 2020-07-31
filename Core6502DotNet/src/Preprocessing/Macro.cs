@@ -31,7 +31,7 @@ namespace Core6502DotNet
 
         #region Members
 
-        StringComparison _stringCompare;
+       
         readonly List<MacroSource> _sources;
 
         #endregion
@@ -44,10 +44,9 @@ namespace Core6502DotNet
         /// <param name="parms">The parameters token.</param>
         /// <param name="source">The original source string for the macro definition.</param>
         public Macro(Token parms, string source, StringComparison stringComparison)
-            : base(parms, source)
+            : base(parms, source, stringComparison)
         {
             _sources = new List<MacroSource>();
-            _stringCompare = stringComparison;
         }
 
         #endregion
@@ -68,7 +67,7 @@ namespace Core6502DotNet
                         parmName = parmName.TrimStartOnce(',');
                     if (string.IsNullOrEmpty(parmName))
                     {
-                        // if empty then simply take the default value if it iexists.
+                        // if empty then simply take the default value if it exists.
                         if (index >= Params.Count || string.IsNullOrEmpty(Params[index].DefaultValue))
                             throw new ExpressionException(p.Position, "No default value was passed for unnamed parameter in parameter list.");
                         paramList.Add(Params[index].DefaultValue);
@@ -83,12 +82,6 @@ namespace Core6502DotNet
                 }
             }
             return paramList;
-        }
-
-        public SourceLine Define(Token passedParams)
-        {
-            var paramList = GetParamListFromParameters(passedParams);
-            return null;
         }
 
         /// <summary>

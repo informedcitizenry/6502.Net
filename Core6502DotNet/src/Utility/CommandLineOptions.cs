@@ -218,14 +218,13 @@ namespace Core6502DotNet
         static string GetVersion() =>
             $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
 
-
         /// <summary>
         /// Process the command-line arguments passed by the end-user.
         /// </summary>
-        /// <param name="passedArgs">The argument array.</param>
-        public void ParseArgs(string[] passedArgs)
+        public void ParseArgs()
         {
-            if (passedArgs.Length == 0)
+            var args = Environment.GetCommandLineArgs().Skip(1).ToList();
+            if (args.Count == 0)
                 throw new Exception($"One or more arguments expected.{_helpUsage}");
 
             _source = new List<string>();
@@ -251,23 +250,6 @@ namespace Core6502DotNet
             PrintVersion =
             CaseSensitive = false;
 
-            // primarily we're interested in clubbing assignment arguments together, so 
-            // { "<option>", "=", "<arg>" } => "<option>=<arg>"
-            var args = new List<string>();
-            for (var i = 0; i < passedArgs.Length; i++)
-            {
-                if (passedArgs[i] == "=")
-                {
-                    if (i == 0 || i == passedArgs.Length - 1)
-                        throw new Exception(GetHelpText());
-                    args[i - 1] += '=' + passedArgs[++i];
-                }
-                else
-                {
-                    args.Add(passedArgs[i]);
-                }
-            }
-            Arguments = args;
             for (var i = 0; i < args.Count; i++)
             {
                 var arg = args[i];
@@ -299,7 +281,7 @@ namespace Core6502DotNet
                         case "--version":
                             throw new Exception(GetVersion());
                         case "--config":
-                            if (args.Count > 1 && (i > 0 || i < args.FindLastIndex(a => a[0] == '-')))
+                            if (args.Count > 1 && (i > 0 || i < args.ToList().FindLastIndex(a => a[0] == '-')))
                                 Console.WriteLine("Option --config ignores all other options.");
                             SetOptionsFromConfig(nextArg);
                             return;
@@ -325,9 +307,15 @@ namespace Core6502DotNet
                         }
                         else
                         {
-                            _defines.Add(nextArg);
-                            while (i + 1 < args.Count && args[i + 1][0] != '-')
-                                _defines.Add(args[++i]);
+                            while (!string.IsNullOrEmpty(nextArg))
+                            {
+                                _defines.Add(nextArg);
+                                if (++i >= args.Count - 1|| args[i + 1][0] == '-')
+                                    break;
+                                nextArg = args[i + 1];
+                            }
+                            if (_defines.Count == 0)
+                                throw new Exception("One or more definitions was expected.");
                         }
                     }
                 }
@@ -336,7 +324,6 @@ namespace Core6502DotNet
                     i = SetInputFiles(args, i);
                 }
             }
-
             if (_source.Count == 0)
                 throw new Exception($"One or more input files was expected.{_helpUsage}");
         }
@@ -531,11 +518,6 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// Gets the argument string array passed.
-        /// </summary>
-        public IEnumerable<string> Arguments { get; set; }
-
-        /// <summary>
         /// Gets or sets the target architecture information.
         /// </summary>
         public string Format { get; set; }
@@ -607,13 +589,6 @@ namespace Core6502DotNet
         /// Gets a flag that treats warnings as errors.
         /// </summary>
         public bool WarningsAsErrors => !NoWarnings && _werror;
-
-        /// <summary>
-        /// Gets the number of arguments passed after the call to 
-        /// <see cref="CommandLineOptions.ParseArgs(string[])"/>.
-        /// </summary>
-        /// <value>The arguments passed.</value>
-        public int ArgsPassed => Arguments.Count();
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 

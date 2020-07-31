@@ -70,7 +70,7 @@ namespace Core6502DotNet
             return expanded;
         }
 
-        static string ProcessComments(string fileName, string source)
+        static string ProcessComments(string source)
         {
             char c;
             int lineNumber = 1;
@@ -302,6 +302,25 @@ namespace Core6502DotNet
             => Preprocess(string.Empty, source);
 
         /// <summary>
+        /// Perforsm preprocessing of the input string as a label define expression.
+        /// </summary>
+        /// <param name="defineExpression">The define</param>
+        /// <returns>A <see cref="SourceLine"/> representing the parsed label define.</returns>
+        /// <exception cref="Exception"/>
+        public SourceLine PreprocessDefine(string defineExpression)
+        {
+            if (!defineExpression.Contains('='))
+                defineExpression += "=1";
+            var defines = Preprocess(string.Empty, defineExpression);
+            var line = defines.ToList()[0];
+            if (line.Label == null || line.Instruction == null || !line.InstructionName.Equals("=") || line.Operand == null)
+                throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
+            if (!Evaluator.ExpressionIsConstant(line.Operand))
+                throw new Exception($"Define expression \"{line.Operand}\" is not a constant.");
+            return line;
+        }
+
+        /// <summary>
         /// Perform preprocessing of the source text within the source file, 
         /// including comment scrubbing and macro creation and expansion.
         /// </summary>
@@ -358,7 +377,7 @@ namespace Core6502DotNet
         IEnumerable<SourceLine> Preprocess(string fileName, string source)
         {
             source = source.Replace("\r", string.Empty); // remove Windows CR
-            source = ProcessComments(fileName, source);
+            source = ProcessComments(source);
             var uncommented = LexerParser.Parse(fileName, source);
             // process older .comment/.endcomments
             var lineIterator = uncommented.GetIterator();

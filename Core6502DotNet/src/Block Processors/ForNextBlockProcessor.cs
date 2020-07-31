@@ -52,7 +52,7 @@ namespace Core6502DotNet
         {
             if (Assembler.CurrentLine.InstructionName.Equals(".next"))
             {
-                foreach (Token child in _iterations.Children)
+                foreach (var child in _iterations.Children)
                 {
                     if (!child.HasChildren)
                         throw new ExpressionException(child.Position, "Iteration expression cannot be empty.");

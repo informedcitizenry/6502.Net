@@ -230,7 +230,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <typeparam name="T">The type.</typeparam>
         /// <param name="collection">The collection.</param>
-        /// <returns>An iterator.</returns>
+        /// <returns>A <see cref="RandomAccessIterator{T}"/> iterator for the collection.</returns>
         public static RandomAccessIterator<T> GetIterator<T>(this IEnumerable<T> collection)
             => new RandomAccessIterator<T>(collection);
 

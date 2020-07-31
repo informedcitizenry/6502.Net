@@ -203,7 +203,6 @@ namespace Core6502DotNet
                     token.Name = ScanTo(previousChar, iterator, FirstNonSymbol);
                     if (parsingAssembly && !Assembler.Options.CaseSensitive)
                         token.Name = token.Name.ToLower();
-
                     if (parsingAssembly && Assembler.InstructionLookupRules.Any(rule => rule(token.Name)))
                     {
                         token.Type = TokenType.Instruction;
@@ -497,6 +496,8 @@ namespace Core6502DotNet
                         if (token != null)
                         {
                             previousChar = iterator.Current;
+                            if (string.IsNullOrEmpty(token.UnparsedName)) 
+                                token.UnparsedName = token.Name;
                             token.Parent = currentParent;
                             token.Position = iterator.Index - lineIndex - token.Name.Length + 1;
                             if (token.OperatorType == OperatorType.Open || token.OperatorType == OperatorType.Closed || token.OperatorType == OperatorType.Separator)
@@ -611,6 +612,7 @@ namespace Core6502DotNet
                 {
                     Type = TokenType.Operator,
                     OperatorType = OperatorType.Separator,
+                    UnparsedName = string.Empty,
                     Name = string.Empty,
                     Position = token == null ? 1 : token.Position,
                     Children = new List<Token>()

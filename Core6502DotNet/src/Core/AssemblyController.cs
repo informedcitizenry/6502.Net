@@ -38,16 +38,6 @@ namespace Core6502DotNet
             _assemblers = new List<AssemblerBase>();
         }
 
-        /// <summary>
-        /// Constructs an instance of a <see cref="AssemblyController"/>, which controls the 
-        /// assembly process.
-        /// </summary>
-        /// <param name="args">The command line arguments.</param>
-        public AssemblyController(string[] args)
-        {
-            Assembler.Initialize(args);
-            _assemblers = new List<AssemblerBase>();
-        }
 
         #endregion
 
@@ -77,9 +67,6 @@ namespace Core6502DotNet
                 if (Assembler.Options.Quiet)
                     Console.SetOut(TextWriter.Null);
 
-                Console.WriteLine(Assembler.AssemblerName);
-                Console.WriteLine(Assembler.AssemblerVersion);
-
                 // init all line assemblers
                 var multiLineAssembler = new MultiLineAssembler();
 
@@ -97,24 +84,19 @@ namespace Core6502DotNet
                 if (Assembler.Options.LabelDefines.Count > 0)
                 {
                     foreach (var define in Assembler.Options.LabelDefines)
-                        processed.AddRange(preprocessor.PreprocessSource(define));
+                        processed.Add(preprocessor.PreprocessDefine(define));
                 }
                 foreach (var path in Assembler.Options.InputFiles)
                     processed.AddRange(preprocessor.PreprocessFile(path));
 
-                /*
-                stopWatch.Stop();
-                var ts1 = stopWatch.Elapsed.TotalSeconds;
-
-                Console.WriteLine($"{ts1} sec."); return;
-                */
-
+                Console.WriteLine(Assembler.AssemblerName);
+                Console.WriteLine(Assembler.AssemblerVersion);
 
                 // set the iterator
                 Assembler.LineIterator = processed.GetIterator();
 
                 var exec = Process.GetCurrentProcess().MainModule.ModuleName;
-                var argsPassed = string.Join(' ', Assembler.Options.Arguments);
+                var argsPassed = string.Join(' ', Environment.GetCommandLineArgs().Skip(1));
                 var inputFiles = string.Join("\n// ", preprocessor.GetInputFiles());
                 var disasmHeader = $"// {Assembler.AssemblerNameSimple}\n// {exec} {argsPassed}\n// {DateTime.Now:f}\n\n// Input files:" +
                                         $"\n\n// {inputFiles}\n\n";
@@ -152,17 +134,20 @@ namespace Core6502DotNet
                         }
                         catch (Exception ex)
                         {
-                            if (ex is SymbolException || ex is FormatException || ex is MultiLineAssemblerException)
+                            if (ex is SymbolException symbEx)
                             {
-                                if (ex is SymbolException symbEx)
-                                    Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
-                                else if (ex is FormatException fmtEx)
+                                Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
+                            }
+                            else if (ex is FormatException || ex is MultiLineAssemblerException)
+                            {
+                                if (ex is FormatException fmtEx)
                                     Assembler.Log.LogEntry(line,
                                                       line.Operand,
                                                       $"There was a problem with the format string:\n{fmtEx.Message}.",
                                                       true);
                                 else
                                     Assembler.Log.LogEntry(line, line.Instruction.Position, ex.Message);
+      
                                 break;
                             }
                             else
