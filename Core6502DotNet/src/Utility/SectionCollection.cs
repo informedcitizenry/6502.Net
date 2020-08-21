@@ -114,12 +114,12 @@ namespace Core6502DotNet
             name = section.Name;
             
             if (_collection.Any(kvp =>
-                section.Starts <= kvp.Value.Ends && kvp.Value.Starts <= section.Ends))
+                section.Starts <= (kvp.Value.Ends - 1) && kvp.Value.Starts <= (section.Ends - 1)))
                 return CollectionResult.RangeOverlap;
 
             if (!_collection.TryAdd(section.Name, section))
                 return CollectionResult.Duplicate;
-;
+
             return CollectionResult.Success;
         }
 
