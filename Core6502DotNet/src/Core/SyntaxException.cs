@@ -5,16 +5,14 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace Core6502DotNet
 {
-    public interface IBinaryFormatProvider
+    /// <summary>
+    /// Represents a syntax error.
+    /// </summary>
+    public class SyntaxException : ExpressionException
     {
-        /// <summary>
-        /// Converts the assembly output to a custom binary format.
-        /// </summary>
-        /// <returns>A custom-formatted byte collection.</returns>
-        IEnumerable<byte> GetFormat();
+        public SyntaxException(int position, string message)
+            : base(position, message) { }
     }
 }

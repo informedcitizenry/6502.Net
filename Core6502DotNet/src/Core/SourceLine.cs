@@ -24,34 +24,81 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="fileName">The source file name.</param>
         /// <param name="lineNumber">The source line number.</param>
-        public SourceLine(string fileName, int lineNumber)
-        {
-            Label = Instruction = Operand = null;
-
-            LineNumber = lineNumber;
-            Filename = fileName;
-
-            IsParsed = false;
-
-            UnparsedSource =
-            ParsedSource = string.Empty;
-
-            Assembly = new List<byte>();
-        }
-
-        /// <summary>
-        /// Constructs a new instance of the source line class.
-        /// </summary>
-        /// <param name="fileName">The source file name.</param>
-        /// <param name="lineNumber">The source line number.</param>
         /// <param name="originalSource">The original (unprocessed) source.</param>
         /// <param name="head">The head token used to parse down to label, instruction, and operand tokens.</param>
         public SourceLine(string fileName, int lineNumber, string originalSource, Token head)
-            : this(fileName, lineNumber)
         {
+            LineNumber = lineNumber;
+            Filename = fileName;
+
             UnparsedSource = originalSource;
-            ParsedSource = Assembler.Options.CaseSensitive ? originalSource : originalSource.ToLower();
-            ParseOne(head);
+            
+            if (head == null)
+            {
+                Label = Instruction = Operand = null;
+                IsParsed = false;
+                ParsedSource = string.Empty;
+            }
+            else
+            {
+                IsParsed = true;
+                ParsedSource = Assembler.Options.CaseSensitive ? originalSource : originalSource.ToLower();
+                var firstChild = head.Children[0];
+                // if there is an operand under first child treat it as a label
+                if (firstChild.Children.Count > 0)
+                {
+                    Label = firstChild.Children[0];
+
+                    if (firstChild.Children.Count > 1)
+                    {
+                        if (firstChild.Children[1].OperatorType == OperatorType.Binary &&
+                             firstChild.Children[1].Name.Equals("="))
+                        {
+                            Instruction = new Token("=", 
+                                                    "=", 
+                                                    TokenType.Instruction, 
+                                                    OperatorType.None, 
+                                                    firstChild.Children[1].Position);
+                            Operand = new Token(string.Empty, string.Empty,
+                                                TokenType.Operator,
+                                                OperatorType.Separator,
+                                                firstChild.Children[1].Position + 1,
+                                                firstChild.Children.Skip(2));
+                            if (head.Children.Count > 1)
+                                Operand.Children.AddRange(head.Children.Skip(1));
+                            return;
+                        }
+                        Assembler.Log.LogEntry(Filename, LineNumber, firstChild.Children[1].Position,
+                                   $"Unknown instruction \"{firstChild.Children[1].Name}\" found.", true);
+                    }
+                }
+                if (head.Children.Count > 1)
+                {
+                    Instruction = head.Children[1];
+
+                    if (head.Children.Count > 2)
+                        Operand = head.Children[2];
+                }
+            }            
+        }
+
+        SourceLine(string fileName, 
+                   int lineNumber, 
+                   Token label, 
+                   Token instruction, 
+                   Token operand, 
+                   bool isParsed, 
+                   string unparsedSource,
+                   string parsedSource)
+        {
+            Filename = fileName;
+            LineNumber = lineNumber;
+            Label = label;
+            Instruction = instruction;
+            Operand = operand;
+            IsParsed = isParsed;
+            UnparsedSource = unparsedSource;
+            ParsedSource = parsedSource;
         }
 
         #endregion
@@ -59,72 +106,29 @@ namespace Core6502DotNet
         #region Methods
 
         /// <summary>
-        /// Perform a deep-copy of the current source line.
+        /// Make a copy of the current source line, but with the specified line number.
         /// </summary>
-        /// <returns>A clone of the current source line.</returns>
-        public SourceLine Clone()
-        {
-            var copy = new SourceLine(Filename, LineNumber)
-            {
-                ParsedSource = ParsedSource,
-                UnparsedSource = UnparsedSource,
-            };
-            if (Label != null)
-                copy.Label = Label.Clone();
-            if (Instruction != null)
-                copy.Instruction = Instruction.Clone();
-            if (Operand != null)
-                copy.Operand = Operand.Clone();
-            return copy;
-        }
+        /// <param name="lineNumber">The line nummber of the copied source line.</param>
+        /// <returns>The copied source line with the specified line number.</returns>
+        public SourceLine WithLineNumber(int lineNumber) =>
+                            new SourceLine(Filename,
+                                            lineNumber,
+                                            Label,
+                                            Instruction,
+                                            Operand,
+                                            IsParsed,
+                                            UnparsedSource,
+                                            ParsedSource);
 
-        void ParseOne(Token parentSep)
-        {
-            IsParsed = true;
-            Token firstChild = parentSep.Children[0];
-            // if there is an operand under first child treat it as a label
-            if (firstChild.HasChildren)
-            {
-                Label = firstChild.Children[0];
-
-                if (firstChild.Children.Count > 1)
-                {
-                    if (firstChild.Children[1].OperatorType == OperatorType.Binary &&
-                         firstChild.Children[1].Name.Equals("="))
-                    {
-                        Instruction = firstChild.Children[1];
-                        Instruction.Type = TokenType.Instruction;
-                        Operand = new Token
-                        {
-                            Type = TokenType.Operator,
-                            OperatorType = OperatorType.Separator,
-                            Children = firstChild.Children.Skip(2).ToList()
-                        };
-                        if (parentSep.Children.Count > 1)
-                            Operand.Children.AddRange(parentSep.Children.Skip(1));
-                        return;
-                    }
-                    Assembler.Log.LogEntry(Filename, LineNumber, firstChild.Children[1].Position,
-                               $"Unknown instruction \"{firstChild.Children[1].Name}\" found.", true);
-                }
-            }
-            if (parentSep.Children.Count > 1)
-            {
-                Instruction = parentSep.Children[1];
-
-                if (parentSep.Children.Count > 2)
-                    Operand = parentSep.Children[2];
-            }
-        }
-
-        /// <summary>
-        /// Reset the <see cref="SourceLine"/>'s internal state.
-        /// </summary>
-        public void Reset()
-        {
-            ParsedSource = string.Empty;
-            Label = Instruction = Operand = null;
-        }
+        public SourceLine NoLabel() =>
+            new SourceLine(Filename,
+                            LineNumber,
+                            null,
+                            Instruction,
+                            Operand,
+                            IsParsed,
+                            UnparsedSource,
+                            ParsedSource);
 
         public override string ToString()
         {
@@ -145,7 +149,7 @@ namespace Core6502DotNet
                     {
                         if (!string.IsNullOrEmpty(child.Name))
                             sb.Append(child.Name);
-                        if (child.HasChildren)
+                        if (child.Children.Count > 0)
                             AppendChildren(child.Children);
                         if (child.OperatorType == OperatorType.Open)
                             sb.Append(LexerParser.Groups[child.Name]);
@@ -160,19 +164,19 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// The <see cref="SourceLine"/>'s label/symbol. This can be determined using the Parse method.
+        /// Gets the <see cref="SourceLine"/>'s label/symbol. 
         /// </summary>
-        public Token Label { get; set; }
+        public Token Label { get; }
 
         /// <summary>
         /// Gets the name of the <see cref="SourceLine"/>'s label, if defined.
         /// </summary>
         public string LabelName => Label == null ? string.Empty : Label.Name;
 
-        // <summary>
-        /// The <see cref="SourceLine"/>'s instruction. This can be determined using the Parse method.
+        /// <summary>
+        /// Gets the <see cref="SourceLine"/>'s instruction. 
         /// </summary>
-        public Token Instruction { get; set; }
+        public Token Instruction { get; }
 
         /// <summary>
         /// Gets the name of the <see cref="SourceLine"/>'s instruction, if defined.
@@ -182,50 +186,43 @@ namespace Core6502DotNet
         /// <summary>
         /// The collection of tokens that make up the <see cref="SourceLine"/>'s operand. This can be determined using the Parse method.
         /// </summary>
-        public Token Operand { get; set; }
+        public Token Operand { get; }
 
         /// <summary>
         /// Gets or sets the <see cref="SourceLine"/>'s Line number in the original source file.
         /// </summary>
-        public int LineNumber { get; set; }
+        public int LineNumber { get; }
 
         /// <summary>
         /// Gets or sets the <see cref="SourceLine"/>'s original source filename.
         /// </summary>
-        public string Filename { get; set; }
-
-        /// <summary>
-        /// Gets or sets the individual assembled bytes.
-        /// </summary>
-        public List<byte> Assembly { get; set; }
+        public string Filename { get; }
 
         /// <summary>
         /// Gets or sets the parsed source of the original source string.
         /// </summary>
-        public string ParsedSource { get; set; }
+        public string ParsedSource { get; }
 
         /// <summary>
         /// Gets or sets the original (unparsed) source string.
         /// </summary>
-        public string UnparsedSource { get; set; }
+        public string UnparsedSource { get; }
 
         /// <summary>
         /// Gets a flag indicating whether this <see cref="SourceLine"/> has been parsed.
         /// </summary>
-        /// <value><c>true</c> if the line has been parsed; otherwise, <c>false</c>.</value>
-        public bool IsParsed { get; set; }
+        public bool IsParsed { get; }
 
         /// <summary>
         /// Gets a flag determining if the operand has any children tokens.
         /// </summary>
-        public bool OperandHasToken => Operand != null &&
-                                       Operand.HasChildren &&
-                                       Operand.Children.Any(c => !string.IsNullOrEmpty(c.Name) || c.HasChildren);
+        public bool OperandHasToken
+            => Operand != null && !string.IsNullOrEmpty(Operand.ToString());
 
         /// <summary>
         /// Gets the operand's expression string.
         /// </summary>
-        public string OperandExpression => Operand != null ? Operand.ToString() : string.Empty;
+        public string OperandExpression => Operand == null ? string.Empty : Operand.ToString();
 
         #endregion
     }

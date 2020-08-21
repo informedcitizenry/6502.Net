@@ -21,9 +21,15 @@ namespace Core6502DotNet
 
         class MacroSource
         {
-            public SourceLine Line { get; set; }
+            public MacroSource(SourceLine line)
+            {
+                Line = line;
+                ParamPlaces = new List<(int paramIndex, string reference, Token token)>();
+            }
 
-            public List<(int paramIndex, string reference, Token token)> ParamPlaces { get; set; }
+            public SourceLine Line { get; }
+
+            public List<(int paramIndex, string reference, Token token)> ParamPlaces { get; }
 
             public override string ToString() => Line.ParsedSource;
         }
@@ -69,7 +75,7 @@ namespace Core6502DotNet
                     {
                         // if empty then simply take the default value if it exists.
                         if (index >= Params.Count || string.IsNullOrEmpty(Params[index].DefaultValue))
-                            throw new ExpressionException(p.Position, "No default value was passed for unnamed parameter in parameter list.");
+                            throw new SyntaxException(p.Position, "No default value was passed for unnamed parameter in parameter list.");
                         paramList.Add(Params[index].DefaultValue);
                     }
                     else
@@ -93,7 +99,7 @@ namespace Core6502DotNet
         public IEnumerable<SourceLine> Expand(Token passedParams)
         {
             var paramList = GetParamListFromParameters(passedParams);
-            var expanded = new List<SourceLine> { GetBlockDirectiveLine(string.Empty, 1, ".block") };
+            var expanded = new List<SourceLine> { Preprocessor.GetBlockDirectiveLine(string.Empty, 1, ".block") };
             foreach (MacroSource source in _sources)
             {
                 if (source.ParamPlaces.Count > 0)
@@ -108,7 +114,7 @@ namespace Core6502DotNet
                         {
                             // expected parameter exceeded passed parameters. Is there a default value?
                             if (parmRef.paramIndex > Params.Count || string.IsNullOrEmpty(Params[parmRef.paramIndex].DefaultValue))
-                                throw new ExpressionException(source.Line.Operand.Position, "Macro expected parameter but was not supplied.");
+                                throw new SyntaxException(source.Line.Operand.Position, "Macro expected parameter but was not supplied.");
                             substitution = Params[parmRef.paramIndex].DefaultValue;
                         }
                         else
@@ -118,65 +124,20 @@ namespace Core6502DotNet
                         replacement = parmRef.token.UnparsedName.Replace(parmRef.reference, substitution, _stringCompare);
                         expandedSource = expandedSource.Replace(parmRef.token.Name, replacement);
                     }
-                    var expandedLine = LexerParser.Parse(source.Line.Filename, expandedSource).First();
-                    expandedLine.LineNumber = source.Line.LineNumber;
-                    expanded.Add(expandedLine);
+                    var expandedList = LexerParser.Parse(source.Line.Filename, expandedSource)
+                        .Select(l => l.WithLineNumber(source.Line.LineNumber));
+                    expanded.AddRange(expandedList);
                 }
                 else
                 {
                     expanded.Add(source.Line);
                 }
             }
-            expanded.Add(GetBlockDirectiveLine(string.Empty, 1, ".endblock"));
-
-            SourceLine line = expanded[^1];
-
+            expanded.Add(Preprocessor.GetBlockDirectiveLine(string.Empty, 1, ".endblock"));
             return expanded;
         }
 
-        /// <summary>
-        /// Returns a new source line representing a block or endblock directive.
-        /// </summary>
-        /// <param name="fileName">The original file name.</param>
-        /// <param name="lineNumber">The source's line number.</param>
-        /// <param name="directive">The directive name.</param>
-        /// <returns></returns>
-        public static SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string directive)
-            => GetBlockDirectiveLine(fileName, lineNumber, string.Empty, directive);
 
-        /// <summary>
-        /// Returns a new source line representing a block or endblock directive.
-        /// </summary>
-        /// <param name="fileName">The original file name.</param>
-        /// <param name="lineNumber">The source's line number.</param>
-        /// <param name="label">The label to attach the block line.</param>
-        /// <param name="directive">The directive name.</param>
-        /// <returns></returns>
-        public static SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string label, string directive)
-        {
-            var blockLine = new SourceLine(fileName, lineNumber)
-            {
-                Instruction = new Token
-                {
-                    Name = directive,
-                    Type = TokenType.Instruction
-                }
-            };
-            if (!string.IsNullOrEmpty(label))
-            {
-                blockLine.Label = new Token
-                {
-                    Name = label,
-                    Type = TokenType.Operand
-                };
-                blockLine.ParsedSource = $"{label} {directive}";
-            }
-            else
-            {
-                blockLine.ParsedSource = directive;
-            }
-            return blockLine;
-        }
 
         /// <summary>
         /// Add a line of source to the macro definition.
@@ -184,11 +145,7 @@ namespace Core6502DotNet
         /// <param name="line">The source line to add to the macro's definition.</param>
         public void AddSource(SourceLine line)
         {
-            var macroSource = new MacroSource
-            {
-                Line = line,
-                ParamPlaces = new List<(int paramIndex, string reference, Token token)>()
-            };
+            var macroSource = new MacroSource(line);
 
             if (line.OperandHasToken)
             {
@@ -236,7 +193,7 @@ namespace Core6502DotNet
                                 if (inQuotes)
                                     reference += "}";
                                 if (paramIx < 0)
-                                    throw new ExpressionException(originalPos, $"Reference parameter \"{reference}\" not defined.");
+                                    throw new SyntaxException(originalPos, $"Reference parameter \"{reference}\" not defined.");
                                 macroSource.ParamPlaces.Add((paramIx, reference, op));
                                 originalPos += refPos + length;
                             }

@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Runtime.CompilerServices;
+
 namespace Core6502DotNet
 {
     /// <summary>
@@ -14,8 +16,14 @@ namespace Core6502DotNet
     {
         #region Constructors
 
+        /// <summary>
+        /// Creates a new instance of a scoped block processor.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
         public ScopeBlock(SourceLine line, BlockType type)
-            : base(line, type)
+            : base(line, type, false)
         {
         }
 
@@ -25,18 +33,17 @@ namespace Core6502DotNet
 
         public override bool ExecuteDirective()
         {
-            var line = Assembler.LineIterator.Current;
+            var line = LineIterator.Current;
             var scopeName = line.LabelName;
             if (line.InstructionName.Equals(".block"))
             {
                 if (string.IsNullOrEmpty(scopeName))
-                    scopeName = Assembler.LineIterator.Index.ToString();
-                else if (scopeName[0].IsSpecialOperator())
+                    scopeName = LineIterator.Index.ToString();
+                else if (!char.IsLetter(scopeName[0]))
                 {
-                    throw new ExpressionException(line.Label.Position,
-                        $"Invalid use of character \'{scopeName[0]}\' as a named scope block.");
+                    throw new SyntaxException(line.Label.Position,
+                        $"Invalid name \"{scopeName}\" for scope block.");
                 }
-
                 Assembler.SymbolManager.PushScope(scopeName);
                 return true;
             }
@@ -47,6 +54,8 @@ namespace Core6502DotNet
             }
             return false;
         }
+
+        public override void PopScope() { }
 
         #endregion
 

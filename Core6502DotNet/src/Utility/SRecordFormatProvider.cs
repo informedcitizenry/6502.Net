@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,7 +35,8 @@ namespace Core6502DotNet
 
             string recHeader;
             int recordBytes;
-            if (Assembler.Options.Format.Equals("srec"))
+            var fmt = Assembler.OutputFormat;
+            if (fmt.Equals("srec", Assembler.StringComparison))
             {
                 recHeader = "S1";
                 recordBytes = RecordSize;

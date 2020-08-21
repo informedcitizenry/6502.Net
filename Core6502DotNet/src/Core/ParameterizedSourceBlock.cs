@@ -22,15 +22,14 @@ namespace Core6502DotNet
         /// <summary>
         /// Represents a parameter, including a symbol name and a default value.
         /// </summary>
-        public class Param
+        public readonly struct Param
         {
-            public Param(string name) => Name = name;
+            public Param(string name, string defaultValue) 
+                => (Name, DefaultValue) = (name, defaultValue);
 
-            public Param() => Name = DefaultValue = string.Empty;
+            public string Name { get; }
 
-            public string Name { get; set; }
-
-            public string DefaultValue { get; set; }
+            public string DefaultValue { get; }
         }
 
         #endregion
@@ -53,7 +52,7 @@ namespace Core6502DotNet
             Params = new List<Param>();
             _stringCompare = stringComparison;
 
-            if (parms != null && parms.HasChildren)
+            if (parms != null)
             {
                 for (var i = 0; i < parms.Children.Count; i++)
                 {
@@ -70,27 +69,26 @@ namespace Core6502DotNet
                         if (string.IsNullOrEmpty(definedParm.UnparsedName))
                             Params.Add(new Param());
                         else if (!Assembler.SymbolManager.SymbolIsValid(definedParm.UnparsedName))
-                            throw new ExpressionException(definedParm.Position, $"Invalid parameter name \"{definedParm.UnparsedName}\".");
+                            throw new SyntaxException(definedParm.Position, $"Invalid parameter name \"{definedParm.UnparsedName}\".");
 
-
-                        var parm = new Param(definedParm.UnparsedName);
+                        var defaultValue = string.Empty;
                         if (parameter.Children.Count > 1)
                         {
                             Token assign = parameter.Children[1];
                             if (!assign.Name.Equals("=") || parameter.Children.Count < 3)
-                                throw new ExpressionException(assign.Position, "Syntax error.");
+                                throw new SyntaxException(assign.Position, "Syntax error.");
                             var defaultIx = parameter.Children[2].Position - 1;
                             if (i < parms.Children.Count - 1)
                             {
                                 var len = parms.Children[i + 1].Position - 1 - defaultIx;
-                                parm.DefaultValue = source.Substring(defaultIx, len);
+                                defaultValue = source.Substring(defaultIx, len);
                             }
                             else
                             {
-                                parm.DefaultValue = source.Substring(defaultIx);
+                                defaultValue = source.Substring(defaultIx);
                             }
                         }
-                        Params.Add(parm);
+                        Params.Add(new Param(definedParm.UnparsedName, defaultValue));
                     }
                 }
             }
@@ -101,10 +99,10 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// The list of parameters associated to the definition,
+        /// Gets the list of parameters associated to the definition,
         /// encapsulated in a <see cref="Param"/> class.
         /// </summary>
-        public List<Param> Params { get; set; }
+        protected List<Param> Params { get; }
 
         #endregion
 

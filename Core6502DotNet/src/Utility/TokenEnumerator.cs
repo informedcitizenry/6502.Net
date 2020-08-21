@@ -58,7 +58,7 @@ namespace Core6502DotNet
             if (_childEnumerator != null && _childEnumerator.MoveNext())
                 return _childEnumerator.Current != null;
 
-            if (_current.HasChildren && _current.Children.Count > _currentIndex)
+            if (_current.Children.Count > _currentIndex)
             {
                 _childEnumerator = new TokenEnumerator(_current.Children[_currentIndex++]);
                 return _childEnumerator.MoveNext();

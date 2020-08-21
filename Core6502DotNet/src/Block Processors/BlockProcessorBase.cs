@@ -11,8 +11,15 @@ using System.Linq;
 
 namespace Core6502DotNet
 {
+    /// <summary>
+    /// Represents an error when a block is not properly closed.
+    /// </summary>
     public class BlockClosureException : Exception
     {
+        /// <summary>
+        /// Creates an instance of a block closure exception.
+        /// </summary>
+        /// <param name="blockType">The block type.</param>
         public BlockClosureException(string blockType)
             : base($"Missing closure for \"{blockType}\" directive.")
         {
@@ -20,6 +27,9 @@ namespace Core6502DotNet
         }  
     }
 
+    /// <summary>
+    /// An enumeration of a block type.
+    /// </summary>
     public enum BlockType
     {
         Scope,
@@ -35,8 +45,14 @@ namespace Core6502DotNet
         Goto
     };
 
-    public class BlockDirective
+    /// <summary>
+    /// A class that defines a block opening and closure.
+    /// </summary>
+    public readonly struct BlockDirective
     {
+        /// <summary>
+        /// Gets the defined list of block directives by block type.
+        /// </summary>
         public static readonly Dictionary<BlockType, BlockDirective> Directives = new Dictionary<BlockType, BlockDirective>
             {
                 { BlockType.Scope,           new BlockDirective(".block",   ".endblock"     ) },
@@ -52,21 +68,32 @@ namespace Core6502DotNet
 
             };
 
-        public BlockDirective(string open, string closure)
+        /// <summary>
+        /// Creates a new instance of the block closure definition.
+        /// </summary>
+        /// <param name="open"></param>
+        /// <param name="closure"></param>
+        public BlockDirective(string open, string closure) 
         {
 
             Open = open;
             Closure = closure;
         }
 
-        public string Open { get; set; }
+        /// <summary>
+        /// Gets the block's open directive.
+        /// </summary>
+        public string Open { get; }
 
-        public string Closure { get; set; }
+        /// <summary>
+        /// Gets the block's closure directive.
+        /// </summary>
+        public string Closure { get; }
     };
 
     /// <summary>
     /// A class responsible for the processing of source code blocks for a 
-    /// <see cref="MultiLineAssembler"/>. This class must be inherited.
+    /// <see cref="BlockAssembler"/>. This class must be inherited.
     /// </summary>
     public abstract class BlockProcessorBase
     {
@@ -79,12 +106,49 @@ namespace Core6502DotNet
         /// and operands invoking or creating the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
         public BlockProcessorBase(SourceLine line, BlockType type)
+            : this(line, type, true) { }
+
+        /// <summary>
+        /// Creates a new instance of a block processor. 
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
+        /// processing the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public BlockProcessorBase(RandomAccessIterator<SourceLine> iterator, BlockType type)
+            : this(iterator, type, true) { }
+
+        /// <summary>
+        /// Creates a new instance of a block processor.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        /// <param name="createScope">Automatically create a scope when initialized.</param>
+        protected BlockProcessorBase(SourceLine line, BlockType type, bool createScope)
         {
-            Index = Assembler.LineIterator.Index;
+            LineIterator = Assembler.LineIterator;
+            Index = LineIterator.Index;
             Line = line;
             Type = type;
-            //if (WrapInScope) <=== this messes with ephemerals, turning off for now. also probably not necessary
-            //  Assembler.SymbolManager.PushScope(string.Empty);
+            if (createScope)
+                Assembler.SymbolManager.PushScope(Index.ToString());
+        }
+
+        /// <summary>
+        /// Creates a new instance of a block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
+        /// processing the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        /// <param name="createScope">Automatically create a scope when initialized.</param>
+        protected BlockProcessorBase(RandomAccessIterator<SourceLine> iterator, BlockType type, bool createScope)
+        {
+            LineIterator = iterator;
+            Line = iterator.Current;
+            Index = iterator.Index;
+            Type = type;
+            if (createScope)
+                Assembler.SymbolManager.PushScope(Index.ToString());
         }
 
         #endregion
@@ -92,19 +156,29 @@ namespace Core6502DotNet
         #region Methods
 
         /// <summary>
-        /// Executes the block directive. This method must be defined by the inherited class.
+        /// Executes the block directive. This method must be inherited.
         /// </summary>
-        /// <returns><c>True</c> if the block processor successfully executed the directive, <c>false</c> otherwise.</returns>
+        /// <returns><c>true</c> if the block processor successfully executed the
+        /// directive, <c>false</c> otherwise.</returns>
         public abstract bool ExecuteDirective();
+
+        public virtual void PopScope()
+        {
+            SeekBlockEnd();
+            Assembler.SymbolManager.PopScope();
+        }
+
+        //public abstract bool ExecuteDirective();
 
         /// <summary>
         /// Seeks the <see cref="SourceLine"/> containing the 
         /// first instance one of the directives in the block.
         /// </summary>
+        /// <param name="iterator">The source line iterator.</param>
         /// <param name="directives">An array of directives, one of which to seek in the block.</param>
-        protected void SeekBlockDirectives(string[] directives)
+        protected void SeekBlockDirectives(RandomAccessIterator<SourceLine> iterator, string[] directives)
         {
-            var line = Assembler.LineIterator.Current;
+            var line = iterator.Current;
             var instruction = line.InstructionName;
             if (!directives.Contains(instruction))
             {
@@ -120,7 +194,7 @@ namespace Core6502DotNet
                 var opens = 1;
                 while (opens != 0)
                 {
-                    line = Assembler.LineIterator.Skip(l => !keywordsNotToSkip.Contains(l.InstructionName));
+                    line = iterator.FirstNotMatching(l => !keywordsNotToSkip.Contains(l.InstructionName));
                     if (line == null)
                         throw new BlockClosureException(blockOpen);
 
@@ -137,20 +211,25 @@ namespace Core6502DotNet
         }
 
         /// <summary>
+        /// Seeks the <see cref="SourceLine"/> containing the 
+        /// first instance one of the directives in the block.
+        /// </summary>
+        /// <param name="directives">An array of directives, one of which to seek in the block.</param>
+        protected void SeekBlockDirectives(string[] directives)
+            => SeekBlockDirectives(LineIterator, directives);
+
+        /// <summary>
+        /// Seeks the <see cref="SourceLine"/> containing the directive that completes the block.
+        /// </summary>
+        /// <param name="iterator">The iterator through which to seek the line.</param>
+        public void SeekBlockEnd(RandomAccessIterator<SourceLine> iterator)
+            => SeekBlockDirectives(iterator, new string[] { Directive.Closure });
+
+        /// <summary>
         /// Seeks the <see cref="SourceLine"/> containing the directive that completes the block.
         /// </summary>
         public void SeekBlockEnd()
-            => SeekBlockDirectives(new string[] { Directive.Closure });
-
-        /// <summary>
-        /// Performs a pop off the symbol stack, if the block's WrapInScope flag
-        /// is set.
-        /// </summary>
-        public void Pop()
-        {
-            //if (WrapInScope)
-            //  Assembler.SymbolManager.PopScope();
-        }
+            => SeekBlockDirectives(LineIterator, new string[] { Directive.Closure });
 
         #endregion
 
@@ -161,21 +240,20 @@ namespace Core6502DotNet
         /// </summary>
         public BlockDirective Directive => BlockDirective.Directives[Type];
 
-
         /// <summary>
         /// Gets the index in the source listing where the block is defined.
         /// </summary>
-        public int Index { get; private set; }
+        public int Index { get; }
 
         /// <summary>
         /// Gets the <see cref="SourceLine"/> that defined the blcok.
         /// </summary>
-        public SourceLine Line { get; private set; }
+        public SourceLine Line { get; }
 
         /// <summary>
         /// Gets the block's <see cref="BlockType"/>.
         /// </summary>
-        public BlockType Type { get; private set; }
+        public BlockType Type { get; }
 
         /// <summary>
         /// Gets the flag indicating whether a .break directive is allowed
@@ -194,6 +272,11 @@ namespace Core6502DotNet
         /// local in its own scope.
         /// </summary>
         public virtual bool WrapInScope => false;
+
+        /// <summary>
+        /// Gets this block processor's line iterator.
+        /// </summary>
+        protected RandomAccessIterator<SourceLine> LineIterator { get; }
 
         #endregion
     }

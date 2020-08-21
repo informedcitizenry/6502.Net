@@ -55,7 +55,7 @@ namespace Core6502DotNet.m6502
             { 35, 17 }
         };
 
-        static readonly List<int> _trackOffsets = new List<int>
+        static readonly int[] _trackOffsets = 
         {
             0x00000, // extra dummy track
             0x00000,
@@ -247,10 +247,9 @@ namespace Core6502DotNet.m6502
                 var bitmap = availTrackSectors[i];
                 var blocksFree = GetFreeBlockCount(bitmap);
                 diskImage[bamOffs++] = Convert.ToByte(blocksFree);
-                diskImage[bamOffs++] = Convert.ToByte(bitmap & 0b1111_1111);
-                diskImage[bamOffs++] = Convert.ToByte((bitmap >> 8) & 0b1111_1111);
+                diskImage[bamOffs++] = Convert.ToByte( bitmap        & 0b1111_1111);
+                diskImage[bamOffs++] = Convert.ToByte((bitmap >>  8) & 0b1111_1111);
                 diskImage[bamOffs++] = Convert.ToByte((bitmap >> 16) & 0b1111_1111);
-
             }
             return diskImage;
         }
@@ -263,7 +262,7 @@ namespace Core6502DotNet.m6502
 
         static int GetFreeBlockCount(int i)
         {
-            i = i - ((i >> 1) & 0x55555555);
+            i -= ((i >> 1) & 0x55555555);
             i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
             return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
         }

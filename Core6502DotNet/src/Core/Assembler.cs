@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -33,12 +34,6 @@ namespace Core6502DotNet
     /// </summary>
     public static class Assembler
     {
-        #region Members
-
-        static int _pass;
-
-        #endregion
-
         #region Methods
 
         /// <summary>
@@ -50,18 +45,52 @@ namespace Core6502DotNet
             PassChanged = null;
             PrintOff = false;
             PassNeeded = true;
-            _pass = -1;
+            CurrentPass = -1;
             LineIterator = null;
-            Options = new CommandLineOptions();
             IsReserved = new List<Func<string, bool>>();
             InstructionLookupRules = new List<Func<string, bool>>();
-            Options.ParseArgs();
+
+            if (Options == null)
+                Options = Options.ParseArgs();
+            OutputFormat = Options.Format;
             Encoding = new AsmEncoding(Options.CaseSensitive);
+
             SymbolManager = new SymbolManager(Options.CaseSensitive);
-            Evaluator.Initialize();
+            SymbolManager.AddValidSymbolNameCriterion(s =>
+            {
+                if (!Options.CaseSensitive)
+                    s = s.ToLower();
+                return !Evaluator.IsReserved(s);
+            });
+            Evaluator.Reset();
             Evaluator.AddFunctionEvaluator(SymbolManager);
+            Evaluator.SetCaseSensitive(Options.CaseSensitive);
+
             Log = new ErrorLog();
             Output = new BinaryOutput();
+        }
+
+        /// <summary>
+        /// Selects the <see cref="IBinaryFormatProvider"/> from the specified format
+        /// name, and sets the <see cref="OutputFormat"/> property.
+        /// </summary>
+        /// <param name="format"></param>
+        public static void SelectFormat(string format)
+        {
+            BinaryFormatProvider = (FormatSelector?.Invoke(format));
+            OutputFormat = format;
+        }
+
+        /// <summary>
+        /// Increment the pass counter.
+        /// </summary>
+        /// <returns>The new value of the pass counter.</returns>
+        public static int IncrementPass()
+        {
+            CurrentPass++;
+            PassChanged?.Invoke(null, new EventArgs());
+            PassNeeded = false;
+            return CurrentPass; 
         }
 
         #endregion
@@ -91,10 +120,15 @@ namespace Core6502DotNet
         public static BinaryOutput Output { get; private set; }
 
         /// <summary>
-        /// The <see cref="CommandLineOptions"/> object responsible for parsing
+        /// Gets the output format name.
+        /// </summary>
+        public static string OutputFormat { get; private set; }
+
+        /// <summary>
+        /// The <see cref="global::Core6502DotNet.Options"/> object responsible for parsing
         /// and enumerating all command line options.
         /// </summary>
-        public static CommandLineOptions Options { get; private set; }
+        public static Options Options { get; private set; }
 
 
         /// <summary>
@@ -106,16 +140,7 @@ namespace Core6502DotNet
         /// Gets or sets the number of passes attempted. Setting this
         /// property resets the PassNeeded property.
         /// </summary>
-        public static int CurrentPass
-        {
-            get => _pass;
-            set
-            {
-                _pass = value;
-                PassChanged?.Invoke(null, new EventArgs());
-                PassNeeded = false;
-            }
-        }
+        public static int CurrentPass { get; private set; }
 
         /// <summary>
         /// Gets or sets the flag that determines if another pass is needed. 
@@ -191,17 +216,25 @@ namespace Core6502DotNet
         /// </summary>
         public static IBinaryFormatProvider BinaryFormatProvider { get; set; }
 
+        public static Func<string, IBinaryFormatProvider> FormatSelector { get; set; }
+
         /// <summary>
         /// Gets the current <see cref="SourceLine"/> from the iterator.
         /// </summary>
         public static SourceLine CurrentLine => LineIterator.Current;
 
         /// <summary>
-        /// Gets the <see cref="StringComparer"/> base on the case-sensitive flag of
+        /// Gets the <see cref="StringComparer"/> on the case-sensitive flag of
         /// the set <see cref="Options"/>.
         /// </summary>
         public static StringComparer StringComparer 
             => Options.CaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
+        /// <summary>
+        /// Gets the <see cref="StringComparison"/> on the case-sensitive flag of the set <see cref="Options"/>.
+        /// </summary>
+        public static StringComparison StringComparison
+            => Options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
         #endregion
     }
@@ -219,6 +252,8 @@ namespace Core6502DotNet
         /// </summary>
         protected AssemblerBase()
         {
+            ExcludedInstructionsForLabelDefines = new HashSet<string>(Assembler.StringComparer);
+
             Reserved = new ReservedWords(Assembler.StringComparer);
 
             Assembler.IsReserved.Add(Reserved.IsReserved);
@@ -250,17 +285,36 @@ namespace Core6502DotNet
         /// <param name="line">The source line.</param>
         protected abstract string OnAssembleLine(SourceLine line);
 
+        /// <summary>
+        /// Assemble the parsed <see cref="SourceLine"/>.
+        /// </summary>
+        /// <param name="line">The line to assembly.</param>
+        /// <returns>The disassembly output from the assembly operation.</returns>
+        /// <exception cref="BlockClosureException"/>
+        /// <exception cref="DirectoryNotFoundException"/>
+        /// <exception cref="DivideByZeroException"/>
+        /// <exception cref="ExpressionException"/>
+        /// <exception cref="FileNotFoundException"/>
+        /// <exception cref="FormatException"/>
+        /// <exception cref="InvalidPCAssignmentException"/>
+        /// <exception cref="BlockAssemblerException"/>
+        /// <exception cref="OverflowException"/>
+        /// <exception cref="ProgramOverflowException"/>
+        /// <exception cref="ReturnException"/>
+        /// <exception cref="SectionException"/>
+        /// <exception cref="SymbolException"/>
+        /// <exception cref="SyntaxException"/>
         public string AssembleLine(SourceLine line)
         {
             bool isReference = false;
-            if (!string.IsNullOrEmpty(line.LabelName) && (line.Instruction == null ||
-                (!line.InstructionName.Equals(".equ") && !line.InstructionName.Equals("=") && !line.InstructionName.Equals(".function"))))
+            PCOnAssemble = Assembler.Output.LogicalPC;
+            if (line.Label != null && (line.Instruction == null ||
+                !ExcludedInstructionsForLabelDefines.Contains(line.InstructionName)))
             {
                 if (line.LabelName.Equals("+") || line.LabelName.Equals("-"))
                 {
                     isReference = true;
-                    Assembler.SymbolManager.DefineLineReference(line.LabelName,
-                                                                  Assembler.Output.LogicalPC);
+                    Assembler.SymbolManager.DefineLineReference(line.LabelName, PCOnAssemble);
                 }
                 else if (!line.LabelName.Equals("*"))
                 {
@@ -285,9 +339,22 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// Gets or sets the reserved keywords of the <see cref="AssemblerBase"/> object.
+        /// Gets the collection of instructions where the <see cref="AssemblerBase"/> should 
+        /// not define any line label as a symbolic address or reference when 
+        /// performing the <see cref="AssemblerBase.AssembleLine(SourceLine)"/> action.
         /// </summary>
-        protected ReservedWords Reserved { get; set; }
+        protected HashSet<string> ExcludedInstructionsForLabelDefines { get; }
+
+        /// <summary>
+        /// Gets the reserved keywords of the <see cref="AssemblerBase"/> object.
+        /// </summary>
+        protected ReservedWords Reserved { get; }
+
+        /// <summary>
+        /// Gets the state of the Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
+        /// object when OnAssemble was invoked.
+        /// </summary>
+        protected int PCOnAssemble { get; private set; }
 
         #endregion
     }

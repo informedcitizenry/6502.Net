@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>6502.Net</PackageId>
-    <Version>2.1.8</Version>
+    <Version>2.2</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
@@ -13,12 +13,34 @@
     <ReleaseVersion>2.1.6.1</ReleaseVersion>
     <StartupObject>Core6502DotNet.Core6502DotNet</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>2.1.8.1</AssemblyVersion>
-    <FileVersion>2.1.8.1</FileVersion>
+    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <FileVersion>2.2.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Properties\launchSettings.json" />
+    <None Remove="wiki.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="src\Utility\ConfigConstants.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ConfigConstants.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="src\Utility\ConfigConstants.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ConfigConstants.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

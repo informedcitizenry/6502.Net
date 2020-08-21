@@ -7,9 +7,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+using System.Data;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -34,32 +33,21 @@ namespace Core6502DotNet
         {
             if (s.Length < 2 || s[0] != '\'' || s[^1] != '\'')
                 return false;
-            if (s.Length == 2 && s[1] == '\'')
-                return true;
-            var constchar = s[1..^1];
-            if (constchar[0] == '\\')
-            {
-                if (constchar.Length > 1)
-                {
-                    if (constchar[1] == '\\' && constchar.Length == 2)
-                        return true;
-                    if (constchar[^1] == '\\')
-                        return false;
-                }
-                try
-                {
-                    constchar = Regex.Unescape(constchar);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-            else if (constchar[0] == '\'')
-            {
-                return false;
-            }
-            return constchar.Length == 1;
+            return s.Length < 4;
+        }
+
+        /// <summary>
+        /// Returns an elliptical representation of the string if it 
+        /// exceeds the specified length.
+        /// </summary>
+        /// <param name="s">This string.</param>
+        /// <param name="length">The string length before it the ellipsis.</param>
+        /// <returns>The modified string.</returns>
+        public static string Elliptical(this string s, int length)
+        {
+            if (s.Length > length)
+                return s.Substring(0, length - 3) + "...";
+            return s;
         }
 
         /// <summary>
@@ -69,7 +57,7 @@ namespace Core6502DotNet
         /// <returns><c>True</c> if string is fully enclosed in double quotes, otherwise <c>false</c>.</returns>
         public static bool EnclosedInDoubleQuotes(this string s)
         {
-            if (s.Length < 2 || s[0] != '"' || s[^1] != '"')
+            if (s.Length < 3 || s[0] != '"' || s[^1] != '"')
                 return false;
             var penult = s.Length - 2;
             if (penult > 0 && s[^2] == '\\')
@@ -202,6 +190,19 @@ namespace Core6502DotNet
 
     public static class Double_Extension
     {
+        /// <summary>
+        /// The minimum size required in bytes to store this value.
+        /// </summary>
+        /// <param name="value">The value to store.</param>
+        /// <returns>The size in bytes.</returns>
+        public static int Size(this double value)
+        {
+            if (value > UInt24.MaxValue || value < Int24.MinValue) return 4;
+            if (value > ushort.MaxValue || value < short.MinValue) return 3;
+            if (value > byte.MaxValue   || value < sbyte.MinValue) return 2;
+            return 1;
+        }
+
         /// <summary>
         /// Returns a value indicating whether this double is almost equal with great
         /// precision to a specified <see cref="double"/>. 

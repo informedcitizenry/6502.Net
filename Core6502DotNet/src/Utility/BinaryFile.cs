@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.IO;
 
 namespace Core6502DotNet
@@ -13,7 +12,7 @@ namespace Core6502DotNet
     /// <summary>
     /// Represents an in-memory load of a binary file.
     /// </summary>
-    public sealed class BinaryFile : IEquatable<BinaryFile>
+    public sealed class BinaryFile
     {
         #region Constructor
 
@@ -48,53 +47,19 @@ namespace Core6502DotNet
 
         #endregion
 
-        #region IEquatable
-
-        /// <summary>
-        /// Determines whether this binary file is equal to the other,
-        /// based on filename only.
-        /// </summary>
-        /// <param name="other">The other file.</param>
-        /// <returns><c>True</c> if the files (filenames) are equal, otherwise <c>false</c>.</returns>
-        public bool Equals(BinaryFile other) => Filename.Equals(other.Filename);
-
-        #endregion
-
-        #region Override Methods
-
-        /// <summary>
-        /// Determines whether this binary file is equal to the other,
-        /// based on filename only.
-        /// </summary>
-        /// <param name="obj">The other file.</param>
-        /// <returns><c>True</c> if the files (filenames) are equal, otherwise <c>false</c>.</returns>
-        public override bool Equals(object obj)
-        {
-            var other = obj as BinaryFile;
-            return this.Filename == other.Filename;
-        }
-
-        /// <summary>
-        /// Gets the binary file's unique hash.
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode() => Filename.GetHashCode();
-
-        #endregion
-
         #region Properties
 
         /// <summary>
         /// Gets the filename of the binary file.
         /// </summary>
         /// <value>The filename.</value>
-        public string Filename { get; set; }
+        public string Filename { get; private set; }
 
         /// <summary>
         /// Gets the binary file data.
         /// </summary>
         /// <value>The data.</value>
-        public byte[] Data { get; set; }
+        public byte[] Data { get; private set; }
 
         #endregion
     }

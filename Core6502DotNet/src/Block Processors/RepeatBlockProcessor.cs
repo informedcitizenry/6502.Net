@@ -20,6 +20,12 @@ namespace Core6502DotNet
 
         #region Constructors
 
+        /// <summary>
+        /// Creates a new instance of a repeat block processor.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
         public RepeatBlock(SourceLine line, BlockType type)
             : base(line, type)
         {
@@ -34,15 +40,14 @@ namespace Core6502DotNet
 
         public override bool ExecuteDirective()
         {
-            SourceLine line = Assembler.LineIterator.Current;
+            SourceLine line = LineIterator.Current;
             if (line.InstructionName.Equals(".endrepeat"))
             {
                 if (_repetition < 1)
                     throw new ExpressionException(line.Instruction.Position, $"Missing matching \".repeat\" directive.");
 
                 if (--_repetition > 0)
-                    Assembler.LineIterator.Rewind(Index);
-
+                    LineIterator.Rewind(Index);
             }
             return line.InstructionName.Equals(".repeat");
         }

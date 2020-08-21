@@ -24,6 +24,11 @@ namespace Core6502DotNet
             Reserved.DefineType("Pseudo",
                 ".relocate", ".pseudopc", ".endrelocate", ".realpc");
 
+            ExcludedInstructionsForLabelDefines.Add(".org");
+            ExcludedInstructionsForLabelDefines.Add(".equ");
+            ExcludedInstructionsForLabelDefines.Add("=");
+            ExcludedInstructionsForLabelDefines.Add(".global");
+
             Reserved.DefineType("Directives", ".let", ".org");
         }
 
@@ -77,28 +82,34 @@ namespace Core6502DotNet
                     }
                 }
             }
-            else if (line.InstructionName.Equals(".let"))
+            else
             {
-                if (!line.OperandHasToken || line.Operand.Children[0].Children.Count < 3)
-                    Assembler.Log.LogEntry(line, line.Instruction, $"Directive \".let\" expects an assignment expression.");
-                else if (line.Operand.Children.Count > 1)
-                    Assembler.Log.LogEntry(line, line.Operand.LastChild, "Extra expression not valid.");
-                else
-                    Assembler.SymbolManager.Define(line.Operand.Children[0].Children, true);
-            }
-            else if (line.InstructionName.Equals(".org"))
-            {
-                if (line.LabelName.Equals("*"))
-                    Assembler.Log.LogEntry(line, line.Label, "Program Counter symbol is redundant for \".org\" directive.", false);
-
-                Assembler.Output.SetPC((int)Evaluator.Evaluate(line.Operand, short.MinValue, ushort.MaxValue));
-            }
-            else if (Reserved.IsOneOf("Pseudo", line.InstructionName))
-            {
-                if (line.InstructionName.Equals(".pseudopc") || line.InstructionName.Equals(".relocate"))
-                    Assembler.Output.SetLogicalPC((int)Evaluator.Evaluate(line.Operand.Children, short.MinValue, ushort.MaxValue));
-                else
-                    Assembler.Output.SynchPC();
+                switch (line.InstructionName)
+                {
+                    case ".let":
+                        if (!line.OperandHasToken || line.Operand.Children[0].Children.Count < 3)
+                            Assembler.Log.LogEntry(line, line.Instruction, $"Directive \".let\" expects an assignment expression.");
+                        else if (line.Operand.Children.Count > 1)
+                            Assembler.Log.LogEntry(line, line.Operand.LastChild, "Extra expression not valid.");
+                        else
+                            Assembler.SymbolManager.Define(line.Operand.Children[0].Children, true);
+                        break;
+                    case ".org":
+                        if (line.LabelName.Equals("*"))
+                            Assembler.Log.LogEntry(line, line.Label, "Program Counter symbol is redundant for \".org\" directive.", false);
+                        Assembler.Output.SetPC((int)Evaluator.Evaluate(line.Operand, short.MinValue, ushort.MaxValue));
+                        SetLabel(line);
+                        break;
+                    case ".pseudopc":
+                    case ".relocate":
+                        Assembler.Output.SetLogicalPC((int)Evaluator.Evaluate(line.Operand.Children, short.MinValue, ushort.MaxValue));
+                        SetLabel(line);
+                        break;
+                    case ".endrelocate":
+                    case ".realpc":
+                        Assembler.Output.SynchPC();
+                        break;
+                }
             }
             if (Reserved.IsOneOf("Pseudo", line.InstructionName))
                 return $".{Assembler.Output.LogicalPC,-8:x4}";
@@ -111,12 +122,27 @@ namespace Core6502DotNet
                     symbol = line.LabelName;
                 if (Assembler.SymbolManager.SymbolIsScalar(symbol))
                 {
-                    return string.Format("=${0}{1}",
-                   ((int)Assembler.SymbolManager.GetNumericValue(symbol)).ToString("x").PadRight(41),
-                   line.UnparsedSource);
+                    if (Assembler.SymbolManager.SymbolIsNumeric(symbol))
+                        return string.Format("=${0}{1}",
+                            ((int)Assembler.SymbolManager.GetNumericValue(symbol)).ToString("x").PadRight(41),
+                            line.UnparsedSource);
+                    var elliptical = $"\"{Assembler.SymbolManager.GetStringValue(symbol).Elliptical(38)}\"";
+                    return string.Format("={0}{1}", elliptical.PadRight(42), line.UnparsedSource);
                 }
             }
             return string.Empty;
+        }
+
+        void SetLabel(SourceLine line)
+        {
+            var labelName = line.LabelName;
+            if (!string.IsNullOrEmpty(labelName) && !labelName.Equals("*"))
+            {
+                if (labelName.Equals("+") || labelName.Equals("-"))
+                    Assembler.SymbolManager.DefineLineReference(labelName, Assembler.Output.LogicalPC);
+                else
+                    Assembler.SymbolManager.DefineSymbolicAddress(labelName);
+            }
         }
 
         public override bool AssemblesLine(SourceLine line)

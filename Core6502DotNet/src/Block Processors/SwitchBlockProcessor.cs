@@ -42,8 +42,8 @@ namespace Core6502DotNet
 
         class SwitchContext
         {
-            List<CaseBlock<string>> _stringBlocks;
-            List<CaseBlock<double>> _numericBlocks;
+            readonly List<CaseBlock<string>> _stringBlocks;
+            readonly List<CaseBlock<double>> _numericBlocks;
 
             SwitchContext()
             {
@@ -134,8 +134,14 @@ namespace Core6502DotNet
 
         #region Constructors
 
+        /// <summary>
+        /// Creates a new instance of a switch block processor.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
         public SwitchBlock(SourceLine line, BlockType type)
-            : base(line, type)
+            : base(line, type, false)
         {
 
         }
@@ -146,45 +152,35 @@ namespace Core6502DotNet
 
         public override bool ExecuteDirective()
         {
-            var line = Assembler.LineIterator.Current;
+            var line = LineIterator.Current;
+            if (line.InstructionName.Equals(".endswitch"))
+                return true;
             if (!line.InstructionName.Equals(".switch"))
                 return false;
-            SwitchContext context = null;
             CaseBlock<string> stringBlock = null;
             CaseBlock<double> numericBlock = null;
-
+            var noParens = line.OperandExpression.TrimStart('(').TrimEnd(')');
+            SwitchContext context;
             if (Line.OperandHasToken)
             {
-                if (!Assembler.SymbolManager.SymbolExists(Line.OperandExpression))
+                if (!Assembler.SymbolManager.SymbolExists(noParens))
                 {
-                    if (Line.Operand.Children[0].Name.Equals("("))
-                    {
-                        if (Line.Operand.Children[0].Children.Count > 0
-                            && Line.Operand.Children[0].Children[0].ToString().EnclosedInDoubleQuotes())
-                            context = new SwitchContext(Line.Operand.Children[0].Children[0].ToString());
-                        else
-                            context = new SwitchContext(Evaluator.Evaluate(Line.Operand));
-                    }
-                    else if (line.OperandExpression.Equals("*"))
-                    {
-                        context = new SwitchContext(Assembler.Output.LogicalPC);
-                    }
+                    if (noParens.EnclosedInDoubleQuotes())
+                        context = new SwitchContext(noParens);
+                    else
+                        context = new SwitchContext(Evaluator.Evaluate(Line.Operand));
                 }
                 else
                 {
                     context = new SwitchContext(Evaluator.Evaluate(Line.Operand));
                 }
             }
-            if (context == null)
+            else
             {
-                Assembler.Log.LogEntry(Line, Line.Operand, "Expression must be a valid symbol or constant expression.");
+                Assembler.Log.LogEntry(Line, Line.Instruction.Position, "Expression must follow \".switch\" directive.");
                 return true;
             }
-            Token lastInstruction = null;
-            if (!(line.OperandHasToken &&
-                (Assembler.SymbolManager.SymbolExists(line.Operand.Children[0].Children[0].Name) || 
-                line.OperandExpression.Equals("*") ||
-                line.Operand.Children[0].Name.Equals("("))))
+            if (context == null)
             {
                 string error;
                 if (!line.OperandHasToken)
@@ -194,13 +190,14 @@ namespace Core6502DotNet
                 Assembler.Log.LogEntry(line, line.Instruction.Position, error);
                 return true;
             }
+            Token lastInstruction = null;
             var defaultIndex = -1;
             if (!string.IsNullOrEmpty(context.StringValue))
                 stringBlock = new CaseBlock<string>();
             else
                 numericBlock = new CaseBlock<double>();
-            while ((line = Assembler.LineIterator.GetNext()) != null &&
-                   !line.InstructionName.Equals(".endswitch"))
+            while ((line = LineIterator.GetNext()) != null && 
+                    !line.InstructionName.Equals(".endswitch"))
             {
                 if (!string.IsNullOrEmpty(line.InstructionName))
                     lastInstruction = line.Instruction;
@@ -212,26 +209,30 @@ namespace Core6502DotNet
                     }
                     else if (stringBlock?.FallthroughIndex > -1 || numericBlock?.FallthroughIndex > -1)
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction.Position, "\".case\" directive must follow a \".break\" directive.");
+                        Assembler.Log.LogEntry(line, line.Instruction.Position, 
+                            "\".case\" directive must follow a \".break\" or \".return\" directive.");
                     }
-                    {
-                        stringBlock?.Cases.Add(line.Operand.Name);
-                        numericBlock?.Cases.Add(Evaluator.Evaluate(line.Operand));
-                    }
+                    stringBlock?.Cases.Add(line.Operand.Name);
+                    numericBlock?.Cases.Add(Evaluator.Evaluate(line.Operand));
                 }
-                else if (line.InstructionName.Equals(".break"))
+                else if (line.InstructionName.Equals(".break") || line.InstructionName.Equals(".return"))
                 {
                     if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0)
                         && defaultIndex < 0)
                     {
                         Assembler.Log.LogEntry(line, line.Instruction.Position,
-                            "\".break\" directive must follow a \".case\" or \".default\" directive.");
+                            $"\"{line.Instruction}\" directive must follow a \".case\" or \".default\" directive.");
                     }
                     else
                     {
+                        if (line.InstructionName.Equals(".return") && (stringBlock?.FallthroughIndex < 0 || numericBlock?.FallthroughIndex < 0))
+                        {
+                            if (stringBlock != null) stringBlock.FallthroughIndex = LineIterator.Index;
+                            if (numericBlock != null) numericBlock.FallthroughIndex = LineIterator.Index;
+                        }
                         context.AddBlock(stringBlock);
                         context.AddBlock(numericBlock);
-
+                        Assembler.SymbolManager.PopScope();
                         if (stringBlock != null)
                             stringBlock = new CaseBlock<string>();
                         else
@@ -244,7 +245,7 @@ namespace Core6502DotNet
                         Assembler.Log.LogEntry(line, line.Instruction.Position,
                             "There can only be one \".default\" directive in a switch block.");
                     else
-                        defaultIndex = Assembler.LineIterator.Index + 1;
+                        defaultIndex = LineIterator.Index + 1;
                 }
                 else
                 {
@@ -260,17 +261,23 @@ namespace Core6502DotNet
                         }
                         else if (stringBlock?.FallthroughIndex < 0 || numericBlock?.FallthroughIndex < 0)
                         {
-                            if (stringBlock != null) stringBlock.FallthroughIndex = Assembler.LineIterator.Index;
-                            if (numericBlock != null) numericBlock.FallthroughIndex = Assembler.LineIterator.Index;
+                            if (stringBlock != null) stringBlock.FallthroughIndex = LineIterator.Index;
+                            if (numericBlock != null) numericBlock.FallthroughIndex = LineIterator.Index;
                         }
                     }
                 }
             }
-            if (lastInstruction == null || (line != null && !string.IsNullOrEmpty(lastInstruction.Name) && !lastInstruction.Name.Equals(".break")))
+            if (lastInstruction == null || 
+                (line != null && 
+                 !string.IsNullOrEmpty(lastInstruction.Name) && 
+                 !lastInstruction.Name.Equals(".break") &&
+                 !lastInstruction.Name.Equals(".return")
+                )
+               )
             {
                 if (line == null)
                     line = Line;
-                Assembler.Log.LogEntry(line, "Switch statement must end with a \".break\" directive.");
+                Assembler.Log.LogEntry(line, "Switch statement must end with a \".break\" or \".return\" directive.");
             }
             else if (line != null)
             {
@@ -295,7 +302,8 @@ namespace Core6502DotNet
                     fallthroughIndex = defaultIndex;
 
                 if (fallthroughIndex > -1)
-                    Assembler.LineIterator.Rewind(fallthroughIndex - 1);
+                    LineIterator.Rewind(fallthroughIndex - 1);
+                Assembler.SymbolManager.PushScope(LineIterator.Index.ToString());
             }
             return true;
         }

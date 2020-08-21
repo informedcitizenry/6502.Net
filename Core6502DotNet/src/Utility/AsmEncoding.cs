@@ -72,7 +72,7 @@ namespace Core6502DotNet
                 var codebytes = BitConverter.GetBytes(code);
                 return codebytes.Take(code.Size()).ToArray();
             }
-            return Encoding.UTF8.GetBytes(s);
+            return UTF8.GetBytes(s);
         }
 
 

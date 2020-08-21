@@ -24,24 +24,31 @@ namespace Core6502DotNet
 
         #region Constructors
 
+        /// <summary>
+        /// Creates a new instance of the for next block processor.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
         public ForNextBlock(SourceLine line, BlockType type)
             : base(line, type)
         {
             if (line.Operand == null ||
                 line.Operand.Children.Count < 3)
             {
-                throw new ExpressionException(line.Operand.Position, "Missing operands for \".for\" directive.");
+                throw new SyntaxException(line.Operand.Position, "Missing operands for \".for\" directive.");
             }
 
-            if (line.Operand.Children[1].HasChildren)
+            if (line.Operand.Children[1].Children.Count > 0)
                 _condition = line.Operand.Children[1].Children;
-            _iterations = new Token
-            {
-                Children = line.Operand.Children.Skip(2).ToList()
-            };
-            if (line.Operand.Children[0].HasChildren)
-                Assembler.SymbolManager.Define(line.Operand.Children[0].Children, true);
-
+            _iterations = new Token(string.Empty, 
+                                    string.Empty, 
+                                    TokenType.Operator, 
+                                    OperatorType.Separator,
+                                    line.Operand.Children[2].Position,
+                                    line.Operand.Children.Skip(2));
+            if (Line.Operand.Children[0].Children.Count > 0)
+                Assembler.SymbolManager.Define(Line.Operand.Children[0].Children, true);
         }
 
         #endregion
@@ -50,29 +57,26 @@ namespace Core6502DotNet
 
         public override bool ExecuteDirective()
         {
-            if (Assembler.CurrentLine.InstructionName.Equals(".next"))
+        if (LineIterator.Current.InstructionName.Equals(".next"))
             {
                 foreach (var child in _iterations.Children)
                 {
-                    if (!child.HasChildren)
-                        throw new ExpressionException(child.Position, "Iteration expression cannot be empty.");
+                    if (child.Children.IsEmpty)
+                        throw new SyntaxException(child.Position, "Iteration expression cannot be empty.");
 
                     if (!Assembler.SymbolManager.SymbolExists(child.Children[0].Name))
                     {
-                        throw new ExpressionException(child.Children[0].Position,
+                        throw new SyntaxException(child.Children[0].Position,
                             $"Variable \"{child.Children[0].Name}\" must be defined before it is used.");
                     }
-
                     Assembler.SymbolManager.Define(child.Children, true);
                 }
-
                 if (_condition == null || Evaluator.EvaluateCondition(_condition))
-                    Assembler.LineIterator.Rewind(Index);
+                    LineIterator.Rewind(Index);
                 return true;
             }
-            return Assembler.CurrentLine.InstructionName.Equals(".for");
+            return LineIterator.Current.InstructionName.Equals(".for");
         }
-
         #endregion
 
         #region Properties

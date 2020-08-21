@@ -20,7 +20,7 @@ namespace Core6502DotNet.z80
     {
         public IEnumerable<byte> GetFormat()
         {
-            var fmt = Assembler.Options.Format;
+            var fmt = Assembler.OutputFormat;
             var progstart = (ushort)Assembler.Output.ProgramStart;
             var progend = (ushort)Assembler.Output.ProgramCounter;
             var size = Assembler.Output.GetCompilation().Count;

@@ -35,8 +35,7 @@ namespace Core6502DotNet
         public Preprocessor()
         {
             Reserved.DefineType("Directives",
-                ".comment", ".endcomment", ".macro",
-                ".endmacro", ".include", ".binclude");
+                ".macro",".endmacro", ".include", ".binclude");
 
             Reserved.DefineType("MacroNames");
 
@@ -60,17 +59,17 @@ namespace Core6502DotNet
             include = include.TrimOnce('"');
 
             if (line.InstructionName[1] == 'b')
-                expanded.Add(Macro.GetBlockDirectiveLine(include, line.LineNumber, line.LabelName, ".block"));
+                expanded.Add(GetBlockDirectiveLine(include, line.LineNumber, line.LabelName, ".block"));
 
             expanded.AddRange(PreprocessFile(include));
 
             if (line.InstructionName[1] == 'b')
-                expanded.Add(Macro.GetBlockDirectiveLine(include, line.LineNumber, ".endblock"));
+                expanded.Add(GetBlockDirectiveLine(include, line.LineNumber, ".endblock"));
 
             return expanded;
         }
 
-        static string ProcessComments(string source)
+        static string ProcessComments(string fileName, string source)
         {
             char c;
             int lineNumber = 1;
@@ -81,8 +80,9 @@ namespace Core6502DotNet
                 var peekNext = iterator.PeekNext();
                 if (c == '/' && peekNext == '*')
                 {
+                    var endBlock = false;
                     iterator.MoveNext();
-                    while ((c = iterator.Skip(c => c != '\n' && c != '*')) != char.MinValue)
+                    while ((c = iterator.FirstNotMatching(c => c != '\n' && c != '*')) != char.MinValue)
                     {
                         if (c == '\n')
                         {
@@ -91,11 +91,18 @@ namespace Core6502DotNet
                         }
                         if ((peekNext = iterator.PeekNext()) == '/')
                         {
+                            endBlock = true;
                             break;
                         }
                     }
+                    if (!endBlock)
+                        throw new Exception($"{fileName}({lineNumber}): End of file reached before \"*/\" found.");
                     if (!iterator.MoveNext())
                         break;
+                }
+                else if (c == '*' && peekNext == '/')
+                {
+                    throw new Exception($"{fileName}({lineNumber}): \"*/\" does not close a comment block.");
                 }
                 else
                 {
@@ -135,7 +142,7 @@ namespace Core6502DotNet
                         lineNumber++;
                 }
             }
-            return uncommented.ToString(); ;
+            return uncommented.ToString(); 
         }
 
         IEnumerable<SourceLine> ProcessMacros(IEnumerable<SourceLine> uncommented)
@@ -174,8 +181,7 @@ namespace Core6502DotNet
                         }
                         Reserved.AddWord("MacroNames", macroName);
 
-                        var compare = Assembler.Options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                        var macro = new Macro(line.Operand, line.ParsedSource, compare);
+                        var macro = new Macro(line.Operand, line.ParsedSource, Assembler.StringComparison);
                         _macros[macroName] = macro;
                         var instr = line;
                         while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endmacro"))
@@ -215,9 +221,9 @@ namespace Core6502DotNet
                                 Assembler.Log.LogEntry(line, line.Operand, "Unexpected argument found for macro definition closure.");
                                 continue;
                             }
-                            line.Instruction = null;
-                            line.ParsedSource = line.ParsedSource.Replace(".endmacro", string.Empty);
-                            macro.AddSource(line);
+                            macro.AddSource(LexerParser.Parse(line.Filename, line.LabelName)
+                                                        .First()
+                                                        .WithLineNumber(line.LineNumber));
                         }
                         else if (line == null)
                         {
@@ -233,14 +239,7 @@ namespace Core6502DotNet
                     else if (_macros.ContainsKey(line.InstructionName))
                     {
                         if (!string.IsNullOrEmpty(line.LabelName))
-                        {
-                            SourceLine clone = line.Clone();
-                            clone.Operand =
-                            clone.Instruction = null;
-                            clone.UnparsedSource =
-                            clone.ParsedSource = line.LabelName;
-                            macroProcessed.Add(clone);
-                        }
+                            macroProcessed.AddRange(LexerParser.Parse(line.Filename, line.LabelName));
                         Macro macro = _macros[line.InstructionName];
                         macroProcessed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
                     }
@@ -293,31 +292,51 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Perform preprocessing of the source text, 
-        /// including comment scrubbing and macro creation and expansion.
-        /// </summary>
-        /// <param name="source">The source text.</param>
-
-        public IEnumerable<SourceLine> PreprocessSource(string source)
-            => Preprocess(string.Empty, source);
-
-        /// <summary>
         /// Perforsm preprocessing of the input string as a label define expression.
         /// </summary>
         /// <param name="defineExpression">The define</param>
         /// <returns>A <see cref="SourceLine"/> representing the parsed label define.</returns>
         /// <exception cref="Exception"/>
-        public SourceLine PreprocessDefine(string defineExpression)
+        public static SourceLine PreprocessDefine(string defineExpression)
         {
             if (!defineExpression.Contains('='))
                 defineExpression += "=1";
-            var defines = Preprocess(string.Empty, defineExpression);
+
+            var defines = LexerParser.Parse(string.Empty, defineExpression);
+            if (defines.Count() > 1)
+                throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
+            //var defines = Preprocess(string.Empty, defineExpression);
             var line = defines.ToList()[0];
             if (line.Label == null || line.Instruction == null || !line.InstructionName.Equals("=") || line.Operand == null)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
-            if (!Evaluator.ExpressionIsConstant(line.Operand))
+            if (!line.OperandExpression.EnclosedInDoubleQuotes() && !Evaluator.ExpressionIsConstant(line.Operand))
                 throw new Exception($"Define expression \"{line.Operand}\" is not a constant.");
             return line;
+        }
+
+        /// <summary>
+        /// Returns a new source line representing a block or endblock directive.
+        /// </summary>
+        /// <param name="fileName">The original file name.</param>
+        /// <param name="lineNumber">The source's line number.</param>
+        /// <param name="directive">The directive name.</param>
+        /// <returns></returns>
+        public static SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string directive)
+            => GetBlockDirectiveLine(fileName, lineNumber, string.Empty, directive);
+
+        /// <summary>
+        /// Returns a new source line representing a block or endblock directive.
+        /// </summary>
+        /// <param name="fileName">The original file name.</param>
+        /// <param name="lineNumber">The source's line number.</param>
+        /// <param name="label">The label to attach the block line.</param>
+        /// <param name="directive">The directive name.</param>
+        /// <returns></returns>
+        public static SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string label, string directive)
+        {
+            var source = string.IsNullOrEmpty(label) ? directive : $"{label} {directive}";
+            var parsed = LexerParser.Parse(fileName, source).First();
+            return parsed.WithLineNumber(lineNumber);
         }
 
         /// <summary>
@@ -377,24 +396,8 @@ namespace Core6502DotNet
         IEnumerable<SourceLine> Preprocess(string fileName, string source)
         {
             source = source.Replace("\r", string.Empty); // remove Windows CR
-            source = ProcessComments(source);
-            var uncommented = LexerParser.Parse(fileName, source);
-            // process older .comment/.endcomments
-            var lineIterator = uncommented.GetIterator();
-            SourceLine line;
-            while ((line = lineIterator.Skip(l => !l.InstructionName.Equals(".comment"))) != null)
-            {
-                Assembler.Log.LogEntry(line, line.Instruction,
-                    "Directive \".comment\" is deprecated. Consider using '/*' for comment blocks instead.", false);
-
-                line.Reset();
-                while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endcomment"))
-                    line.Reset();
-                if (line == null)
-                    throw new Exception("Missing closing \".endcomment\" for \".comment\" directive.");
-                line.Reset();
-            }
-            return ProcessMacros(uncommented);
+            source = ProcessComments(fileName, source);
+            return ProcessMacros(LexerParser.Parse(fileName, source));
         }
 
         /// <summary>

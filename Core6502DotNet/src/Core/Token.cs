@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -43,99 +44,144 @@ namespace Core6502DotNet
     /// </summary>
     public class Token : IEquatable<Token>
     {
-        #region Members
-
-        TokenType _type;
-        OperatorType _opType;
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
         /// Constructs a new token object.
         /// </summary>
-        public Token()
-            : this(null, string.Empty, 1)
-        {
-
-        }
+        public Token() => Children = ImmutableList.Create<Token>();
 
         /// <summary>
         /// Constructs a new token object.
         /// </summary>
         /// <param name="source">The source for which to derive the token's name.</param>
-        public Token(string source)
-            : this(null, source, 1)
-        {
+        public Token(string source) : this() => Name = source;
 
-        }
 
         /// <summary>
         /// Constructs a new token object.
         /// </summary>
-        /// <param name="parent">The token's parent token.</param>
         /// <param name="source">The source for which to derive the token's name.</param>
-        /// <param name="position">The token's position (column) in the source code line.</param>
-        public Token(Token parent, string source, int position)
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        public Token(string source, TokenType type) : this() =>
+           (Name, Type) = (source, type);
+
+        /// <summary>
+        /// constructs a new token object.
+        /// </summary>
+        /// <param name="name">The token's (parsed) name.</param>
+        /// <param name="source">The source for which to derive the token's name.</param>
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        public Token(string name, string source, TokenType type)
+            : this(name, source, type, OperatorType.None) { }
+
+        /// <summary>
+        /// Constructs a new token object.
+        /// </summary>
+        /// <param name="source">The source for which to derive the token's name.</param>
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
+        public Token(string source, TokenType type, OperatorType operatorType)
+            : this(source, source, type, operatorType, 1) { }
+
+        /// <summary>
+        /// Constructs a new token object.
+        /// </summary>
+        /// <param name="name">The token's (parsed) name.</param>
+        /// <param name="source">The original unparsed source.</param>
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
+        public Token(string name, string source, TokenType type, OperatorType operatorType)
+            : this(name, source, type, operatorType, 1) { }
+
+        /// <summary>
+        /// Constructs a new token object.
+        /// </summary>
+        /// <param name="name">The token's (parsed) name.</param>
+        /// <param name="source">The original unparsed source.</param>
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
+        /// <param name="position">The token's column position in the original source.</param>
+        public Token(string name, string source, TokenType type, OperatorType operatorType, int position)
+            : this()
         {
-            Parent = parent;
-            Name = source;
+            Name = name;
+            UnparsedName = source;
+            Type = type;
+            OperatorType = type == TokenType.Operator ? operatorType : OperatorType.None;
             Position = position;
-            Type = TokenType.None;
         }
+
+        /// <summary>
+        /// Constructs a new token object.
+        /// </summary>
+        /// <param name="name">The token's (parsed) name.</param>
+        /// <param name="source">The original unparsed source.</param>
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
+        /// <param name="position">The token's column position in the original source.</param>
+        /// <param name="children">The token's child tokens.</param>
+        public Token(string name, string source, TokenType type, OperatorType operatorType, int position, IEnumerable<Token> children)
+            : this(name, source, type, operatorType, position) => Children = ImmutableList.CreateRange(children);
 
         #endregion
 
         #region Methods
 
         public bool Equals([AllowNull] Token other)
-            => Name.Equals(other.Name) && Type == other.Type && OperatorType == other.OperatorType;
+            => other != null && 
+            Name.Equals(other.Name) && 
+            Type == other.Type && 
+            OperatorType == other.OperatorType;
 
         public override int GetHashCode()
-            => Name.GetHashCode() | Type.GetHashCode() | OperatorType.GetHashCode();
+        {
+            unchecked
+            {
+                var hash = 17   * 23 + Name.GetHashCode();
+                hash = hash     * 23 + Type.GetHashCode();
+                hash = hash     * 23 + OperatorType.GetHashCode();
+                return hash;
+            }
+        }
 
         public override bool Equals(object obj)
         {
-            if (obj is Token)
-            {
-                var other = obj as Token;
-                return this.Equals(other);
-            }
+            if (obj is Token other)
+                return Equals(other);
             return false;
         }
 
+        /// <summary>
+        /// Adds a child to the token's children graph.
+        /// </summary>
+        /// <param name="token">The child token to add.</param>
         public void AddChild(Token token)
         {
             token.Parent = this;
             if (Children == null)
-                Children = new List<Token>();
+                Children = ImmutableList.Create<Token>();
             if (string.IsNullOrEmpty(Name) && Children.Count == 0)
                 Position = token.Position;
 
-            Children.Add(token);
+            Children = Children.Add(token);
         }
 
+        /// <summary>
+        /// Clone's the token and all its children. 
+        /// </summary>
+        /// <returns>Returns a deep copy of the token, including deep copies of its children.</returns>
         public Token Clone()
         {
-            var copy = new Token
-            {
-                Name = new string(Name),
-                Type = Type,
-                OperatorType = OperatorType
-            };
-            if (Children != null)
-            {
-                copy.Children = new List<Token>(Children.Count);
-                foreach (Token child in Children)
-                    copy.Children.Add(child.Clone());
-            }
+            var copy = new Token(new string(Name), new string(Name), Type, OperatorType, Position);
+            foreach (var child in Children)
+                copy.Children = copy.Children.Add(child.Clone());
             return copy;
         }
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(UnparsedName);
+            var sb = new StringBuilder(UnparsedName);
             if (Children != null)
             {
                 foreach (Token t in Children)
@@ -146,12 +192,19 @@ namespace Core6502DotNet
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Auto-creates a separator token.
+        /// </summary>
+        /// <returns>A parsed token that represents a separator.</returns>
+        public static Token SeparatorToken()
+            => new Token(string.Empty, string.Empty, TokenType.Operator, OperatorType.Separator);
+
         #endregion
 
         #region Properties
 
         /// <summary>
-        /// Gets the token's position (or column) in the source line from
+        /// Gets or sets the token's position (or column) in the source line from
         /// which it was decoded.
         /// </summary>
         public int Position { get; set; }
@@ -159,55 +212,32 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the token's type.
         /// </summary>
-        public TokenType Type
-        {
-            get => _type;
-            set
-            {
-                _type = value;
-                OperatorType = OperatorType.None;
-            }
-        }
+        public TokenType Type { get; }
 
         /// <summary>
         /// Gets the token's operator type.
         /// </summary>
-        public OperatorType OperatorType
-        {
-            get => _opType;
-            set
-            {
-                if (Type == TokenType.Operator)
-                    _opType = value;
-                else
-                    _opType = OperatorType.None;
-            }
-        }
+        public OperatorType OperatorType { get; }
 
         /// <summary>
-        /// Gets or sets the token's name.
+        /// Gets or the token's name.
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary>
-        /// Gets or sets the token's unparsed name.
+        /// Gets the token's unparsed name.
         /// </summary>
-        public string UnparsedName { get; set; }
+        public string UnparsedName { get; }
 
         /// <summary>
-        /// Gets or sets the token's parent.
+        /// Gets the token's parent.
         /// </summary>
-        public Token Parent { get; set; }
+        public Token Parent { get; private set; }
 
         /// <summary>
-        /// Gets or sets the list of the token's child tokens.
+        /// Gets the list of the token's child tokens.
         /// </summary>
-        public List<Token> Children { get; set; }
-
-        /// <summary>
-        /// Determines if the token has any child tokens.
-        /// </summary>
-        public bool HasChildren => Children != null && Children.Count > 0;
+        public ImmutableList<Token> Children { get; private set; }
 
         /// <summary>
         /// Gets the last child in the token's own hierarchy, or itself if it
@@ -217,7 +247,7 @@ namespace Core6502DotNet
         {
             get
             {
-                if (HasChildren)
+                if (Children.Count > 0)
                     return Children[^1].LastChild;
                 return this;
             }

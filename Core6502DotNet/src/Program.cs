@@ -19,19 +19,13 @@ namespace Core6502DotNet
             {
                 var controller = new AssemblyController();
                 AssemblerBase cpuAssembler;
+                Assembler.FormatSelector = Select8BitFormat;
+
                 if (Assembler.Options.CPU.Equals("z80"))
-                {
-                    Assembler.BinaryFormatProvider = new Z80FormatProvider();
                     cpuAssembler = new Z80Asm();
-                }
                 else
-                {
-                    if (Assembler.Options.Format.Equals("d64"))
-                        Assembler.BinaryFormatProvider = new D64FormatProvider();
-                    else
-                        Assembler.BinaryFormatProvider = new M6502FormatProvider();
                     cpuAssembler = new Asm6502();
-                }
+                
                 controller.AddAssembler(cpuAssembler);
                 controller.Assemble();
             }
@@ -39,6 +33,22 @@ namespace Core6502DotNet
             {
                 Console.Error.WriteLine(ex.Message);
             }
+        }
+
+        static IBinaryFormatProvider Select8BitFormat(string format)
+        {
+            if (format.Equals("srec", Assembler.StringComparison) || 
+                format.Equals("srecmos", Assembler.StringComparison))
+                return new SRecordFormatProvider();
+            
+            if (Assembler.Options.CPU.Equals("z80"))
+                return new Z80FormatProvider();
+
+            return format.ToLower() switch
+            {
+                "d64" => new D64FormatProvider(),
+                _ => new M6502FormatProvider(),
+            };
         }
     }
 }

@@ -16,68 +16,72 @@ namespace Core6502DotNet
     /// </summary>
     public sealed class Function : ParameterizedSourceBlock
     {
+        #region Members
+
+        readonly int _startIndex;
+        readonly int _endIndex;
+        readonly RandomAccessIterator<SourceLine> _lineIterator;
+
+        #endregion
+
         #region Constructors
+
+
         /// <summary>
         /// Creates a new instance of the Function class.
         /// </summary>
-        /// definition and invocations.</param>
         /// <param name="parameterList">The list of parameters for the function.</param>
         public Function(Token parameterList)
+            : this(parameterList, Assembler.LineIterator) { }
+
+        /// <summary>
+        /// Creates a new instance of the Function class.
+        /// </summary>
+        /// <param name="parameterList">The list of parameters for the function.</param>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator.</param>
+        public Function(Token parameterList,
+                        RandomAccessIterator<SourceLine> iterator)
             : base(parameterList, 
-                   Assembler.LineIterator.Current.ParsedSource, 
-                   Assembler.Options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase)
+                  iterator.Current.ParsedSource, 
+                  Assembler.StringComparison)
         {
-            StartIndex = EndIndex = -1;
-            Define();
+            _endIndex = -1;
+            _startIndex = iterator.Index;
+            SourceLine line;
+            while ((line = iterator.GetNext()) != null)
+            {
+                if (line.LabelName.Equals("+"))
+                {
+                    Assembler.Log.LogEntry(line, line.Label, "Anonymous labels are not supported inside functions.", false);
+                }
+                if (line.InstructionName.Equals(".global"))
+                    throw new SyntaxException(line.Instruction.Position,
+                        $"Directive \".global\" not allowed inside a function block.");
+                if (line.InstructionName.Equals(".endfunction"))
+                {
+                    if (line.OperandHasToken)
+                        throw new SyntaxException(line.Operand.Position, "Unexpected expression found after \".endfunction\" directive.");
+                    break;
+                }
+            }
+            if (line == null)
+                throw new SyntaxException(_startIndex, "Function definition does not have a closing \".endfunction\" directive.");
+            _endIndex = iterator.Index - 1;
+            _lineIterator = iterator;
         }
 
         #endregion
 
         #region Methods
 
-        void Define()
-        {
-            StartIndex = Assembler.LineIterator.Index;
-            SourceLine line;
-            Assembler.LineIterator.Current.Label = null;
-            while ((line = Assembler.LineIterator.GetNext()) != null)
-            {
-                if (line.LabelName.Equals("+"))
-                {
-                    Assembler.Log.LogEntry(line, line.LabelName, "Anonymous labels are not supported inside functions.", false);
-                }
-                else if (line.InstructionName.Equals(".global"))
-                {
-                    Assembler.Log.LogEntry(line, line.Instruction, $"Directive \".global\" not allowed inside a function block.");
-                    break;
-                }
-                else if (line.InstructionName.Equals(".function"))
-                {
-                    Assembler.Log.LogEntry(line, line.Instruction, "Function definition not allowed inside a function block.");
-                    break;
-                }
-                else if (line.InstructionName.Equals(".endfunction"))
-                {
-                    if (line.OperandHasToken)
-                        Assembler.Log.LogEntry(line, line.Operand, "Unexpected expression found after \".endfunction\" directive.");
-                    break;
-                }
-            }
-            if (line == null)
-                throw new ExpressionException(StartIndex, "Function definition does not have a closing \".endfunction\" directive.");
-            EndIndex = Assembler.LineIterator.Index;
-        }
-
         /// <summary>
         /// Invokes the function from its definition, starting assembly at the first line.
         /// </summary>
-        /// <param name="mla">The <see cref="MultiLineAssembler"/> reponsible for making
-        /// the function call.</param>
         /// <param name="parameterList">The parameters of the function call.</param>
         /// <returns>A <see cref="double"/> of the function return.</returns>
-        public double Invoke(MultiLineAssembler mla, List<object> parameterList)
+        public double Invoke(List<object> parameterList)
         {
-            var invokeLine = Assembler.LineIterator.Current;
+            var invokeLine = _lineIterator.Current;
             if (parameterList.Count > Params.Count)
             {
                 Assembler.Log.LogEntry(invokeLine, invokeLine.Instruction, "Unexpected argument passed to function.");
@@ -89,7 +93,10 @@ namespace Core6502DotNet
                 {
                     if (!string.IsNullOrEmpty(Params[i].DefaultValue))
                     {
-                        Assembler.SymbolManager.Define(Params[i].Name, Evaluator.Evaluate(Params[i].DefaultValue), true);
+                        if (Params[i].DefaultValue.EnclosedInDoubleQuotes())
+                            Assembler.SymbolManager.Define(Params[i].Name, Params[i].DefaultValue.TrimOnce('"'));
+                        else
+                            Assembler.SymbolManager.Define(Params[i].Name, Evaluator.Evaluate(Params[i].DefaultValue), true);
                     }
                     else
                     {
@@ -112,75 +119,66 @@ namespace Core6502DotNet
                     new AssignmentAssembler(),
                     new EncodingAssembler(),
                     new MiscAssembler(),
-                    mla
+                    new BlockAssembler()
                 };
-            var returnIx = Assembler.LineIterator.Index;
-            if (returnIx < StartIndex)
-                Assembler.LineIterator.FastForward(StartIndex);
+            var returnIx = _lineIterator.Index;
+            if (returnIx < _startIndex)
+                _lineIterator.FastForward(_startIndex);
             else
-                Assembler.LineIterator.Rewind(StartIndex);
+                _lineIterator.Rewind(_startIndex);
+            return MultiLineAssembler.AssembleLines(_lineIterator,
+                                                    assemblers,
+                                                    _startIndex,
+                                                    _endIndex,
+                                                    true,
+                                                    null,
+                                                    false,
+                                                    ErrorHandler);
 
-            foreach (SourceLine line in Assembler.LineIterator)
-            {
-                if (Assembler.LineIterator.Index == EndIndex)
-                    break;
-                if (line.InstructionName.Equals(".return"))
-                {
-                    if (line.OperandHasToken)
-                        return Evaluator.Evaluate(line.Operand);
-                    return double.NaN;
-                }
-                var asm = assemblers.FirstOrDefault(asm => asm.AssemblesLine(line));
-                if (asm == null && line.Instruction != null)
-                {
-                    Assembler.Log.LogEntry(line, line.Instruction,
-                        $"Directive \"{line.InstructionName}\" not allowed inside a function block.");
-                    break;
-                }
-                else if (asm != null)
-                {
-                    asm.AssembleLine(line);
-                    if (line.InstructionName.Equals(".goto") &&
-                        (Assembler.LineIterator.Index < StartIndex || Assembler.LineIterator.Index > EndIndex))
-                    {
-                        Assembler.Log.LogEntry(line, line.Instruction,
-                            $"\".goto\" destination \"{line.OperandExpression}\" is outside of function block.");
-                        break;
-                    }
-                }
-            }
-            return double.NaN;
         }
 
-        #endregion
-
-        #region Properties
-
-        /// <summary>
-        /// Gets the start index in the <see cref="SourceLine"/> iterator in which the function is defined.
-        /// </summary>
-        public int StartIndex { get; set; }
-
-        /// <summary>
-        /// Gets the end index in the <see cref="SourceLine"/> iterator in which the function is defined.
-        /// </summary>
-        public int EndIndex { get; set; }
-
+        bool ErrorHandler(SourceLine line, AssemblyErrorReason reason, Exception ex)
+        {
+            if (reason == AssemblyErrorReason.ExceptionRaised)
+            {
+                if (Assembler.CurrentPass > 0)
+                {
+                    Assembler.Log.LogEntry(line, line.Instruction,
+                                            ex.Message);
+                    return false;
+                }
+                return true;
+            }
+            if (reason == AssemblyErrorReason.OutsideBounds)
+                Assembler.Log.LogEntry(line, line.Instruction,
+                            $"\".goto\" destination \"{line.OperandExpression}\" is outside of function block.");
+            
+            if (reason == AssemblyErrorReason.NotFound)
+                Assembler.Log.LogEntry(line, line.Instruction,
+                        $"Directive \"{line.InstructionName}\" not allowed inside a function block.");
+            return false;
+        }
         #endregion
     }
 
-
-    public class FunctionBlock : BlockProcessorBase
+    /// <summary>
+    /// Represents a placeholder function block processor.
+    /// </summary>
+    public sealed class FunctionBlock : BlockProcessorBase
     {
+        /// <summary>
+        /// Creates a new instance of a function block processor placeholder.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
         public FunctionBlock(SourceLine line, BlockType type)
-            : base(line, type)
-        {
-        }
+            : base(line, type, false) { }
 
         public override bool AllowBreak => false;
-
+         
         public override bool AllowContinue => false;
 
-        public override bool ExecuteDirective() => throw new NotImplementedException();
+        public override bool ExecuteDirective() => false;
     }
 }

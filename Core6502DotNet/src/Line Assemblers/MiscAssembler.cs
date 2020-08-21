@@ -6,7 +6,6 @@
 //-----------------------------------------------------------------------------
 
 using System;
-using System.Linq;
 
 namespace Core6502DotNet
 {
@@ -23,13 +22,16 @@ namespace Core6502DotNet
         public MiscAssembler()
         {
             Reserved.DefineType("Directives",
-                    ".assert", ".bank",
+                    ".assert", ".bank", ".end",
                     ".eor", ".echo", ".format",
+                    ".invoke",
                     ".initmem", ".target",
                     ".error", ".errorif",
                     ".pron", ".proff",
-                    ".warnif", ".warn"
+                    ".warnif", ".warn", 
+                    ".dsection", ".section"
                 );
+            ExcludedInstructionsForLabelDefines.Add(".section");
         }
 
         #endregion
@@ -38,9 +40,8 @@ namespace Core6502DotNet
 
         void ThrowConditional(SourceLine line)
         {
-            if (line.Operand.Children == null ||
-                line.Operand.Children.Count < 2 ||
-                !line.Operand.Children[1].HasChildren)
+            if (line.Operand.Children.Count < 2 ||
+                line.Operand.Children[1].Children.IsEmpty)
             {
                 Assembler.Log.LogEntry(line, line.Operand, $"Missing arguments for directive \"{line.InstructionName}\".");
             }
@@ -108,18 +109,31 @@ namespace Core6502DotNet
                 case ".eor":
                     SetEor(line);
                     break;
+                case ".invoke":
+                    InvokeFunction(line);
+                    break;
                 case ".pron":
                     Assembler.PrintOff = false;
                     break;
                 case ".proff":
                     Assembler.PrintOff = true;
                     break;
+                case ".dsection":
+                    if (!string.IsNullOrEmpty(line.LabelName))
+                        throw new SyntaxException(line.Label.Position, "Label definitions are not allowed for directive \".dsection\".");
+                    if (Assembler.CurrentPass == 0)
+                        Assembler.Output.DefineSection(line.Operand);
+                    break;
+                case ".section":
+                    return SetSection(line);
                 case ".format":
                 case ".target":
                     if (!line.OperandHasToken || !line.OperandExpression.EnclosedInDoubleQuotes())
                         Assembler.Log.LogEntry(line, line.Operand, "Expression must be a string.");
+                    else if (!string.IsNullOrEmpty(Assembler.OutputFormat))
+                        Assembler.Log.LogEntry(line, line.Operand, "Output format was previously specified.");
                     else
-                        Assembler.Options.Format = line.OperandExpression.TrimOnce('"');
+                        Assembler.SelectFormat(line.OperandExpression.TrimOnce('"'));
                     if (instruction.Equals(".target"))
                         Assembler.Log.LogEntry(line, line.Instruction, "\".target\" is deprecated. Use \".format\" instead.", false);
                     break;
@@ -128,6 +142,38 @@ namespace Core6502DotNet
                     break;
             }
             return string.Empty;
+        }
+
+        void InvokeFunction(SourceLine line)
+        {
+            if (!line.OperandHasToken || line.Operand.Children[0].Children.Count == 0)
+                Assembler.Log.LogEntry(line, line.Operand, "Missing function name from invocation directive.");
+            else if (line.Operand.Children[0].Children.Count < 2)
+                Assembler.Log.LogEntry(line, line.Operand, "Missing function parameters.");
+            else if (line.Operand.Children[0].Children.Count > 2)
+                Assembler.Log.LogEntry(line, line.Operand.Children[0].Children[2],
+                    "Unexpected expression.");
+            else
+                Evaluator.Invoke(line.Operand.Children[0].Children[0], line.Operand.Children[0].Children[1]);
+        }
+
+        string SetSection(SourceLine line)
+        {
+            if (!line.Operand.ToString().EnclosedInDoubleQuotes())
+                throw new SyntaxException(line.Operand.Position, "Directive expects a string expression.");
+            if (!Assembler.Output.SetSection(line.Operand))
+                throw new SyntaxException(line.Operand.Position, $"Section {line.Operand} not defined.");
+            if (!string.IsNullOrEmpty(line.LabelName))
+            {
+                if (line.LabelName.Equals("*"))
+                    Assembler.Log.LogEntry(line, "Redundant assignment of program counter for directive \".section\".", false);
+                else if (line.LabelName[0].IsSpecialOperator())
+                    Assembler.SymbolManager.DefineLineReference(line.LabelName, Assembler.Output.LogicalPC);
+                else
+                    Assembler.SymbolManager.DefineSymbolicAddress(line.LabelName);
+                return $"=${Assembler.Output.LogicalPC:x4}                  {line.LabelName}  // section {line.Operand}";
+            }
+            return $"* = ${Assembler.Output.LogicalPC:x4}  // section {line.Operand}";
         }
 
         void InitMem(SourceLine line)
@@ -177,7 +223,7 @@ namespace Core6502DotNet
 
         void DoAssert(SourceLine line)
         {
-            if (line.Operand.Children == null || !line.Operand.HasChildren)
+            if (line.Operand.Children.IsEmpty)
             {
                 Assembler.Log.LogEntry(line, line.Operand, "One or more arguments expected for assertion directive.");
             }

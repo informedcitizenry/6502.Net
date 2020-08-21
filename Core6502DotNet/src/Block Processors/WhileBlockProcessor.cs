@@ -14,6 +14,12 @@ namespace Core6502DotNet
     {
         #region Constructors
 
+        /// <summary>
+        /// Creates a new instance of a while block processor.
+        /// </summary>
+        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
         public WhileBlock(SourceLine line, BlockType type)
             : base(line, type)
         {
@@ -25,12 +31,13 @@ namespace Core6502DotNet
 
         public override bool ExecuteDirective()
         {
-            if (!Assembler.LineIterator.Current.Equals(".while") && !Assembler.LineIterator.Current.Equals(".endwhile"))
+            if (!LineIterator.Current.InstructionName.Equals(".while") && 
+                !LineIterator.Current.InstructionName.Equals(".endwhile"))
                 return false;
             if (Evaluator.EvaluateCondition(Line.Operand.Children))
             {
-                if (Assembler.CurrentLine.InstructionName.Equals(".endwhile"))
-                    Assembler.LineIterator.Rewind(Index);
+                if (LineIterator.Current.InstructionName.Equals(".endwhile"))
+                    LineIterator.Rewind(Index);
             }
             else
             {

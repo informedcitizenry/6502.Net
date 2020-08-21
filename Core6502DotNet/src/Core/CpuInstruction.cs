@@ -8,24 +8,15 @@
 namespace Core6502DotNet
 {
     /// <summary>
-    /// A class that represents information about an instruction, including its 
+    /// A struct that represents information about an instruction, including its 
     /// size, CPU and opcode.
     /// </summary>
-    public class CpuInstruction
+    public readonly struct CpuInstruction
     {
         #region Constructors
 
         /// <summary>
-        /// Creates a new instance of a <see cref="CpuInstruction"/>.
-        /// </summary>
-        public CpuInstruction() :
-            this(string.Empty, 0x00, 0)
-        {
-
-        }
-
-        /// <summary>
-        /// Creates a new instance of a<see cref="CpuInstruction"/>.
+        /// Creates a new instance of a CPU instruction.
         /// </summary>
         /// <param name="cpu">The CPU's name.</param>
         /// <param name="opcode">The instruction's opcode.</param>
@@ -37,7 +28,7 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// 
+        /// Creates a new instance of a CPU instruction.
         /// </summary>
         /// <param name="cpu">The CPU's name.</param>
         /// <param name="opcode">The instruction's opcode.</param>
@@ -56,18 +47,18 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets or sets the instruction size (including operands).
         /// </summary>
-        public int Size { get; set; }
+        public int Size { get; }
 
         /// <summary>
         /// Gets or sets the opcode of the instruction.
         /// </summary>
-        public int Opcode { get; set; }
+        public int Opcode { get; }
 
         /// <summary>
         /// Gets or sets the CPU of this instruction.
         /// </summary>
         /// <value>The cpu.</value>
-        public string CPU { get; set; }
+        public string CPU { get; }
 
         #endregion
     }

@@ -7,11 +7,19 @@
 
 namespace Core6502DotNet
 {
+    /// <summary>
+    /// A utility class for source lines.
+    /// </summary>
     public static class SourceLineHelper
     {
-        public static SourceLine GetLastInstructionLine()
+        /// <summary>
+        /// Returns the previous instruction line in the global Assembler iterator.
+        /// </summary>
+        /// <returns>Returns the previous instruction line in ther global Assembler iterator.</returns>
+        public static SourceLine GetLastInstructionLine(RandomAccessIterator<SourceLine> iterator)
         {
-            var iterator = new RandomAccessIterator<SourceLine>(Assembler.LineIterator);
+            // make a copy
+            iterator = new RandomAccessIterator<SourceLine>(iterator);
             var index = iterator.Index;
             if (index > -1)
             {

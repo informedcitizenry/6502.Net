@@ -7,7 +7,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
@@ -19,38 +20,6 @@ namespace Core6502DotNet.m6502
     public sealed partial class Asm6502 : AssemblerBase
     {
         const int Padding = 25;
-
-        #region Subclasses
-
-        class MnemMode : IEquatable<MnemMode>
-        {
-            public MnemMode() : this(string.Empty, Modes.Implied) { }
-
-            public MnemMode(string mnemonic, Modes mode)
-            {
-                Mnem = mnemonic;
-                Mode = mode;
-            }
-
-            public string Mnem { get; set; }
-
-            public Modes Mode { get; set; }
-
-            public override int GetHashCode() => Mnem.GetHashCode() | Mode.GetHashCode();
-
-            public override bool Equals(object obj)
-            {
-                var other = obj as MnemMode;
-                if (other != null)
-                    return Equals(other);
-                return false;
-            }
-
-            public bool Equals([AllowNull] MnemMode other)
-                => Mnem.Equals(other.Mnem, StringComparison.OrdinalIgnoreCase) && Mode == other.Mode;
-        }
-
-        #endregion
 
         #region Constructors
 
@@ -249,7 +218,7 @@ namespace Core6502DotNet.m6502
             }
             else
             {
-                _selectedInstructions = new Dictionary<MnemMode, CpuInstruction>(_opcodes6502);
+                _selectedInstructions = new Dictionary<(string Mnem, Modes Mode), CpuInstruction>(_opcodes6502);
                 _cpu = "6502";
             }
         }
@@ -309,7 +278,8 @@ namespace Core6502DotNet.m6502
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 default:
-                    _selectedInstructions = new Dictionary<MnemMode, CpuInstruction>(_opcodes6502);
+                    _selectedInstructions = new ReadOnlyDictionary<(string Mnem, Modes mode), CpuInstruction>(
+                        new Dictionary<(string Mnem, Modes Mode), CpuInstruction>(_opcodes6502));
                     break;
 
             }
@@ -373,10 +343,10 @@ namespace Core6502DotNet.m6502
             });
             var nonImmediates = _selectedInstructions.Except(immediates);
 
-            _selectedInstructions =
-                nonImmediates.Concat(immediates.ToDictionary(kvp => new MnemMode(kvp.Key.Mnem, newmode),
+            _selectedInstructions = new ReadOnlyDictionary<(string, Modes), CpuInstruction>(
+                nonImmediates.Concat(immediates.ToDictionary(kvp => (kvp.Key.Mnem, newmode),
                                                              kvp => new CpuInstruction(kvp.Value.CPU, kvp.Value.Opcode, size)))
-                             .ToDictionary(k => k.Key, k => k.Value);
+                             .ToDictionary(k => k.Key, k => k.Value));
         }
 
         Modes Evaluate(IEnumerable<Token> tokens, int operandIndex)
@@ -404,36 +374,37 @@ namespace Core6502DotNet.m6502
                 var operand = line.Operand;
                 var operandChildren = operand.Children;
                 var firstDelim = operandChildren[0];
-                if (!firstDelim.HasChildren)
-                    throw new ExpressionException(firstDelim.Position, "Expression expected.");
+                if (firstDelim.Children.IsEmpty)
+                    throw new SyntaxException(firstDelim.Position, "Expression expected.");
 
                 var first = firstDelim.Children[0];
                 var firstDelimChildren = firstDelim.Children;
 
                 // test if we are setting the operand size or direct page
+                var forcedMode = Modes.Implied;
                 if (first.Name.Equals("[") && firstDelimChildren.Count > 1)
                 {
                     var opSize = Evaluator.Evaluate(first.Children, 8, 24);
-                    mode = opSize switch
+                    forcedMode = opSize switch
                     {
                         8 => Modes.ZeroPage,
                         16 => Modes.Absolute,
                         24 => Modes.Long,
                         _ => throw new ExpressionException(first.Position, $"Illegal quantity {opSize} for bit-width specifier."),
                     };
-                    mode |= Modes.ForceWidth;
+                    mode = forcedMode | Modes.ForceWidth;
 
                     // now we have to re-tokenize the operand string because essentially we've changed it
                     var next = line.ParsedSource.Substring(firstDelimChildren[1].Position - 1);
                     first = firstDelim.Children[1];
-                    firstDelimChildren = firstDelimChildren.Skip(1).ToList();
+                    firstDelimChildren = ImmutableList.CreateRange(firstDelimChildren.Skip(1).ToList());
                 }
 
                 if (first.Name.Equals("a"))
                 {
                     // e.g., lsr a
                     if (mode != Modes.Implied)
-                        throw new ExpressionException(first.Position, "Forced bit-width applied to an implied mode instruction.");
+                        throw new SyntaxException(first.Position, "Forced bit-width applied to an implied mode instruction.");
 
                     return mode;
                 }
@@ -441,7 +412,7 @@ namespace Core6502DotNet.m6502
                 if (first.Name.Equals("#"))
                 {
                     if (firstDelimChildren.Count < 2)
-                        throw new ExpressionException(first.Position, "Missing operand.");
+                        throw new SyntaxException(first.Position, "Missing operand.");
 
                     mode |= Modes.Immediate;
 
@@ -452,8 +423,8 @@ namespace Core6502DotNet.m6502
                 }
                 else if (first.Name.Equals("[") || first.Name.Equals("("))
                 {
-                    if (!first.HasChildren)
-                        throw new ExpressionException(first.Position, "Missing one or more operands.");
+                    if (first.Children.IsEmpty)
+                        throw new SyntaxException(first.Position, "Missing one or more operands.");
 
                     if (first.Name.Equals("["))
                     {
@@ -467,7 +438,7 @@ namespace Core6502DotNet.m6502
                         if (first.Children.Count > 1 && first.Children[1].OperatorType == OperatorType.Separator)
                         {
                             if (first.Children.Count > 2)
-                                throw new ExpressionException(first.LastChild.Position, "Unexpected argument found.");
+                                throw new SyntaxException(first.LastChild.Position, "Unexpected argument found.");
 
                             if (first.Children[1].Children.Count == 1)
                             {
@@ -475,7 +446,7 @@ namespace Core6502DotNet.m6502
                                 if (Reserved.IsOneOf("Indeces", firstAfterComma.Name))
                                 {
                                     if (first.Children[1].Children.Count > 2)
-                                        throw new ExpressionException(first.Children[1].LastChild.Position, "Unexpected argument found.");
+                                        throw new SyntaxException(first.Children[1].LastChild.Position, "Unexpected argument found.");
                                     if (firstAfterComma.Name.Equals("x"))
                                         mode |= Modes.InnerX;
                                     else if (firstAfterComma.Name.Equals("s"))
@@ -483,16 +454,16 @@ namespace Core6502DotNet.m6502
                                     else if (firstAfterComma.Name.Equals("sp"))
                                         mode |= Modes.IndexedSp;
                                     else
-                                        throw new ExpressionException(firstAfterComma.Position, $"Illegal index \"{firstAfterComma.Name}\" specified.");
+                                        throw new SyntaxException(firstAfterComma.Position, $"Illegal index \"{firstAfterComma.Name}\" specified.");
                                 }
                                 else
                                 {
-                                    throw new ExpressionException(firstAfterComma.Position, $"Unexpected expression \"{firstAfterComma.Name}\" encountered.");
+                                    throw new SyntaxException(firstAfterComma.Position, $"Unexpected expression \"{firstAfterComma.Name}\" encountered.");
                                 }
                             }
                             else
                             {
-                                throw new ExpressionException(first.LastChild.Position, $"Unexpected expression \"{first.LastChild.Name}\" encountered.");
+                                throw new SyntaxException(first.LastChild.Position, $"Unexpected expression \"{first.LastChild.Name}\" encountered.");
                             }
                         }
                     }
@@ -501,8 +472,8 @@ namespace Core6502DotNet.m6502
                 var memoryMode = mode & Modes.MemModMask;
                 if ((memoryMode & Modes.DirIndMask) != 0)
                 {
-                    if (!first.HasChildren || !first.Children[0].HasChildren)
-                        throw new ExpressionException(first.Position, "Expression expected.");
+                    if (first.Children.IsEmpty || first.Children[0].Children.IsEmpty)
+                        throw new SyntaxException(first.Position, "Expression expected.");
 
                     var firstInnerSep = first.Children[0];
                     firstOperandExpression = firstInnerSep.Children;
@@ -516,20 +487,22 @@ namespace Core6502DotNet.m6502
                     var resultmode = Evaluate(firstOperandExpression, 0);
                     if (!mode.HasFlag(Modes.ForceWidth))
                         mode |= resultmode;
+                    else if ((int)forcedMode < (int)resultmode)
+                        throw new ExpressionException(line.Operand.LastChild.Position, "Width specifier does not match expression.");
                 }
 
                 // capture the outer ",<register>" if any
                 if (operandChildren.Count > 1)
                 {
                     var lastCommaDelim = operandChildren[^1];
-                    if (operandChildren.Count > 3 || !lastCommaDelim.HasChildren)
-                        throw new ExpressionException(line.Operand.LastChild.Position, "Bad expression.");
+                    if (operandChildren.Count > 3 || lastCommaDelim.Children.IsEmpty)
+                        throw new SyntaxException(line.Operand.LastChild.Position, "Bad expression.");
 
                     var indexerIndex = -1;
                     if (Reserved.IsOneOf("Indeces", lastCommaDelim.Children[0].Name))
                     {
                         if (lastCommaDelim.Children.Count != 1)
-                            throw new ExpressionException(lastCommaDelim.Position, "Bad expression.");
+                            throw new SyntaxException(lastCommaDelim.Position, "Bad expression.");
 
                         var firstAfterComma = lastCommaDelim.Children[0];
                         if (firstAfterComma.Name.Equals("x"))
@@ -539,7 +512,7 @@ namespace Core6502DotNet.m6502
                         else if (firstAfterComma.Name.Equals("z"))
                             mode |= Modes.IndexedZ;
                         else
-                            throw new ExpressionException(firstAfterComma.Position, $"Illegal index \"{firstAfterComma.Name}\" specified.");
+                            throw new SyntaxException(firstAfterComma.Position, $"Illegal index \"{firstAfterComma.Name}\" specified.");
 
                         indexerIndex = operandChildren.Count - 1;
                     }
@@ -572,14 +545,14 @@ namespace Core6502DotNet.m6502
 
                     mode |= (Modes)((int)_evaled[0] << 14) | Modes.Bit0;
                     if (double.IsNaN(_evaled[1]))
-                        throw new ExpressionException(line.Operand.Position, "Missing direct page operand.");
+                        throw new SyntaxException(line.Operand.Position, "Missing direct page operand.");
 
                     _evaled[0] = _evaled[1];
 
                     if (Reserved.IsOneOf("Branches", instruction))
                     {
                         if (double.IsNaN(_evaled[2]))
-                            throw new ExpressionException(line.Operand.Position, "Missing branch address.");
+                            throw new SyntaxException(line.Operand.Position, "Missing branch address.");
                         _evaled[1] = _evaled[2];
                     }
                     else
@@ -602,30 +575,24 @@ namespace Core6502DotNet.m6502
         (Modes mode, CpuInstruction instruction) GetModeInstruction(SourceLine line)
         {
             var instruction = line.InstructionName;
-            var mnemmode = new MnemMode(instruction, ParseOperand(line));
-
+            var mnemmode = (Mnem: instruction, Mode: ParseOperand(line));
+            
             // remember if force width bit was set
             var forceWidth = mnemmode.Mode.HasFlag(Modes.ForceWidth);
 
             // drop the force width bit off
             mnemmode.Mode &= Modes.ModeMask;
-
-            var instructionExists = _selectedInstructions.ContainsKey(mnemmode);
-            CpuInstruction foundInstruction = null;
-            if (!instructionExists && !forceWidth)
+             if (!_selectedInstructions.TryGetValue(mnemmode, out CpuInstruction foundInstruction) && !forceWidth)
             {
-                var sizeModeBit = (int)(Modes.Indirect | Modes.SizeMask);
-                while (!(instructionExists = _selectedInstructions.ContainsKey(mnemmode)))
+                var sizeModeBit = (int)(Modes.ZeroPage);//(Modes.Indirect | Modes.SizeMask);
+                while (!_selectedInstructions.TryGetValue(mnemmode, out foundInstruction))
                 {
-                    sizeModeBit >>= 1;
-                    if (sizeModeBit == 0)
+                    sizeModeBit <<= 1;
+                    if (sizeModeBit > 7)
                         break;
-                    mnemmode.Mode = (mnemmode.Mode & Modes.MemModMask) | (Modes)sizeModeBit;
+                    mnemmode.Mode = (mnemmode.Mode & Modes.MemModMask) | (Modes)sizeModeBit | Modes.ZeroPage;
                 }
             }
-            if (instructionExists)
-                foundInstruction = _selectedInstructions[mnemmode];
-
             return (mnemmode.Mode, foundInstruction);
         }
 
@@ -652,13 +619,12 @@ namespace Core6502DotNet.m6502
 
         string AssemblePseudoBranch(SourceLine line)
         {
-            var startPc = Assembler.Output.LogicalPC;
             if (!line.OperandHasToken)
             {
                 Assembler.Log.LogEntry(line, line.Instruction, "Missing branch location.");
                 return string.Empty;
             }
-            var offset = Evaluator.Evaluate(line.Operand);
+            var offset = Evaluator.Evaluate(line.Operand, short.MinValue, ushort.MaxValue);
             int addrOffs;
             int minValue, maxValue;
             double relative;
@@ -689,28 +655,28 @@ namespace Core6502DotNet.m6502
                 mnemonic = "b" + mnemonic.Substring(1);
                 offset = double.NaN;
             }
-            var mnmemmode = new MnemMode(mnemonic, mode);
-            line.Assembly = Assembler.Output.Add(_selectedInstructions[mnmemmode].Opcode, 1);
+            var mnmemmode = (mnemonic, mode);
+            Assembler.Output.Add(_selectedInstructions[mnmemmode].Opcode, 1);
             if (double.IsNaN(offset))
             {
-                line.Assembly.AddRange(Assembler.Output.Add(relative, addrOffs - 1));
+                Assembler.Output.Add(relative, addrOffs - 1);
             }
             else
             {
-                line.Assembly.AddRange(Assembler.Output.Add(relative, 1));
-                line.Assembly.AddRange(Assembler.Output.Add((byte)0x4c));
-                line.Assembly.AddRange(Assembler.Output.Add(offset, 2));
+                Assembler.Output.Add(relative, 1);
+                Assembler.Output.Add((byte)0x4c);
+                Assembler.Output.Add(offset, 2);
             }
             if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
                 return string.Empty;
             var sb = new StringBuilder();
 
             if (!Assembler.Options.NoAssembly)
-                sb.Append(line.Assembly.Take(2).ToString(startPc, '.', true).PadRight(Padding));
+                sb.Append(Assembler.Output.GetBytesFrom(PCOnAssemble).Take(2).ToString(PCOnAssemble, '.', true).PadRight(Padding));
             else
-                sb.Append($".{startPc:x4}                     ");
+                sb.Append($".{PCOnAssemble:x4}                     ");
 
-            if (!Assembler.Options.NoDissasembly)
+            if (!Assembler.Options.NoDisassembly)
             {
                 sb.Append($"{mnemonic} ");
                 if (double.IsNaN(offset))
@@ -721,14 +687,14 @@ namespace Core6502DotNet.m6502
                 }
                 else
                 {
-                    sb.Append($"${startPc + 3:x4}");
+                    sb.Append($"${Assembler.Output.LogicalPC:x4}");
                     if (!Assembler.Options.NoSource)
                         sb.Append($"         {line.UnparsedSource}");
                     sb.AppendLine();
                     if (!Assembler.Options.NoAssembly)
-                        sb.Append(line.Assembly.Skip(2).ToString(startPc + 3, '.').PadRight(Padding));
+                        sb.Append(Assembler.Output.GetBytesFrom(PCOnAssemble + 2).ToString(PCOnAssemble + addrOffs, '.').PadRight(Padding));
                     else
-                        sb.Append($".{startPc:x4}                     ");
+                        sb.Append($".{PCOnAssemble:x4}                     ");
 
                     sb.Append($"jmp ${(int)offset:x4}");
 
@@ -743,8 +709,6 @@ namespace Core6502DotNet.m6502
 
         protected override string OnAssembleLine(SourceLine line)
         {
-            var startPc = Assembler.Output.LogicalPC;
-
             var instruction = line.InstructionName;
 
             if (Reserved.IsOneOf("LongShort", instruction))
@@ -765,7 +729,7 @@ namespace Core6502DotNet.m6502
             _evaled[1] =
             _evaled[2] = double.NaN;
             var modeInstruction = GetModeInstruction(line);
-            if (modeInstruction.instruction != null)
+            if (!string.IsNullOrEmpty(modeInstruction.instruction.CPU))
             {
                 if (modeInstruction.mode.HasFlag(Modes.RelativeBit))
                 {
@@ -793,43 +757,52 @@ namespace Core6502DotNet.m6502
                         _evaled[offsIx] = 0;
                     }
                 }
-
-                var modeSize = (modeInstruction.mode & Modes.SizeMask);
-                var size = modeSize switch
+                var operandSize = (modeInstruction.mode & Modes.SizeMask) switch
                 {
                     Modes.Implied   => 0,
                     Modes.ZeroPage  => 1,
                     Modes.Absolute  => 2,
-                    Modes.Long      => 3
+                    _               => 3
                 };
                 // start adding to the output
-                line.Assembly = new List<byte>(Assembler.Output.Add(modeInstruction.instruction.Opcode, 1));
+                Assembler.Output.Add(modeInstruction.instruction.Opcode, 1);
 
-                if (size > 0)
+                if (operandSize > 0)
                 {
                     // add operand bytes
                     for (int i = 0; i < 3 && !double.IsNaN(_evaled[i]); i++)
                     {
-                        if ((modeInstruction.mode & Modes.TestBitFlag) != 0 && i == 0)
-                        {
+                        if ((modeInstruction.mode & Modes.TestBitFlag) != 0 &&
+                             modeInstruction.mode.HasFlag(Modes.TwoOpBit) &&
+                                i == 0)
+                        { // The Hudson test bit instructions
                             if (_evaled[i] >= sbyte.MinValue && _evaled[i] <= byte.MaxValue)
-                                line.Assembly.AddRange(Assembler.Output.Add(_evaled[i], 1));
+                                Assembler.Output.Add(_evaled[i], 1);
                         }
                         else
                         {
-                            line.Assembly.AddRange(Assembler.Output.Add(_evaled[i], size));
+                            if (_evaled[i].Size() > operandSize)
+                                break;
+                            else
+                                Assembler.Output.Add(_evaled[i], operandSize);
                         }
                     }
                 }
-                if (!Assembler.PassNeeded && line.Assembly.Count != modeInstruction.instruction.Size)
+                var instructionSize = Assembler.Output.LogicalPC - PCOnAssemble;
+                if (!Assembler.PassNeeded && instructionSize != modeInstruction.instruction.Size)
                     Assembler.Log.LogEntry(line, line.Instruction, $"Mode not supporter for \"{line.Instruction}\" in selected CPU.");
             }
             else
             {
                 if (_selectedInstructions.Keys.Any(k => k.Mnem.Equals(line.InstructionName)))
-                    Assembler.Log.LogEntry(line, line.Instruction, $"Mode not supported for \"{line.Instruction}\" in selected CPU.");
+                {
+                    if (!Assembler.PassNeeded)
+                        Assembler.Log.LogEntry(line, line.Instruction, $"Mode not supported for \"{line.Instruction}\" in selected CPU.");
+                }
                 else
+                {
                     Assembler.Log.LogEntry(line, line.Instruction, $"Mnemonic \"{line.Instruction}\" not supported for selected CPU.");
+                }
                 return string.Empty;
             }
             if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
@@ -837,16 +810,16 @@ namespace Core6502DotNet.m6502
             var sb = new StringBuilder();
             if (!Assembler.Options.NoAssembly)
             {
-                var byteString = line.Assembly.Take(7).ToString(startPc, '.');
+                var byteString = Assembler.Output.GetBytesFrom(PCOnAssemble).ToString(PCOnAssemble, '.');
                 sb.Append(byteString.PadRight(Padding));
             }
             else
             {
-                sb.Append($".{startPc:x4}                        ");
+                sb.Append($".{PCOnAssemble:x4}                        ");
             }
 
             var disSb = new StringBuilder();
-            if (!Assembler.Options.NoDissasembly)
+            if (!Assembler.Options.NoDisassembly)
             {
                 if (sb.Length > 29)
                     disSb.Append(' ');

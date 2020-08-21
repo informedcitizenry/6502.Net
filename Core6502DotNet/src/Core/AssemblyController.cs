@@ -68,32 +68,40 @@ namespace Core6502DotNet
                     Console.SetOut(TextWriter.Null);
 
                 // init all line assemblers
-                var multiLineAssembler = new MultiLineAssembler();
+                var blockAssembler = new BlockAssembler();
 
-                _assemblers.Add(multiLineAssembler);
+                _assemblers.Add(blockAssembler);
                 _assemblers.Add(new AssignmentAssembler());
                 _assemblers.Add(new EncodingAssembler());
                 _assemblers.Add(new PseudoAssembler());
                 _assemblers.Add(new MiscAssembler());
-
-                // preprocess all input files 
+     
                 var preprocessor = new Preprocessor();
                 var processed = new List<SourceLine>();
 
-                // define all passed option defines 
-                if (Assembler.Options.LabelDefines.Count > 0)
-                {
-                    foreach (var define in Assembler.Options.LabelDefines)
-                        processed.Add(preprocessor.PreprocessDefine(define));
-                }
+                // preprocess all passed option defines and sections
+                foreach (var define in Assembler.Options.LabelDefines)
+                    processed.Add(Preprocessor.PreprocessDefine(define));
+                foreach (var section in Assembler.Options.Sections)
+                    processed.AddRange(LexerParser.Parse(string.Empty, $".dsection {section}"));
+
+                if (Assembler.Options.InputFiles.Count == 0)
+                    throw new Exception("One or more required input files was not specified.");
+
+                // preprocess all input files 
                 foreach (var path in Assembler.Options.InputFiles)
                     processed.AddRange(preprocessor.PreprocessFile(path));
 
                 Console.WriteLine(Assembler.AssemblerName);
                 Console.WriteLine(Assembler.AssemblerVersion);
 
+                // hunt for the first ".end"
+                var endIx = processed.FindIndex(l => l.InstructionName.Equals(".end"));
+                if (endIx < 0)
+                    endIx = processed.Count;
+
                 // set the iterator
-                Assembler.LineIterator = processed.GetIterator();
+                Assembler.LineIterator = processed.GetRange(0, endIx).GetIterator();
 
                 var exec = Process.GetCurrentProcess().MainModule.ModuleName;
                 var argsPassed = string.Join(' ', Environment.GetCommandLineArgs().Skip(1));
@@ -104,98 +112,31 @@ namespace Core6502DotNet
                 // while passes are needed
                 while (Assembler.PassNeeded && !Assembler.Log.HasErrors)
                 {
-                    if (Assembler.CurrentPass++ == 4)
+                    if (Assembler.IncrementPass() == 4)
                         throw new Exception("Too many passes attempted.");
                     disassembly = new StringBuilder(disasmHeader);
-                    foreach (var line in Assembler.LineIterator)
+
+                    _ = MultiLineAssembler.AssembleLines(Assembler.LineIterator,
+                                                         _assemblers,
+                                                         -1,
+                                                         -1,
+                                                         false,
+                                                         disassembly,
+                                                         Assembler.Options.VerboseList,
+                                                         AssemblyErrorHandler);
+                    if (blockAssembler.InAnActiveBlock)
                     {
-                        try
-                        {
-                            if (line.Label != null || line.Instruction != null)
-                            {
-                                var asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
-                                if (asm != null)
-                                {
-                                    var disasm = asm.AssembleLine(line);
-                                    if (!string.IsNullOrWhiteSpace(disasm) && !Assembler.PrintOff)
-                                        disassembly.AppendLine(disasm);
-                                }
-                                else if (line.Instruction != null)
-                                {
-                                    Assembler.Log.LogEntry(line,
-                                                           line.Instruction.Position,
-                                                           $"Unknown instruction \"{line.InstructionName}\".");
-                                }
-                            }
-                            else if (Assembler.Options.VerboseList)
-                            {
-                                disassembly.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            if (ex is SymbolException symbEx)
-                            {
-                                Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
-                            }
-                            else if (ex is FormatException || ex is MultiLineAssemblerException)
-                            {
-                                if (ex is FormatException fmtEx)
-                                    Assembler.Log.LogEntry(line,
-                                                      line.Operand,
-                                                      $"There was a problem with the format string:\n{fmtEx.Message}.",
-                                                      true);
-                                else
-                                    Assembler.Log.LogEntry(line, line.Instruction.Position, ex.Message);
-      
-                                break;
-                            }
-                            else
-                            {
-                                if (Assembler.CurrentPass > 0 && !Assembler.PassNeeded)
-                                {
-                                    if (ex is ExpressionException expEx)
-                                    {
-                                        if (ex is IllegalQuantityException)
-                                            Assembler.Log.LogEntry(line, expEx.Position,
-                                                $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
-                                        else
-                                            Assembler.Log.LogEntry(line, expEx.Position, ex.Message);
-                                    }
-                                    else if (ex is OverflowException)
-                                    {
-                                        Assembler.Log.LogEntry(line, line.Operand.Position,
-                                                    $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
-                                    }
-                                    else if (ex is InvalidPCAssignmentException pcEx)
-                                    {
-                                        Assembler.Log.LogEntry(line, line.Instruction,
-                                                $"Invalid Program Counter assignment in expression \"{line.Operand}\".");
-                                    }
-                                    else if (ex is ProgramOverflowException prgEx)
-                                    {
-                                        Assembler.Log.LogEntry(line, line.Instruction,
-                                                "Program Overflow.");
-                                    }
-                                    else
-                                    {
-                                        Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
-                                    }
-                                }
-                                else
-                                {
-                                    Assembler.PassNeeded = true;
-                                }
-                            }
-                        }
-                    }
-                    if (multiLineAssembler.InAnActiveBlock)
-                    {
-                        SourceLine activeLine = multiLineAssembler.ActiveBlockLine;
+                        SourceLine activeLine = blockAssembler.ActiveBlockLine;
                         Assembler.Log.LogEntry(activeLine, activeLine.Instruction,
                             $"End of source file reached before finding block closure for \"{activeLine.InstructionName}\".");
                     }
                     Assembler.LineIterator.Reset();
+                }
+                var unused = Assembler.Output.UnusedSections;
+                if (unused.Count() > 0)
+                {
+                    foreach (var section in unused)
+                        Assembler.Log.LogEntry(null, 1, 1, $"Section {section} was defined but never used.", false);
                 }
                 if (!Assembler.Options.NoWarnings && Assembler.Log.HasWarnings)
                     Assembler.Log.DumpWarnings();
@@ -226,16 +167,92 @@ namespace Core6502DotNet
             }
         }
 
+        bool AssemblyErrorHandler(SourceLine line, AssemblyErrorReason reason, Exception ex)
+        {
+            switch (reason)
+            {
+                case AssemblyErrorReason.NotFound:
+                    Assembler.Log.LogEntry(line,
+                                           line.Instruction.Position,
+                                           $"Unknown instruction \"{line.InstructionName}\".");
+                    return true;
+                case AssemblyErrorReason.ReturnNotAllowed:
+                    Assembler.Log.LogEntry(line, 
+                                           line.Instruction.Position,
+                                           "Directive \".return\" not valid outside of function block.");
+                    return true;
+                case AssemblyErrorReason.ExceptionRaised:
+                    {
+                        if (ex is SymbolException symbEx)
+                        {
+                            Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
+                        }
+                        else if (ex is SyntaxException synEx)
+                        {
+                            Assembler.Log.LogEntry(line, synEx.Position, synEx.Message, true);
+                        }
+                        else if (ex is FormatException ||
+                                 ex is ReturnException ||
+                                 ex is BlockAssemblerException ||
+                                 ex is SectionException)
+                        {
+                            if (ex is FormatException fmtEx)
+                                Assembler.Log.LogEntry(line,
+                                                  line.Operand,
+                                                  $"There was a problem with the format string:\n{fmtEx.Message}.",
+                                                  true);
+                            else if (ex is ReturnException retEx)
+                                Assembler.Log.LogEntry(line, retEx.Position, retEx.Message);
+                            else
+                                Assembler.Log.LogEntry(line, line.Instruction.Position, ex.Message);
+
+                            return false;
+                        }
+                        else
+                        {
+                            if (Assembler.CurrentPass > 0 && !Assembler.PassNeeded)
+                            {
+                                if (ex is ExpressionException expEx)
+                                {
+                                    if (ex is IllegalQuantityException)
+                                        Assembler.Log.LogEntry(line, expEx.Position,
+                                            $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
+                                    else
+                                        Assembler.Log.LogEntry(line, expEx.Position, ex.Message);
+                                }
+                                else if (ex is OverflowException)
+                                {
+                                    Assembler.Log.LogEntry(line, line.Operand.Position,
+                                                $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\".");
+                                }
+                                else if (ex is InvalidPCAssignmentException pcEx)
+                                {
+                                    Assembler.Log.LogEntry(line, line.Instruction,
+                                            $"Invalid Program Counter assignment {pcEx} in expression \"{line.Operand}\".");
+                                }
+                                else
+                                {
+                                    Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
+                                }
+                            }
+                            else
+                            {
+                                Assembler.PassNeeded = true;
+                            }
+                        }  
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
         static void WriteOutput(string disassembly)
         {
             // no errors finish up
             // save to disk
             var outputFile = Assembler.Options.OutputFile;
-
-            var fmt = Assembler.Options.Format;
-            if (fmt.Equals("srec") || fmt.Equals("srecmos")) // set the binary format provider if srec/srecmos
-                Assembler.BinaryFormatProvider = new SRecordFormatProvider();
-
+            Assembler.SelectFormat(Assembler.OutputFormat);
             if (Assembler.BinaryFormatProvider != null)
                 File.WriteAllBytes(outputFile, Assembler.BinaryFormatProvider.GetFormat().ToArray());
             else

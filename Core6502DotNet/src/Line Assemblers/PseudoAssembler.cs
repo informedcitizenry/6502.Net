@@ -8,7 +8,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Core6502DotNet
 {
@@ -49,7 +48,7 @@ namespace Core6502DotNet
 
         static void AssembleFills(SourceLine line)
         {
-            if (!line.Operand.Children[0].HasChildren)
+            if (line.Operand.Children[0].Children.IsEmpty)
             {
                 Assembler.Log.LogEntry(line, $"Instruction \"{line.InstructionName}\" expects a value but none was given");
                 return;
@@ -65,9 +64,9 @@ namespace Core6502DotNet
                 }
                 var fillval = (int)Evaluator.Evaluate(line.Operand.Children[1]);
                 if (line.InstructionName.Equals(".align"))
-                    line.Assembly = Assembler.Output.Align(alignval, fillval);
+                    Assembler.Output.Align(alignval, fillval);
                 else
-                    line.Assembly = Assembler.Output.Fill(alignval, fillval);
+                    Assembler.Output.Fill(alignval, fillval);
             }
             else
             {
@@ -88,11 +87,9 @@ namespace Core6502DotNet
                 Assembler.Log.LogEntry(line, line.Operand, $"Instruction \"{line.InstructionName}\" expects one or more arguments.");
                 return;
             }
-            line.Assembly = new List<byte>();
-            var uninit = 0;
             foreach (Token child in line.Operand.Children)
             {
-                if (!child.HasChildren)
+                if (child.Children.IsEmpty)
                 {
                     Assembler.Log.LogEntry(line, child.Position, "Expression expected.");
                     return;
@@ -103,7 +100,6 @@ namespace Core6502DotNet
                     if (child.Children.Count > 1)
                         Assembler.Log.LogEntry(line, child.Children[1].Position,
                             $"Unexpected expression \"{child.Children[1].Name}\".");
-                    uninit++;
                     Assembler.Output.AddUninitialized(setSize);
                 }
                 else
@@ -111,12 +107,7 @@ namespace Core6502DotNet
                     var val = Evaluator.Evaluate(child.Children, minValue, maxValue);
                     if (isRta)
                         val = ((int)(val - 1)) & 0xFFFF;
-                    if (uninit > 0)
-                    {
-                        line.Assembly.AddRange(new byte[setSize * uninit]);
-                        uninit = 0;
-                    }
-                    line.Assembly.AddRange(Assembler.Output.Add(val, setSize));
+                    Assembler.Output.Add(val, setSize);
                 }
             }
         }
@@ -124,7 +115,7 @@ namespace Core6502DotNet
         void AssembleBinaryFile(SourceLine line)
         {
             if (!line.OperandHasToken)
-                throw new ExpressionException(line.Instruction.Position, "Filename not specified.");
+                throw new SyntaxException(line.Instruction.Position, "Filename not specified.");
 
             BinaryFile file;
             var filename = line.Operand.Children[0].Children[0].Name;
@@ -134,12 +125,11 @@ namespace Core6502DotNet
             }
             else
             {
-
                 if (!filename.EnclosedInDoubleQuotes())
-                    throw new ExpressionException(line.Operand.Position, "Filename not given in quotes.");
+                    throw new SyntaxException(line.Operand.Position, "Filename not given in quotes.");
                 file = new BinaryFile(filename.TrimOnce('"'));
                 if (!file.Open())
-                    throw new ExpressionException(line.Operand.Position, $"Unable to open file \"{filename}\".");
+                    throw new SyntaxException(line.Operand.Position, $"Unable to open file \"{filename}\".");
                 _includedBinaries.Add(filename, file);
             }
 
@@ -152,7 +142,7 @@ namespace Core6502DotNet
                 if (line.Operand.Children.Count > 2)
                 {
                     if (line.Operand.Children.Count > 3)
-                        throw new ExpressionException(line.Operand.Children[3].Position, "Too many arguments specified for directive.");
+                        throw new SyntaxException(line.Operand.Children[3].Position, "Too many arguments specified for directive.");
                     size = (int)Evaluator.Evaluate(line.Operand.Children[2].Children, ushort.MinValue, ushort.MaxValue);
                 }
                 offset = (int)Evaluator.Evaluate(line.Operand.Children[1].Children, ushort.MinValue, ushort.MaxValue);
@@ -166,7 +156,7 @@ namespace Core6502DotNet
             if (size > ushort.MaxValue)
                 throw new ExpressionException(line.Operand.Position, $"Difference between specified offset and size is greater than the maximum allowed amount.");
 
-            line.Assembly = Assembler.Output.AddBytes(file.Data.Skip(offset), size);
+            Assembler.Output.AddBytes(file.Data.Skip(offset), size);
         }
 
 
@@ -174,32 +164,43 @@ namespace Core6502DotNet
         {
             if (!line.OperandHasToken)
             {
-                throw new ExpressionException(line.Instruction.Position,
+                throw new SyntaxException(line.Instruction.Position,
                     $"Instruction \"{line.InstructionName}\" expects one or more string arguments.");
             }
-
-            line.Assembly = new List<byte>();
             var stringBytes = new List<byte>();
-            var uninit = 0;
             foreach (Token child in line.Operand.Children)
             {
                 if (child.Children.Count == 0)
-                    throw new ExpressionException(child.Position, $"Expected value for instruction \"{line.InstructionName}\".");
-
-                if (child.Children[0].ToString().Equals("?"))
+                    throw new SyntaxException(child.Position, $"Expected value for instruction \"{line.InstructionName}\".");
+                var element = child.Children[0];
+                if (element.ToString().Equals("?"))
                 {
                     if (child.Children.Count > 1)
                         Assembler.Log.LogEntry(line, child.Children[1].Position,
                             $"Unexpected expression \"{child.Children[1].Name}\".");
-                    uninit++;
                     Assembler.Output.AddUninitialized(1);
                 }
                 else
                 {
                     if (StringHelper.ExpressionIsAString(child))
+                    {
                         stringBytes.AddRange(Assembler.Encoding.GetBytes(StringHelper.GetString(child)));
-                    else
-                        stringBytes.AddRange(BinaryOutput.ConvertToBytes(Evaluator.Evaluate(child)).ToList());
+                    }
+                    else 
+                    {
+                        if (Assembler.SymbolManager.SymbolExists(element.ToString()))
+                        {
+                            var symVal = Assembler.SymbolManager.GetStringValue(element);
+                            if (!string.IsNullOrEmpty(symVal))
+                                stringBytes.AddRange(Assembler.Encoding.GetBytes(StringHelper.GetString(child.Children[0])));
+                            else
+                                stringBytes.AddRange(BinaryOutput.ConvertToBytes(Assembler.SymbolManager.GetNumericValue(element)));
+                        }
+                        else
+                        {
+                            stringBytes.AddRange(BinaryOutput.ConvertToBytes(Evaluator.Evaluate(child)));
+                        }   
+                    }
                 }
             }
             switch (line.InstructionName)
@@ -230,14 +231,11 @@ namespace Core6502DotNet
                 default:
                     break;
             }
-            if (uninit > 0)
-                line.Assembly.AddRange(new byte[uninit]);
-            line.Assembly.AddRange(Assembler.Output.AddBytes(stringBytes));
+            Assembler.Output.AddBytes(stringBytes);
         }
 
         protected override string OnAssembleLine(SourceLine line)
         {
-            var startPc = Assembler.Output.LogicalPC;
             switch (line.InstructionName)
             {
                 case ".addr":
@@ -281,7 +279,7 @@ namespace Core6502DotNet
             }
             if (Assembler.PassNeeded || string.IsNullOrEmpty(Assembler.Options.ListingFile))
                 return string.Empty;
-            return StringHelper.GetByteDisassembly(line, startPc);
+            return StringHelper.GetByteDisassembly(line, PCOnAssemble);
         }
 
         public bool EvaluatesFunction(Token function) => function.Name.Equals("format");
@@ -291,6 +289,10 @@ namespace Core6502DotNet
             var str = StringHelper.GetStringFormat(parameters);
             return Assembler.Encoding.GetEncodedValue(str);
         }
+
+        public void InvokeFunction(Token unused, Token parameters)
+            => _ = EvaluateFunction(unused, parameters);
+
         #endregion
     }
 }

@@ -11,22 +11,26 @@ using System.Text;
 
 namespace Core6502DotNet
 {
+    /// <summary>
+    /// A helper class for string evaluations and manipulation.
+    /// </summary>
     public static class StringHelper
     {
         /// <summary>
         /// Gets the string format from the parsed token.
         /// </summary>
         /// <param name="formatToken">The tokenfrom which to evaluate the string expression.</param>
-        /// <returns></returns>
+        /// <returns>Returns the format string from the parsed token.</returns>
+        /// <exception cref="SyntaxException"></exception>
         public static string GetStringFormat(Token formatToken)
         {
             if (formatToken.Children.Count == 0)
-                throw new ExpressionException(formatToken.Position, "String format argument not supplied.");
+                throw new SyntaxException(formatToken.Position, "String format argument not supplied.");
 
             string fmtString;
             Token firstChild = formatToken.Children[0];
-            List<Token> tokenChildren = formatToken.Children;
-            if (firstChild.HasChildren &&
+            var tokenChildren = formatToken.Children;
+            if (firstChild.Children.Count > 0 &&
                 firstChild.Children[0].OperatorType == OperatorType.Function &&
                 firstChild.Children[0].Name.Equals("format"))
             {
@@ -44,19 +48,38 @@ namespace Core6502DotNet
             if (tokenChildren.Count > 1)
             {
                 if (tokenChildren[1].OperatorType != OperatorType.Separator)
-                    throw new ExpressionException(tokenChildren[1].Position, "Expected argument list in format call.");
+                    throw new SyntaxException(tokenChildren[1].Position, "Expected argument list in format call.");
                 objects = new List<object>();
                 IEnumerable<Token> args = tokenChildren.Skip(1);
                 foreach (Token arg in args)
                 {
                     if (arg.Children.Count == 0)
-                        throw new ExpressionException(arg.Position, "Value not specified.");
-                    if (arg.Children[0].OperatorType == OperatorType.Function && arg.Children[0].Name.Equals("format"))
+                        throw new SyntaxException(arg.Position, "Value not specified.");
+                    var argChild = arg.Children[0];
+
+                    if (argChild.OperatorType == OperatorType.Function && argChild.Name.Equals("format"))
+                    {
                         objects.Add(GetStringFormat(arg.Children[1]));
-                    else if (arg.Children[0].Name.EnclosedInDoubleQuotes())
-                        objects.Add(arg.Children[0].Name.TrimOnce('"'));
+                    }
+                    else if (argChild.Name.EnclosedInDoubleQuotes())
+                    {
+                        objects.Add(argChild.Name.TrimOnce('"'));
+                    }
                     else
-                        objects.Add((long)Evaluator.Evaluate(arg));
+                    {
+                        if (Assembler.SymbolManager.SymbolExists(argChild.Name))
+                        {
+                            var symbol = Assembler.SymbolManager.GetStringValue(argChild);
+                            if (!string.IsNullOrEmpty(symbol))
+                                objects.Add(symbol);
+                            else
+                                objects.Add((long)Assembler.SymbolManager.GetNumericValue(argChild));
+                        }
+                        else
+                        {
+                            objects.Add((long)Evaluator.Evaluate(arg));
+                        }
+                    }
                 }
             }
             return string.Format(fmtString, objects.ToArray());
@@ -66,7 +89,7 @@ namespace Core6502DotNet
         /// Determines whether the tokenized expression is in fact a complete string.
         /// </summary>
         /// <param name="expression">The tokenized expression.</param>
-        /// <returns><c>True</c> if the expression is a string, otherwise <c>false</c>.</c></returns>
+        /// <returns><c>true</c> if the expression is a string, otherwise <c>false</c>.</c></returns>
         public static bool ExpressionIsAString(Token expression)
         {
             if (expression.Children.Count > 2)
@@ -112,19 +135,11 @@ namespace Core6502DotNet
                 {
                     var stringVal = Assembler.SymbolManager.GetStringVectorElementValue(expression.Children[0], expression.Children[1]);
                     if (stringVal == string.Empty)
-                    {
-                        Assembler.Log.LogEntry(Assembler.CurrentLine, expression.Children[0].Position,
-                            "Type mismatch");
-                    }
-                    else if (stringVal == null)
-                    {
-                        Assembler.Log.LogEntry(Assembler.CurrentLine, expression.Children[1].Position,
+                        throw new SyntaxException(expression.Children[0].Position, "Type mismatch");
+                    if (stringVal == null)
+                        throw new SyntaxException(expression.Children[1].Position,
                             "Index is out of range.");
-                    }
-                    else
-                    {
-                        return stringVal;
-                    }
+                    return stringVal;
                 }
             }
             return string.Empty;
@@ -141,22 +156,23 @@ namespace Core6502DotNet
         public static string GetByteDisassembly(SourceLine line, int startPc)
         {
             var sb = new StringBuilder();
+            var assembly = Assembler.Output.GetBytesFrom(startPc);
             if (!Assembler.Options.NoAssembly)
             {
-                sb.Append(line.Assembly.Take(8).ToString(startPc).PadRight(43, ' '));
+                sb.Append(assembly.Take(8).ToString(startPc).PadRight(43, ' '));
                 if (!Assembler.Options.NoSource)
                     sb.Append(line.UnparsedSource);
-                if (line.Assembly.Count > 8)
+                if (assembly.Count > 8)
                 {
                     sb.AppendLine();
-                    sb.Append(line.Assembly.Skip(8).ToString(startPc + 8));
+                    sb.Append(assembly.Skip(8).ToString(startPc + 8));
                 }
             }
             else
             {
                 sb.Append($">{startPc:x4}");
                 if (!Assembler.Options.NoSource)
-                    sb.Append($"{line.UnparsedSource.PadLeft(43, ' ')}");
+                    sb.Append($"{line.UnparsedSource,43}");
             }
             return sb.ToString();
         }

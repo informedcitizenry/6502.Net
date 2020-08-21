@@ -34,26 +34,22 @@ namespace Core6502DotNet
         /// <param name="collection">The source collection for the iterator.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public RandomAccessIterator(IEnumerable<T> collection)
-        {
-            if (collection == null)
-                throw new ArgumentNullException();
-            _firstIndex = 0;
-            Index = -1;
-            _list = collection.ToArray();
-            _length = _list.Length;
-        }
+           : this(collection, 0) { }
 
         /// <summary>
         /// Constructs a new instance of a <see cref="RandomAccessIterator{T}"/> class.
         /// </summary>
         /// <param name="collection">The source collection for the iterator.</param>
-        /// <param name="firstIndex">The first inde</param>
+        /// <param name="firstIndex">The first index of the iterator.</param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
         public RandomAccessIterator(IEnumerable<T> collection, int firstIndex)
         {
             if (collection == null)
                 throw new ArgumentNullException();
             _list = collection.ToArray();
-            if (firstIndex < 0 || firstIndex >= _length)
+            _length = _list.Length;
+            if (_length > 0 && (firstIndex < 0 || firstIndex >= _length))
                 throw new ArgumentOutOfRangeException();
             _firstIndex = firstIndex;
             Index = firstIndex - 1;
@@ -71,6 +67,7 @@ namespace Core6502DotNet
             _firstIndex = iterator._firstIndex;
             Index = iterator.Index;
             _list = iterator._list;
+            _length = iterator._length;
         }
 
         #endregion
@@ -105,13 +102,42 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Skip elements matching the conditions defined in the predicate.
+        /// Moves the iterator to the first element in the collection not matching the
+        /// predicate.
         /// </summary>
-        /// <param name="predicate">A condition for which to skip any elements in the collection while retrieving the next element.</param>
-        /// <returns></returns>
-        public T Skip(Predicate<T> predicate)
+        /// <param name="predicate">A condition for which to skip any elements 
+        /// in the collection while retrieving the next element.</param>
+        /// <returns>The first element in the collection 
+        /// after the predicate evaluates to false.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public T FirstNotMatching(Predicate<T> predicate)
         {
+            if (predicate == null)
+                throw new ArgumentNullException();
             while (MoveNext() && predicate(Current)) { }
+            return Current;
+        }
+
+        /// <summary>
+        /// Bypasses the number of elements in a sequence then returns the remaining elements.
+        /// </summary>
+        /// <param name="count">The number of elements to skip before returning the remaining
+        /// elements.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> that contains the elements that occur
+        /// after the specified index in the input sequence.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public IEnumerable<T> Skip(int count) => _list.Skip(count);
+
+        /// <summary>
+        /// The first element in the collection matching the conditions in the predicate. This operation
+        /// will advance the iterator forward until the match is found, or the iteration is complete.
+        /// </summary>
+        /// <param name="predicate">A condition for which to find the next matching element in the
+        /// collection.</param>
+        /// <returns>The first element matching the predicate.</returns>
+        public T FirstOrDefault(Predicate<T> predicate)
+        {
+            while (MoveNext() && !predicate(Current)) { }
             return Current;
         }
 
@@ -180,7 +206,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the current index of the iterator.
         /// </summary>
-        public int Index { get; set; }
+        public int Index { get; private set; }
 
         public T Current
         {
