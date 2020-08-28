@@ -23,11 +23,11 @@ namespace Core6502DotNet
         bool _elseEvaluated;
         bool _ifTrue;
 
-        static readonly string[] _keywords =
+        static readonly HashSet<string> s_keywords = new HashSet<string>
         {
-                ".if", ".ifdef", ".ifndef",
-                ".else", ".elseif", ".elseif", ".elseifdef", ".elseifndef",
-                ".endif"
+            ".if", ".ifdef", ".ifndef",
+            ".else", ".elseif", ".elseif", ".elseifdef", ".elseifndef",
+            ".endif"
         };
 
         readonly Dictionary<(string, int), bool> _ifDefEvaluations;
@@ -44,6 +44,20 @@ namespace Core6502DotNet
         /// <param name="type">The <see cref="BlockType"/>.</param>
         public ConditionalBlock(SourceLine line, BlockType type)
             : base(line, type)
+        {
+            _ifDefEvaluations = new Dictionary<(string, int), bool>();
+            _ifTrue =
+            _ifEvaluated = _elseEvaluated = false;
+        }
+
+        /// <summary>
+        /// Creates a new instance of a conditional block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
+        /// processing the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public ConditionalBlock(RandomAccessIterator<SourceLine> iterator, BlockType type)
+            : base(iterator, type)
         {
             _ifDefEvaluations = new Dictionary<(string, int), bool>();
             _ifTrue =
@@ -77,7 +91,7 @@ namespace Core6502DotNet
         public override bool ExecuteDirective()
         {
             SourceLine line = LineIterator.Current;
-            if (!_keywords.Contains(line.InstructionName))
+            if (!s_keywords.Contains(line.InstructionName))
                 return false;
 
             if (_ifTrue)
@@ -121,9 +135,9 @@ namespace Core6502DotNet
                     {
                         if (!LineIterator.MoveNext())
                             throw new SyntaxException(position, "Missing closure for \".if\" directive.");
-                        else if (_keywords.Contains(LineIterator.Current.InstructionName))
+                        else if (s_keywords.Contains(LineIterator.Current.InstructionName))
                             throw new SyntaxException(position, "Empty sub-block under conditional directive.");
-                        SeekBlockDirectives(_keywords);
+                        SeekBlockDirectives(s_keywords.ToArray());
                     }
                     line = LineIterator.Current;
                 }

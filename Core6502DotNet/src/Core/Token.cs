@@ -7,8 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Core6502DotNet
@@ -42,14 +40,14 @@ namespace Core6502DotNet
     /// Represents a token class useed in lexical analysis of 
     /// assembly source code.
     /// </summary>
-    public class Token : IEquatable<Token>
+    public class Token : IEquatable<Token>, IComparable<Token>
     {
         #region Constructors
 
         /// <summary>
         /// Constructs a new token object.
         /// </summary>
-        public Token() => Children = ImmutableList.Create<Token>();
+        public Token() => Children = new List<Token>();
 
         /// <summary>
         /// Constructs a new token object.
@@ -122,13 +120,13 @@ namespace Core6502DotNet
         /// <param name="position">The token's column position in the original source.</param>
         /// <param name="children">The token's child tokens.</param>
         public Token(string name, string source, TokenType type, OperatorType operatorType, int position, IEnumerable<Token> children)
-            : this(name, source, type, operatorType, position) => Children = ImmutableList.CreateRange(children);
+            : this(name, source, type, operatorType, position) => Children = new List<Token>(children);
 
         #endregion
 
         #region Methods
 
-        public bool Equals([AllowNull] Token other)
+        public bool Equals(Token other)
             => other != null && 
             Name.Equals(other.Name) && 
             Type == other.Type && 
@@ -159,12 +157,10 @@ namespace Core6502DotNet
         public void AddChild(Token token)
         {
             token.Parent = this;
-            if (Children == null)
-                Children = ImmutableList.Create<Token>();
             if (string.IsNullOrEmpty(Name) && Children.Count == 0)
                 Position = token.Position;
 
-            Children = Children.Add(token);
+            /*Children = */Children.Add(token);
         }
 
         /// <summary>
@@ -174,8 +170,7 @@ namespace Core6502DotNet
         public Token Clone()
         {
             var copy = new Token(new string(Name), new string(Name), Type, OperatorType, Position);
-            foreach (var child in Children)
-                copy.Children = copy.Children.Add(child.Clone());
+            Children.ForEach(child => copy.Children.Add(child.Clone()));
             return copy;
         }
 
@@ -198,6 +193,23 @@ namespace Core6502DotNet
         /// <returns>A parsed token that represents a separator.</returns>
         public static Token SeparatorToken()
             => new Token(string.Empty, string.Empty, TokenType.Operator, OperatorType.Separator);
+
+        public int CompareTo(Token other)
+        {
+            if (other != null)
+            {
+                var nameCompare = Name.CompareTo(other.Name);
+                if (nameCompare == 0)
+                {
+                    var typeCompare = Type.CompareTo(other.Type);
+                    if (typeCompare == 0)
+                        return OperatorType.CompareTo(other.OperatorType);
+                    return typeCompare;
+                }
+                return nameCompare;
+            }
+            return 1;
+        }
 
         #endregion
 
@@ -237,7 +249,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the list of the token's child tokens.
         /// </summary>
-        public ImmutableList<Token> Children { get; private set; }
+        public List<Token> Children { get; }
 
         /// <summary>
         /// Gets the last child in the token's own hierarchy, or itself if it

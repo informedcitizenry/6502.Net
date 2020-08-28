@@ -33,8 +33,8 @@ namespace Core6502DotNet
 
             Reserved.DefineType("Types",
                     ".addr", ".align", ".binary", ".byte", ".sbyte",
-                    ".dint", ".dword", ".fill", ".lint", ".long",
-                    ".rta", ".sint", ".word",
+                    ".char", ".dint", ".dword", ".fill", ".lint",
+                    ".long", ".rta", ".short", ".sint", ".word",
                     ".cstring", ".lstring", ".nstring", ".pstring",
                     ".string"
                 );
@@ -48,7 +48,7 @@ namespace Core6502DotNet
 
         static void AssembleFills(SourceLine line)
         {
-            if (line.Operand.Children[0].Children.IsEmpty)
+            if (line.Operand.Children[0].Children.Count == 0)
             {
                 Assembler.Log.LogEntry(line, $"Instruction \"{line.InstructionName}\" expects a value but none was given");
                 return;
@@ -89,7 +89,7 @@ namespace Core6502DotNet
             }
             foreach (Token child in line.Operand.Children)
             {
-                if (child.Children.IsEmpty)
+                if (child.Children.Count == 0)
                 {
                     Assembler.Log.LogEntry(line, child.Position, "Expression expected.");
                     return;
@@ -158,7 +158,6 @@ namespace Core6502DotNet
 
             Assembler.Output.AddBytes(file.Data.Skip(offset), size);
         }
-
 
         static void AssembleStrings(SourceLine line)
         {
@@ -253,6 +252,7 @@ namespace Core6502DotNet
                     AssembleValues(line, byte.MinValue, byte.MaxValue, 1);
                     break;
                 case ".sbyte":
+                case ".char":
                     AssembleValues(line, sbyte.MinValue, sbyte.MaxValue, 1);
                     break;
                 case ".dint":
@@ -271,6 +271,7 @@ namespace Core6502DotNet
                     AssembleValues(line, short.MinValue, ushort.MaxValue, 2, true);
                     break;
                 case ".sint":
+                case ".short":
                     AssembleValues(line, short.MinValue, short.MaxValue, 2);
                     break;
                 default:
@@ -292,6 +293,8 @@ namespace Core6502DotNet
 
         public void InvokeFunction(Token unused, Token parameters)
             => _ = EvaluateFunction(unused, parameters);
+
+        public bool IsFunctionName(string symbol) => symbol.Equals("format");
 
         #endregion
     }

@@ -412,11 +412,7 @@ namespace Core6502DotNet
 
         #region Methods
 
-        /// <summary>
-        /// Get the list of options as a JSON string.
-        /// </summary>
-        /// <returns>The <see cref="Option"/> object as a JSON string.</returns>
-        public string JsonSerialize()
+        string JsonSerialize()
         {
             var root = new JObject();
             var logging = new JObject();
@@ -485,12 +481,17 @@ namespace Core6502DotNet
                     var sParms = s.Split(',');
                     if (sParms.Length == 3)
                     {
-                        var section = new JObject();
-                        section.Add("name", sParms[0]);
-                        section.Add("starts", sParms[1]);
-                        section.Add("ends", sParms[2]);
-
+                        var section = new JObject
+                        {
+                            { "name",   sParms[0] },
+                            { "starts", sParms[1] },
+                            { "ends",   sParms[2] }
+                        };
                         sections.Add(section);
+                    }
+                    else
+                    {
+                        throw new Exception("Invalid argument for option '.dsection'.");
                     }
                 }
                 if (sections.Count > 0)
@@ -573,21 +574,22 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Parses and fills an Options object from passed command-line arguments.
+        /// Parses and fills an <see cref="Options"/>Options object from 
+        /// passed command-line arguments.
         /// </summary>
+        /// <param name="args">A collection of arguments to parse as arguments.</param>
         /// <returns>Returns an instance of the Options class.</returns>
-        public static Options ParseArgs()
+        public static Options FromArgs(IEnumerable<string> args)
         {
             try
             {
-                var args = Environment.GetCommandLineArgs().Skip(1);
                 Options options = null;
                 var parser = new Parser(with =>
                 {
                     with.HelpWriter = null;
                 });
                 var result = parser.ParseArguments<Options>(args);
-                _ = result.WithParsed<Options>(o =>
+                _ = result.WithParsed(o =>
                 {
                     if (string.IsNullOrEmpty(o.ConfigFile))
                     {

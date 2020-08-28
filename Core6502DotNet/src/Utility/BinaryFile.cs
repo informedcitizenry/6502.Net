@@ -29,7 +29,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Opens the underlying file specified in the binary file's filenae.
         /// </summary>
-        /// <returns><c>True</c> if the file was opened successfully, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the file was opened successfully, otherwise <c>false</c>.</returns>
         public bool Open()
         {
             try

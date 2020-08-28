@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Linq;
+
 namespace Core6502DotNet
 {
     /// <summary>
@@ -123,9 +125,21 @@ namespace Core6502DotNet
                 if (Assembler.SymbolManager.SymbolIsScalar(symbol))
                 {
                     if (Assembler.SymbolManager.SymbolIsNumeric(symbol))
+                    {
+                        var numValue = (int)Assembler.SymbolManager.GetNumericValue(symbol);
+                        bool condition;
+                        if (line.InstructionName.Equals(".let"))
+                            condition = Evaluator.ExpressionIsCondition(line.Operand.Children[0].Children.Skip(2));
+                        else
+                            condition = Evaluator.ExpressionIsCondition(line.Operand.Children);
+                        if (condition)
+                            return string.Format("={0}{1}",
+                                (numValue == 0 ? "false" : "true").PadRight(42), line.UnparsedSource);
                         return string.Format("=${0}{1}",
-                            ((int)Assembler.SymbolManager.GetNumericValue(symbol)).ToString("x").PadRight(41),
-                            line.UnparsedSource);
+                              numValue.ToString("x").PadRight(41),
+                              line.UnparsedSource);
+                        
+                    }
                     var elliptical = $"\"{Assembler.SymbolManager.GetStringValue(symbol).Elliptical(38)}\"";
                     return string.Format("={0}{1}", elliptical.PadRight(42), line.UnparsedSource);
                 }

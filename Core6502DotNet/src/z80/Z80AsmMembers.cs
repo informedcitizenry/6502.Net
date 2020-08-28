@@ -80,7 +80,7 @@ namespace Core6502DotNet.z80
             BitOp7      = Bit7      | BitOp
         }
 
-		static readonly Dictionary<string, Z80Mode> _namedModes = 
+		static readonly Dictionary<string, Z80Mode> s_namedModes = 
 			new Dictionary<string, Z80Mode>
 		{
 			{ "a",   Z80Mode.A         },
@@ -113,7 +113,7 @@ namespace Core6502DotNet.z80
 			{ "z",   Z80Mode.Z			}	
 		};
 
-		static readonly Dictionary<Z80Mode, string> _disassemblyFormats = 
+		static readonly Dictionary<Z80Mode, string> s_disassemblyFormats = 
 			new Dictionary<Z80Mode, string>
 		{     
 			{ Z80Mode.Implied, string.Empty	},
@@ -160,7 +160,7 @@ namespace Core6502DotNet.z80
 			{ Z80Mode.Z,		"z"				}
 		};
 
-		static readonly Dictionary<(string Mnem, Z80Mode Mode0, Z80Mode Mode1, Z80Mode Mode2), CpuInstruction> _z80Instructions = 
+		static readonly Dictionary<(string Mnem, Z80Mode Mode0, Z80Mode Mode1, Z80Mode Mode2), CpuInstruction> s_z80Instructions = 
 			new Dictionary<(string Mnem, Z80Mode Mode0, Z80Mode Mode1, Z80Mode Mode2), CpuInstruction>
 		{
 			{ ("nop",   Z80Mode.Implied, Z80Mode.Implied, Z80Mode.Implied ), new CpuInstruction("z80", 0x00,    1) },
@@ -1476,6 +1476,6 @@ namespace Core6502DotNet.z80
 			{ ("ld",    Z80Mode.SP,      Z80Mode.IY,      Z80Mode.Implied ), new CpuInstruction("z80", 0xf9fd,   2) }
 		};
 
-		static double[] _evals = new double[3];
+		static readonly double[] s_evals = new double[3];
 	}
 }

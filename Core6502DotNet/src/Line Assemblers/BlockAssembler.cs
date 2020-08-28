@@ -51,7 +51,8 @@ namespace Core6502DotNet
     {
         #region Data
 
-        static readonly Dictionary<string, BlockType> _blockOpenTypes = new Dictionary<string, BlockType>
+        static readonly Dictionary<string, BlockType> s_blockOpenTypes
+            = new Dictionary<string, BlockType>
         {
             { ".block",     BlockType.Scope           },
             { ".if",        BlockType.Conditional     },
@@ -71,6 +72,7 @@ namespace Core6502DotNet
         #region Members
 
         readonly Stack<BlockProcessorBase> _blocks;
+        readonly RandomAccessIterator<SourceLine> _lineIterator;
         BlockProcessorBase _currentBlock;
         readonly Dictionary<string, Function> _functionDefs;
 
@@ -81,9 +83,11 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of the multiline assembler class.
         /// </summary>
-        public BlockAssembler()
+        public BlockAssembler(RandomAccessIterator<SourceLine> lineIterator)
         {
             _blocks = new Stack<BlockProcessorBase>();
+
+            _lineIterator = lineIterator;
 
             _functionDefs = new Dictionary<string, Function>();
 
@@ -146,26 +150,26 @@ namespace Core6502DotNet
             }
         }
 
-        BlockProcessorBase GetProcessor(SourceLine line, BlockType type)
+        BlockProcessorBase GetProcessor(BlockType type)
         {
             switch (type)
             {
                 case BlockType.ForNext:
-                    return new ForNextBlock(line, type);
+                    return new ForNextBlock(_lineIterator, type);
                 case BlockType.Repeat:
-                    return new RepeatBlock(line, type);
+                    return new RepeatBlock(_lineIterator, type);
                 case BlockType.Conditional:
                 case BlockType.ConditionalDef:
                 case BlockType.ConditionalNdef:
-                    return new ConditionalBlock(line, type);
+                    return new ConditionalBlock(_lineIterator, type);
                 case BlockType.Scope:
-                    return new ScopeBlock(line, type);
+                    return new ScopeBlock(_lineIterator, type);
                 case BlockType.Page:
-                    return new PageBlockProcessor(line, type);
+                    return new PageBlockProcessor(_lineIterator, type);
                 case BlockType.Switch:
-                    return new SwitchBlock(line, type);
+                    return new SwitchBlock(_lineIterator, type);
                 default:
-                    return new WhileBlock(line, type);
+                    return new WhileBlock(_lineIterator, type);
             }
         }
 
@@ -182,15 +186,15 @@ namespace Core6502DotNet
 
         void ScanBlock(BlockType type)
         {
-            var index = Assembler.LineIterator.Index;
+            var index = _lineIterator.Index;
             SourceLine line = Assembler.CurrentLine;
             var blocks = new Stack<(SourceLine l, BlockDirective d)>();
             blocks.Push((line, BlockDirective.Directives[type]));
-            while (((line = Assembler.LineIterator.FirstOrDefault(l =>
+            while (((line = _lineIterator.FirstOrDefault(l =>
                 BlockDirective.Directives.Values.Any(v => v.Open.Equals(l.InstructionName) || v.Closure.Equals(l.InstructionName)))) 
                 != null) && blocks.Count > 0)
             {
-                if (_blockOpenTypes.TryGetValue(line.InstructionName, out type))
+                if (s_blockOpenTypes.TryGetValue(line.InstructionName, out type))
                 {
                     blocks.Push((line, BlockDirective.Directives[type]));
                 }
@@ -208,7 +212,7 @@ namespace Core6502DotNet
                             $"Closure \"{line.Instruction}\" does not close block \"{blocks.Peek().d.Open}\".");
                 }
             }
-            Assembler.LineIterator.SetIndex(index);
+            _lineIterator.SetIndex(index);
             if (blocks.Count > 0)
             {
                 var rev = new Stack<(SourceLine l, BlockDirective d)>();
@@ -238,12 +242,12 @@ namespace Core6502DotNet
                 }
                 return string.Empty;
             }
-            if (_blockOpenTypes.TryGetValue(line.InstructionName, out BlockType type))
+            if (s_blockOpenTypes.TryGetValue(line.InstructionName, out BlockType type))
             {
                 if (type == BlockType.Goto)
                     return DoGoto(line);
 
-                var block = GetProcessor(line, type);
+                var block = GetProcessor(type);
                 if (_blocks.Count == 0)
                     ScanBlock(type);
                 _blocks.Push(block);
@@ -251,11 +255,11 @@ namespace Core6502DotNet
             }
             if (_currentBlock != null)
             {
-                var isBreakCont = Assembler.CurrentLine.InstructionName.Equals(".break") || 
-                                  Assembler.CurrentLine.InstructionName.Equals(".continue");
+                var isBreakCont = _lineIterator.Current.InstructionName.Equals(".break") ||
+                                  _lineIterator.Current.InstructionName.Equals(".continue");
                 if (isBreakCont)
                 {
-                    var contBreakLine = Assembler.CurrentLine;
+                    var contBreakLine = _lineIterator.Current;
                     if (!_currentBlock.AllowContinue && 
                         contBreakLine.InstructionName.Equals(".continue"))
                     {
@@ -309,13 +313,13 @@ namespace Core6502DotNet
                 if (!executeSuccess && !isBreakCont)
                     throw new BlockAssemblerException(line);
                 
-                if (Assembler.CurrentLine == null ||
-                    Assembler.CurrentLine.InstructionName.Equals(BlockDirective.Directives[_currentBlock.Type].Closure))
+                if (_lineIterator.Current == null ||
+                    _lineIterator.Current.InstructionName.Equals(BlockDirective.Directives[_currentBlock.Type].Closure))
                 {
 
                     if (Assembler.CurrentLine == null)
                     {
-                        line = SourceLineHelper.GetLastInstructionLine(Assembler.LineIterator);
+                        line = SourceLineHelper.GetLastInstructionLine(_lineIterator);
                         Assembler.Log.LogEntry(line,
                             $"Missing closure for \"{BlockDirective.Directives[_currentBlock.Type].Open}\" directive.", true);
                     }
@@ -351,22 +355,18 @@ namespace Core6502DotNet
                 }
                 else
                 {
-                    var iterCopy = new RandomAccessIterator<SourceLine>(Assembler.LineIterator);
-                    if (_currentBlock != null)
-
-                    iterCopy.Reset();
-
+                    var iterCopy = new RandomAccessIterator<SourceLine>(_lineIterator, true);
                     SourceLine currLine;
                     if ((currLine = iterCopy.FirstNotMatching(l =>
                     {
-                        if (_blockOpenTypes.TryGetValue(l.InstructionName, out BlockType type))
+                        if (s_blockOpenTypes.TryGetValue(l.InstructionName, out BlockType type))
                         {
                             // skip over other blocks we are not calling .goto 
                             // from within (we can know this by checking if the block in the stack
                             // has an index matching the iterator's current index.
                             if (BlockDirective.Directives.ContainsKey(type) && 
                                !_blocks.Any(b => b.Index == iterCopy.Index ))
-                                GetProcessor(l, type).SeekBlockEnd(iterCopy);
+                                GetProcessor(type).SeekBlockEnd(iterCopy);
                             return true;
                         }
                         return !l.LabelName.Equals(gotoExp);
@@ -388,7 +388,7 @@ namespace Core6502DotNet
                                 if (iterCopy.Index > _currentBlock.Index)
                                 {
                                     // did we land in a place still within the block scope?
-                                    if (iterCopy.Index > Assembler.LineIterator.Index)
+                                    if (iterCopy.Index > _lineIterator.Index)
                                         // no, pop out
                                         DoPop();
                                     else
@@ -401,12 +401,10 @@ namespace Core6502DotNet
                                     DoPop();
                                 }
                             }
-                            if (iterCopy.Index >= Assembler.LineIterator.Index)
-                                Assembler.LineIterator.FastForward(iterCopy.Index);
-                            else if (iterCopy.Index == 0)
-                                Assembler.LineIterator.Reset();
+                            if (iterCopy.Index >= _lineIterator.Index)
+                                _lineIterator.FastForward(iterCopy.Index);
                             else
-                                Assembler.LineIterator.Rewind(iterCopy.Index - 1);
+                                _lineIterator.Rewind(iterCopy.Index - 1);
                         }
                     }
                     else
@@ -450,13 +448,13 @@ namespace Core6502DotNet
                 throw new SyntaxException(function.Position, 
                     $"Unknown function name \"{function.Name}\".");
 
-            var evalParms = parameters.Children.Where(p => !p.Children.IsEmpty)
+            var evalParms = parameters.Children.Where(p => p.Children.Count != 0)
                                                .Select(p => 
                                                     p.ToString().EnclosedInDoubleQuotes() ? 
                                                     p.ToString() : (object)Evaluator.Evaluate(p))
                                                .ToList();
             // save pre-call context
-            var returnIndex = Assembler.LineIterator.Index;
+            var returnIndex = _lineIterator.Index;
 
             // invoke the function, get the return
             Assembler.SymbolManager.PushScopeEphemeral();
@@ -466,7 +464,7 @@ namespace Core6502DotNet
                 throw new ReturnException(function.Position, 
                     $"Function \"{function.Name}\" did not return a value.");
 
-            Assembler.LineIterator.SetIndex(returnIndex);
+            //_lineIterator.SetIndex(returnIndex);
             return value;
         }
 
@@ -477,6 +475,8 @@ namespace Core6502DotNet
 
         public void InvokeFunction(Token function, Token parameters)
             => CallFunction(function, parameters, false);
+
+        public bool IsFunctionName(string symbol) => _functionDefs.ContainsKey(symbol);
 
         #endregion
 

@@ -61,6 +61,7 @@ namespace Core6502DotNet
         /// <param name="iterator">An iterator from which to copy.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public RandomAccessIterator(RandomAccessIterator<T> iterator)
+            : this(iterator, false)
         {
             if (iterator == null)
                 throw new ArgumentNullException();
@@ -68,6 +69,22 @@ namespace Core6502DotNet
             Index = iterator.Index;
             _list = iterator._list;
             _length = iterator._length;
+        }
+
+        /// <summary>
+        /// Constructs a new instance of a <see cref="RandomAccessIterator{T}"/> class.
+        /// </summary>
+        /// <param name="iterator">An iterator from which to copy.</param>
+        /// <param name="reset">Reset the copied indicator.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public RandomAccessIterator(RandomAccessIterator<T> iterator, bool reset)
+        {
+            if (iterator == null)
+                throw new ArgumentNullException();
+            _firstIndex = iterator._firstIndex;
+            _list = iterator._list;
+            _length = iterator._length;
+            Index = reset ? _firstIndex - 1 : iterator.Index;
         }
 
         #endregion
@@ -141,7 +158,15 @@ namespace Core6502DotNet
             return Current;
         }
 
-        public bool MoveNext() => ++Index < _length;
+        public bool MoveNext()
+        {
+            if (++Index == _length)
+            {
+                Index = -1;
+                return false;
+            }
+            return true;
+        }
 
         /// <summary>
         /// Looks at the next element in the collection without advancing the iterator.

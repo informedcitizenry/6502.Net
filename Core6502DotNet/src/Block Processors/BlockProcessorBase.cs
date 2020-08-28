@@ -186,11 +186,10 @@ namespace Core6502DotNet
                 var blockClose = BlockDirective.Directives[Type].Closure;
 
                 var keywordsNotToSkip = new HashSet<string>(directives)
-                    {
-                        blockOpen,
-                        blockClose
-                    };
-
+                {
+                    blockOpen,
+                    blockClose
+                };
                 var opens = 1;
                 while (opens != 0)
                 {

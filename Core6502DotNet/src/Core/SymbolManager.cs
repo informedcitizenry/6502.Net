@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 
 namespace Core6502DotNet
 {
@@ -45,7 +44,7 @@ namespace Core6502DotNet
             Scalar
         }
 
-        static readonly Dictionary<ExceptionReason, string> _reasonMessages = new Dictionary<ExceptionReason, string>
+        static readonly Dictionary<ExceptionReason, string> s_reasonMessages = new Dictionary<ExceptionReason, string>
         {
             { ExceptionReason.Redefined,                "Cannot assign \"{0}\" after it has been assigned."           },
             { ExceptionReason.NonScalar,                "Symbol \"{0}\" is non-scalar but is being used as a scalar." },
@@ -63,7 +62,7 @@ namespace Core6502DotNet
         /// <param name="position">The position in the symbol in the original source.</param>
         /// <param name="reason">The exception reason.</param>
         public SymbolException(string symbolName, int position, ExceptionReason reason)
-            : base(string.Format(_reasonMessages[reason], symbolName))
+            : base(string.Format(s_reasonMessages[reason], symbolName))
         {
             Position = position;
             SymbolToken = null;
@@ -77,7 +76,7 @@ namespace Core6502DotNet
         /// <param name="token">The symbol as a parsed token.</param>
         /// <param name="reason">The exception reason.</param>
         public SymbolException(Token token, ExceptionReason reason)
-            : base(string.Format(_reasonMessages[reason], token.Name))
+            : base(string.Format(s_reasonMessages[reason], token.Name))
         {
             SymbolToken = token;
             Position = token.Position;
@@ -726,7 +725,7 @@ namespace Core6502DotNet
                     throw new SyntaxException(tokenList[1].Position, $"Unexpected expression \"{tokenList[1]}\".");
                
                 var array = tokenList[0].Children;
-                if (array == null || array.Count == 0 || array[0].Children.IsEmpty)
+                if (array == null || array.Count == 0 || array[0].Children.Count == 0)
                     throw new SyntaxException(tokenList[1].Position,
                         "Array definition cannot be an empty list");
                 
@@ -883,7 +882,7 @@ namespace Core6502DotNet
         /// Determines if the symbol has been defined.
         /// </summary>
         /// <param name="name">The symbol name.</param>
-        /// <returns><c>True</c> if the symbol has been defined, 
+        /// <returns><c>true</c> if the symbol has been defined, 
         /// otherwise <c>false</c>.</returns>
         public bool SymbolExists(string name) => _symbols.ContainsKey(GetFullyQualifiedName(name));
 
@@ -950,7 +949,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="symbol">The token that contains the symbol name.</param>
         /// <param name="array">The token that contains the array of values for the non-scalar symbol.</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(Token symbol, Token array) => DefineFromTokens(symbol, array, false, true);
 
         /// <summary>
@@ -960,7 +959,7 @@ namespace Core6502DotNet
         /// <param name="array">The token that contains the array of values for the non-scalar symbol.</param>
         /// <param name="isMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(Token symbol, Token array, bool isMutable)
             => DefineFromTokens(symbol, array, isMutable, true);
 
@@ -969,7 +968,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="tokens">The tokens that contain the definition expression.</param>
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(IEnumerable<Token> tokens) => DefineFromTokens(tokens, false, true);
 
         /// <summary>
@@ -978,7 +977,7 @@ namespace Core6502DotNet
         /// <param name="tokens">The tokens that contain the definition expression.</param>
         /// <param name="IsMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(IEnumerable<Token> tokens, bool IsMutable) => DefineFromTokens(tokens, IsMutable, true);
 
         /// <summary>
@@ -986,7 +985,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="name">The name of the symbol.</param>
         /// <param name="value">The symbol's floating point value.</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(string name, double value) => DefineSymbol(new Symbol(name, false, value), true);
 
         /// <summary>
@@ -996,7 +995,7 @@ namespace Core6502DotNet
         /// <param name="value">The symbol's integral value.</param>
         /// <param name="isMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(string name, double value, bool isMutable) => DefineSymbol(new Symbol(name, isMutable, value), true);
 
         /// <summary>
@@ -1004,7 +1003,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="name">The name of the symbol.</param>
         /// <param name="value">The symbol's string value.</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(string name, string value) => DefineSymbol(new Symbol(name, false, value), true);
 
         /// <summary>
@@ -1014,7 +1013,7 @@ namespace Core6502DotNet
         /// <param name="value">The symbol's integral value.</param>
         /// <param name="isMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool DefineGlobal(string name, string value, bool isMutable) => DefineSymbol(new Symbol(name, isMutable, value), true);
 
         /// <summary>
@@ -1024,7 +1023,7 @@ namespace Core6502DotNet
         /// <param name="value">The symbol's string value.</param>
         /// <param name="isMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool Define(string name, string value, bool isMutable) => DefineSymbol(new Symbol(name, isMutable, value), false);
 
         /// <summary>
@@ -1033,7 +1032,7 @@ namespace Core6502DotNet
         /// <param name="name">The name of the symbol.</param>
         /// <param name="value">The symbol's string value.</param>
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool Define(string name, string value) => Define(name, value, false);
 
         /// <summary>
@@ -1043,7 +1042,7 @@ namespace Core6502DotNet
         /// <param name="value">The symbol's floating point value.</param>
         /// <param name="isMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool Define(string name, double value, bool isMutable) => DefineSymbol(new Symbol(name, isMutable, value), false);
 
         /// <summary>
@@ -1052,7 +1051,7 @@ namespace Core6502DotNet
         /// <param name="name">The name of the symbol.</param>
         /// <param name="value">The symbol's floating point value.</param>
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool Define(string name, double value) => Define(name, value, false);
 
         /// <summary>
@@ -1060,7 +1059,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="line">The <see cref="SourceLine"/> containing the operand expression that
         /// defines the symbol.</param>
-        /// <returns><c>True</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol could be defined, otherwise <c>false</c>.</returns>
         public bool Define(SourceLine line) => Define(line.Label, line.Operand, false);
 
         /// <summary>
@@ -1069,7 +1068,7 @@ namespace Core6502DotNet
         /// <param name="tokens">The parsed expression as a token collection.</param>
         /// <param name="isMutable">A flag indicating whether the symbol should be treated as a mutable
         /// (variable).</param>
-        /// <returns><c>True</c> if the symbol was created, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the symbol was created, otherwise <c>false</c>.</returns>
         public bool Define(IEnumerable<Token> tokens, bool isMutable) => DefineFromTokens(tokens, isMutable, false);
 
 
@@ -1247,7 +1246,7 @@ namespace Core6502DotNet
         /// Determines if a symbol is valid.
         /// </summary>
         /// <param name="symbol">The symbol name.</param>
-        /// <returns><c>True</c> if valid, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if valid, otherwise <c>false</c>.</returns>
         public bool SymbolIsValid(string symbol)
         {
             foreach (var f in _criteria)
@@ -1288,7 +1287,7 @@ namespace Core6502DotNet
 
         public double EvaluateFunction(Token function, Token parameters)
         {
-            if (parameters.Children.IsEmpty || parameters.Children[0].Children.IsEmpty)
+            if (parameters.Children.Count == 0 || parameters.Children[0].Children.Count == 0)
                 throw new SyntaxException(parameters.Position, "Expected argument not provided.");
             if (parameters.Children.Count > 1)
                 throw new SyntaxException(parameters.LastChild.Position, $"Unexpected argument \"{parameters.LastChild}\".");
@@ -1300,6 +1299,9 @@ namespace Core6502DotNet
 
         public void InvokeFunction(Token function, Token parameters)
             => _ = EvaluateFunction(function, parameters);
+
+        public bool IsFunctionName(string symbol) => symbol.Equals("len");
+
 
         #endregion
 

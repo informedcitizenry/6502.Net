@@ -13,11 +13,11 @@ namespace Core6502DotNet
 {
     static class Core6502DotNet
     {
-        static void Main()
+        static void Main(string[] args)
         {
             try
             {
-                var controller = new AssemblyController();
+                var controller = new AssemblyController(args);
                 AssemblerBase cpuAssembler;
                 Assembler.FormatSelector = Select8BitFormat;
 
@@ -25,7 +25,7 @@ namespace Core6502DotNet
                     cpuAssembler = new Z80Asm();
                 else
                     cpuAssembler = new Asm6502();
-                
+
                 controller.AddAssembler(cpuAssembler);
                 controller.Assemble();
             }
@@ -40,6 +40,9 @@ namespace Core6502DotNet
             if (format.Equals("srec", Assembler.StringComparison) || 
                 format.Equals("srecmos", Assembler.StringComparison))
                 return new SRecordFormatProvider();
+
+            if (format.Equals("bytesource", Assembler.StringComparison))
+                return new ByteSourceFormatProvider();
             
             if (Assembler.Options.CPU.Equals("z80"))
                 return new Z80FormatProvider();
@@ -47,7 +50,7 @@ namespace Core6502DotNet
             return format.ToLower() switch
             {
                 "d64" => new D64FormatProvider(),
-                _ => new M6502FormatProvider(),
+                _     => new M6502FormatProvider(),
             };
         }
     }

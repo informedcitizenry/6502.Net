@@ -22,9 +22,15 @@ namespace Core6502DotNet
         /// Constructs a new instance of the evaluator exception.
         /// </summary>
         /// <param name="token">The token that is the cause of the exception.</param>
-        public IllegalQuantityException(Token token)
-            : base(token.Position, $"Illegal quantity in expression \"{token.Name}\".")
-        { }
+        /// <param name="quantity">The evaluated quantity that raised the error.</param>
+        public IllegalQuantityException(Token token, double quantity)
+            : base(token.Position, $"Illegal quantity in expression \"{token.Name}\" ({quantity}).")
+            => Quantity = quantity;
+
+        /// <summary>
+        /// Gets the quantity that raised the error.
+        /// </summary>
+        public double Quantity { get; }
     }
 
     /// <summary>
@@ -34,9 +40,7 @@ namespace Core6502DotNet
     {
         #region Members
 
-        static bool _caseSensitive = false;
-
-        static readonly IReadOnlyDictionary<string, double> _constants = new Dictionary<string, double>
+        static readonly IReadOnlyDictionary<string, double> s_constants = new Dictionary<string, double>
         {
             { "true",       1               },
             { "false",      0               },
@@ -60,7 +64,7 @@ namespace Core6502DotNet
             { "INT8_MIN",   sbyte.MinValue  }
         };
 
-        static readonly IReadOnlyDictionary<string, double> _constantsNoCase 
+        static readonly IReadOnlyDictionary<string, double> s_constantsNoCase 
             = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
             { "true",       1               },
@@ -85,12 +89,22 @@ namespace Core6502DotNet
             { "INT8_MIN",   sbyte.MinValue  }
         };
 
-        static readonly IReadOnlyDictionary<string, ConversionDef> _radixOperators = new Dictionary<string, ConversionDef>
+        static readonly HashSet<string> s_conditionals = new HashSet<string>
+        {
+            "||", "&&", "<", "<=", ">", ">=", "==", "!="
+        };
+
+        static readonly HashSet<string> s_comparers = new HashSet<string>
+        {
+            "<", "<=", "!=", "==", ">=", ">"
+        };
+
+        static readonly IReadOnlyDictionary<string, ConversionDef> s_radixOperators = new Dictionary<string, ConversionDef>
         {
             { "$", new ConversionDef(parm => Convert.ToInt64(parm, 16)) },
             { "%", new ConversionDef(parm => Convert.ToInt64(parm,  2)) }
         };
-        static readonly IReadOnlyDictionary<Token, OperationDef> _operators = new Dictionary<Token, OperationDef>
+        static readonly IReadOnlyDictionary<Token, OperationDef> s_operators = new Dictionary<Token, OperationDef>
         {
             {
                 new Token("||", TokenType.Operator, OperatorType.Binary),
@@ -213,9 +227,9 @@ namespace Core6502DotNet
                 new OperationDef(parms => parms[0],                                           11)
             }
         };
-        static readonly Random _rng = new Random();
+        static readonly Random s_rng = new Random();
 
-        static readonly IReadOnlyDictionary<string, OperationDef> _functions = new Dictionary<string, OperationDef>
+        static readonly IReadOnlyDictionary<string, OperationDef> s_functions = new Dictionary<string, OperationDef>
         {
             { "abs",    new OperationDef(parms => Math.Abs(parms[0]),                                       1) },
             { "acos",   new OperationDef(parms => Math.Acos(parms[0]),                                      1) },
@@ -233,7 +247,7 @@ namespace Core6502DotNet
             { "log10",  new OperationDef(parms => Math.Log10(parms[0]),                                     1) },
             { "pow",    new OperationDef(parms => Math.Pow(parms[0], parms[1]),                             2) },
             { "rad",    new OperationDef(parms => parms[0] * Math.PI / 180,                                 1) },
-            { "random", new OperationDef(parms => _rng.Next((int)parms[0], (int)parms[1]),                  2) },
+            { "random", new OperationDef(parms => s_rng.Next((int)parms[0], (int)parms[1]),                  2) },
             { "round",  new OperationDef(parms => Math.Round(parms[0]),                                     1) },
             { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),                                      1) },
             { "sin",    new OperationDef(parms => Math.Sin(parms[0]),                                       1) },
@@ -242,7 +256,7 @@ namespace Core6502DotNet
             { "tan",    new OperationDef(parms => Math.Tan(parms[0]),                                       1) },
             { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),                                      1) }
         };
-        static readonly List<IFunctionEvaluator> _functionEvaluators = new List<IFunctionEvaluator>();
+        static readonly List<IFunctionEvaluator> s_functionEvaluators = new List<IFunctionEvaluator>();
 
         #endregion
 
@@ -251,13 +265,13 @@ namespace Core6502DotNet
         /// <summary>
         /// Initialize the Evaluator for use.
         /// </summary>
-        public static void Reset() => _functionEvaluators.Clear();
+        public static void Reset() => s_functionEvaluators.Clear();
 
         /// <summary>
         /// Determines if the tokenized expression is constant.
         /// </summary>
         /// <param name="token">The token expression.</param>
-        /// <returns><c>True</c> if the expression is a constant, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the expression is a constant, otherwise <c>false</c>.</returns>
         public static bool ExpressionIsConstant(Token token)
         {
             var tokenAsString = token.ToString();
@@ -283,8 +297,8 @@ namespace Core6502DotNet
                 // no, is it a named symbol?
                 if (char.IsLetter(token.Name[0]) || token.Name[0] == '_')
                 {
-                    if (!_constants.TryGetValue(token.Name, out converted) &&
-                        !_caseSensitive && !_constantsNoCase.TryGetValue(token.Name, out converted))
+                    if (!s_constants.TryGetValue(token.Name, out converted) &&
+                        !CaseSensitive && !s_constantsNoCase.TryGetValue(token.Name, out converted))
                     {
                         converted = Assembler.SymbolManager.GetNumericValue(token);
                         if (double.IsNaN(converted)) // on first pass this will be true if symbol not yet defined
@@ -346,6 +360,57 @@ namespace Core6502DotNet
             return converted;
         }
 
+        /// <summary>
+        /// Determines whether the collection of parsed tokens comprise a conditional
+        /// expression that evaluates to <c>true</c> or <c>false</c>.
+        /// </summary>
+        /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
+        /// <returns><c>true</c> if the expression is conditional, <c>false</c> otherwise.</returns>
+        public static bool ExpressionIsCondition(IEnumerable<Token> tokens)
+        {
+            var lastComparerFound = -1;
+            var lastLogicalFound = -1;
+            var lastBinary = -1;
+            var lastWasCompound = false;
+
+            var tokenList = tokens.ToList();
+            for(var i = 0; i < tokenList.Count; i++)
+            {
+                var token = tokenList[i];
+                if (token.OperatorType == OperatorType.Binary)
+                {
+                    if (s_conditionals.Contains(token.Name))
+                    {
+                        lastWasCompound = false;
+                        if (s_comparers.Contains(token.Name))
+                            lastComparerFound = i;
+                        else
+                            lastLogicalFound = i;
+                    }
+                    else if (lastWasCompound)
+                    {
+                        return false;
+                    }
+                    lastBinary = i;
+                }
+                else if (token.Children.Count > 0)
+                {
+                    if (ExpressionIsCondition(token.Children))
+                    {
+                        if (i > 0 && 
+                            tokenList[i - 1].OperatorType == OperatorType.Unary && 
+                            tokenList[i - 1].Name[0] != '!')
+                                return false;
+                        if (lastBinary > lastLogicalFound)
+                            return false;
+                        lastWasCompound = true;
+                        lastComparerFound = i;
+                    }
+                }
+            }
+            return lastComparerFound > -1 && lastComparerFound > lastLogicalFound;
+        }
+
         static Stack<double> EvaluateInternal(IEnumerable<Token> tokens)
         {
             var result = new Stack<double>();
@@ -360,7 +425,7 @@ namespace Core6502DotNet
             {
                 if (token.Type == TokenType.Operand)
                 {
-                    if (lastType == OperatorType.Unary && _radixOperators.ContainsKey(lastToken))
+                    if (lastType == OperatorType.Unary && s_radixOperators.ContainsKey(lastToken))
                     {
                         if (!string.IsNullOrEmpty(nonBase10))
                             throw new SyntaxException(iterator.Current.Position, $"Unexpected token {token.Name}.");
@@ -390,9 +455,9 @@ namespace Core6502DotNet
                         if (lastToken.IsByteExtractor())
                             operators.Push(token);
                     }
-                    else if (token.OperatorType == OperatorType.Function && !_functions.ContainsKey(lastToken))
+                    else if (token.OperatorType == OperatorType.Function && !s_functions.ContainsKey(lastToken))
                     {
-                        var fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(token));
+                        var fe = s_functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(token));
                         if (fe == null)
                             throw new SyntaxException(token.Position, $"Unknown function \"{lastToken}\".");
                         result.Push(fe.EvaluateFunction(token, iterator.GetNext()));
@@ -405,13 +470,13 @@ namespace Core6502DotNet
                     {
                         if (operators.Count > 0)
                         {
-                            if (!_operators.ContainsKey(token) && !_functions.ContainsKey(lastToken))
+                            if (!s_operators.ContainsKey(token) && !s_functions.ContainsKey(lastToken))
                                 throw new SyntaxException(token.Position, $"Unknown operator \"{lastToken}\".");
 
                             Token top = operators.Peek();
-                            var opOrder = token.OperatorType == OperatorType.Function ? int.MaxValue : _operators[token].Item2;
+                            var opOrder = token.OperatorType == OperatorType.Function ? int.MaxValue : s_operators[token].Item2;
 
-                            while ((top.OperatorType == OperatorType.Function || _operators[top].Item2 >= opOrder) && operators.Count > 0)
+                            while ((top.OperatorType == OperatorType.Function || s_operators[top].Item2 >= opOrder) && operators.Count > 0)
                             {
                                 operators.Pop();
                                 DoOperation(top);
@@ -419,7 +484,7 @@ namespace Core6502DotNet
                                     top = operators.Peek();
                             }
                         }
-                        if (token.OperatorType != OperatorType.Function && !_operators.ContainsKey(token))
+                        if (token.OperatorType != OperatorType.Function && !s_operators.ContainsKey(token))
                             throw new SyntaxException(token.Position, $"Invalid expression \"{lastToken}\".");
                         operators.Push(token);
                     }
@@ -439,7 +504,7 @@ namespace Core6502DotNet
                 {
                     try
                     {
-                        result.Push(_radixOperators[op.Name](nonBase10));
+                        result.Push(s_radixOperators[op.Name](nonBase10));
                         nonBase10 = string.Empty;
                     }
                     catch
@@ -454,14 +519,14 @@ namespace Core6502DotNet
                     var parmCount = 1;
                     if (op.OperatorType == OperatorType.Function)
                     {
-                        operation = _functions[op.Name];
+                        operation = s_functions[op.Name];
                         parmCount = operation.Item2;
                     }
                     else
                     {
-                        if (!_operators.ContainsKey(op))
+                        if (!s_operators.ContainsKey(op))
                             throw new SyntaxException(op.Position, $"Invalid expression \"{op.Name}\".");
-                        operation = _operators[op];
+                        operation = s_operators[op];
                         if (op.OperatorType == OperatorType.Binary)
                             parmCount++;
                     }
@@ -479,16 +544,8 @@ namespace Core6502DotNet
             }
         }
 
-        /// <summary>
-        /// Set whether the evaluator is in case-sensitive mode.
-        /// </summary>
-        /// <param name="caseSensitive">The case-sensitive flag.</param>
-        public static void SetCaseSensitive(bool caseSensitive)
-            => _caseSensitive = caseSensitive;
-
         static double DoEvaluation(IEnumerable<Token> tokens, double minValue, double maxValue, bool isMath)
         {
-
             var result = EvaluateInternal(tokens);
             if (result.Count != 1)
                 throw new SyntaxException(tokens.Last().LastChild.Position,
@@ -498,15 +555,14 @@ namespace Core6502DotNet
             if (double.IsNaN(r))
             {
                 if (isMath)
-                    r = 0xffff;
+                    return 0xffff;
                 else
-                    r = 0;
+                    return 0;
             }
             if (isMath && (r < minValue || r > maxValue))
-                throw new IllegalQuantityException(tokens.First());
-            else if (!isMath && !(r == 0 || r == 1))
+                throw new IllegalQuantityException(tokens.First(), r);
+            else if (!isMath && !ExpressionIsCondition(tokens))
                 throw new ExpressionException(tokens.First().Position, "Invalid conditional expression.");
-
             return r;
         }
 
@@ -517,9 +573,9 @@ namespace Core6502DotNet
         /// <exception cref="SyntaxException"></exception>
         public static void Invoke(Token function, Token parms)
         {
-            if (_functions.ContainsKey(function.Name))
+            if (s_functions.ContainsKey(function.Name))
                 return;
-            var fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(function));
+            var fe = s_functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(function));
             if (fe == null)
                 throw new SyntaxException(function.Position, $"Unknown function \"{function}\".");
             fe.InvokeFunction(function, parms);
@@ -549,11 +605,11 @@ namespace Core6502DotNet
         /// <exception cref="SyntaxException"></exception>
         public static double Evaluate(Token token, long minValue, long maxValue)
         {
-            if (token.Children.IsEmpty)
+            if (token.Children.Count == 0)
             {
                 var atomic = EvaluateAtomic(token);
                 if (atomic < minValue || atomic > maxValue)
-                    throw new IllegalQuantityException(token);
+                    throw new IllegalQuantityException(token, atomic);
                 return atomic;
             }
             return Evaluate(token.Children, minValue, maxValue);
@@ -608,7 +664,7 @@ namespace Core6502DotNet
         /// <exception cref="IllegalQuantityException>"></exception>
         /// <exception cref="SyntaxException"></exception>
         public static bool EvaluateCondition(IEnumerable<Token> tokens)
-            => DoEvaluation(tokens, -1E-15, 1.000000000000001, false).AlmostEquals(1);
+            => DoEvaluation(tokens, 0, 1, false) == 1;
 
         /// <summary>
         /// Evaluates a parsed token as a conditional expression.
@@ -621,7 +677,7 @@ namespace Core6502DotNet
         /// <exception cref="SyntaxException"></exception>
         public static bool EvaluateCondition(Token token)
         {
-            if (token.Children.IsEmpty)
+            if (token.Children.Count == 0)
                 return EvaluateAtomic(token).AlmostEquals(1);
             return EvaluateCondition(token.Children);
             
@@ -631,12 +687,13 @@ namespace Core6502DotNet
         /// Determines if the symbol is a reserved word for the Evaluator.
         /// </summary>
         /// <param name="symbol">The symbol name.</param>
-        /// <returns><c>True</c> if the specified token is in the collection of reserved words,
+        /// <returns><c>true</c> if the specified token is in the collection of reserved words,
         /// regardless of type, otherwise <c>false</c>.</returns>
         public static bool IsReserved(string symbol)
-            => _constants.ContainsKey(symbol) || 
-               (!_caseSensitive && _constantsNoCase.ContainsKey(symbol)) ||
-               _functions.ContainsKey(symbol);
+            => s_constants.ContainsKey(symbol) || 
+               (!CaseSensitive && s_constantsNoCase.ContainsKey(symbol)) ||
+               s_functions.ContainsKey(symbol) ||
+               s_functionEvaluators.Any(fe => fe.IsFunctionName(symbol));
 
         /// <summary>
         /// Add a custom function evaluator to the evaluator.
@@ -644,7 +701,17 @@ namespace Core6502DotNet
         /// <param name="evaluator">The <see cref="IFunctionEvaluator"/> responsible for
         /// implementing the custom function definition.</param>
         public static void AddFunctionEvaluator(IFunctionEvaluator evaluator)
-            => _functionEvaluators.Add(evaluator);
+            => s_functionEvaluators.Add(evaluator);
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets or sets the flag whether the evaluator should evaluate symbols as 
+        /// case-sensitive.
+        /// </summary>
+        public static bool CaseSensitive { get; set; }
 
         #endregion
     }

@@ -51,13 +51,14 @@ namespace Core6502DotNet
         {
             public Section(Token parameters)
             {
-                if (parameters.Children.IsEmpty || parameters.Children[0].Children.IsEmpty)
+                if (parameters.Children.Count == 0 || parameters.Children[0].Children.Count == 0)
                     throw new SyntaxException(parameters.Position, "Section definition missing parameters.");
                 var parms = parameters.Children;
                 if (parms.Count < 3)
                     throw new SyntaxException(parameters.Position, "Section definition missing one or more parameters.");
                 if (parms.Count > 3)
-                    throw new SyntaxException(parameters.LastChild.Position, $"Unexpected parameter \"{parms[3]}\" in section definition.");
+                    throw new SyntaxException(parameters.LastChild.Position, 
+                        $"Unexpected parameter \"{parms[3]}\" in section definition.");
 
                 Name = parms[0].ToString();
                 if (!Name.EnclosedInDoubleQuotes())
@@ -65,7 +66,8 @@ namespace Core6502DotNet
                 Starts = Convert.ToInt32(Evaluator.Evaluate(parms[1], short.MinValue, ushort.MaxValue));
                 Ends = Convert.ToInt32(Evaluator.Evaluate(parms[2], short.MinValue, ushort.MaxValue));
                 if (Starts >= Ends)
-                    throw new SyntaxException(parms[2].Position, "Section definition invalid. Start address must be less than end address.");
+                    throw new SyntaxException(parms[2].Position, 
+                        "Section definition invalid. Start address must be less than end address.");
                 Selected = false;
             }
 
@@ -129,8 +131,7 @@ namespace Core6502DotNet
         public void Reset()
         {
             _current = null;
-            foreach (var section in _collection)
-                section.Value.Selected = false;
+            _collection.Values.ToList().ForEach(s => s.Selected = false);
         }
 
         /// <summary>
@@ -154,10 +155,10 @@ namespace Core6502DotNet
         /// Determines if the specified address is in the current selected section's bounds.
         /// </summary>
         /// <param name="address">The address to test.</param>
-        /// <returns><c>True</c>, if the address lies within the current selected section's bounds,
+        /// <returns><c>true</c>, if the address lies within the current selected section's bounds,
         /// otherwise <c>false</c>.</returns>
         public bool AddressInBounds(int address) => 
-            _current != null ? _current.AddressInBounds(address) : false;
+            _current != null && _current.AddressInBounds(address);
 
         #endregion
 
@@ -169,13 +170,13 @@ namespace Core6502DotNet
         public bool IsEmpty => _collection.Count == 0;
 
         /// <summary>
-        /// Gets the selected section's start address, or the minimal <see cref="int"/> value
+        /// Gets the selected section's start address, or the minimum <see cref="int"/> value
         /// if no section is selected.
         /// </summary>
         public int SelectedStartAddress => _current != null ? _current.Starts : int.MinValue;
 
         /// <summary>
-        /// A property that determines whether a section has been selected.
+        /// Gets if a section has been selected.
         /// </summary>
         public bool SectionSelected => _current != null;
 

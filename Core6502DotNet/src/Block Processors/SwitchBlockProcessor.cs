@@ -146,6 +146,19 @@ namespace Core6502DotNet
 
         }
 
+        /// <summary>
+        /// Creates a new instance of a switch block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public SwitchBlock(RandomAccessIterator<SourceLine> iterator,
+                           BlockType type)
+            : base(iterator, type, false)
+        {
+
+        }
+
         #endregion
 
         #region Methods

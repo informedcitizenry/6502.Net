@@ -76,7 +76,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="type">The type (dictionary key).</param>
         /// <param name="token">The token or keyword.</param>
-        /// <returns><c>True</c> if the specified token is one of the specified type, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if the specified token is one of the specified type, otherwise <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
         public bool IsOneOf(string type, string token) => _types[type].Contains(token);
@@ -85,7 +85,7 @@ namespace Core6502DotNet
         /// Determines if the token is in the list of reserved words for all types.
         /// </summary>
         /// <param name="token">The token or keyword.</param>
-        /// <returns><c>True</c> if the specified token is in the collection of reserved words,
+        /// <returns><c>true</c> if the specified token is in the collection of reserved words,
         /// regardless of type, otherwise <c>false</c>.</returns>
         public bool IsReserved(string token) =>  _values.Contains(token);
 

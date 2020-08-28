@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -53,10 +54,22 @@ namespace Core6502DotNet
     /// </summary>
     public sealed class BinaryOutput : IFunctionEvaluator
     {
+        #region Constants
+
+        const int BufferSize = 0x10000;
+
+        /// <summary>
+        /// Represents the maximum address the Program Counter can reach before
+        /// subsequent output is considered an overflow.
+        /// </summary>
+        public const int MaxAddress = 0xFFFF;
+
+        #endregion
+
         #region Members
 
-        SectionCollection _sectionCollection;
-        byte[] _bytes;
+        readonly SectionCollection _sectionCollection;
+        readonly byte[] _bytes;
         int _logicalPc;
         int _pc;
         bool _compilingStarted;
@@ -72,10 +85,10 @@ namespace Core6502DotNet
         /// <param name="isLittleEndian">Determines whether to compile as little endian</param>
         public BinaryOutput(bool isLittleEndian)
         {
+            _bytes = new byte[BufferSize];
             _sectionCollection = new SectionCollection();
             IsLittleEndian = isLittleEndian;
             Assembler.PassChanged += AssemblerPassesChanged;
-            Assembler.SymbolManager.AddValidSymbolNameCriterion(s => !s.Equals("peek") && !s.Equals("poke"));
             Evaluator.AddFunctionEvaluator(this);
             Reset();
         }
@@ -139,13 +152,12 @@ namespace Core6502DotNet
         /// </summary>
         public void Reset()
         {
+            Array.Clear(_bytes, 0, BufferSize);
             _compilingStarted = _started = false;
             _sectionCollection.Reset();
-            _bytes = new byte[0x10000];
             CurrentBank = 0;
             ProgramEnd = PreviousPC = 
             _pc = _logicalPc = 0;
-            MaxAddress = ushort.MaxValue;
             PCOverflow = false;
             SetBank(0);
         }
@@ -159,6 +171,9 @@ namespace Core6502DotNet
         {
             if (bank < 0)
                 throw new ArgumentOutOfRangeException();
+            if (!AddressIsValid(0))
+                throw new InvalidPCAssignmentException(0);
+            _logicalPc = _pc = 0;
             CurrentBank = bank;
         }
 
@@ -228,6 +243,8 @@ namespace Core6502DotNet
         /// <param name="size">The number of bytes to add to the memory space.</param>
         public void AddUninitialized(int size)
         {
+            if (ProgramEnd > MaxAddress)
+                throw new ProgramOverflowException($"Program overflowed {size} bytes.");
             ProgramCounter += size;
             LogicalPC += size;
         }
@@ -333,14 +350,18 @@ namespace Core6502DotNet
         /// <param name="ignoreEndian">Ignore the endianness when adding to the compilation.</param>
         /// <exception cref="ProgramOverflowException"/>
         public void AddBytes(IEnumerable<byte> bytes, int size, bool ignoreEndian)
-        {    
+        {
             if (!_compilingStarted)
             {
                 _started =
                 _compilingStarted = true;
                 ProgramStart = ProgramCounter;
             }
-            LogicalPC += size;
+            else if (ProgramCounter < ProgramStart)
+            {
+                ProgramStart = ProgramCounter;
+            }
+            _logicalPc += size;
 
             if (ignoreEndian == false && BitConverter.IsLittleEndian != IsLittleEndian)
                 bytes = bytes.Reverse();
@@ -351,15 +372,12 @@ namespace Core6502DotNet
             var bytesAdded = bytes.ToList().GetRange(0, size);
             foreach (var b in bytesAdded)
             {
-                if (!AddressIsValid(ProgramCounter))
-                {
-                    if (!_sectionCollection.SectionSelected)
-                        throw new ProgramOverflowException($"Program overflow at {ProgramCounter:x4}.");
+                if (_pc > MaxAddress)
+                    throw new ProgramOverflowException($"Program overflow.");
+                if (_sectionCollection.SectionSelected && !_sectionCollection.AddressInBounds(_pc))
                     throw new ProgramOverflowException($"{ProgramCounter:x4} exceeds bounds of current section.");
-                }
-                _bytes[ProgramCounter++] = b;
+                _bytes[_pc++] = b;
             }
-
             if (ProgramEnd < ProgramCounter)
                 ProgramEnd = ProgramCounter;
         }
@@ -419,6 +437,8 @@ namespace Core6502DotNet
         /// <param name="start">The start address.</param>
         public ReadOnlyCollection<byte> GetBytesFrom(int start)
         {
+            if (!_compilingStarted || ProgramCounter < ProgramStart)
+                return new List<byte>().AsReadOnly();
             if (ProgramCounter != _logicalPc)
             {
                 var diff = _logicalPc - start;
@@ -426,7 +446,13 @@ namespace Core6502DotNet
             }
             if (start < ProgramStart)
                 return new List<byte>().AsReadOnly();
-            var range = ProgramEnd - start;
+            int range;
+            if (!_sectionCollection.SectionSelected || 
+                _sectionCollection.AddressInBounds(ProgramEnd))
+                range = ProgramEnd - start;
+            else
+                range = ProgramCounter - start;
+            
             if (range < 0 || range > MaxAddress)
                 return new List<byte>().AsReadOnly();
             return _bytes.Skip(start).Take(range).ToList().AsReadOnly();
@@ -456,18 +482,22 @@ namespace Core6502DotNet
                 if (function.Name.Equals("peek"))
                 {
                     if (parameters.Children.Count != 1)
-                        throw new SyntaxException(parameters.Position, "Too many arguments passed for function \"peek\".");
+                        throw new SyntaxException(parameters.Position, 
+                            "Too many arguments passed for function \"peek\".");
 
                     if (address < ProgramStart || address >= ProgramCounter)
-                        throw new ExpressionException(parameters.Position, $"Cannot read address ${address:x4}.");
+                        throw new ExpressionException(parameters.Position, 
+                            $"Cannot read address ${address:x4}.");
                     return _bytes[address];
                 }
                 else
                 {
                     if (!AddressIsValid(address))
-                        throw new ExpressionException(parameters.Position, $"Address ${address:x4} is not within the bounds of program or section space.");
+                        throw new ExpressionException(parameters.Position,
+                            $"Address ${address:x4} is not within the bounds of program or section space.");
                     if (parameters.Children.Count != 2)
-                        throw new SyntaxException(parameters.Position, "Too many arguments passed for function \"poke\".");
+                        throw new SyntaxException(parameters.Position, 
+                            "Too many arguments passed for function \"poke\".");
                     var value = (byte)Evaluator.Evaluate(parameters.Children[1], sbyte.MinValue, byte.MaxValue);
 
                     _started = _compilingStarted = true;
@@ -487,18 +517,18 @@ namespace Core6502DotNet
         public void InvokeFunction(Token function, Token parameters)
             => _ = EvaluateFunction(function, parameters);
 
+        public bool IsFunctionName(string symbol) => symbol.Equals("peek") || symbol.Equals("poke");
+
         /// <summary>
-        /// Gets the SHA1 hash of the binary output.
+        /// Gets the MD5 hash of the binary output.
         /// </summary>
         /// <returns>The calculated checksum of the binary output.</returns>
         public string GetOutputHash()
         {
-            var sha1 = SHA1.Create();
-            var sha1Sb = new StringBuilder();
-            var bytes = sha1.ComputeHash(_bytes.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
-            foreach (var b in bytes)
-                sha1Sb.Append($"{b:x2}");
-            return sha1Sb.ToString();
+            using var md5 = MD5.Create();
+            using var stream = new MemoryStream(_bytes, ProgramStart, ProgramEnd - ProgramStart);
+            var hash = BitConverter.ToString(md5.ComputeHash(stream));
+            return hash.Replace("-", string.Empty).ToLower();
         }
 
         /// <summary>
@@ -510,13 +540,15 @@ namespace Core6502DotNet
         public void DefineSection(Token operands)
         {
             if (_started)
-                throw new SectionException(operands.Position, "Cannot define a section after assembly has started.");
-            switch( _sectionCollection.Add(operands, out string name))
+                throw new SectionException(operands.Position, 
+                    "Cannot define a section after assembly has started.");
+            switch( _sectionCollection.Add(operands, out var name))
             {
                 case CollectionResult.Duplicate:
                     throw new SectionException(operands.Position, $"Section {name} already defined.");
                 case CollectionResult.RangeOverlap:
-                    throw new SectionException(operands.Position, $"Section {name} start and end address intersect existing section's.");
+                    throw new SectionException(operands.Position, 
+                        $"Section {name} start and end address intersect existing section's.");
                 default:
                     break;
             }
@@ -569,8 +601,7 @@ namespace Core6502DotNet
         /// Gets the program start addressed based on the value of the Program Counter
         /// when compilation first occurred.
         /// </summary>
-        public int ProgramStart 
-        { get; private set; }
+        public int ProgramStart { get; private set; }
 
         /// <summary>
         /// Gets the program end address, which is the address of the final assembled byte
@@ -583,12 +614,6 @@ namespace Core6502DotNet
         /// output operation.
         /// </summary>
         public int PreviousPC { get; private set; }
-
-        /// <summary>
-        /// Gets or sets the maximum address allowed for the Program Counter until
-        /// it overflows.
-        /// </summary>
-        public int MaxAddress { get; set; }
 
         /// <summary>
         /// Gets the real Program Counter
@@ -608,7 +633,8 @@ namespace Core6502DotNet
         /// Gets the names of any defined sections not used during 
         /// assembly.
         /// </summary>
-        public IEnumerable<string> UnusedSections => _sectionCollection.SectionsNotSelected;
+        public IEnumerable<string> UnusedSections 
+            => _sectionCollection.SectionsNotSelected;
 
         /// <summary>
         /// Gets the current memory bank.
@@ -624,7 +650,7 @@ namespace Core6502DotNet
         /// Gets a flag that indicates if a PC overflow has occurred. This flag will 
         /// only be cleared with a call to the Reset method.
         /// </summary>
-        public bool PCOverflow { get; set; }
+        public bool PCOverflow { get; private set; }
 
         /// <summary>
         /// Gets the current logical Program Counter.

@@ -22,13 +22,6 @@ namespace Core6502DotNet
     public delegate void PassesChangedEventHandler(object sender, EventArgs args);
 
     /// <summary>
-    /// A delegate that defines a function responsible for writing header data
-    /// to assembly output.
-    /// </summary>
-    /// <returns></returns>
-    public delegate IEnumerable<byte> HeaderWriter();
-
-    /// <summary>
     /// A static class holding all shared assembly resources and state, such as
     /// <see cref="ErrorLog"/> and <see cref="BinaryOutput"/> support classes.
     /// </summary>
@@ -40,7 +33,8 @@ namespace Core6502DotNet
         /// Initializes the <see cref="Assembler"/> class for use. Repeated calls will reset symbol labels and variables,
         /// assembling pass and listing printing states, the binary output, and the error log.
         /// </summary>
-        public static void Initialize()
+        /// <param name="args">The collection of option arguments.</param>
+        public static void Initialize(IEnumerable<string> args)
         {
             PassChanged = null;
             PrintOff = false;
@@ -49,9 +43,7 @@ namespace Core6502DotNet
             LineIterator = null;
             IsReserved = new List<Func<string, bool>>();
             InstructionLookupRules = new List<Func<string, bool>>();
-
-            if (Options == null)
-                Options = Options.ParseArgs();
+            Options = Options.FromArgs(args);
             OutputFormat = Options.Format;
             Encoding = new AsmEncoding(Options.CaseSensitive);
 
@@ -64,7 +56,7 @@ namespace Core6502DotNet
             });
             Evaluator.Reset();
             Evaluator.AddFunctionEvaluator(SymbolManager);
-            Evaluator.SetCaseSensitive(Options.CaseSensitive);
+            Evaluator.CaseSensitive = Options.CaseSensitive;
 
             Log = new ErrorLog();
             Output = new BinaryOutput();
@@ -129,6 +121,11 @@ namespace Core6502DotNet
         /// and enumerating all command line options.
         /// </summary>
         public static Options Options { get; private set; }
+
+        /// <summary>
+        /// Gets the option arguments passed.
+        /// </summary>
+        public static string OptionArguments { get; private set; }
 
 
         /// <summary>
@@ -271,7 +268,7 @@ namespace Core6502DotNet
         /// Determines whether the token is a reserved word to the assembler object.
         /// </summary>
         /// <param name="token">The token to check if reserved</param>
-        /// <returns><c>True</c> if reserved, otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> if reserved, otherwise <c>false</c>.</returns>
         public virtual bool IsReserved(string token) => Reserved.IsReserved(token);
 
         public virtual bool Assembles(string s) => IsReserved(s);

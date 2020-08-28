@@ -36,5 +36,12 @@ namespace Core6502DotNet
         /// <param name="parameters">The parsed <see cref="Token"/> containing the list of function
         /// parameters.</param>
         void InvokeFunction(Token function, Token parameters);
+
+        /// <summary>
+        /// Determines if the given symbol is a named function the evaluator evalutes.
+        /// </summary>
+        /// <param name="symbol">The symbol name.</param>
+        /// <returns><c>true</c> if the symbol is a function name, <c>false</c> otherwise.</returns>
+        bool IsFunctionName(string symbol);
     }
 }

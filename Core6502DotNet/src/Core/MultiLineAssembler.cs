@@ -33,8 +33,6 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="lines">The lines.</param>
         /// <param name="withAssemblers">The assemblers to assemble.</param>
-        /// <param name="startIndex">The start index of the iterator.</param>
-        /// <param name="endIndex">The end index of the iterator.</param>
         /// <param name="allowReturn">Allow .return directive.</param>
         /// <param name="allowOutput">Allow the assemblers to emit output data.</param>
         /// <param name="disasmBuilder">The disassembly builder.</param>
@@ -43,8 +41,6 @@ namespace Core6502DotNet
         /// <returns>The return value if a .return directive is assembled.</returns>
         public static double AssembleLines(RandomAccessIterator<SourceLine> lines,
                                            IEnumerable<AssemblerBase> withAssemblers,
-                                           int startIndex,
-                                           int endIndex, 
                                            bool allowReturn,
                                            StringBuilder disasmBuilder,
                                            bool disassembleAll,
@@ -57,8 +53,6 @@ namespace Core6502DotNet
             {
                 try
                 {
-                    if (endIndex > 0 && lines.Index > endIndex)
-                        break;
                     if (line.Label != null || line.Instruction != null)
                     {
                         if (line.InstructionName.Equals(".return"))
@@ -80,12 +74,6 @@ namespace Core6502DotNet
                         if (asm != null)
                         {
                             var disasm = asm.AssembleLine(line);
-                            if (startIndex >= 0 && (lines.Index < startIndex || lines.Index > endIndex))
-                            {
-                                if (errorHandler(line, AssemblyErrorReason.OutsideBounds, null))
-                                    continue;
-                                break;
-                            }
                             if (disasmBuilder != null && !string.IsNullOrEmpty(disasm) && !Assembler.PrintOff)
                                 disasmBuilder.AppendLine(disasm);
                         }

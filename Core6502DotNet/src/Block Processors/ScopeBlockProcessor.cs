@@ -27,6 +27,18 @@ namespace Core6502DotNet
         {
         }
 
+        /// <summary>
+        /// Creates a new instance of a scoped block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> containing the instruction
+        /// and operands invoking or creating the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public ScopeBlock(RandomAccessIterator<SourceLine> iterator,
+                          BlockType type)
+            : base(iterator, type, false)
+        {
+        }
+
         #endregion
 
         #region Methods

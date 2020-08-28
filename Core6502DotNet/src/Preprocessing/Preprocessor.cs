@@ -162,23 +162,19 @@ namespace Core6502DotNet
                     if (line.InstructionName.Equals(".macro"))
                     {
                         if (string.IsNullOrEmpty(line.LabelName))
-                        {
-                            Assembler.Log.LogEntry(line, line.Instruction, "Macro name not specified.");
-                            continue;
-                        }
+                            throw new SyntaxException(line.Instruction.Position,
+                                "Macro name not specified.");
+
                         var macroName = "." + line.LabelName;
 
                         if (_macros.ContainsKey(macroName))
-                        {
-                            Assembler.Log.LogEntry(line, line.Label, $"Macro named \"{line.LabelName}\" already defined.");
-                            continue;
-                        }
+                            throw new SyntaxException(line.Label.Position, 
+                                $"Macro named \"{line.LabelName}\" already defined.");
                         if (Assembler.IsReserved.Any(i => i.Invoke(macroName)) ||
                             !char.IsLetter(line.LabelName[0]))
-                        {
-                            Assembler.Log.LogEntry(line, line.Label, $"Macro name \"{line.LabelName}\" is not valid.");
-                            continue;
-                        }
+                            throw new SyntaxException(line.Label.Position, 
+                                $"Macro name \"{line.LabelName}\" is not valid.");
+                        
                         Reserved.AddWord("MacroNames", macroName);
 
                         var macro = new Macro(line.Operand, line.ParsedSource, Assembler.StringComparison);
@@ -187,25 +183,21 @@ namespace Core6502DotNet
                         while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endmacro"))
                         {
                             if (macroName.Equals(line.InstructionName))
-                            {
-                                Assembler.Log.LogEntry(line, line.Instruction, "Recursive macro call not allowed.");
-                                continue;
-                            }
+                                throw new SyntaxException(line.Instruction.Position,
+                                    "Recursive macro call not allowed.");
                             if (line.InstructionName.Equals(".macro"))
-                            {
-                                Assembler.Log.LogEntry(line, line.Instruction, "Nested macro definitions not allowed.");
-                                continue;
-                            }
+                                throw new SyntaxException(line.Instruction.Position,
+                                    "Nested macro definitions not allowed.");
+                            
                             if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
                             {
                                 var includes = ExpandInclude(line);
                                 foreach (var incl in includes)
                                 {
                                     if (macroName.Equals(incl.InstructionName))
-                                    {
-                                        Assembler.Log.LogEntry(incl, incl.Instruction, "Recursive macro call not allowed.");
-                                        continue;
-                                    }
+                                        throw new SyntaxException(incl.Instruction.Position,
+                                            "Recursive macro call not allowed.");
+                                    
                                     macro.AddSource(incl);
                                 }
                             }
@@ -217,10 +209,8 @@ namespace Core6502DotNet
                         if (!string.IsNullOrEmpty(line.LabelName))
                         {
                             if (line.OperandHasToken)
-                            {
-                                Assembler.Log.LogEntry(line, line.Operand, "Unexpected argument found for macro definition closure.");
-                                continue;
-                            }
+                                throw new SyntaxException(line.Operand.Position,
+                                    "Unexpected argument found for macro definition closure.");
                             macro.AddSource(LexerParser.Parse(line.Filename, line.LabelName)
                                                         .First()
                                                         .WithLineNumber(line.LineNumber));
@@ -228,8 +218,8 @@ namespace Core6502DotNet
                         else if (line == null)
                         {
                             line = instr;
-                            Assembler.Log.LogEntry(instr, instr.Instruction, "Missing closure for macro definition.");
-                            continue;
+                            throw new SyntaxException(instr.Instruction.Position,
+                                "Missing closure for macro definition.");
                         }
                     }
                     else if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
@@ -245,16 +235,14 @@ namespace Core6502DotNet
                     }
                     else if (line.InstructionName.Equals(".endmacro"))
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction,
-                            "Directive \".endmacro\" does not close a macro definition.");
-                        continue;
-                    }
+                        throw new SyntaxException(line.Instruction.Position,
+                            "Directive \".endmacro\" does not close a macro definition.");                    }
                     else
                     {
                         macroProcessed.Add(line);
                     }
                 }
-                catch (ExpressionException ex)
+                catch (SyntaxException ex)
                 {
                     Assembler.Log.LogEntry(line, ex.Position, ex.Message);
                 }
@@ -352,11 +340,9 @@ namespace Core6502DotNet
             var fileInfo = new FileInfo(fileName);
             if (fileInfo.Exists)
             {
-                using (var fs = fileInfo.OpenText())
-                {
-                    fullPath = fileInfo.FullName;
-                    source = fs.ReadToEnd();
-                }
+                using var fs = fileInfo.OpenText();
+                fullPath = fileInfo.FullName;
+                source = fs.ReadToEnd();
             }
             else if (!string.IsNullOrEmpty(Assembler.Options.IncludePath))
             {
@@ -370,17 +356,10 @@ namespace Core6502DotNet
             {
                 throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
             }
-            var sourceFileValid = false;
-            var len = source.Length < 5 ? source.Length : 5;
-            for(var i = 0; i < len; i++)
-            {
-                if (!char.IsControl(source[i]) || char.IsWhiteSpace(source[i]))
-                {
-                    sourceFileValid = true;
-                    break;
-                }
-            }
-            if (!sourceFileValid)
+            var sourceInvalid = string.IsNullOrEmpty(source) ||
+                                source.Take(5).Any(c => char.IsControl(c) && !char.IsWhiteSpace(c));
+            
+            if (sourceInvalid)
                 throw new Exception($"File \"{fileName}\" may be empty or in an unrecognized file format.");
 
             var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);

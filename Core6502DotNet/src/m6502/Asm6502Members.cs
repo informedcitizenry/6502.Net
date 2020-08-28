@@ -95,8 +95,8 @@ namespace Core6502DotNet.m6502
         string _cpu;
         bool _m16, _x16;
         IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _selectedInstructions;
-        static double[] _evaled;
-        static readonly IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodes6502 = 
+        static double[] s_evaled;
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes6502 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("brk", Modes.Implied     ), new CpuInstruction( "6502",    0x00) },
@@ -252,7 +252,7 @@ namespace Core6502DotNet.m6502
             { ("sbc", Modes.AbsoluteX   ), new CpuInstruction( "6502",    0xfd, 3) },
             { ("inc", Modes.AbsoluteX   ), new CpuInstruction( "6502",    0xfe, 3) },
         };
-        static readonly IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodes65C02 = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes65C02 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("tsb", Modes.ZeroPage    ), new CpuInstruction( "65C02",   0x04, 2) },
@@ -283,13 +283,13 @@ namespace Core6502DotNet.m6502
             { ("sbc", Modes.IndZp       ), new CpuInstruction( "65C02",   0xf2, 2) },
             { ("plx", Modes.Implied     ), new CpuInstruction( "65C02",   0xfa) },
         };
-        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodesW65C02 = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodesW65C02 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("wai", Modes.Implied     ), new CpuInstruction( "W65C02",  0xcb) },
             { ("stp", Modes.Implied     ), new CpuInstruction( "W65C02",  0xdb) }
         };
-        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodesR65C02 = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodesR65C02 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("rmb", Modes.Zp0         ), new CpuInstruction( "R65C02",  0x07, 2) },
@@ -325,7 +325,7 @@ namespace Core6502DotNet.m6502
             { ("smb", Modes.Zp7         ), new CpuInstruction( "R65C02",  0xf7, 2) },
             { ("bbs", Modes.ThreeOpRel7 ), new CpuInstruction( "R65C02",  0xff, 3) },
         };
-        static readonly IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodesHuC6280 = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodesHuC6280 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("sxy", Modes.Implied     ), new CpuInstruction( "HuC6280", 0x03) },
@@ -359,7 +359,7 @@ namespace Core6502DotNet.m6502
             { ("tai", Modes.ThreeOpAbs  ), new CpuInstruction( "HuC6280", 0xf3, 7) },
             { ("set", Modes.Implied     ), new CpuInstruction( "HuC6280", 0xf4) }
         };
-        static readonly IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodes65CE02 = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes65CE02 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("cle", Modes.Implied     ), new CpuInstruction( "65CE02",  0x03) },
@@ -419,7 +419,7 @@ namespace Core6502DotNet.m6502
             { ("plz", Modes.Implied     ), new CpuInstruction( "65CE02",  0xfb) },
             { ("phw", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xfc, 2) }
         };
-        static readonly IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodes65816 = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes65816 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("cop", Modes.Implied     ), new CpuInstruction( "65816",   0x03) },
@@ -502,7 +502,7 @@ namespace Core6502DotNet.m6502
             { ("xce", Modes.Implied     ), new CpuInstruction( "65816",   0xfb) },
             { ("sbc", Modes.LongX       ), new CpuInstruction( "65816",   0xff, 4) },
         };
-        static readonly IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _opcodes6502i = 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes6502i = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
             { ("jam", Modes.Implied     ), new CpuInstruction( "6502i",   0x03) },
@@ -577,7 +577,7 @@ namespace Core6502DotNet.m6502
             { ("isb", Modes.AbsoluteY   ), new CpuInstruction( "6502i",   0xfb, 3) },
             { ("isb", Modes.AbsoluteX   ), new CpuInstruction( "6502i",   0xff, 3) },
         };
-        static readonly IReadOnlyDictionary<Modes, string> _modeFormats = new Dictionary<Modes, string>
+        static readonly IReadOnlyDictionary<Modes, string> s_modeFormats = new Dictionary<Modes, string>
         {
             { Modes.Implied,        string.Empty                },
             { Modes.Immediate,      "#${0:x2}"                  },
@@ -627,7 +627,7 @@ namespace Core6502DotNet.m6502
             { Modes.ThreeOpRel7,    "7,${0:x2},${1:x4}"         },
             { Modes.ThreeOpAbs,     "${0:x4},${1:x4},${2:x4}"   }
         };
-        static readonly IReadOnlyDictionary<string, string> _pseudoBranchTranslations = 
+        static readonly IReadOnlyDictionary<string, string> s_pseudoBranchTranslations = 
             new Dictionary<string, string>
         {
             { "jcc", "bcs" },

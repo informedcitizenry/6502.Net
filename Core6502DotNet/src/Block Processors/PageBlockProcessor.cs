@@ -23,6 +23,16 @@ namespace Core6502DotNet
         public PageBlockProcessor(SourceLine line, BlockType type)
             : base(line, type, false) => _page = GetPage();
 
+        /// <summary>
+        /// Creates a new instance of a page block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
+        /// processing the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public PageBlockProcessor(RandomAccessIterator<SourceLine> iterator,
+                                  BlockType type)
+            : base(iterator, type, false) => _page = GetPage();
+
         int GetPage() => Assembler.Output.LogicalPC & 0xF00;
 
         int GetPage(int address) => address & 0xF00;

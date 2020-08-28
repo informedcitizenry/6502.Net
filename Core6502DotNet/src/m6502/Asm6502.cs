@@ -200,7 +200,7 @@ namespace Core6502DotNet.m6502
 
             Reset();
 
-            _evaled = new double[3];
+            s_evaled = new double[3];
         }
 
         #endregion
@@ -218,7 +218,7 @@ namespace Core6502DotNet.m6502
             }
             else
             {
-                _selectedInstructions = new Dictionary<(string Mnem, Modes Mode), CpuInstruction>(_opcodes6502);
+                _selectedInstructions = new Dictionary<(string Mnem, Modes Mode), CpuInstruction>(s_opcodes6502);
                 _cpu = "6502";
             }
         }
@@ -234,52 +234,51 @@ namespace Core6502DotNet.m6502
             switch (_cpu)
             {
                 case "65816":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes65C02)
-                                                        .Concat(_opcodesW65C02)
-                                                        .Concat(_opcodes65816)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes65C02)
+                                                        .Concat(s_opcodesW65C02)
+                                                        .Concat(s_opcodes65816)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "HuC6280":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes65C02.Where(o => (o.Value.Opcode & 0x0f) != 0x02))
-                                                        .Concat(_opcodesR65C02)
-                                                        .Concat(_opcodesW65C02)
-                                                        .Concat(_opcodesHuC6280)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes65C02.Where(o => (o.Value.Opcode & 0x0f) != 0x02))
+                                                        .Concat(s_opcodesR65C02)
+                                                        .Concat(s_opcodesW65C02)
+                                                        .Concat(s_opcodesHuC6280)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "65CE02":
-                    _selectedInstructions = _opcodes6502.Where(o => (o.Value.Opcode & 0x1f) != 0x10) // exclude 6502 branch instructions
-                                                        .Concat(_opcodes65C02.Where(o => o.Value.Opcode != 0x80 && (o.Value.Opcode & 0x0f) != 0x02))
-                                                        .Concat(_opcodesR65C02)
-                                                        .Concat(_opcodes65CE02)
+                    _selectedInstructions = s_opcodes6502.Where(o => (o.Value.Opcode & 0x1f) != 0x10) // exclude 6502 branch instructions
+                                                        .Concat(s_opcodes65C02.Where(o => o.Value.Opcode != 0x80 && (o.Value.Opcode & 0x0f) != 0x02))
+                                                        .Concat(s_opcodesR65C02)
+                                                        .Concat(s_opcodes65CE02)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "R65C02":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes65C02)
-                                                        .Concat(_opcodesR65C02)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes65C02)
+                                                        .Concat(s_opcodesR65C02)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "65CS02":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes65C02)
-                                                        .Concat(_opcodesW65C02)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes65C02)
+                                                        .Concat(s_opcodesW65C02)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "W65C02":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes65C02)
-                                                        .Concat(_opcodesR65C02)
-                                                        .Concat(_opcodesW65C02)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes65C02)
+                                                        .Concat(s_opcodesR65C02)
+                                                        .Concat(s_opcodesW65C02)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "65C02":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes65C02)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes65C02)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "6502i":
-                    _selectedInstructions = _opcodes6502.Concat(_opcodes6502i)
+                    _selectedInstructions = s_opcodes6502.Concat(s_opcodes6502i)
                                                         .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 default:
-                    _selectedInstructions = new ReadOnlyDictionary<(string Mnem, Modes mode), CpuInstruction>(
-                        new Dictionary<(string Mnem, Modes Mode), CpuInstruction>(_opcodes6502));
+                    _selectedInstructions = new ReadOnlyDictionary<(string Mnem, Modes mode), CpuInstruction>(s_opcodes6502);
                     break;
 
             }
@@ -359,7 +358,7 @@ namespace Core6502DotNet.m6502
                 if (result < short.MinValue || result > ushort.MaxValue)
                     mode |= Modes.Long;
             }
-            _evaled[operandIndex] = result;
+            s_evaled[operandIndex] = result;
             return mode;
         }
 
@@ -374,7 +373,7 @@ namespace Core6502DotNet.m6502
                 var operand = line.Operand;
                 var operandChildren = operand.Children;
                 var firstDelim = operandChildren[0];
-                if (firstDelim.Children.IsEmpty)
+                if (firstDelim.Children.Count == 0)
                     throw new SyntaxException(firstDelim.Position, "Expression expected.");
 
                 var first = firstDelim.Children[0];
@@ -387,17 +386,17 @@ namespace Core6502DotNet.m6502
                     var opSize = Evaluator.Evaluate(first.Children, 8, 24);
                     forcedMode = opSize switch
                     {
-                        8 => Modes.ZeroPage,
+                        8  => Modes.ZeroPage,
                         16 => Modes.Absolute,
                         24 => Modes.Long,
-                        _ => throw new ExpressionException(first.Position, $"Illegal quantity {opSize} for bit-width specifier."),
+                        _  => throw new ExpressionException(first.Position, $"Illegal quantity {opSize} for bit-width specifier."),
                     };
                     mode = forcedMode | Modes.ForceWidth;
 
                     // now we have to re-tokenize the operand string because essentially we've changed it
                     var next = line.ParsedSource.Substring(firstDelimChildren[1].Position - 1);
                     first = firstDelim.Children[1];
-                    firstDelimChildren = ImmutableList.CreateRange(firstDelimChildren.Skip(1).ToList());
+                    firstDelimChildren = firstDelimChildren.Skip(1).ToList();
                 }
 
                 if (first.Name.Equals("a"))
@@ -423,7 +422,7 @@ namespace Core6502DotNet.m6502
                 }
                 else if (first.Name.Equals("[") || first.Name.Equals("("))
                 {
-                    if (first.Children.IsEmpty)
+                    if (first.Children.Count == 0)
                         throw new SyntaxException(first.Position, "Missing one or more operands.");
 
                     if (first.Name.Equals("["))
@@ -472,7 +471,7 @@ namespace Core6502DotNet.m6502
                 var memoryMode = mode & Modes.MemModMask;
                 if ((memoryMode & Modes.DirIndMask) != 0)
                 {
-                    if (first.Children.IsEmpty || first.Children[0].Children.IsEmpty)
+                    if (first.Children.Count == 0 || first.Children[0].Children.Count == 0)
                         throw new SyntaxException(first.Position, "Expression expected.");
 
                     var firstInnerSep = first.Children[0];
@@ -495,7 +494,7 @@ namespace Core6502DotNet.m6502
                 if (operandChildren.Count > 1)
                 {
                     var lastCommaDelim = operandChildren[^1];
-                    if (operandChildren.Count > 3 || lastCommaDelim.Children.IsEmpty)
+                    if (operandChildren.Count > 3 || lastCommaDelim.Children.Count == 0)
                         throw new SyntaxException(line.Operand.LastChild.Position, "Bad expression.");
 
                     var indexerIndex = -1;
@@ -539,27 +538,27 @@ namespace Core6502DotNet.m6502
                 }
                 if (Reserved.IsOneOf("Rockwell", instruction))
                 {
-                    if (double.IsNaN(_evaled[0]) ||
-                        _evaled[0] < 0 || _evaled[0] > 7)
+                    if (double.IsNaN(s_evaled[0]) ||
+                        s_evaled[0] < 0 || s_evaled[0] > 7)
                         throw new ExpressionException(line.Operand.Position, $"First operand for \"{instruction}\" must be 0 to 7.");
 
-                    mode |= (Modes)((int)_evaled[0] << 14) | Modes.Bit0;
-                    if (double.IsNaN(_evaled[1]))
+                    mode |= (Modes)((int)s_evaled[0] << 14) | Modes.Bit0;
+                    if (double.IsNaN(s_evaled[1]))
                         throw new SyntaxException(line.Operand.Position, "Missing direct page operand.");
 
-                    _evaled[0] = _evaled[1];
+                    s_evaled[0] = s_evaled[1];
 
                     if (Reserved.IsOneOf("Branches", instruction))
                     {
-                        if (double.IsNaN(_evaled[2]))
+                        if (double.IsNaN(s_evaled[2]))
                             throw new SyntaxException(line.Operand.Position, "Missing branch address.");
-                        _evaled[1] = _evaled[2];
+                        s_evaled[1] = s_evaled[2];
                     }
                     else
                     {
-                        _evaled[1] = double.NaN;
+                        s_evaled[1] = double.NaN;
                     }
-                    _evaled[2] = double.NaN;
+                    s_evaled[2] = double.NaN;
 
                 }
                 if (Reserved.IsOneOf("Branches", instruction))
@@ -647,7 +646,7 @@ namespace Core6502DotNet.m6502
             var mnemonic = line.InstructionName;
             if (relative < minValue || relative > maxValue)
             {
-                mnemonic = _pseudoBranchTranslations[mnemonic];
+                mnemonic = s_pseudoBranchTranslations[mnemonic];
                 relative = 3;
             }
             else
@@ -725,9 +724,9 @@ namespace Core6502DotNet.m6502
             {
                 return AssemblePseudoBranch(line);
             }
-            _evaled[0] =
-            _evaled[1] =
-            _evaled[2] = double.NaN;
+            s_evaled[0] =
+            s_evaled[1] =
+            s_evaled[2] = double.NaN;
             var modeInstruction = GetModeInstruction(line);
             if (!string.IsNullOrEmpty(modeInstruction.instruction.CPU))
             {
@@ -741,9 +740,9 @@ namespace Core6502DotNet.m6502
 
                     try
                     {
-                        _evaled[offsIx] = modeInstruction.mode == Modes.RelativeAbs
-                            ? Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)_evaled[offsIx], 3))
-                            : Convert.ToSByte(Assembler.Output.GetRelativeOffset((int)_evaled[offsIx], 2 + offsIx));
+                        s_evaled[offsIx] = modeInstruction.mode == Modes.RelativeAbs
+                            ? Convert.ToInt16(Assembler.Output.GetRelativeOffset((int)s_evaled[offsIx], 3))
+                            : Convert.ToSByte(Assembler.Output.GetRelativeOffset((int)s_evaled[offsIx], 2 + offsIx));
                     }
                     catch (OverflowException)
                     {
@@ -754,7 +753,7 @@ namespace Core6502DotNet.m6502
                                 "Relative offset for branch was too far. Consider using a pseudo branch directive.");
                             return string.Empty;
                         }
-                        _evaled[offsIx] = 0;
+                        s_evaled[offsIx] = 0;
                     }
                 }
                 var operandSize = (modeInstruction.mode & Modes.SizeMask) switch
@@ -770,21 +769,21 @@ namespace Core6502DotNet.m6502
                 if (operandSize > 0)
                 {
                     // add operand bytes
-                    for (int i = 0; i < 3 && !double.IsNaN(_evaled[i]); i++)
+                    for (int i = 0; i < 3 && !double.IsNaN(s_evaled[i]); i++)
                     {
                         if ((modeInstruction.mode & Modes.TestBitFlag) != 0 &&
                              modeInstruction.mode.HasFlag(Modes.TwoOpBit) &&
                                 i == 0)
                         { // The Hudson test bit instructions
-                            if (_evaled[i] >= sbyte.MinValue && _evaled[i] <= byte.MaxValue)
-                                Assembler.Output.Add(_evaled[i], 1);
+                            if (s_evaled[i] >= sbyte.MinValue && s_evaled[i] <= byte.MaxValue)
+                                Assembler.Output.Add(s_evaled[i], 1);
                         }
                         else
                         {
-                            if (_evaled[i].Size() > operandSize)
+                            if (s_evaled[i].Size() > operandSize)
                                 break;
                             else
-                                Assembler.Output.Add(_evaled[i], operandSize);
+                                Assembler.Output.Add(s_evaled[i], operandSize);
                         }
                     }
                 }
@@ -836,7 +835,7 @@ namespace Core6502DotNet.m6502
                     int eval1;
                     if (size == Modes.Long)
                     {
-                        eval1 = (int)_evaled[0] & 0xFFFFFF;
+                        eval1 = (int)s_evaled[0] & 0xFFFFFF;
                     }
                     else if (size >= Modes.Absolute)
                     {
@@ -844,37 +843,37 @@ namespace Core6502DotNet.m6502
                         {
                             if (Reserved.IsOneOf("Rockwell", instruction))
                             {
-                                eval1 = (int)_evaled[0] & 0xFF;
-                                eval2 = Assembler.Output.LogicalPC + (int)_evaled[1];
+                                eval1 = (int)s_evaled[0] & 0xFF;
+                                eval2 = Assembler.Output.LogicalPC + (int)s_evaled[1];
                                 eval2 &= 0xFFFF;
                             }
                             else
                             {
-                                eval1 = Assembler.Output.LogicalPC + (int)_evaled[0];
+                                eval1 = Assembler.Output.LogicalPC + (int)s_evaled[0];
                                 eval1 &= 0xFFFF;
                             }
                         }
                         else
                         {
-                                eval1 = (int)_evaled[0] & 0xFFFF;
-                            if (!double.IsNaN(_evaled[1]))
-                                eval2 = (int)_evaled[1] & 0xFFFF;
-                            if (!double.IsNaN(_evaled[2]))
-                                eval3 = (int)_evaled[2] & 0xFFFF;
+                                eval1 = (int)s_evaled[0] & 0xFFFF;
+                            if (!double.IsNaN(s_evaled[1]))
+                                eval2 = (int)s_evaled[1] & 0xFFFF;
+                            if (!double.IsNaN(s_evaled[2]))
+                                eval3 = (int)s_evaled[2] & 0xFFFF;
                         }
                     }
                     else
                     {
-                        eval1 = (int)_evaled[0] & 0xFF;
-                        if (!double.IsNaN(_evaled[1]))
-                            eval2 = (int)_evaled[1] & 0xFF;
-                        if (!double.IsNaN(_evaled[2]))
-                            eval3 = (int)_evaled[2] & 0xFF;
+                        eval1 = (int)s_evaled[0] & 0xFF;
+                        if (!double.IsNaN(s_evaled[1]))
+                            eval2 = (int)s_evaled[1] & 0xFF;
+                        if (!double.IsNaN(s_evaled[2]))
+                            eval3 = (int)s_evaled[2] & 0xFF;
                     }
                     if (modeInstruction.mode == Modes.Zp0 && Reserved.IsOneOf("Rockwell", line.InstructionName))
                         disSb.Append($"0,{eval1:x2}");
                     else
-                        disSb.AppendFormat(_modeFormats[modeInstruction.mode], eval1, eval2, eval3);
+                        disSb.AppendFormat(s_modeFormats[modeInstruction.mode], eval1, eval2, eval3);
                 }
                 sb.Append(disSb.ToString().PadRight(18));
             }

@@ -16,7 +16,7 @@ namespace Core6502DotNet.m6502
     /// </summary>
     public class D64FormatProvider : IBinaryFormatProvider
     {
-        static readonly Dictionary<int, int> _trackSectorTable = new Dictionary<int, int>
+        static readonly Dictionary<int, int> s_trackSectorTable = new Dictionary<int, int>
         {
             { 1, 21 },
             { 2, 21 },
@@ -55,7 +55,7 @@ namespace Core6502DotNet.m6502
             { 35, 17 }
         };
 
-        static readonly int[] _trackOffsets = 
+        static readonly int[] s_trackOffsets = 
         {
             0x00000, // extra dummy track
             0x00000,
@@ -109,7 +109,7 @@ namespace Core6502DotNet.m6502
         public IEnumerable<byte> GetFormat()
         {
             var diskImage = new byte[DiskSize];
-            var availTrackSectors = _trackSectorTable.ToDictionary(k => k.Key, k => ToBitMap(k.Value));
+            var availTrackSectors = s_trackSectorTable.ToDictionary(k => k.Key, k => ToBitMap(k.Value));
 
             var fileName = Assembler.Options.OutputFile.ToUpper();
 
@@ -200,9 +200,9 @@ namespace Core6502DotNet.m6502
             for (; finx < fileBytes.Count - 253; finx += 254)
             {
                 availTrackSectors[currentTrack] = ResetBit(availTrackSectors[currentTrack], currentSector);
-                offset = _trackOffsets[currentTrack] + 256 * currentSector;
+                offset = s_trackOffsets[currentTrack] + 256 * currentSector;
                 currentSector += 10;
-                if (currentSector < 0 || currentSector >= _trackSectorTable[currentTrack])
+                if (currentSector < 0 || currentSector >= s_trackSectorTable[currentTrack])
                 {
                     stride += -2 * currentStrideDir;
                     if (stride == 0)
@@ -235,7 +235,7 @@ namespace Core6502DotNet.m6502
             }
             if (finx < fileBytes.Count)
             {
-                offset = _trackOffsets[currentTrack] + 256 * currentSector;
+                offset = s_trackOffsets[currentTrack] + 256 * currentSector;
                 availTrackSectors[currentTrack] = ResetBit(availTrackSectors[currentTrack], currentSector);
                 diskImage[offset++] = 0;
                 diskImage[offset++] = Convert.ToByte((fileBytes.Count % 254) + 1);

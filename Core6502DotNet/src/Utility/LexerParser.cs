@@ -29,10 +29,20 @@ namespace Core6502DotNet
             ["{"] = "}"
         };
 
-        static readonly HashSet<string> _operators = new HashSet<string>
+        static readonly HashSet<string> s_operators = new HashSet<string>
         {
             "|", "||", "&", "&&", "<<", ">>", "<", ">", ">=", "<=", "==", "!=", "(", ")",
             "[",  "]", "%",  "^", "^^", "`", "~", "!", "*", "-", "+", "/", ",", ":", "$"
+        };
+
+        static readonly HashSet<string> s_compoundOperators = new HashSet<string>
+        {
+            "||", "&&", "<<", ">>", ">=", "<=", "==", "!=", "^^",
+        };
+
+        static readonly HashSet<char> _nonCompoundOperators = new HashSet<char>
+        {
+            '(', ')', '[', ']', '{', '}', '%', '`', '~', '*', '-', '+', '/', ',', ':', '$'
         };
 
         static bool IsHex(char c)
@@ -130,11 +140,13 @@ namespace Core6502DotNet
 
         static bool FirstNonMatchingOperator(char prev, char current, char next)
         {
-            if (_operators.Any(s => s.Contains($"{prev}{current}{next}")))
+            if (!current.IsOperator() || _nonCompoundOperators.Contains(current))
+                return true;
+
+            if (s_compoundOperators.Any(co => co[0] == current && co[1] == next))
                 return false;
-            if (_operators.Any(s => s.Contains($"{prev}{current}")))
-                return false;
-            return !_operators.Any(s => s.Contains($"{current}{next}"));
+
+            return !s_compoundOperators.Any(co => co[0] == prev && co[1] == current);
         }
 
         static bool NonNewLineWhiteSpace(char c) => c == ' ' || c == '\t';
@@ -293,7 +305,8 @@ namespace Core6502DotNet
                      */
                     // Get the full string
                     source = ScanTo(previousChar, iterator, FirstNonPlusMinus);
-
+                    if (source.Length > 1)
+                        nextChar = iterator.Current;
                     if (previousToken != null && (previousToken.Type == TokenType.Operand || previousToken.Name.Equals(")")))
                     {
                         // looking backward at the previous token, if it's an operand or grouping then we 
@@ -302,8 +315,8 @@ namespace Core6502DotNet
                         operatorType = OperatorType.Binary;
                         if (source.Length > 1)
                         {
+                            iterator.Rewind(iterator.Index - source.Length);          
                             source = c.ToString();
-                            iterator.Rewind(iterator.Index);
                         }
                     }
                     else if (!IsNotOperand(nextChar) || nextChar == '(')
@@ -315,12 +328,14 @@ namespace Core6502DotNet
                             // If the string is greater than one character,
                             // then it's not a unary, it's an operand AND a unary. So we split off the 
                             // rest of the string.
+                            iterator.Rewind(iterator.Index - source.Length);
                             source = c.ToString();
-                            iterator.Rewind(iterator.Index);
                             tokenType = TokenType.Operand;
                         }
                         else
                         {
+                            // we have a unary operator because the next item
+                            // will be an operand/grouping
                             tokenType = TokenType.Operator;
                             operatorType = OperatorType.Unary;
                         }
@@ -365,6 +380,8 @@ namespace Core6502DotNet
                     {
                         unparsedSource =
                         source = ScanTo(previousChar, iterator, FirstNonMatchingOperator);
+                        if (source.Length > 1)
+                            nextChar = iterator.Current;
                         /* The general strategy to determine whether an operator is unary or binary:
                             1. Is it actually one of the defined unary types?
                             2. Peek at the next character. Is it a group or operand, or not?
@@ -372,7 +389,6 @@ namespace Core6502DotNet
                             4. If the token does NOT follow an operand or group, AND it precedes a group character,
                                or operand character, then it is a unary.
                             5. All other cases, binary.
-                         * 
                          */
                         if (
                             (

@@ -18,9 +18,8 @@ namespace Core6502DotNet
     {
         #region Members
 
-        readonly int _startIndex;
-        readonly int _endIndex;
         readonly RandomAccessIterator<SourceLine> _lineIterator;
+        readonly SourceLine _invokeLine;
 
         #endregion
 
@@ -45,14 +44,15 @@ namespace Core6502DotNet
                   iterator.Current.ParsedSource, 
                   Assembler.StringComparison)
         {
-            _endIndex = -1;
-            _startIndex = iterator.Index;
+            _invokeLine = iterator.Current;
+            var startIndex = iterator.Index + 1;
             SourceLine line;
             while ((line = iterator.GetNext()) != null)
             {
                 if (line.LabelName.Equals("+"))
                 {
-                    Assembler.Log.LogEntry(line, line.Label, "Anonymous labels are not supported inside functions.", false);
+                    Assembler.Log.LogEntry(line, line.Label, 
+                        "Anonymous labels are not supported inside functions.", false);
                 }
                 if (line.InstructionName.Equals(".global"))
                     throw new SyntaxException(line.Instruction.Position,
@@ -60,14 +60,16 @@ namespace Core6502DotNet
                 if (line.InstructionName.Equals(".endfunction"))
                 {
                     if (line.OperandHasToken)
-                        throw new SyntaxException(line.Operand.Position, "Unexpected expression found after \".endfunction\" directive.");
+                        throw new SyntaxException(line.Operand.Position, 
+                            "Unexpected expression found after \".endfunction\" directive.");
                     break;
                 }
             }
             if (line == null)
-                throw new SyntaxException(_startIndex, "Function definition does not have a closing \".endfunction\" directive.");
-            _endIndex = iterator.Index - 1;
-            _lineIterator = iterator;
+                throw new SyntaxException(iterator.Current.Instruction.Position, 
+                                          "Function definition does not have a closing \".endfunction\" directive.");
+            var count = iterator.Index - startIndex;
+            _lineIterator = iterator.Skip(startIndex).Take(count).GetIterator();
         }
 
         #endregion
@@ -81,10 +83,10 @@ namespace Core6502DotNet
         /// <returns>A <see cref="double"/> of the function return.</returns>
         public double Invoke(List<object> parameterList)
         {
-            var invokeLine = _lineIterator.Current;
             if (parameterList.Count > Params.Count)
             {
-                Assembler.Log.LogEntry(invokeLine, invokeLine.Instruction, "Unexpected argument passed to function.");
+                Assembler.Log.LogEntry(_invokeLine, _invokeLine.Instruction, 
+                    "Unexpected argument passed to function.");
                 return double.NaN;
             }
             for (var i = 0; i < Params.Count; i++)
@@ -94,13 +96,15 @@ namespace Core6502DotNet
                     if (!string.IsNullOrEmpty(Params[i].DefaultValue))
                     {
                         if (Params[i].DefaultValue.EnclosedInDoubleQuotes())
-                            Assembler.SymbolManager.Define(Params[i].Name, Params[i].DefaultValue.TrimOnce('"'));
+                            Assembler.SymbolManager.Define(Params[i].Name, 
+                                Params[i].DefaultValue.TrimOnce('"'));
                         else
-                            Assembler.SymbolManager.Define(Params[i].Name, Evaluator.Evaluate(Params[i].DefaultValue), true);
+                            Assembler.SymbolManager.Define(Params[i].Name, 
+                                Evaluator.Evaluate(Params[i].DefaultValue), true);
                     }
                     else
                     {
-                        Assembler.Log.LogEntry(invokeLine, invokeLine.Instruction,
+                        Assembler.Log.LogEntry(_invokeLine, _invokeLine.Instruction,
                                                     $"Missing argument \"{Params[i].Name}\" for function.");
                         return double.NaN;
                     }
@@ -114,22 +118,16 @@ namespace Core6502DotNet
                         Assembler.SymbolManager.Define(Params[i].Name, (double)parm, true);
                 }
             }
+            var iteratorCopy = _lineIterator.GetIterator();
             var assemblers = new List<AssemblerBase>
                 {
                     new AssignmentAssembler(),
                     new EncodingAssembler(),
                     new MiscAssembler(),
-                    new BlockAssembler()
+                    new BlockAssembler(iteratorCopy)
                 };
-            var returnIx = _lineIterator.Index;
-            if (returnIx < _startIndex)
-                _lineIterator.FastForward(_startIndex);
-            else
-                _lineIterator.Rewind(_startIndex);
-            return MultiLineAssembler.AssembleLines(_lineIterator,
+            return MultiLineAssembler.AssembleLines(iteratorCopy,
                                                     assemblers,
-                                                    _startIndex,
-                                                    _endIndex,
                                                     true,
                                                     null,
                                                     false,

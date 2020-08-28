@@ -34,6 +34,21 @@ namespace Core6502DotNet
                 throw new ExpressionException(Line.Operand.Position, $"Repetition must be an integer");
         }
 
+        /// <summary>
+        /// Creates a new instance of a repeat block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
+        /// processing the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public RepeatBlock(RandomAccessIterator<SourceLine> iterator,
+                           BlockType type)
+            : base(iterator, type)
+        {
+            _repetition = Evaluator.Evaluate(Line.Operand.Children, 1, uint.MaxValue);
+            if (!_repetition.IsInteger())
+                throw new ExpressionException(Line.Operand.Position, $"Repetition must be an integer");
+        }
+
         #endregion
 
         #region Methods

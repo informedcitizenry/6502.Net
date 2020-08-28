@@ -51,6 +51,34 @@ namespace Core6502DotNet
                 Assembler.SymbolManager.Define(Line.Operand.Children[0].Children, true);
         }
 
+        /// <summary>
+        /// Creates a new instance of the for next block processor.
+        /// </summary>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
+        /// processing the block.</param>
+        /// <param name="type">The <see cref="BlockType"/>.</param>
+        public ForNextBlock(RandomAccessIterator<SourceLine> iterator, BlockType type)
+            : base(iterator, type)
+        {
+            var line = iterator.Current;
+            if (line.Operand == null ||
+                line.Operand.Children.Count < 3)
+            {
+                throw new SyntaxException(line.Operand.Position, "Missing operands for \".for\" directive.");
+            }
+
+            if (line.Operand.Children[1].Children.Count > 0)
+                _condition = line.Operand.Children[1].Children;
+            _iterations = new Token(string.Empty,
+                                    string.Empty,
+                                    TokenType.Operator,
+                                    OperatorType.Separator,
+                                    line.Operand.Children[2].Position,
+                                    line.Operand.Children.Skip(2));
+            if (Line.Operand.Children[0].Children.Count > 0)
+                Assembler.SymbolManager.Define(Line.Operand.Children[0].Children, true);
+        }
+
         #endregion
 
         #region Methods
@@ -61,7 +89,7 @@ namespace Core6502DotNet
             {
                 foreach (var child in _iterations.Children)
                 {
-                    if (child.Children.IsEmpty)
+                    if (child.Children.Count == 0)
                         throw new SyntaxException(child.Position, "Iteration expression cannot be empty.");
 
                     if (!Assembler.SymbolManager.SymbolExists(child.Children[0].Name))

@@ -41,7 +41,7 @@ namespace Core6502DotNet
         void ThrowConditional(SourceLine line)
         {
             if (line.Operand.Children.Count < 2 ||
-                line.Operand.Children[1].Children.IsEmpty)
+                line.Operand.Children[1].Children.Count == 0)
             {
                 Assembler.Log.LogEntry(line, line.Operand, $"Missing arguments for directive \"{line.InstructionName}\".");
             }
@@ -223,7 +223,7 @@ namespace Core6502DotNet
 
         void DoAssert(SourceLine line)
         {
-            if (line.Operand.Children.IsEmpty)
+            if (line.Operand.Children.Count == 0)
             {
                 Assembler.Log.LogEntry(line, line.Operand, "One or more arguments expected for assertion directive.");
             }
