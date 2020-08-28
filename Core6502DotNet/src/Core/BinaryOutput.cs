@@ -159,7 +159,6 @@ namespace Core6502DotNet
             ProgramEnd = PreviousPC = 
             _pc = _logicalPc = 0;
             PCOverflow = false;
-            SetBank(0);
         }
 
         /// <summary>
