@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <None Remove="Properties\launchSettings.json" />
+    <None Remove="Releases.txt" />
     <None Remove="wiki.txt" />
   </ItemGroup>
 
