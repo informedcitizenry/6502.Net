@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -47,27 +46,13 @@ namespace Core6502DotNet
     public class SectionCollection
     {
         #region Subclasses
-        class Section
+        class Section 
         {
-            public Section(Token parameters)
+            public Section(string name, int starts, int ends)
             {
-                if (parameters.Children.Count == 0 || parameters.Children[0].Children.Count == 0)
-                    throw new SyntaxException(parameters.Position, "Section definition missing parameters.");
-                var parms = parameters.Children;
-                if (parms.Count < 3)
-                    throw new SyntaxException(parameters.Position, "Section definition missing one or more parameters.");
-                if (parms.Count > 3)
-                    throw new SyntaxException(parameters.LastChild.Position, 
-                        $"Unexpected parameter \"{parms[3]}\" in section definition.");
-
-                Name = parms[0].ToString();
-                if (!Name.EnclosedInDoubleQuotes())
-                    throw new SyntaxException(parameters.Position, "Section name must be a string.");
-                Starts = Convert.ToInt32(Evaluator.Evaluate(parms[1], short.MinValue, ushort.MaxValue));
-                Ends = Convert.ToInt32(Evaluator.Evaluate(parms[2], short.MinValue, ushort.MaxValue));
-                if (Starts >= Ends)
-                    throw new SyntaxException(parms[2].Position, 
-                        "Section definition invalid. Start address must be less than end address.");
+                Name = name;
+                Starts = starts;
+                Ends = ends;
                 Selected = false;
             }
 
@@ -106,13 +91,14 @@ namespace Core6502DotNet
         /// <summary>
         /// Add a section to the collection.
         /// </summary>
-        /// <param name="operands">The parsed operands for the section (name, start address, and end address).</param>
-        /// <param name="name">A string representing the parsed section name.</param>
+        /// <param name="name">The section name.</param>
+        /// <param name="starts">The section start address.</param>
+        /// <param name="ends">The section end address.</param>
         /// <returns>The <see cref="CollectionResult"/> of the attempt to add the section to the collection..</returns>
         /// <exception cref="ExpressionException"/>
-        public CollectionResult Add(Token operands, out string name) 
+        public CollectionResult Add(string name, int starts, int ends) 
         {
-            Section section = new Section(operands);
+            Section section = new Section(name, starts, ends);
             name = section.Name;
             
             if (_collection.Any(kvp =>

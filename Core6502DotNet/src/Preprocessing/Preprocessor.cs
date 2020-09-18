@@ -24,6 +24,7 @@ namespace Core6502DotNet
 
         readonly Dictionary<string, Macro> _macros;
         readonly HashSet<string> _includedFiles;
+        bool _processingStarted;
 
         #endregion
 
@@ -32,13 +33,16 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of the preprocessor class.
         /// </summary>
-        public Preprocessor()
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        public Preprocessor(AssemblyServices services)
+            : base(services)
         {
             Reserved.DefineType("Directives",
                 ".macro",".endmacro", ".include", ".binclude");
 
             Reserved.DefineType("MacroNames");
 
+            _processingStarted = false;
             _includedFiles = new HashSet<string>();
             _macros = new Dictionary<string, Macro>();
         }
@@ -52,7 +56,7 @@ namespace Core6502DotNet
             var expanded = new List<SourceLine>();
             if (!line.OperandHasToken)
                 throw new Exception();
-            var include = line.Operand.ToString();
+            var include = line.OperandExpression;
             if (!include.EnclosedInDoubleQuotes())
                 throw new Exception();
 
@@ -82,14 +86,14 @@ namespace Core6502DotNet
                 {
                     var endBlock = false;
                     iterator.MoveNext();
-                    while ((c = iterator.FirstNotMatching(c => c != '\n' && c != '*')) != char.MinValue)
+                    while ((c = iterator.FirstOrDefault(c => c == '\n' || c == '*')) != char.MinValue)
                     {
                         if (c == '\n')
                         {
                             lineNumber++;
                             uncommented.Append(c);
                         }
-                        if ((peekNext = iterator.PeekNext()) == '/')
+                        else if ((peekNext = iterator.PeekNext()) == '/')
                         {
                             endBlock = true;
                             break;
@@ -106,10 +110,9 @@ namespace Core6502DotNet
                 }
                 else
                 {
-                    if (c == ';' || (c == '/' && peekNext == '/'))
+                    var isSemi = c == ';';
+                    if (isSemi || (c == '/' && peekNext == '/'))
                     {
-                        var isSemi = c == ';';
-
                         while (c != '\n' && c != char.MinValue)
                         {
                             if (isSemi)
@@ -145,7 +148,7 @@ namespace Core6502DotNet
             return uncommented.ToString(); 
         }
 
-        IEnumerable<SourceLine> ProcessMacros(IEnumerable<SourceLine> uncommented)
+        IEnumerable<SourceLine> ProcessDirectives(IEnumerable<SourceLine> uncommented)
         {
             var macroProcessed = new List<SourceLine>();
             RandomAccessIterator<SourceLine> lineIterator = uncommented.GetIterator();
@@ -159,6 +162,12 @@ namespace Core6502DotNet
                         macroProcessed.Add(line);
                         continue;
                     }
+                    if (line.InstructionName.Equals(".cpu"))
+                        throw new SyntaxException(line.Instruction.Position,
+                                "\".cpu\" directive must be precede all others in sources.");
+
+                    _processingStarted = true;
+
                     if (line.InstructionName.Equals(".macro"))
                     {
                         if (string.IsNullOrEmpty(line.LabelName))
@@ -170,15 +179,18 @@ namespace Core6502DotNet
                         if (_macros.ContainsKey(macroName))
                             throw new SyntaxException(line.Label.Position, 
                                 $"Macro named \"{line.LabelName}\" already defined.");
-                        if (Assembler.IsReserved.Any(i => i.Invoke(macroName)) ||
+                        if (Services.IsReserved.Any(i => i.Invoke(macroName)) ||
                             !char.IsLetter(line.LabelName[0]))
                             throw new SyntaxException(line.Label.Position, 
                                 $"Macro name \"{line.LabelName}\" is not valid.");
                         
                         Reserved.AddWord("MacroNames", macroName);
 
-                        var macro = new Macro(line.Operand, line.ParsedSource, Assembler.StringComparison);
+                        var macro = new Macro(Services, 
+                                              line.Operand, 
+                                              line.ParsedSource);
                         _macros[macroName] = macro;
+                        macro.AddSource(GetBlockDirectiveLine(line.Filename, line.LineNumber, ".block"));
                         var instr = line;
                         while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endmacro"))
                         {
@@ -211,7 +223,7 @@ namespace Core6502DotNet
                             if (line.OperandHasToken)
                                 throw new SyntaxException(line.Operand.Position,
                                     "Unexpected argument found for macro definition closure.");
-                            macro.AddSource(LexerParser.Parse(line.Filename, line.LabelName)
+                            macro.AddSource(LexerParser.Parse(line.Filename, line.LabelName, Services, true)
                                                         .First()
                                                         .WithLineNumber(line.LineNumber));
                         }
@@ -221,6 +233,7 @@ namespace Core6502DotNet
                             throw new SyntaxException(instr.Instruction.Position,
                                 "Missing closure for macro definition.");
                         }
+                        macro.AddSource(GetBlockDirectiveLine(line.Filename, line.LineNumber, ".endblock"));
                     }
                     else if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
                     {
@@ -229,8 +242,8 @@ namespace Core6502DotNet
                     else if (_macros.ContainsKey(line.InstructionName))
                     {
                         if (!string.IsNullOrEmpty(line.LabelName))
-                            macroProcessed.AddRange(LexerParser.Parse(line.Filename, line.LabelName));
-                        Macro macro = _macros[line.InstructionName];
+                            macroProcessed.AddRange(LexerParser.Parse(line.Filename, line.LabelName, Services));
+                        Macro macro = _macros[line.InstructionName];                        
                         macroProcessed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
                     }
                     else if (line.InstructionName.Equals(".endmacro"))
@@ -244,7 +257,7 @@ namespace Core6502DotNet
                 }
                 catch (SyntaxException ex)
                 {
-                    Assembler.Log.LogEntry(line, ex.Position, ex.Message);
+                    Services.Log.LogEntry(line, ex.Position, ex.Message);
                 }
                 
             }
@@ -267,7 +280,7 @@ namespace Core6502DotNet
                 }
                 else if (line.InstructionName.Equals(".endmacro"))
                 {
-                    Assembler.Log.LogEntry(line, line.Instruction,
+                    Services.Log.LogEntry(line, line.Instruction,
                         "Directive \".endmacro\" does not close a macro definition.");
                     break;
                 }
@@ -285,19 +298,20 @@ namespace Core6502DotNet
         /// <param name="defineExpression">The define</param>
         /// <returns>A <see cref="SourceLine"/> representing the parsed label define.</returns>
         /// <exception cref="Exception"/>
-        public static SourceLine PreprocessDefine(string defineExpression)
+        public SourceLine PreprocessDefine(string defineExpression)
         {
             if (!defineExpression.Contains('='))
                 defineExpression += "=1";
 
-            var defines = LexerParser.Parse(string.Empty, defineExpression);
+            var defines = LexerParser.Parse(string.Empty, defineExpression, Services);
             if (defines.Count() > 1)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
             //var defines = Preprocess(string.Empty, defineExpression);
             var line = defines.ToList()[0];
             if (line.Label == null || line.Instruction == null || !line.InstructionName.Equals("=") || line.Operand == null)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
-            if (!line.OperandExpression.EnclosedInDoubleQuotes() && !Evaluator.ExpressionIsConstant(line.Operand))
+            if (!line.OperandExpression.EnclosedInDoubleQuotes() && 
+                !Services.Evaluator.ExpressionIsConstant(line.Operand))
                 throw new Exception($"Define expression \"{line.Operand}\" is not a constant.");
             return line;
         }
@@ -309,7 +323,7 @@ namespace Core6502DotNet
         /// <param name="lineNumber">The source's line number.</param>
         /// <param name="directive">The directive name.</param>
         /// <returns></returns>
-        public static SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string directive)
+        public SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string directive)
             => GetBlockDirectiveLine(fileName, lineNumber, string.Empty, directive);
 
         /// <summary>
@@ -320,10 +334,10 @@ namespace Core6502DotNet
         /// <param name="label">The label to attach the block line.</param>
         /// <param name="directive">The directive name.</param>
         /// <returns></returns>
-        public static SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string label, string directive)
+        public SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string label, string directive)
         {
             var source = string.IsNullOrEmpty(label) ? directive : $"{label} {directive}";
-            var parsed = LexerParser.Parse(fileName, source).First();
+            var parsed = LexerParser.Parse(fileName, source, Services, true).First();
             return parsed.WithLineNumber(lineNumber);
         }
 
@@ -344,9 +358,9 @@ namespace Core6502DotNet
                 fullPath = fileInfo.FullName;
                 source = fs.ReadToEnd();
             }
-            else if (!string.IsNullOrEmpty(Assembler.Options.IncludePath))
+            else if (!string.IsNullOrEmpty(Services.Options.IncludePath))
             {
-                fullPath = Path.Combine(Assembler.Options.IncludePath, fileName);
+                fullPath = Path.Combine(Services.Options.IncludePath, fileName);
                 if (File.Exists(fullPath))
                     source = File.ReadAllText(fullPath);
                 else
@@ -376,7 +390,51 @@ namespace Core6502DotNet
         {
             source = source.Replace("\r", string.Empty); // remove Windows CR
             source = ProcessComments(fileName, source);
-            return ProcessMacros(LexerParser.Parse(fileName, source));
+
+            // we cannot do proper parsing until the cpu assembler is properly configured first.
+            string cpu = Services.Options.CPU;
+            var firstLine = LexerParser.Parse(fileName, source, Services, true)
+                                      .FirstOrDefault(l => !string.IsNullOrEmpty(l.ParsedSource));
+            if (firstLine != null && firstLine.InstructionName.Equals(".cpu"))
+            {
+                if (_processingStarted)
+                {
+                    Services.Log.LogEntry(firstLine, firstLine.Instruction,
+                          "\".cpu\" directive must precede all others in sources.");
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(firstLine.LabelName))
+                        Services.Log.LogEntry(firstLine, firstLine.Label, 
+                            "Label definition ignored for directive \".cpu\".", false);
+                    if (!string.IsNullOrEmpty(Services.Options.CPU))
+                        Services.Log.LogEntry(firstLine, firstLine.Instruction,
+                            "\".cpu\" directive ignores option '--cpu'.", false);
+                    cpu = firstLine.OperandExpression.Trim();
+                    if (!cpu.EnclosedInDoubleQuotes())
+                    {
+                        Services.Log.LogEntry(firstLine, firstLine.Operand,
+                           "Expression must be a string.");
+                    }
+                    else
+                    {
+                        cpu = cpu.TrimOnce('"');
+
+                        // scrub out the .cpu directive line since it's been evaluated.
+                        var postIndex = firstLine.IndexInSource + firstLine.UnparsedSource.Length;
+                        var preSource = string.Empty;
+                        if (firstLine.IndexInSource != 0)
+                            preSource = source.Substring(0, firstLine.IndexInSource);
+                        if (source.Length > postIndex)
+                            source = preSource + source.Substring(postIndex);
+                        else
+                            source = preSource;
+                    }
+                }
+            }
+            if (!_processingStarted)
+                Services.SelectCPU(cpu);
+            return ProcessDirectives(LexerParser.Parse(fileName, source, Services));
         }
 
         /// <summary>

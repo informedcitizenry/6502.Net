@@ -105,7 +105,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class managing all valid assembly symbols, including their scope and values.
     /// </summary>
-    public class SymbolManager : IFunctionEvaluator
+    public class SymbolManager : Core6502Base, IFunctionEvaluator
     {
         #region Subclasses
 
@@ -129,7 +129,7 @@ namespace Core6502DotNet
 
             public Dictionary<string, Symbol> SymbolHash { get; set; }
 
-            public int DefinedAtBank { get; private set; }
+            public int DefinedAtBank { get; set; }
 
             public bool IsMutable { get; set; }
 
@@ -145,11 +145,20 @@ namespace Core6502DotNet
                 NumericValue = 0D;
                 StringValue = string.Empty;
                 DefinedAtBank = 0;
-                if (Assembler.LineIterator == null)
+            }
+
+            public Symbol(RandomAccessIterator<SourceLine> LineIterator)
+            {
+                DataType = DataType.None;
+                SymbolType = SymbolType.Scalar;
+                IsMutable = false;
+                NumericValue = 0D;
+                StringValue = string.Empty;
+                DefinedAtBank = 0;
+                if (LineIterator == null)
                     DefinedAtIndex = -1;
                 else
-                    DefinedAtIndex = Assembler.LineIterator.Index;
-                DefinedAtPass = Assembler.CurrentPass;
+                    DefinedAtIndex = LineIterator.Index;
             }
 
             public Symbol(string name)
@@ -201,7 +210,6 @@ namespace Core6502DotNet
             public void SetValue(int address)
             {
                 DataType = DataType.Address;
-                DefinedAtBank = Assembler.Output.CurrentBank;
                 NumericValue = address;
             }
 
@@ -376,14 +384,14 @@ namespace Core6502DotNet
                     StringVector[index] = value;
             }
 
-            public double GetNumericValue()
+            public double GetNumericValue(int currentBank)
             {
                 switch (DataType)
                 {
                     case DataType.String:
                         return double.NaN;
                     case DataType.Address:
-                        if (Assembler.Output.CurrentBank == DefinedAtBank)
+                        if (currentBank == DefinedAtBank)
                             return NumericValue;
                         return (int)NumericValue | (DefinedAtBank * 0x10000);
                     default:
@@ -416,7 +424,7 @@ namespace Core6502DotNet
                     {
                         return DataType switch
                         {
-                            DataType.Address => GetNumericValue() == other.GetNumericValue(),
+                            DataType.Address => GetNumericValue(0) == other.GetNumericValue(0),
                             DataType.Numeric => NumericValue == other.NumericValue,
                             _                => StringValue.Equals(other.StringValue),
                         };
@@ -458,15 +466,29 @@ namespace Core6502DotNet
             }
         }
 
-        class LineReferenceStackFrame
+        class LineReferenceStackFrame : Core6502Base
         {
-            readonly List<Symbol> _lineReferences;
+            struct LineReference
+            {
+                public string Name { get; }
+
+                public double Value { get; }
+
+                public LineReference(string name, double value)
+                    => (Name, Value) = (name, value);
+            }
+
+            readonly Dictionary<int, LineReference> _lineReferences;
             readonly LineReferenceStackFrame _parent;
 
-            public LineReferenceStackFrame(LineReferenceStackFrame parent)
+            public LineReferenceStackFrame(AssemblyServices services, 
+                                           LineReferenceStackFrame parent,
+                                           RandomAccessIterator<SourceLine> lineIterator)
+                :base(services)
             {
                 _parent = parent;
-                _lineReferences = new List<Symbol>();
+                _lineReferences = new Dictionary<int, LineReference>();
+                LineIterator = lineIterator;
             }
 
             public double GetLineReferenceValue(string name)
@@ -474,32 +496,38 @@ namespace Core6502DotNet
                 // cannot evaluate on forward references on first pass
                 if (name[0] == '+')
                 {
-                    if (Assembler.CurrentPass == 0)
+                    if (Services.CurrentPass == 0)
                     {
-                        Assembler.PassNeeded = true;
-                        return Assembler.Output.LogicalPC;
+                        Services.PassNeeded = true;
+                        return Services.Output.LogicalPC;
                     }
                 }
                 var places = name.Length;
-                var lastIndex = Assembler.LineIterator.Index;
-                var nextIndex = 0;
-                Symbol anonymous = null;
-                while (places > 0 && lastIndex >= 0)
+                var lastIndex = LineIterator.Index + 1;
+                int key = 0;
+                while (places > 0)
                 {
-
                     if (name[0] == '-')
                     {
-                        anonymous = _lineReferences.LastOrDefault(s => s.Name[0] == name[0] && s.DefinedAtIndex >= 0 && s.DefinedAtIndex <= lastIndex);
-                        nextIndex = anonymous == null ? -1 : anonymous.DefinedAtIndex;
-                        lastIndex = nextIndex - 1;
+                        while (lastIndex > 0)
+                        {
+                            key = _lineReferences.Keys.LastOrDefault(k => k < lastIndex);
+                            if (key == 0 || _lineReferences[key].Name[0] == '-')
+                                break;
+                            lastIndex = key;
+                        }
                     }
                     else
                     {
-                        anonymous = _lineReferences.FirstOrDefault(s => s.Name[0] == name[0] && s.DefinedAtIndex >= lastIndex);
-                        nextIndex = anonymous == null ? -1 : anonymous.DefinedAtIndex;
-                        lastIndex = nextIndex + 1;
+                        while (lastIndex <= _lineReferences.Keys.Max())
+                        {
+                            key = _lineReferences.Keys.FirstOrDefault(k => k > lastIndex);
+                            if (key == 0 || _lineReferences.ContainsKey(key) && _lineReferences[key].Name[0] == '+')
+                                break;
+                            lastIndex = key;
+                        }
                     }
-                    if (anonymous == null)
+                    if (key == 0)
                     {
                         if (_parent != null)
                             return _parent.GetLineReferenceValue(name.Substring(0, places));
@@ -510,26 +538,20 @@ namespace Core6502DotNet
                     else
                         places--;
                 }
-                return anonymous.NumericValue;
+                return _lineReferences[key].Value;
             }
 
             public void DefineLineReferenceValue(string name, double value)
             {
-                var reference = _lineReferences.FirstOrDefault(s => s.Name[0] == name[0] &&
-                                                                 s.DefinedAtIndex == Assembler.LineIterator.Index);
-                if (reference != null)
-                {
-                    if (reference.GetNumericValue() != value)
-                    {
-                        reference.SetValue(value);
-                        Assembler.PassNeeded = true;
-                    }
-                }
-                else
-                {
-                    _lineReferences.Add(new Symbol(name, false, value));
-                }
+                var index = LineIterator.Index + 1;
+                if (_lineReferences.TryGetValue(index, out LineReference lineRef) &&
+                    lineRef.Value != value)
+                    Services.PassNeeded = true;
+                   
+                _lineReferences[index] = new LineReference(name, value);
             }
+
+            public RandomAccessIterator<SourceLine> LineIterator { get; set; }
         }
 
         #endregion
@@ -541,8 +563,8 @@ namespace Core6502DotNet
         readonly Stack<int> _referenceFrameIndexStack;
         readonly List<Func<string, bool>> _criteria;
         readonly List<LineReferenceStackFrame> _lineReferenceFrames;
-        readonly StringComparison _stringComparison;
         int _referenceFramesCounter, _ephemeralCounter;
+        RandomAccessIterator<SourceLine> _lineIterator;
 
         #endregion
 
@@ -551,31 +573,19 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of a symbol manager class.
         /// </summary>
-        /// <param name="caseSensitive">Determines the case-sensitivity of lookups to the symbol tables.
-        /// </param>
-        public SymbolManager(bool caseSensitive)
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        public SymbolManager(AssemblyServices services)
+            :base(services)
         {
-            Assembler.PassChanged += ProcessPassChange;
-
-            StringComparer stringCompare;
-            if (caseSensitive)
-            {
-                stringCompare = StringComparer.Ordinal;
-                _stringComparison = StringComparison.Ordinal;
-            }
-            else
-            {
-                stringCompare = StringComparer.OrdinalIgnoreCase;
-                _stringComparison = StringComparison.OrdinalIgnoreCase;
-            }
-            _symbols = new Dictionary<string, Symbol>(stringCompare);
+            Services.PassChanged += ProcessPassChange;
+            _symbols = new Dictionary<string, Symbol>(services.StringComparer);
             _scope = new Stack<string>();
             _referenceFrameIndexStack = new Stack<int>();
             _referenceFrameIndexStack.Push(0);
 
             _lineReferenceFrames = new List<LineReferenceStackFrame>
             {
-                new LineReferenceStackFrame(null)
+                new LineReferenceStackFrame(services, null, _lineIterator)
             };
 
             Local = string.Empty;
@@ -634,6 +644,9 @@ namespace Core6502DotNet
 
         bool DefineSymbol(Symbol symbol, bool isGlobal)
         {
+            symbol.DefinedAtBank = Services.Output.CurrentBank;
+            symbol.DefinedAtIndex = LineIterator.Index;
+            symbol.DefinedAtPass = Services.CurrentPass;
             if (_criteria.Any(f => !f(symbol.Name)))
                 throw new SymbolException(symbol.Name, 0, SymbolException.ExceptionReason.NotValid);
             string fqdn;
@@ -664,7 +677,7 @@ namespace Core6502DotNet
                     (symbol.DataType == DataType.Address || symbol.DataType == DataType.Boolean))
                     existingSym.DataType = symbol.DataType;
 
-                if (!existingSym.IsMutable && existingSym.DefinedAtPass == Assembler.CurrentPass)
+                if (!existingSym.IsMutable && existingSym.DefinedAtPass == Services.CurrentPass)
                     throw new SymbolException(symbol.Name, 1, SymbolException.ExceptionReason.Redefined);
 
                 if (!existingSym.IsValueEqual(symbol))
@@ -682,8 +695,8 @@ namespace Core6502DotNet
                     // we are setting the PassNeeded flag accordingly, because in very specific circumstances,
                     // we have looped back to this point already but within the same pass (.e.g., from
                     // a loop or goto directive)
-                    if (!existingSym.IsMutable && !Assembler.PassNeeded)
-                        Assembler.PassNeeded = true;//Assembler.CurrentPass != existingSym.DefinedAtPass;
+                    if (!existingSym.IsMutable && !Services.PassNeeded)
+                        Services.PassNeeded = true;
                 }
             }
             else
@@ -759,7 +772,7 @@ namespace Core6502DotNet
                 {
                     var value = new List<double>(array.Count);
                     foreach (var f in array)
-                        value.Add(Evaluator.Evaluate(f));
+                        value.Add(Services.Evaluator.Evaluate(f));
                     if (arrayElementToUpdate != null)
                     {
                         if (arrayElementToUpdate.DataType != DataType.Numeric)
@@ -797,7 +810,7 @@ namespace Core6502DotNet
                 }
                 else
                 {
-                    var value = Evaluator.Evaluate(tokenList);
+                    var value = Services.Evaluator.Evaluate(tokenList);
                     if (arrayElementToUpdate != null)
                     {
                          if (arrayElementToUpdate.DataType != DataType.Numeric)
@@ -832,7 +845,7 @@ namespace Core6502DotNet
 
             var isSubscript = tokenList[1].Name.Equals("[");
             var arrayElementToUpdate = isSubscript ? Lookup(tokenList[0]) : null;
-            var subscriptix = isSubscript ? (int)Evaluator.Evaluate(tokenList[1].Children, uint.MinValue, int.MaxValue) : -1;
+            var subscriptix = isSubscript ? (int)Services.Evaluator.Evaluate(tokenList[1].Children, uint.MinValue, int.MaxValue) : -1;
             var assignIx = isSubscript ? 2 : 1;
             var assignment = tokenList[assignIx];
 
@@ -867,10 +880,10 @@ namespace Core6502DotNet
             var fqdn = GetFullyQualifiedName(name);
             if (_symbols.ContainsKey(fqdn))
                 return _symbols[fqdn];
-            Assembler.PassNeeded = true;
+            Services.PassNeeded = true;
             if (raiseExceptionIfNotFound)
             {
-                if (Assembler.CurrentPass > 0)
+                if (Services.CurrentPass > 0)
                     throw new SymbolException(symbolToken, SymbolException.ExceptionReason.NotDefined);
             }
             return null;
@@ -901,10 +914,10 @@ namespace Core6502DotNet
         {
             _scope.Push(name);
 
-            if (Assembler.CurrentPass == 0)
+            if (Services.CurrentPass == 0)
             {
                 LineReferenceStackFrame parent = _lineReferenceFrames[_referenceFrameIndexStack.Peek()];
-                _lineReferenceFrames.Add(new LineReferenceStackFrame(parent));
+                _lineReferenceFrames.Add(new LineReferenceStackFrame(Services, parent, _lineIterator));
             }
             _referenceFrameIndexStack.Push(++_referenceFramesCounter);
         }
@@ -921,7 +934,8 @@ namespace Core6502DotNet
                 if (ephemeral)
                 {
                     _ephemeralCounter--;
-                    var ephemerals = new List<string>(_symbols.Keys.Where(k => k.Contains(sc, _stringComparison)));
+                    var ephemerals = new List<string>(_symbols.Keys
+                                                .Where(k => k.Contains(sc, Services.StringComparison)));
                     foreach (var key in ephemerals)
                         _symbols.Remove(key);
                 }
@@ -1103,7 +1117,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="addressName">The symbolic address name.</param>
         public void DefineSymbolicAddress(string addressName)
-            => DefineSymbol(new Symbol(addressName, Assembler.Output.LogicalPC), false);
+            => DefineSymbol(new Symbol(addressName, Services.Output.LogicalPC), false);
 
         (Symbol symbol, int index)  GetVectorElementAtIndex(Token symbolToken, Token subscriptToken)
         {
@@ -1115,7 +1129,7 @@ namespace Core6502DotNet
 
             if (subscriptToken == null || !subscriptToken.Name.Equals("["))
                 throw new SyntaxException(subscriptToken.Position, "Array subscript expression expected.");
-            var index = Evaluator.Evaluate(subscriptToken.Children);
+            var index = Services.Evaluator.Evaluate(subscriptToken.Children);
             if (index != (int)index)
                 throw new ExpressionException(subscriptToken.Position, "Subscript index must be an integral value.");
 
@@ -1138,7 +1152,7 @@ namespace Core6502DotNet
             if (symbol.DataType == DataType.String)
             {
                 var value = symbol.GetStringValueAtIndex(index);
-                return Assembler.Encoding.GetEncodedValue(value);
+                return Services.Encoding.GetEncodedValue(value);
             }
             
             return symbol.GetNumericValueAtIndex(index);
@@ -1200,7 +1214,7 @@ namespace Core6502DotNet
             if (!symbol.IsScalar())
                 throw new SymbolException(token, SymbolException.ExceptionReason.NonScalar);
 
-            return symbol.GetNumericValue();
+            return symbol.GetNumericValue(Services.Output.CurrentBank);
         }
 
         /// <summary>
@@ -1214,7 +1228,7 @@ namespace Core6502DotNet
             var symObj = Lookup(new Token(symbol));
             if (symObj == null)
                 return double.NaN;
-            return symObj.GetNumericValue();
+            return symObj.GetNumericValue(Services.Output.CurrentBank);
         }
 
         /// <summary>
@@ -1234,7 +1248,7 @@ namespace Core6502DotNet
                         listBuilder.Append($"\"{label.Value.StringValue}\"");
                         break;
                     default:
-                        listBuilder.Append($"{label.Value} (${(int)label.Value.GetNumericValue():x})");
+                        listBuilder.Append($"{label.Value} (${(int)label.Value.GetNumericValue(Services.Output.CurrentBank):x})");
                         break;
                 }
                 listBuilder.AppendLine();
@@ -1311,6 +1325,20 @@ namespace Core6502DotNet
         /// Gets the local label scope.
         /// </summary>
         public string Local { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the line iterator the symbol manager uses to handle
+        /// forward and backward references.
+        /// </summary>
+        public RandomAccessIterator<SourceLine> LineIterator 
+        {
+            get => _lineIterator;
+            set
+            {
+                _lineIterator = value;
+                _lineReferenceFrames.ForEach(lrf => lrf.LineIterator = value);
+            }
+        }
 
         #endregion
     }

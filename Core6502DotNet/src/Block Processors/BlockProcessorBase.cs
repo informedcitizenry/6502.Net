@@ -95,44 +95,21 @@ namespace Core6502DotNet
     /// A class responsible for the processing of source code blocks for a 
     /// <see cref="BlockAssembler"/>. This class must be inherited.
     /// </summary>
-    public abstract class BlockProcessorBase
+    public abstract class BlockProcessorBase : Core6502Base
     {
         #region Constructors
 
         /// <summary>
-        /// Creates a new instance of a block processor.
-        /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public BlockProcessorBase(SourceLine line, BlockType type)
-            : this(line, type, true) { }
-
-        /// <summary>
         /// Creates a new instance of a block processor. 
         /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
         /// processing the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
-        public BlockProcessorBase(RandomAccessIterator<SourceLine> iterator, BlockType type)
-            : this(iterator, type, true) { }
-
-        /// <summary>
-        /// Creates a new instance of a block processor.
-        /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        /// <param name="createScope">Automatically create a scope when initialized.</param>
-        protected BlockProcessorBase(SourceLine line, BlockType type, bool createScope)
-        {
-            LineIterator = Assembler.LineIterator;
-            Index = LineIterator.Index;
-            Line = line;
-            Type = type;
-            if (createScope)
-                Assembler.SymbolManager.PushScope(Index.ToString());
-        }
+        public BlockProcessorBase(AssemblyServices services,
+                                  RandomAccessIterator<SourceLine> iterator, 
+                                  BlockType type)
+            : this(services, iterator, type, true) { }
 
         /// <summary>
         /// Creates a new instance of a block processor.
@@ -141,14 +118,18 @@ namespace Core6502DotNet
         /// processing the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
         /// <param name="createScope">Automatically create a scope when initialized.</param>
-        protected BlockProcessorBase(RandomAccessIterator<SourceLine> iterator, BlockType type, bool createScope)
+        protected BlockProcessorBase(AssemblyServices services,
+                                     RandomAccessIterator<SourceLine> iterator, 
+                                     BlockType type, 
+                                     bool createScope)
+            :base(services)
         {
             LineIterator = iterator;
             Line = iterator.Current;
             Index = iterator.Index;
             Type = type;
             if (createScope)
-                Assembler.SymbolManager.PushScope(Index.ToString());
+                Services.SymbolManager.PushScope(Index.ToString());
         }
 
         #endregion
@@ -165,7 +146,7 @@ namespace Core6502DotNet
         public virtual void PopScope()
         {
             SeekBlockEnd();
-            Assembler.SymbolManager.PopScope();
+            Services.SymbolManager.PopScope();
         }
 
         //public abstract bool ExecuteDirective();
@@ -193,7 +174,7 @@ namespace Core6502DotNet
                 var opens = 1;
                 while (opens != 0)
                 {
-                    line = iterator.FirstNotMatching(l => !keywordsNotToSkip.Contains(l.InstructionName));
+                    line = iterator.FirstOrDefault(l => keywordsNotToSkip.Contains(l.InstructionName));
                     if (line == null)
                         throw new BlockClosureException(blockOpen);
 

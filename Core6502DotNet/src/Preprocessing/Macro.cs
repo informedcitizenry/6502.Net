@@ -18,7 +18,6 @@ namespace Core6502DotNet
     public sealed class Macro : ParameterizedSourceBlock
     {
         #region Subclasses
-
         class MacroSource
         {
             public MacroSource(SourceLine line)
@@ -47,10 +46,13 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new macro instance.
         /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="parms">The parameters token.</param>
         /// <param name="source">The original source string for the macro definition.</param>
-        public Macro(Token parms, string source, StringComparison stringComparison)
-            : base(parms, source, stringComparison)
+        public Macro(AssemblyServices services,
+                     Token parms, 
+                     string source)
+            : base(services, parms, source)
         {
             _sources = new List<MacroSource>();
         }
@@ -80,9 +82,7 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        if (parmName.EnclosedInDoubleQuotes())
-                            parmName = parmName.TrimOnce('"');
-                        paramList.Add(parmName);
+                        paramList.Add(parmName.Trim());
                     }
                     index++;
                 }
@@ -99,32 +99,33 @@ namespace Core6502DotNet
         public IEnumerable<SourceLine> Expand(Token passedParams)
         {
             var paramList = GetParamListFromParameters(passedParams);
-            var expanded = new List<SourceLine> { Preprocessor.GetBlockDirectiveLine(string.Empty, 1, ".block") };
+            var expanded = new List<SourceLine>();
             foreach (MacroSource source in _sources)
             {
                 if (source.ParamPlaces.Count > 0)
                 {
                     string expandedSource = source.Line.UnparsedSource;
 
-                    foreach ((int paramIndex, string reference, Token token) parmRef in source.ParamPlaces)
+                    foreach ((int paramIndex, string reference, Token token) in source.ParamPlaces)
                     {
                         string replacement;
                         string substitution;
-                        if (parmRef.paramIndex >= paramList.Count)
+                        if (paramIndex >= paramList.Count)
                         {
                             // expected parameter exceeded passed parameters. Is there a default value?
-                            if (parmRef.paramIndex > Params.Count || string.IsNullOrEmpty(Params[parmRef.paramIndex].DefaultValue))
+                            if (paramIndex > Params.Count || string.IsNullOrEmpty(Params[paramIndex].DefaultValue))
                                 throw new SyntaxException(source.Line.Operand.Position, "Macro expected parameter but was not supplied.");
-                            substitution = Params[parmRef.paramIndex].DefaultValue;
+                            substitution = Params[paramIndex].DefaultValue;
                         }
                         else
                         {
-                            substitution = paramList[parmRef.paramIndex];
+                            substitution = paramList[paramIndex];
                         }
-                        replacement = parmRef.token.UnparsedName.Replace(parmRef.reference, substitution, _stringCompare);
-                        expandedSource = expandedSource.Replace(parmRef.token.Name, replacement);
+                        var unparsedName = token.UnparsedName.Trim();
+                        replacement = unparsedName.Replace(reference, substitution, Services.StringComparison);
+                        expandedSource = expandedSource.Replace(unparsedName, replacement);
                     }
-                    var expandedList = LexerParser.Parse(source.Line.Filename, expandedSource)
+                    var expandedList = LexerParser.Parse(source.Line.Filename, expandedSource, Services, true)
                         .Select(l => l.WithLineNumber(source.Line.LineNumber));
                     expanded.AddRange(expandedList);
                 }
@@ -133,7 +134,6 @@ namespace Core6502DotNet
                     expanded.Add(source.Line);
                 }
             }
-            expanded.Add(Preprocessor.GetBlockDirectiveLine(string.Empty, 1, ".endblock"));
             return expanded;
         }
 
@@ -185,7 +185,7 @@ namespace Core6502DotNet
                                 else
                                     reference = afterMark.Substring(0, length);
                                 if (!int.TryParse(reference, out var paramIx))
-                                    paramIx = Params.FindIndex(p => p.Name.Equals(reference, _stringCompare));
+                                    paramIx = Params.FindIndex(p => p.Name.Equals(reference, Services.StringComparison));
                                 else
                                     paramIx--;
 

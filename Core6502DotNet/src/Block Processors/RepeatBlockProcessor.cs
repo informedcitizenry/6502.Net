@@ -23,28 +23,16 @@ namespace Core6502DotNet
         /// <summary>
         /// Creates a new instance of a repeat block processor.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public RepeatBlock(SourceLine line, BlockType type)
-            : base(line, type)
-        {
-            _repetition = Evaluator.Evaluate(Line.Operand.Children, 1, uint.MaxValue);
-            if (!_repetition.IsInteger())
-                throw new ExpressionException(Line.Operand.Position, $"Repetition must be an integer");
-        }
-
-        /// <summary>
-        /// Creates a new instance of a repeat block processor.
-        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
         /// processing the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
-        public RepeatBlock(RandomAccessIterator<SourceLine> iterator,
+        public RepeatBlock(AssemblyServices services,
+                           RandomAccessIterator<SourceLine> iterator,
                            BlockType type)
-            : base(iterator, type)
+            : base(services, iterator, type)
         {
-            _repetition = Evaluator.Evaluate(Line.Operand.Children, 1, uint.MaxValue);
+            _repetition = Services.Evaluator.Evaluate(Line.Operand.Children, 1, uint.MaxValue);
             if (!_repetition.IsInteger())
                 throw new ExpressionException(Line.Operand.Position, $"Repetition must be an integer");
         }

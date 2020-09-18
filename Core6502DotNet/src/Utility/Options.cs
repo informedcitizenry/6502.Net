@@ -248,6 +248,7 @@ namespace Core6502DotNet
         #region Members
 
         readonly bool _werror;
+        IEnumerable<string> _passedArgs;
 
         #endregion
 
@@ -553,6 +554,7 @@ namespace Core6502DotNet
 
         static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
+
             var heading = $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
             if (errs.IsVersion())
                 throw new Exception(heading);
@@ -579,6 +581,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="args">A collection of arguments to parse as arguments.</param>
         /// <returns>Returns an instance of the Options class.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static Options FromArgs(IEnumerable<string> args)
         {
             try
@@ -624,6 +627,7 @@ namespace Core6502DotNet
                 .WithNotParsed(errs => DisplayHelp(result, errs));
                 if (options.CreateConfig != null)
                     CreateConfigFile(options);
+                options._passedArgs = args;
                 return options;
             }
             catch (Exception ex)
@@ -634,6 +638,8 @@ namespace Core6502DotNet
                     throw ex;
             }
         }
+
+        public IEnumerable<string> GetPassedArgs() => _passedArgs;
 
         #endregion
 
@@ -709,7 +715,7 @@ namespace Core6502DotNet
         public string ErrorFile { get; }
 
         /// <summary>
-        /// Gets or sets the target architecture information.
+        /// Gets the target binary format.
         /// </summary>
         [Option("format", Required = false, HelpText = "Specify binary output format", MetaValue = "<format>")]
         public string Format { get; }
@@ -783,6 +789,7 @@ namespace Core6502DotNet
         /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
         [Option("wleft", Required = false, HelpText = "Warn when a whitespace precedes a label")]
         public bool WarnLeft { get; }
+
 
         [Usage(ApplicationAlias = "6502.Net.exe")]
         public static IEnumerable<Example> Examples

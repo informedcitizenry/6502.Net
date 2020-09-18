@@ -16,15 +16,24 @@ namespace Core6502DotNet.z80
     /// <summary>
     /// A class to handle disk/tape formats for several popular Z80-based systems.
     /// </summary>
-    public class Z80FormatProvider : IBinaryFormatProvider
+    public class Z80FormatProvider : Core6502Base, IBinaryFormatProvider
     {
+        /// <summary>
+        /// Creates a new instance of the Z80 format provider.
+        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        public Z80FormatProvider(AssemblyServices services)
+            :base(services)
+        {
+        }
+
         public IEnumerable<byte> GetFormat()
         {
-            var fmt = Assembler.OutputFormat;
-            var progstart = (ushort)Assembler.Output.ProgramStart;
-            var progend = (ushort)Assembler.Output.ProgramCounter;
-            var size = Assembler.Output.GetCompilation().Count;
-            var name = Assembler.Options.OutputFile;
+            var fmt = Services.OutputFormat;
+            var progstart = (ushort)Services.Output.ProgramStart;
+            var progend = (ushort)Services.Output.ProgramCounter;
+            var size = Services.Output.GetCompilation().Count;
+            var name = Services.Options.OutputFile;
 
             using (var ms = new MemoryStream())
             {
@@ -165,7 +174,7 @@ namespace Core6502DotNet.z80
                     {
                         throw new Exception($"Format \"{fmt}\" not supported with targetted CPU.");
                     }
-                    writer.Write(Assembler.Output.GetCompilation().ToArray());
+                    writer.Write(Services.Output.GetCompilation().ToArray());
                     return ms.ToArray();
                 }
             }

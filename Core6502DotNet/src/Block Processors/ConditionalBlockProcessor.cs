@@ -5,9 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace Core6502DotNet
@@ -15,7 +13,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class reponsible for processing .if/.endif conditional blocks of code.
     /// </summary>
-    public class ConditionalBlock : BlockProcessorBase
+    public sealed class ConditionalBlock : BlockProcessorBase
     {
         #region Members
 
@@ -39,25 +37,14 @@ namespace Core6502DotNet
         /// <summary>
         /// Creates a new instance of a conditional block processor.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public ConditionalBlock(SourceLine line, BlockType type)
-            : base(line, type)
-        {
-            _ifDefEvaluations = new Dictionary<(string, int), bool>();
-            _ifTrue =
-            _ifEvaluated = _elseEvaluated = false;
-        }
-
-        /// <summary>
-        /// Creates a new instance of a conditional block processor.
-        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
         /// processing the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
-        public ConditionalBlock(RandomAccessIterator<SourceLine> iterator, BlockType type)
-            : base(iterator, type)
+        public ConditionalBlock(AssemblyServices services, 
+                                RandomAccessIterator<SourceLine> iterator, 
+                                BlockType type)
+            : base(services, iterator, type)
         {
             _ifDefEvaluations = new Dictionary<(string, int), bool>();
             _ifTrue =
@@ -75,16 +62,16 @@ namespace Core6502DotNet
                 if (!_ifDefEvaluations.TryGetValue((line.Filename, line.LineNumber), out _ifTrue))
                 {
                     if (line.InstructionName.EndsWith("ndef"))
-                        _ifTrue = !Assembler.SymbolManager.SymbolExists(line.OperandExpression);
+                        _ifTrue = !Services.SymbolManager.SymbolExists(line.OperandExpression);
                     else if (line.InstructionName.EndsWith("def"))
-                        _ifTrue = Assembler.SymbolManager.SymbolExists(line.OperandExpression);
+                        _ifTrue = Services.SymbolManager.SymbolExists(line.OperandExpression);
                     // save the evaluation
                     _ifDefEvaluations.Add((line.Filename, line.LineNumber), _ifTrue);
                 }
             }
             else
             {
-                _ifTrue = Evaluator.EvaluateCondition(line.Operand.Children);
+                _ifTrue = Services.Evaluator.EvaluateCondition(line.Operand.Children);
             }
         }
 

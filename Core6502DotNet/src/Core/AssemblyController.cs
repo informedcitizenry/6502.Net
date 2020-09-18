@@ -22,8 +22,9 @@ namespace Core6502DotNet
     {
         #region Members
 
+        readonly AssemblyServices _services;
         readonly List<AssemblerBase> _assemblers;
-        readonly IEnumerable<string> _passedArgs;
+        readonly Func<string, AssemblyServices, AssemblerBase> _cpuSetHandler;
 
         #endregion
 
@@ -33,19 +34,28 @@ namespace Core6502DotNet
         /// Constructs a new instance of an <see cref="AssemblyController"/>, which controls
         /// the assembly process.
         /// </summary>
-        /// <param name="args">The collection of option arguments for assembly.</param>
-        public AssemblyController(IEnumerable<string> args)
+        /// <param name="args">The commandline arguments.</param>
+        /// <param name="cpuSetHandler">The CPU change handler.</param>
+        /// <param name="formatSelector">The format selector.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public AssemblyController(IEnumerable<string> args,
+                                  Func<string, AssemblyServices, AssemblerBase> cpuSetHandler,
+                                  Func<string, AssemblyServices, IBinaryFormatProvider> formatSelector)
         {
-            _passedArgs = args;
-            Assembler.Initialize(args);
+            if (args == null || cpuSetHandler == null || formatSelector == null)
+                throw new ArgumentNullException();
 
-            // init line assemblers
+            _services = new AssemblyServices(Options.FromArgs(args));
+            _services.PassChanged += OnPassChanged;
+            _services.FormatSelector = formatSelector;
+            _services.CPUAssemblerSelector = SetCpuAssembler;
+            _cpuSetHandler = cpuSetHandler;
             _assemblers = new List<AssemblerBase>
             {
-                new AssignmentAssembler(),
-                new EncodingAssembler(),
-                new PseudoAssembler(),
-                new MiscAssembler()
+                new AssignmentAssembler(_services),
+                new EncodingAssembler(_services),
+                new PseudoAssembler(_services),
+                new MiscAssembler(_services)
             };
         }
 
@@ -53,14 +63,8 @@ namespace Core6502DotNet
 
         #region Methods
 
-        /// <summary>
-        /// Adds an <see cref="AssemblerBase"/> to the collection of assemblers that control
-        /// assembly.
-        /// </summary>
-        /// <param name="lineAssembler">An <see cref="AssemblerBase"/> responsible for assembling 
-        /// directives not in the base assembler package.</param>
-        public void AddAssembler(AssemblerBase lineAssembler)
-            => _assemblers.Add(lineAssembler);
+        void SetCpuAssembler(string cpu) 
+            => _assemblers.Add(_cpuSetHandler(cpu, _services));
 
         /// <summary>
         /// Begin the assembly process.
@@ -73,89 +77,88 @@ namespace Core6502DotNet
             stopWatch.Start();
 
             // process cmd line args
-            if (Assembler.Options.Quiet)
+            if (_services.Options.Quiet)
                 Console.SetOut(TextWriter.Null);
 
-            var preprocessor = new Preprocessor();
+            var preprocessor = new Preprocessor(_services);
             var processed = new List<SourceLine>();
 
             // preprocess all passed option defines and sections
-            foreach (var define in Assembler.Options.LabelDefines)
-                processed.Add(Preprocessor.PreprocessDefine(define));
-            foreach (var section in Assembler.Options.Sections)
-                processed.AddRange(LexerParser.Parse(string.Empty, $".dsection {section}"));
+            foreach (var define in _services.Options.LabelDefines)
+                processed.Add(preprocessor.PreprocessDefine(define));
+            foreach (var section in _services.Options.Sections)
+                processed.AddRange(LexerParser.Parse(string.Empty, $".dsection {section}", _services, true));
 
-            if (Assembler.Options.InputFiles.Count == 0)
+            if (_services.Options.InputFiles.Count == 0)
                 throw new Exception("One or more required input files was not specified.");
 
             // preprocess all input files 
-            foreach (var path in Assembler.Options.InputFiles)
+            foreach (var path in _services.Options.InputFiles)
                 processed.AddRange(preprocessor.PreprocessFile(path));
 
-            Console.WriteLine(Assembler.AssemblerName);
-            Console.WriteLine(Assembler.AssemblerVersion);
-
-            // hunt for the first ".end"
-            var endIx = processed.FindIndex(l => l.InstructionName.Equals(".end"));
-            if (endIx < 0)
-                endIx = processed.Count;
+            Console.WriteLine($"{Assembler.AssemblerName}");
+            Console.WriteLine($"{Assembler.AssemblerVersion}");
 
             // set the iterator
-            Assembler.LineIterator = processed.GetRange(0, endIx).GetIterator();
+            var iterator = processed.TakeWhile(l => !l.InstructionName.Equals(".end"))
+                                    .GetIterator();
+
+            _services.SymbolManager.LineIterator = iterator;
 
             // add the block assembler.
-            _assemblers.Add(new BlockAssembler(Assembler.LineIterator));
+            _assemblers.Add(new BlockAssembler(_services, iterator));
 
             var disassembly = new StringBuilder();
+
             // while passes are needed
-            while (Assembler.PassNeeded && !Assembler.Log.HasErrors)
+            while (_services.PassNeeded && !_services.Log.HasErrors)
             {
-                if (Assembler.IncrementPass() == 4)
+                if (_services.DoNewPass() == 4)
                     throw new Exception("Too many passes attempted.");
                 disassembly.Clear();
-                Assembler.LineIterator.Reset();
-                _ = MultiLineAssembler.AssembleLines(Assembler.LineIterator,
+                _ = MultiLineAssembler.AssembleLines(iterator,
                                                      _assemblers,
                                                      false,
                                                      disassembly,
-                                                     Assembler.Options.VerboseList,
-                                                     AssemblyErrorHandler);
+                                                     _services.Options.VerboseList,
+                                                     AssemblyErrorHandler,
+                                                     _services);
             }
-            var unused = Assembler.Output.UnusedSections;
+            var unused = _services.Output.UnusedSections;
             if (unused.Count() > 0)
             {
                 foreach (var section in unused)
-                    Assembler.Log.LogEntry(null, 1, 1, $"Section {section} was defined but never used.", false);
+                    _services.Log.LogEntry(null, 1, 1, $"Section {section} was defined but never used.", false);
             }
-            if (!Assembler.Options.NoWarnings && Assembler.Log.HasWarnings)
-                Assembler.Log.DumpWarnings();
+            if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
+                _services.Log.DumpWarnings();
 
-            if (Assembler.Log.HasErrors)
+            if (_services.Log.HasErrors)
             {
-                Assembler.Log.DumpErrors();
+                _services.Log.DumpErrors();
             }
             else
             {
+                var passedArgs = _services.Options.GetPassedArgs();
                 var exec = Process.GetCurrentProcess().MainModule.ModuleName;
                 var inputFiles = string.Join("\n// ", preprocessor.GetInputFiles());
                 var disasmHeader = $"// {Assembler.AssemblerNameSimple}\n" +
-                                   $"// {exec} {string.Join(' ', _passedArgs)}\n" +
+                                   $"// {exec} {string.Join(' ', passedArgs)}\n" +
                                    $"// {DateTime.Now:f}\n\n// Input files:\n\n" +
                                    $"// {inputFiles}\n\n";
                 disassembly.Insert(0, disasmHeader);
                 WriteOutput(disassembly.ToString());
             }
-
-            Console.WriteLine($"Number of errors: {Assembler.Log.ErrorCount}");
-            Console.WriteLine($"Number of warnings: {Assembler.Log.WarningCount}");
+            Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
+            Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
 
             stopWatch.Stop();
             var ts = stopWatch.Elapsed.TotalSeconds;
-            if (!Assembler.Log.HasErrors)
+            if (!_services.Log.HasErrors)
             {
-                Console.WriteLine($"{Assembler.Output.GetCompilation().Count} bytes, {ts} sec.");
-                if (Assembler.Options.ShowChecksums)
-                    Console.WriteLine($"Checksum: {Assembler.Output.GetOutputHash()}");
+                Console.WriteLine($"{_services.Output.GetCompilation().Count} bytes, {ts} sec.");
+                if (_services.Options.ShowChecksums)
+                    Console.WriteLine($"Checksum: {_services.Output.GetOutputHash()}");
                 Console.WriteLine("*********************************");
                 Console.WriteLine("Assembly completed successfully.");
             }
@@ -167,12 +170,12 @@ namespace Core6502DotNet
             switch (reason)
             {
                 case AssemblyErrorReason.NotFound:
-                    Assembler.Log.LogEntry(line,
+                    _services.Log.LogEntry(line,
                                            line.Instruction.Position,
                                            $"Unknown instruction \"{line.InstructionName}\".");
                     return true;
                 case AssemblyErrorReason.ReturnNotAllowed:
-                    Assembler.Log.LogEntry(line, 
+                    _services.Log.LogEntry(line, 
                                            line.Instruction.Position,
                                            "Directive \".return\" not valid outside of function block.");
                     return true;
@@ -180,11 +183,11 @@ namespace Core6502DotNet
                     {
                         if (ex is SymbolException symbEx)
                         {
-                            Assembler.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
+                            _services.Log.LogEntry(line, symbEx.Position, symbEx.Message, true);
                         }
                         else if (ex is SyntaxException synEx)
                         {
-                            Assembler.Log.LogEntry(line, synEx.Position, synEx.Message, true);
+                            _services.Log.LogEntry(line, synEx.Position, synEx.Message, true);
                         }
                         else if (ex is FormatException ||
                                  ex is ReturnException ||
@@ -192,20 +195,22 @@ namespace Core6502DotNet
                                  ex is SectionException)
                         {
                             if (ex is FormatException fmtEx)
-                                Assembler.Log.LogEntry(line,
+                                _services.Log.LogEntry(line,
                                                   line.Operand,
                                                   $"There was a problem with the format string:\n{fmtEx.Message}.",
                                                   true);
                             else if (ex is ReturnException retEx)
-                                Assembler.Log.LogEntry(line, retEx.Position, retEx.Message);
+                                _services.Log.LogEntry(line, retEx.Position, retEx.Message);
                             else
-                                Assembler.Log.LogEntry(line, line.Instruction.Position, ex.Message);
+                                _services.Log.LogEntry(line, line.Instruction.Position, ex.Message);
                         }
                         else
                         {
-                            if (Assembler.CurrentPass <= 0 || Assembler.PassNeeded)
+                            if (_services.CurrentPass <= 0 || _services.PassNeeded)
                             {
-                                Assembler.PassNeeded = true;
+                                if (ex is IllegalQuantityException)
+                                    _services.Output.AddUninitialized(2);
+                                _services.PassNeeded = true;
                                 return true;
                             }
                             else
@@ -213,24 +218,24 @@ namespace Core6502DotNet
                                 if (ex is ExpressionException expEx)
                                 {
                                     if (ex is IllegalQuantityException illegalExp)
-                                        Assembler.Log.LogEntry(line, illegalExp.Position,
-                                            $"Illegal quantity for \"{line.Instruction}\" in expression \"{line.Operand}\" ({illegalExp.Quantity}).");
+                                        _services.Log.LogEntry(line, illegalExp.Position,
+                                            $"Illegal quantity for \"{line.InstructionName}\" in expression \"{line.Operand.ToString().Trim()}\" ({illegalExp.Quantity}).");
                                     else
-                                        Assembler.Log.LogEntry(line, expEx.Position, ex.Message);
+                                        _services.Log.LogEntry(line, expEx.Position, ex.Message);
                                 }
                                 else if (ex is ProgramOverflowException)
                                 {
-                                    Assembler.Log.LogEntry(line, line.Instruction.Position,
+                                    _services.Log.LogEntry(line, line.Instruction.Position,
                                               ex.Message);
                                 }
                                 else if (ex is InvalidPCAssignmentException pcEx)
                                 {
-                                    Assembler.Log.LogEntry(line, line.Instruction,
-                                            $"Invalid Program Counter assignment {pcEx.Message} in expression \"{line.Operand}\".");
+                                    _services.Log.LogEntry(line, line.Instruction,
+                                            $"Invalid Program Counter assignment {pcEx.Message} in expression \"{line.Operand.ToString().Trim()}\".");
                                 }
                                 else
                                 {
-                                    Assembler.Log.LogEntry(line, line.Operand.Position, ex.Message);
+                                    _services.Log.LogEntry(line, line.Operand.Position, ex.Message);
                                 }
                             }
                         }  
@@ -241,28 +246,31 @@ namespace Core6502DotNet
             }
         }
 
-        static void WriteOutput(string disassembly)
+        void OnPassChanged(object sender, EventArgs args) => _services.Output.Reset();
+
+        void WriteOutput(string disassembly)
         {
             // no errors finish up
             // save to disk
-            var outputFile = Assembler.Options.OutputFile;
-            Assembler.SelectFormat(Assembler.OutputFormat);
-            if (Assembler.BinaryFormatProvider != null)
-                File.WriteAllBytes(outputFile, Assembler.BinaryFormatProvider.GetFormat().ToArray());
+            var outputFile = _services.Options.OutputFile;
+            var formatProvider = _services.FormatSelector?.Invoke(_services.OutputFormat, _services);
+            if (formatProvider != null)
+                File.WriteAllBytes(outputFile, formatProvider.GetFormat().ToArray());
             else
-                File.WriteAllBytes(outputFile, Assembler.Output.GetCompilation().ToArray());
+                File.WriteAllBytes(outputFile, _services.Output.GetCompilation().ToArray());
+
             // write disassembly
-            if (!string.IsNullOrEmpty(disassembly) && !string.IsNullOrEmpty(Assembler.Options.ListingFile))
-                File.WriteAllText(Assembler.Options.ListingFile, disassembly);
+            if (!string.IsNullOrEmpty(disassembly) && !string.IsNullOrEmpty(_services.Options.ListingFile))
+                File.WriteAllText(_services.Options.ListingFile, disassembly);
 
             // write listings
-            if (!string.IsNullOrEmpty(Assembler.Options.LabelFile))
-                File.WriteAllText(Assembler.Options.LabelFile, Assembler.SymbolManager.ListLabels());
+            if (!string.IsNullOrEmpty(_services.Options.LabelFile))
+                File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels());
 
             Console.WriteLine("\n*********************************");
-            Console.WriteLine($"Assembly start: ${Assembler.Output.ProgramStart:X4}");
-            Console.WriteLine($"Assembly end:   ${Assembler.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
-            Console.WriteLine($"Passes: {Assembler.CurrentPass + 1}");
+            Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
+            Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
+            Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
         }
         #endregion
     }

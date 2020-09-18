@@ -83,7 +83,11 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of the multiline assembler class.
         /// </summary>
-        public BlockAssembler(RandomAccessIterator<SourceLine> lineIterator)
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="lineIterator">The line iterator.</param>
+        public BlockAssembler(AssemblyServices services, 
+                              RandomAccessIterator<SourceLine> lineIterator)
+            :base(services)
         {
             _blocks = new Stack<BlockProcessorBase>();
 
@@ -119,7 +123,7 @@ namespace Core6502DotNet
 
             ExcludedInstructionsForLabelDefines.Add(".function");
 
-            Evaluator.AddFunctionEvaluator(this);
+            Services.Evaluator.AddFunctionEvaluator(this);
         }
 
         #endregion
@@ -128,25 +132,25 @@ namespace Core6502DotNet
 
         void DefineFunction(SourceLine line)
         {
-            if (Assembler.CurrentPass == 0)
+            if (Services.CurrentPass == 0)
             {
                 if (_currentBlock != null)
-                {
-                    Assembler.Log.LogEntry(line, line.Instruction,
+                    throw new SyntaxException(_currentBlock.Line.Instruction.Position,
                         $"Function cannot be defined inside a \"{_currentBlock.Line.InstructionName}\" block.");
-                    return;
-                }
+
                 var fcnName = line.LabelName;
+                if (string.IsNullOrEmpty(fcnName))
+                    throw new SyntaxException(1, "Function name not specified.");
                 if (!char.IsLetter(fcnName[0]))
-                    Assembler.Log.LogEntry(line, line.Label, $"Invalid function name \"{fcnName}\".");
+                    throw new SyntaxException(line.Label.Position, $"Invalid function name \"{fcnName}\".");
                 else if (_functionDefs.ContainsKey(fcnName))
-                    Assembler.Log.LogEntry(line, line.Label, $"Duplicate function declaration \"{fcnName}\".");
+                    throw new SyntaxException(line.Label.Position, $"Duplicate function declaration \"{fcnName}\".");
                 else
-                    _functionDefs.Add(fcnName, new Function(line.Operand));
+                    _functionDefs.Add(fcnName, new Function(Services, line.Operand, _lineIterator));
             }
             else
             {
-                new FunctionBlock(line, BlockType.Functional).SeekBlockEnd();
+                new FunctionBlock(Services, _lineIterator, BlockType.Functional).SeekBlockEnd();
             }
         }
 
@@ -155,21 +159,21 @@ namespace Core6502DotNet
             switch (type)
             {
                 case BlockType.ForNext:
-                    return new ForNextBlock(_lineIterator, type);
+                    return new ForNextBlock(Services, _lineIterator, type);
                 case BlockType.Repeat:
-                    return new RepeatBlock(_lineIterator, type);
+                    return new RepeatBlock(Services, _lineIterator, type);
                 case BlockType.Conditional:
                 case BlockType.ConditionalDef:
                 case BlockType.ConditionalNdef:
-                    return new ConditionalBlock(_lineIterator, type);
+                    return new ConditionalBlock(Services, _lineIterator, type);
                 case BlockType.Scope:
-                    return new ScopeBlock(_lineIterator, type);
+                    return new ScopeBlock(Services, _lineIterator, type);
                 case BlockType.Page:
-                    return new PageBlockProcessor(_lineIterator, type);
+                    return new PageBlockProcessor(Services, _lineIterator, type);
                 case BlockType.Switch:
-                    return new SwitchBlock(_lineIterator, type);
+                    return new SwitchBlock(Services, _lineIterator, type);
                 default:
-                    return new WhileBlock(_lineIterator, type);
+                    return new WhileBlock(Services, _lineIterator, type);
             }
         }
 
@@ -187,7 +191,7 @@ namespace Core6502DotNet
         void ScanBlock(BlockType type)
         {
             var index = _lineIterator.Index;
-            SourceLine line = Assembler.CurrentLine;
+            SourceLine line = _lineIterator.Current;
             var blocks = new Stack<(SourceLine l, BlockDirective d)>();
             blocks.Push((line, BlockDirective.Directives[type]));
             while (((line = _lineIterator.FirstOrDefault(l =>
@@ -208,7 +212,7 @@ namespace Core6502DotNet
                     blocksAsList.RemoveAt(blocksAsList.FindIndex(blc => blc.d.Closure.Equals(line.InstructionName)));
                     blocksAsList.Reverse();
                     blocks = new Stack<(SourceLine l, BlockDirective d)>(blocksAsList);
-                    Assembler.Log.LogEntry(line, line.Instruction,
+                    Services.Log.LogEntry(line, line.Instruction,
                             $"Closure \"{line.Instruction}\" does not close block \"{blocks.Peek().d.Open}\".");
                 }
             }
@@ -221,7 +225,7 @@ namespace Core6502DotNet
                 while (rev.Count > 0)
                 {
                     var (l, d) = rev.Pop();
-                    Assembler.Log.LogEntry(l, l.Instruction,
+                    Services.Log.LogEntry(l, l.Instruction,
                         $"Missing closure \"{d.Closure}\" for block \"{d.Open}\".");
                 }
             }
@@ -237,7 +241,7 @@ namespace Core6502DotNet
                 }
                 else if (_currentBlock != null)
                 {
-                    Assembler.Log.LogEntry(line, line.Instruction,
+                    throw new SyntaxException(line.Instruction.Position,
                         $"Directive \"{line.InstructionName}\" can only be made inside function block.");
                 }
                 return string.Empty;
@@ -253,166 +257,151 @@ namespace Core6502DotNet
                 _blocks.Push(block);
                 _currentBlock = block;
             }
-            if (_currentBlock != null)
+            if (_currentBlock == null)
+                throw new SyntaxException(line.Instruction.Position,
+                    $"\"{line.InstructionName}\" directive must come inside a block.");
+            var isBreakCont = _lineIterator.Current.InstructionName.Equals(".break") ||
+                              _lineIterator.Current.InstructionName.Equals(".continue");
+            if (isBreakCont)
             {
-                var isBreakCont = _lineIterator.Current.InstructionName.Equals(".break") ||
-                                  _lineIterator.Current.InstructionName.Equals(".continue");
-                if (isBreakCont)
+                var contBreakLine = _lineIterator.Current;
+                if (!_currentBlock.AllowContinue &&
+                    contBreakLine.InstructionName.Equals(".continue"))
                 {
-                    var contBreakLine = _lineIterator.Current;
-                    if (!_currentBlock.AllowContinue && 
-                        contBreakLine.InstructionName.Equals(".continue"))
+                    while (_currentBlock != null)
                     {
-                        while (_currentBlock != null)
-                        {
-                            _currentBlock.SeekBlockEnd();
-                            if (_currentBlock.AllowContinue)
-                                break;
-                            else
-                                CheckClosureThenPop();
-                        }
-                        if (_currentBlock == null)
-                        {
-                            Assembler.Log.LogEntry(contBreakLine, contBreakLine.Instruction,
-                               "No enclosing loop out of which to continue.");
-                            return string.Empty;
-                        }
-                    }
-                    else if (!_currentBlock.AllowBreak && 
-                        contBreakLine.InstructionName.Equals(".break"))
-                    {
-                        while (_currentBlock != null)
-                        {
-                            _currentBlock.SeekBlockEnd();
-                            var allowBreak = _currentBlock.AllowBreak;
+                        _currentBlock.SeekBlockEnd();
+                        if (_currentBlock.AllowContinue)
+                            break;
+                        else
                             CheckClosureThenPop();
-                            if (allowBreak)
-                                return string.Empty;
-                        }
-                        if (_currentBlock == null)
-                        {
-                            Assembler.Log.LogEntry(contBreakLine, contBreakLine.Instruction,
-                               "No enclosing loop out of which to break.");
+                    }
+                    if (_currentBlock == null)
+                        throw new SyntaxException(contBreakLine.Instruction.Position,
+                           "No enclosing loop out of which to continue.");
+                }
+                else if (!_currentBlock.AllowBreak &&
+                    contBreakLine.InstructionName.Equals(".break"))
+                {
+                    while (_currentBlock != null)
+                    {
+                        _currentBlock.SeekBlockEnd();
+                        var allowBreak = _currentBlock.AllowBreak;
+                        CheckClosureThenPop();
+                        if (allowBreak)
                             return string.Empty;
-                        }
+                    }
+                    if (_currentBlock == null)
+                        throw new SyntaxException(contBreakLine.Instruction.Position,
+                           "No enclosing loop out of which to break.");
+                }
+                else
+                {
+                    if (contBreakLine.InstructionName.Equals(".break"))
+                    {
+                        DoPop();
+                        return string.Empty;
                     }
                     else
                     {
-                        if (contBreakLine.InstructionName.Equals(".break"))
-                        {
-                            DoPop();
-                            return string.Empty;
-                        }
-                        else
-                        {
-                            _currentBlock.SeekBlockEnd();
-                        }
+                        _currentBlock.SeekBlockEnd();
                     }
                 }
-                var executeSuccess = _currentBlock.ExecuteDirective();
-                if (!executeSuccess && !isBreakCont)
-                    throw new BlockAssemblerException(line);
-                
-                if (_lineIterator.Current == null ||
-                    _lineIterator.Current.InstructionName.Equals(BlockDirective.Directives[_currentBlock.Type].Closure))
-                {
-
-                    if (Assembler.CurrentLine == null)
-                    {
-                        line = SourceLineHelper.GetLastInstructionLine(_lineIterator);
-                        Assembler.Log.LogEntry(line,
-                            $"Missing closure for \"{BlockDirective.Directives[_currentBlock.Type].Open}\" directive.", true);
-                    }
-                    DoPop();
-                }  
             }
-            else
+            var executeSuccess = _currentBlock.ExecuteDirective();
+            if (!executeSuccess && !isBreakCont)
+                throw new BlockAssemblerException(line);
+
+            if (_lineIterator.Current == null ||
+                _lineIterator.Current.InstructionName.Equals(BlockDirective.Directives[_currentBlock.Type].Closure))
             {
-                Assembler.Log.LogEntry(line, line.Instruction.Position, 
-                    $"\"{line.InstructionName}\" directive must come inside a block.");
+
+                if (_lineIterator.Current == null)
+                {
+                    line = SourceLineHelper.GetLastInstructionLine(_lineIterator);
+                    Services.Log.LogEntry(line,
+                        $"Missing closure for \"{BlockDirective.Directives[_currentBlock.Type].Open}\" directive.", true);
+                }
+                DoPop();
             }
             if (line.Label != null)
-                return $".{Assembler.Output.LogicalPC,-42:x4}{line.UnparsedSource.Substring(line.Label.Position - 1, line.Label.Name.Length)}";
+                return $".{Services.Output.LogicalPC,-42:x4}{line.UnparsedSource.Substring(line.Label.Position - 1, line.Label.Name.Length)}";
             return string.Empty;
         }
 
         string DoGoto(SourceLine line)
         {
             if (!line.OperandHasToken)
+                throw new SyntaxException(line.Instruction.Position, 
+                    "Destination not specified for \".goto\" directive.");
+
+            var gotoExp = line.OperandExpression;
+            if (!char.IsLetter(gotoExp[0]) && gotoExp[0] != '_')
             {
-                Assembler.Log.LogEntry(line, line.Instruction, "Destination not specified for \".goto\" directive.");
+                Services.Log.LogEntry(line, line.Operand, "\".goto\" operand must be a label.");
+            }
+            else if (gotoExp.Equals(line.LabelName))
+            {
+                Services.Log.LogEntry(line, line.Instruction, "Destination cannot be the same line as \".goto\" directive.");
             }
             else
             {
-                var gotoExp = line.OperandExpression;
-                if (!char.IsLetter(gotoExp[0]) && gotoExp[0] != '_')
+                var iterCopy = new RandomAccessIterator<SourceLine>(_lineIterator, true);
+                SourceLine currLine;
+                if ((currLine = iterCopy.FirstOrDefault(l =>
                 {
-                    Assembler.Log.LogEntry(line, line.Operand, "\".goto\" operand must be a label.");
-                }
-                else if (gotoExp.Equals(line.LabelName))
-                {
-                    Assembler.Log.LogEntry(line, line.Instruction, "Destination cannot be the same line as \".goto\" directive.");
-                }
-                else
-                {
-                    var iterCopy = new RandomAccessIterator<SourceLine>(_lineIterator, true);
-                    SourceLine currLine;
-                    if ((currLine = iterCopy.FirstNotMatching(l =>
+                    if (s_blockOpenTypes.TryGetValue(l.InstructionName, out BlockType type))
                     {
-                        if (s_blockOpenTypes.TryGetValue(l.InstructionName, out BlockType type))
-                        {
-                            // skip over other blocks we are not calling .goto 
-                            // from within (we can know this by checking if the block in the stack
-                            // has an index matching the iterator's current index.
-                            if (BlockDirective.Directives.ContainsKey(type) && 
-                               !_blocks.Any(b => b.Index == iterCopy.Index ))
-                                GetProcessor(type).SeekBlockEnd(iterCopy);
-                            return true;
-                        }
-                        return !l.LabelName.Equals(gotoExp);
-                    })) != null)
+                        // skip over other blocks we are not calling .goto 
+                        // from within (we can know this by checking if the block in the stack
+                        // has an index matching the iterator's current index.
+                        if (BlockDirective.Directives.ContainsKey(type) &&
+                           !_blocks.Any(b => b.Index == iterCopy.Index))
+                            GetProcessor(type).SeekBlockEnd(iterCopy);
+                        return false;
+                    }
+                    return l.LabelName.Equals(gotoExp);
+                })) != null)
+                {
+                    if (currLine.InstructionName.Contains("=") ||
+                        currLine.InstructionName.Equals(".equ") ||
+                        currLine.InstructionName.Equals(".global"))
                     {
-                        if (currLine.InstructionName.Contains("=") ||
-                            currLine.InstructionName.Equals(".equ") ||
-                            currLine.InstructionName.Equals(".global"))
-                        {
-                            Assembler.Log.LogEntry(line, line.Instruction, $"\"{gotoExp}\" is not a valid destination.");
-                        }
-                        else
-                        {
-                            while (_currentBlock != null)
-                            {
-                                // if where we landed lies outside of the current block scope
-                                // we need to pop out of that scope.
-                                _currentBlock.SeekBlockEnd();
-                                if (iterCopy.Index > _currentBlock.Index)
-                                {
-                                    // did we land in a place still within the block scope?
-                                    if (iterCopy.Index > _lineIterator.Index)
-                                        // no, pop out
-                                        DoPop();
-                                    else
-                                        // we're still within the current block, don't pop it
-                                        break;
-                                }
-                                else
-                                {
-                                    // we went backwards, pop out of current scope
-                                    DoPop();
-                                }
-                            }
-                            if (iterCopy.Index >= _lineIterator.Index)
-                                _lineIterator.FastForward(iterCopy.Index);
-                            else
-                                _lineIterator.Rewind(iterCopy.Index - 1);
-                        }
+                        Services.Log.LogEntry(line, line.Instruction, $"\"{gotoExp}\" is not a valid destination.");
                     }
                     else
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction,
-                            $"Could not find destination \"{gotoExp}\".");
+                        while (_currentBlock != null)
+                        {
+                            // if where we landed lies outside of the current block scope
+                            // we need to pop out of that scope.
+                            _currentBlock.SeekBlockEnd();
+                            if (iterCopy.Index > _currentBlock.Index)
+                            {
+                                // did we land in a place still within the block scope?
+                                if (iterCopy.Index > _lineIterator.Index)
+                                    // no, pop out
+                                    DoPop();
+                                else
+                                    // we're still within the current block, don't pop it
+                                    break;
+                            }
+                            else
+                            {
+                                // we went backwards, pop out of current scope
+                                DoPop();
+                            }
+                        }
+                        if (iterCopy.Index >= _lineIterator.Index)
+                            _lineIterator.FastForward(iterCopy.Index);
+                        else
+                            _lineIterator.Rewind(iterCopy.Index - 1);
                     }
-
+                }
+                else
+                {
+                    Services.Log.LogEntry(line, line.Instruction,
+                        $"Could not find destination \"{gotoExp}\".");
                 }
             }
             return string.Empty;
@@ -430,16 +419,13 @@ namespace Core6502DotNet
 
         void CheckClosureThenPop()
         {
-            if (!Assembler.CurrentLine.InstructionName.Equals(_currentBlock.Directive.Closure))
+            if (!_lineIterator.Current.InstructionName.Equals(_currentBlock.Directive.Closure))
             {
-                Assembler.Log.LogEntry(Assembler.CurrentLine, Assembler.CurrentLine.Instruction,
-                    $"Missing closure for \"{_currentBlock.Directive.Open}\" directive.");
                 _currentBlock = null;
+                throw new SyntaxException(_lineIterator.Current.Instruction.Position,
+                    $"Missing closure for \"{_currentBlock.Directive.Open}\" directive.");
             }
-            else
-            {
-                DoPop();
-            }
+            DoPop();
         }
 
         double CallFunction(Token function, Token parameters, bool returnValueExpected)
@@ -450,21 +436,16 @@ namespace Core6502DotNet
 
             var evalParms = parameters.Children.Where(p => p.Children.Count != 0)
                                                .Select(p => 
-                                                    p.ToString().EnclosedInDoubleQuotes() ? 
-                                                    p.ToString() : (object)Evaluator.Evaluate(p))
+                                                    p.ToString().Trim().EnclosedInDoubleQuotes() ? 
+                                                    p.ToString().Trim() : (object)Services.Evaluator.Evaluate(p))
                                                .ToList();
-            // save pre-call context
-            var returnIndex = _lineIterator.Index;
-
             // invoke the function, get the return
-            Assembler.SymbolManager.PushScopeEphemeral();
+            Services.SymbolManager.PushScopeEphemeral();
             var value = _functionDefs[function.Name].Invoke(evalParms);
-            Assembler.SymbolManager.PopScopeEphemeral();
+            Services.SymbolManager.PopScopeEphemeral();
             if (double.IsNaN(value) && returnValueExpected)
-                throw new ReturnException(function.Position, 
+                throw new ReturnException(function.Position,
                     $"Function \"{function.Name}\" did not return a value.");
-
-            //_lineIterator.SetIndex(returnIndex);
             return value;
         }
 

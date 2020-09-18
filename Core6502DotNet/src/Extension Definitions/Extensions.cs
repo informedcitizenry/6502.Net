@@ -7,10 +7,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -121,6 +119,15 @@ namespace Core6502DotNet
         /// <returns><c>true</c>, if the string represents a binary extractor operator, <c>false</c> otherwise.</returns>
         public static bool IsByteExtractor(this string str) 
             => str.Equals("<") || str.Equals(">") || str.Equals("^") || str.Equals("&");
+
+        /// <summary>
+        /// Indicates whether the specified string could be an operand or
+        /// mathematical operator per usage in an expression.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <returns><c>true</c>, if the string is of this type, <c>false</c> otherwise.</returns>
+        public static bool IsSpecialOperator(this string str)
+            => str.Length == 1 && str[0].IsSpecialOperator();
     }
 
     public static class Char_Extension
@@ -173,6 +180,22 @@ namespace Core6502DotNet
             c == '{' || c == '}' || c == '%' || c == '`' || c == '~' || c == '*' || c == '-' ||
             c == '+' || c == '/' || c == ',' || c == ':' || c == '$';
 
+    }
+
+    public static class Int32_Extension
+    {
+        /// <summary>
+        /// The minimum size required in bytes to store this value.
+        /// </summary>
+        /// <param name="value">The value to store.</param>
+        /// <returns>The size in bytes.</returns>
+        public static int Size(this int value)
+        {
+            if (value > UInt24.MaxValue || value < Int24.MinValue) return 4;
+            if (value > ushort.MaxValue || value < short.MinValue) return 3;
+            if (value > byte.MaxValue   || value < sbyte.MinValue) return 2;
+            return 1;
+        }
     }
 
     public static class Int64_Extension

@@ -10,30 +10,21 @@ namespace Core6502DotNet
     /// <summary>
     /// A class responsible for processing .while/.endwhile blocks.
     /// </summary>
-    public class WhileBlock : BlockProcessorBase
+    public sealed class WhileBlock : BlockProcessorBase
     {
         #region Constructors
 
         /// <summary>
         /// Creates a new instance of a while block processor.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public WhileBlock(SourceLine line, BlockType type)
-            : base(line, type)
-        {
-        }
-
-        /// <summary>
-        /// Creates a new instance of a while block processor.
-        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> containing the instruction
         /// and operands invoking or creating the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
-        public WhileBlock(RandomAccessIterator<SourceLine> iterator,
+        public WhileBlock(AssemblyServices services,
+                          RandomAccessIterator<SourceLine> iterator,
                           BlockType type)
-            : base(iterator, type)
+            : base(services, iterator, type)
         {
         }
 
@@ -46,7 +37,7 @@ namespace Core6502DotNet
             if (!LineIterator.Current.InstructionName.Equals(".while") && 
                 !LineIterator.Current.InstructionName.Equals(".endwhile"))
                 return false;
-            if (Evaluator.EvaluateCondition(Line.Operand.Children))
+            if (Services.Evaluator.EvaluateCondition(Line.Operand.Children))
             {
                 if (LineIterator.Current.InstructionName.Equals(".endwhile"))
                     LineIterator.Rewind(Index);

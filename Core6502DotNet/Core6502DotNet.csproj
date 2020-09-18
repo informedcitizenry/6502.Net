@@ -4,17 +4,17 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>6502.Net</PackageId>
-    <Version>2.2.1</Version>
+    <Version>2.3</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
-    <Description>6502.Net, A simple .Net 6502 and Z80 Cross Assembler</Description>
+    <Description>6502.Net, A .Net Cross Assembler for Several 8-Bit Microprocessors.</Description>
     <Copyright>(C) Copyright 2017-2020 informedcitizenry</Copyright>
     <ReleaseVersion>2.1.6.1</ReleaseVersion>
     <StartupObject>Core6502DotNet.Core6502DotNet</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>2.2.1.0</AssemblyVersion>
-    <FileVersion>2.2.1.0</FileVersion>
+    <AssemblyVersion>2.3.0.0</AssemblyVersion>
+    <FileVersion>2.3.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -118,46 +118,6 @@ namespace Core6502DotNet
             return default;
         }
 
-        /// <summary>
-        /// Moves the iterator to the first element in the collection not matching the
-        /// predicate.
-        /// </summary>
-        /// <param name="predicate">A condition for which to skip any elements 
-        /// in the collection while retrieving the next element.</param>
-        /// <returns>The first element in the collection 
-        /// after the predicate evaluates to false.</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public T FirstNotMatching(Predicate<T> predicate)
-        {
-            if (predicate == null)
-                throw new ArgumentNullException();
-            while (MoveNext() && predicate(Current)) { }
-            return Current;
-        }
-
-        /// <summary>
-        /// Bypasses the number of elements in a sequence then returns the remaining elements.
-        /// </summary>
-        /// <param name="count">The number of elements to skip before returning the remaining
-        /// elements.</param>
-        /// <returns>An <see cref="IEnumerable{T}"/> that contains the elements that occur
-        /// after the specified index in the input sequence.</returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public IEnumerable<T> Skip(int count) => _list.Skip(count);
-
-        /// <summary>
-        /// The first element in the collection matching the conditions in the predicate. This operation
-        /// will advance the iterator forward until the match is found, or the iteration is complete.
-        /// </summary>
-        /// <param name="predicate">A condition for which to find the next matching element in the
-        /// collection.</param>
-        /// <returns>The first element matching the predicate.</returns>
-        public T FirstOrDefault(Predicate<T> predicate)
-        {
-            while (MoveNext() && !predicate(Current)) { }
-            return Current;
-        }
-
         public bool MoveNext()
         {
             if (++Index == _length)
@@ -188,7 +148,7 @@ namespace Core6502DotNet
         public T PeekNextSkipping(Predicate<T> predicate)
         {
             var i = Index + 1;
-            while (i < _length && predicate.Invoke(_list[i])) { i++; }
+            while (i < _length && predicate(_list[i])) { i++; }
             return i < _length ? _list[i] : default;
         }
 

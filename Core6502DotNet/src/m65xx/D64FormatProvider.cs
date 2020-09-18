@@ -9,12 +9,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Core6502DotNet.m6502
+namespace Core6502DotNet.m65xx
 {
     /// <summary>
     /// A class that encapsulates assembly output into a .D64 formatted disk.
     /// </summary>
-    public class D64FormatProvider : IBinaryFormatProvider
+    public class D64FormatProvider : Core6502Base, IBinaryFormatProvider
     {
         static readonly Dictionary<int, int> s_trackSectorTable = new Dictionary<int, int>
         {
@@ -106,27 +106,36 @@ namespace Core6502DotNet.m6502
         const int BAMSize = 139;
         const int DiskSize = 683 * 256;
 
+        /// <summary>
+        /// Creates a new instance of a D64 format provider.
+        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        public D64FormatProvider(AssemblyServices services)
+            :base(services)
+        {
+        }
+
         public IEnumerable<byte> GetFormat()
         {
             var diskImage = new byte[DiskSize];
             var availTrackSectors = s_trackSectorTable.ToDictionary(k => k.Key, k => ToBitMap(k.Value));
 
-            var fileName = Assembler.Options.OutputFile.ToUpper();
+            var fileName = Services.Options.OutputFile.ToUpper();
 
             if (fileName.Length > 16)
                 fileName = fileName.Substring(0, 16);
             else if (fileName.Length > 4 && fileName.EndsWith(".D64"))
                 fileName = fileName[0..^4];
 
-            var fileBytes = new List<byte>(Assembler.Output.GetCompilation().Count + 2)
+            var fileBytes = new List<byte>(Services.Output.GetCompilation().Count + 2)
             {
                 // write load address
-                Convert.ToByte(Assembler.Output.ProgramStart % 256),
-                Convert.ToByte(Assembler.Output.ProgramStart / 256)
+                Convert.ToByte(Services.Output.ProgramStart % 256),
+                Convert.ToByte(Services.Output.ProgramStart / 256)
             };
 
             // write file data
-            fileBytes.AddRange(Assembler.Output.GetCompilation());
+            fileBytes.AddRange(Services.Output.GetCompilation());
 
             // write directory header
             var dirOffs = 0x16500;

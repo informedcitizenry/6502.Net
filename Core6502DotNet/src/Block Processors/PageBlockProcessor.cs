@@ -10,30 +10,23 @@ namespace Core6502DotNet
     /// <summary>
     /// A class responsible for processing .page/.endpage blocks.
     /// </summary>
-    public class PageBlockProcessor : BlockProcessorBase
+    public sealed class PageBlockProcessor : BlockProcessorBase
     {
         readonly int _page;
 
         /// <summary>
         /// Creates a new instance of a page block processor.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public PageBlockProcessor(SourceLine line, BlockType type)
-            : base(line, type, false) => _page = GetPage();
-
-        /// <summary>
-        /// Creates a new instance of a page block processor.
-        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
         /// processing the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
-        public PageBlockProcessor(RandomAccessIterator<SourceLine> iterator,
+        public PageBlockProcessor(AssemblyServices services,
+                                  RandomAccessIterator<SourceLine> iterator,
                                   BlockType type)
-            : base(iterator, type, false) => _page = GetPage();
+            : base(services, iterator, type, false) => _page = GetPage();
 
-        int GetPage() => Assembler.Output.LogicalPC & 0xF00;
+        int GetPage() => Services.Output.LogicalPC & 0xF00;
 
         int GetPage(int address) => address & 0xF00;
 
@@ -46,8 +39,8 @@ namespace Core6502DotNet
             var line = LineIterator.Current;
             if (line.InstructionName.Equals(".endpage"))
             {
-                if (!Assembler.PassNeeded && GetPage(Assembler.Output.LogicalPC - 1) != _page)
-                    Assembler.Log.LogEntry(line, "Page boundary crossed.");
+                if (!Services.PassNeeded && GetPage(Services.Output.LogicalPC - 1) != _page)
+                    Services.Log.LogEntry(line, "Page boundary crossed.");
                 return true;
             }
             return line.InstructionName.Equals(".page");

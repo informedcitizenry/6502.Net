@@ -14,7 +14,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class responsible for processing .switch/.endswitch blocks.
     /// </summary>
-    public class SwitchBlock : BlockProcessorBase
+    public sealed class SwitchBlock : BlockProcessorBase
     {
         #region Subclassses
 
@@ -137,26 +137,15 @@ namespace Core6502DotNet
         /// <summary>
         /// Creates a new instance of a switch block processor.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public SwitchBlock(SourceLine line, BlockType type)
-            : base(line, type, false)
-        {
-
-        }
-
-        /// <summary>
-        /// Creates a new instance of a switch block processor.
-        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> containing the instruction
         /// and operands invoking or creating the block.</param>
         /// <param name="type">The <see cref="BlockType"/>.</param>
-        public SwitchBlock(RandomAccessIterator<SourceLine> iterator,
+        public SwitchBlock(AssemblyServices services,
+                           RandomAccessIterator<SourceLine> iterator,
                            BlockType type)
-            : base(iterator, type, false)
+            : base(services, iterator, type, false)
         {
-
         }
 
         #endregion
@@ -176,21 +165,21 @@ namespace Core6502DotNet
             SwitchContext context;
             if (Line.OperandHasToken)
             {
-                if (!Assembler.SymbolManager.SymbolExists(noParens))
+                if (!Services.SymbolManager.SymbolExists(noParens))
                 {
                     if (noParens.EnclosedInDoubleQuotes())
                         context = new SwitchContext(noParens);
                     else
-                        context = new SwitchContext(Evaluator.Evaluate(Line.Operand));
+                        context = new SwitchContext(Services.Evaluator.Evaluate(Line.Operand));
                 }
                 else
                 {
-                    context = new SwitchContext(Evaluator.Evaluate(Line.Operand));
+                    context = new SwitchContext(Services.Evaluator.Evaluate(Line.Operand));
                 }
             }
             else
             {
-                Assembler.Log.LogEntry(Line, Line.Instruction.Position, "Expression must follow \".switch\" directive.");
+                Services.Log.LogEntry(Line, Line.Instruction.Position, "Expression must follow \".switch\" directive.");
                 return true;
             }
             if (context == null)
@@ -200,7 +189,7 @@ namespace Core6502DotNet
                     error = "Expression must follow \".switch\" directive.";
                 else
                     error = "Expression must be a valid symbol or an expression.";
-                Assembler.Log.LogEntry(line, line.Instruction.Position, error);
+                Services.Log.LogEntry(line, line.Instruction.Position, error);
                 return true;
             }
             Token lastInstruction = null;
@@ -218,22 +207,22 @@ namespace Core6502DotNet
                 {
                     if (defaultIndex > -1)
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction.Position, "\".case\" directive cannot follow a \".default\" directive.");
+                        Services.Log.LogEntry(line, line.Instruction.Position, "\".case\" directive cannot follow a \".default\" directive.");
                     }
                     else if (stringBlock?.FallthroughIndex > -1 || numericBlock?.FallthroughIndex > -1)
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction.Position, 
+                        Services.Log.LogEntry(line, line.Instruction.Position, 
                             "\".case\" directive must follow a \".break\" or \".return\" directive.");
                     }
                     stringBlock?.Cases.Add(line.Operand.Name);
-                    numericBlock?.Cases.Add(Evaluator.Evaluate(line.Operand));
+                    numericBlock?.Cases.Add(Services.Evaluator.Evaluate(line.Operand));
                 }
                 else if (line.InstructionName.Equals(".break") || line.InstructionName.Equals(".return"))
                 {
                     if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0)
                         && defaultIndex < 0)
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction.Position,
+                        Services.Log.LogEntry(line, line.Instruction.Position,
                             $"\"{line.Instruction}\" directive must follow a \".case\" or \".default\" directive.");
                     }
                     else
@@ -245,7 +234,7 @@ namespace Core6502DotNet
                         }
                         context.AddBlock(stringBlock);
                         context.AddBlock(numericBlock);
-                        Assembler.SymbolManager.PopScope();
+                        Services.SymbolManager.PopScope();
                         if (stringBlock != null)
                             stringBlock = new CaseBlock<string>();
                         else
@@ -255,7 +244,7 @@ namespace Core6502DotNet
                 else if (line.InstructionName.Equals(".default"))
                 {
                     if (defaultIndex > -1)
-                        Assembler.Log.LogEntry(line, line.Instruction.Position,
+                        Services.Log.LogEntry(line, line.Instruction.Position,
                             "There can only be one \".default\" directive in a switch block.");
                     else
                         defaultIndex = LineIterator.Index + 1;
@@ -264,13 +253,13 @@ namespace Core6502DotNet
                 {
                     if (line.Label != null)
                     {
-                        Assembler.Log.LogEntry(line, line.Label.Position, "Label cannot be defined inside a switch block.");
+                        Services.Log.LogEntry(line, line.Label.Position, "Label cannot be defined inside a switch block.");
                     }
                     if (line.Instruction != null)
                     {
                         if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0) && defaultIndex < 0)
                         {
-                            Assembler.Log.LogEntry(line, line.Instruction.Position, "\".case\" or \".default\" directive expected");
+                            Services.Log.LogEntry(line, line.Instruction.Position, "\".case\" or \".default\" directive expected");
                         }
                         else if (stringBlock?.FallthroughIndex < 0 || numericBlock?.FallthroughIndex < 0)
                         {
@@ -290,7 +279,7 @@ namespace Core6502DotNet
             {
                 if (line == null)
                     line = Line;
-                Assembler.Log.LogEntry(line, "Switch statement must end with a \".break\" or \".return\" directive.");
+                Services.Log.LogEntry(line, "Switch statement must end with a \".break\" or \".return\" directive.");
             }
             else if (line != null)
             {
@@ -298,16 +287,16 @@ namespace Core6502DotNet
                 {
                     if (defaultIndex >= 0)
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction, "Only a default case was specified.", false);
+                        Services.Log.LogEntry(line, line.Instruction, "Only a default case was specified.", false);
                     }
                     else if (!context.AnyCaseDefined())
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction, "Switch statement did not encounter any cases to evaluate.");
+                        Services.Log.LogEntry(line, line.Instruction, "Switch statement did not encounter any cases to evaluate.");
                         return true;
                     }
                     else
                     {
-                        Assembler.Log.LogEntry(line, line.Instruction, "Switch statement does not have a default case.", false);
+                        Services.Log.LogEntry(line, line.Instruction, "Switch statement does not have a default case.", false);
                     }
                 }
                 var fallthroughIndex = context.GetFallthroughIndex();
@@ -316,7 +305,7 @@ namespace Core6502DotNet
 
                 if (fallthroughIndex > -1)
                     LineIterator.Rewind(fallthroughIndex - 1);
-                Assembler.SymbolManager.PushScope(LineIterator.Index.ToString());
+                Services.SymbolManager.PushScope(LineIterator.Index.ToString());
             }
             return true;
         }

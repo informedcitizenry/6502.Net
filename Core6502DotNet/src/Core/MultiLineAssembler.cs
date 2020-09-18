@@ -38,6 +38,7 @@ namespace Core6502DotNet
         /// <param name="disasmBuilder">The disassembly builder.</param>
         /// <param name="disassembleAll">Disassemble all lines, even those without instructions.</param>
         /// <param name="errorHandler">A function or delegate to handle any errors during assembly.</param>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <returns>The return value if a .return directive is assembled.</returns>
         public static double AssembleLines(RandomAccessIterator<SourceLine> lines,
                                            IEnumerable<AssemblerBase> withAssemblers,
@@ -47,7 +48,8 @@ namespace Core6502DotNet
                                            Func<SourceLine,
                                                 AssemblyErrorReason, 
                                                 Exception, 
-                                                bool> errorHandler)
+                                                bool> errorHandler,
+                                           AssemblyServices services)
         {
             foreach(var line in lines)
             {
@@ -60,7 +62,7 @@ namespace Core6502DotNet
                             if (allowReturn)
                             {
                                 if (line.OperandHasToken)
-                                    return Evaluator.Evaluate(line.Operand);
+                                    return services.Evaluator.Evaluate(line.Operand);
                                 return double.NaN;
                             }
                             else
@@ -74,7 +76,7 @@ namespace Core6502DotNet
                         if (asm != null)
                         {
                             var disasm = asm.AssembleLine(line);
-                            if (disasmBuilder != null && !string.IsNullOrEmpty(disasm) && !Assembler.PrintOff)
+                            if (disasmBuilder != null && !string.IsNullOrEmpty(disasm) && !services.PrintOff)
                                 disasmBuilder.AppendLine(disasm);
                         }
                         else if (line.Instruction != null)

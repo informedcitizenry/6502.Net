@@ -7,95 +7,17 @@
 
 using System.Collections.Generic;
 
-namespace Core6502DotNet.m6502
+namespace Core6502DotNet.m65xx
 {
     /// <summary>
     /// A line assembler that will assemble into 6502 instructions.
     /// </summary>
-    public sealed partial class Asm6502 : AssemblerBase
+    public sealed partial class Asm6502 : MotorolaBase
     {
-        enum Modes
-        {
-            Implied      = 0b00000000000000000000,
-            ZeroPage     = 0b00000000000000000001,
-            Absolute     = 0b00000000000000000011,
-            Long         = 0b00000000000000000111,
-            SizeMask     = 0b00000000000000000111,
-            Indirect     = 0b00000000000000001000,
-            DirectPage   = 0b00000000000000010000,
-            IndexedX     = 0b00000000000000100000,
-            InnerX       = 0b00000000000001000000,
-            IndexedY     = 0b00000000000010000000,
-            IndexedZ     = 0b00000000000100000000,
-            IndexedS     = 0b00000000001000000000,
-            IndexedSp    = 0b00000000010000000000,
-            TwoOpBit     = 0b00000000100000000000,
-            TwoOperand   = 0b00000000100000000001,
-            ThreeOperand = 0b00000001000000000000,
-            Bit0         = 0b00000010000000000000,
-            Bit1         = 0b00000110000000000000,
-            Bit2         = 0b00001010000000000000,
-            Bit3         = 0b00001110000000000000,
-            Bit4         = 0b00010010000000000000,
-            Bit5         = 0b00010110000000000000,
-            Bit6         = 0b00011010000000000000,
-            Bit7         = 0b00011110000000000000,
-            Immediate    = 0b00100000000000000001,
-            RelativeBit  = 0b01000000000000000000,
-            Relative     = 0b01000000000000000001,
-            MemModMask   = 0b01111111111111111000,
-            ModeMask     = 0b01111111111111111111,
-            ForceWidth   = 0b10000000000000000000,
-            AbsoluteX    = Absolute     | IndexedX,
-            AbsoluteY    = Absolute     | IndexedY,
-            ZeroPageX    = ZeroPage     | IndexedX,
-            ZeroPageY    = ZeroPage     | IndexedY,
-            ZeroPageS    = ZeroPage     | IndexedS,
-            LongX        = Long         | IndexedX,
-            IndX         = ZeroPage     | InnerX    | Indirect,
-            IndY         = ZeroPageY    | Indirect,
-            IndZ         = ZeroPage     | Indirect  | IndexedZ,
-            IndS         = IndY         | IndexedS,
-            IndSp        = IndY         | IndexedSp,
-            IndZp        = ZeroPage     | Indirect,
-            IndAbs       = Absolute     | Indirect,
-            IndAbsX      = Absolute     | Indirect  | InnerX,
-            Dir          = ZeroPage     | DirectPage,
-            DirAbs       = Absolute     | DirectPage,
-            DirY         = Dir          | IndexedY,
-            DirIndMask   = Indirect     | DirectPage,
-            RelativeAbs  = Relative     | Absolute,
-            ThreeOpRel   = ThreeOperand | RelativeBit,
-            ThreeOpAbs   = ThreeOperand | Absolute,
-            Zp0          = TwoOperand   | Bit0,
-            Zp1          = TwoOperand   | Bit1,
-            Zp2          = TwoOperand   | Bit2,
-            Zp3          = TwoOperand   | Bit3,
-            Zp4          = TwoOperand   | Bit4,
-            Zp5          = TwoOperand   | Bit5,
-            Zp6          = TwoOperand   | Bit6,
-            Zp7          = TwoOperand   | Bit7,
-            ThreeOpRel0  = ZeroPage     | ThreeOpRel | Bit0,
-            ThreeOpRel1  = ZeroPage     | ThreeOpRel | Bit1,
-            ThreeOpRel2  = ZeroPage     | ThreeOpRel | Bit2,
-            ThreeOpRel3  = ZeroPage     | ThreeOpRel | Bit3,
-            ThreeOpRel4  = ZeroPage     | ThreeOpRel | Bit4,
-            ThreeOpRel5  = ZeroPage     | ThreeOpRel | Bit5,
-            ThreeOpRel6  = ZeroPage     | ThreeOpRel | Bit6,
-            ThreeOpRel7  = ZeroPage     | ThreeOpRel | Bit7,
-            ImmAbs       = Immediate    | Absolute,
-            TestBitZp    = Immediate    | TwoOperand,
-            TestBitAbs   = Immediate    | TwoOperand | Absolute,
-            TestBitZpX   = Immediate    | TwoOperand | IndexedX,
-            TestBitAbsX  = Immediate    | TwoOperand | Absolute | IndexedX,
-            TestBitFlag  = TestBitZp    & MemModMask
-        };
+
         #region Members
     
-        string _cpu;
         bool _m16, _x16;
-        IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> _selectedInstructions;
-        static double[] s_evaled;
         static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes6502 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
@@ -577,56 +499,7 @@ namespace Core6502DotNet.m6502
             { ("isb", Modes.AbsoluteY   ), new CpuInstruction( "6502i",   0xfb, 3) },
             { ("isb", Modes.AbsoluteX   ), new CpuInstruction( "6502i",   0xff, 3) },
         };
-        static readonly IReadOnlyDictionary<Modes, string> s_modeFormats = new Dictionary<Modes, string>
-        {
-            { Modes.Implied,        string.Empty                },
-            { Modes.Immediate,      "#${0:x2}"                  },
-            { Modes.ImmAbs,         "#${0:x4}"                  },
-            { Modes.ZeroPage,       "${0:x2}"                   },
-            { Modes.ZeroPageS,      "${0:x2},s"                 },
-            { Modes.ZeroPageX,      "${0:x2},x"                 },
-            { Modes.ZeroPageY,      "${0:x2},y"                 },
-            { Modes.Relative,       "${0:x4}"                   },
-            { Modes.RelativeAbs,    "${0:x4}"                   },
-            { Modes.Absolute,       "${0:x4}"                   },
-            { Modes.AbsoluteX,      "${0:x4},x"                 },
-            { Modes.AbsoluteY,      "${0:x4},y"                 },
-            { Modes.Long,           "${0:x6}"                   },
-            { Modes.LongX,          "${0:x6},x"                 },
-            { Modes.IndZp,          "(${0:x2})"                 },
-            { Modes.IndS,           "(${0:x2},s),y"             },
-            { Modes.IndSp,          "(${0:x2},sp),y"            },
-            { Modes.IndX,           "(${0:x2},x)"               },
-            { Modes.IndY,           "(${0:x2}),y"               },
-            { Modes.IndZ,           "(${0:x2}),z"               },
-            { Modes.IndAbs,         "(${0:x4})"                 },
-            { Modes.IndAbsX,        "(${0:x4},x)"               },
-            { Modes.Dir,            "[${0:x2}]"                 },
-            { Modes.DirY,           "[${0:x2}],y"               },
-            { Modes.DirAbs,         "[${0:x4}]"                 },
-            { Modes.Zp0,            "0,${0:x2}"                 },
-            { Modes.Zp1,            "1,${0:x2}"                 },
-            { Modes.Zp2,            "2,${0:x2}"                 },
-            { Modes.Zp3,            "3,${0:x2}"                 },
-            { Modes.Zp4,            "4,${0:x2}"                 },
-            { Modes.Zp5,            "5,${0:x2}"                 },
-            { Modes.Zp6,            "6,${0:x2}"                 },
-            { Modes.Zp7,            "7,${0:x2}"                 },
-            { Modes.TwoOperand,     "${0:x2},${1:x2}"           },
-            { Modes.TestBitZp,      "#${0:x2},${1:x2}"          },
-            { Modes.TestBitZpX,     "#${0:x2},${1:x2},x"        },
-            { Modes.TestBitAbs,     "#${0:x2},${1:x4}"          },
-            { Modes.TestBitAbsX,    "#${0:x2},${1:x4},x"        },
-            { Modes.ThreeOpRel0,    "0,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel1,    "1,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel2,    "2,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel3,    "3,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel4,    "4,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel5,    "5,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel6,    "6,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpRel7,    "7,${0:x2},${1:x4}"         },
-            { Modes.ThreeOpAbs,     "${0:x4},${1:x4},${2:x4}"   }
-        };
+        
         static readonly IReadOnlyDictionary<string, string> s_pseudoBranchTranslations = 
             new Dictionary<string, string>
         {

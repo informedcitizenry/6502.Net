@@ -1,6 +1,6 @@
-﻿6502.Net, A Simple .Net-Based 65xx and Z80 Cross-Assembler
+﻿6502.Net, A .Net-Based Cross-Assembler for Several 8-Bit Microprocessors.
 
-Version 2.2.1
+Version 2.3
 
 ## Overview
 

@@ -20,10 +20,13 @@ namespace Core6502DotNet
     /// </summary>
     public class ErrorLog
     {
-        readonly
+        const ConsoleColor ErrorColor = ConsoleColor.Red;
+        const ConsoleColor WarnColor  = ConsoleColor.Yellow;
+
         #region Members
 
-        List<(string message, bool isError)> _errors;
+        readonly List<(string message, bool isError)> _errors;
+        readonly bool _warningsAsErrors;
 
         #endregion
 
@@ -31,11 +34,26 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs an instance of the ErrorLog class.
         /// </summary>
-        public ErrorLog() => _errors = new List<(string message, bool isError)>();
+        /// <param name="warningsAsErrors">Treat warnings as errors.</param>
+        public ErrorLog(bool warningsAsErrors)
+        {
+            _warningsAsErrors = warningsAsErrors;
+            _errors = new List<(string message, bool isError)>();
+        }
 
         #endregion
 
         #region Methods
+
+        void DumpEntries(IEnumerable<(string message, bool isError)> entries,
+                         ConsoleColor textColor,
+                         TextWriter writer)
+        {
+            ConsoleColor consoleColor = Console.ForegroundColor;
+            Console.ForegroundColor = textColor;
+            entries.ToList().ForEach(entry => writer.WriteLine(entry.message));
+            Console.ForegroundColor = consoleColor;
+        }
 
         /// <summary>
         /// Clear all logged messages.
@@ -61,8 +79,15 @@ namespace Core6502DotNet
         /// Dumps all logged messages to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="writer">The <see cref="TextWriter"/> to dump log messages to.</param>
-        public void DumpAll(TextWriter writer) =>
-            _errors.ForEach(e => writer.WriteLine(e.message));
+        public void DumpAll(TextWriter writer)
+        {
+            ConsoleColor consoleColor = Console.ForegroundColor;
+            _errors.ForEach(e => {
+                Console.ForegroundColor = e.isError ? ErrorColor : WarnColor;
+                writer.WriteLine(e.message);
+            });
+            Console.ForegroundColor = consoleColor;
+        }
 
         /// <summary>
         /// Dumps all logged errors to console output.
@@ -73,11 +98,8 @@ namespace Core6502DotNet
         /// Dumps all logged errors to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="writer">The <see cref="TextWriter"/> to dump errors to.</param>
-        public void DumpErrors(TextWriter writer)
-        {
-            _errors.Where(e => e.isError).ToList()
-                   .ForEach(error => writer.WriteLine(error.message));
-        }
+        public void DumpErrors(TextWriter writer) 
+            => DumpEntries(_errors.Where(e => e.isError), ErrorColor, writer);
 
         /// <summary>
         /// Dumps all logged warnings to console output.
@@ -88,11 +110,15 @@ namespace Core6502DotNet
         /// Dumps all logged warnings to a <see cref="TextWriter"/>.
         /// </summary>
         /// <param name="writer">The <see cref="TextWriter"/> to dump warnings to.</param>
-        public void DumpWarnings(TextWriter writer)
-        {
-            _errors.Where(e => !e.isError).ToList()
-                   .ForEach(warning => writer.WriteLine(warning.message));
-        }
+        public void DumpWarnings(TextWriter writer) 
+            => DumpEntries(_errors.Where(e => !e.isError), WarnColor, writer);
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
+        /// <param name="message">The custom string message.</param>
+        public void LogEntrySimple(string message)
+            => _errors.Add((message, true));
 
 
         /// <summary>
@@ -135,7 +161,7 @@ namespace Core6502DotNet
                 else
                     errorBuilder.AppendFormat(message, source);
             }
-            isError = isError || Assembler.Options.WarningsAsErrors;
+            isError = isError || _warningsAsErrors;
             _errors.Add((errorBuilder.ToString(), isError));
             if (_errors.Count > 1000)
             {

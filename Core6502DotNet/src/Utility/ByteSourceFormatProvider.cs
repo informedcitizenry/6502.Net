@@ -10,17 +10,29 @@ using System.Text;
 
 namespace Core6502DotNet
 {
-    public class ByteSourceFormatProvider : IBinaryFormatProvider
+    /// <summary>
+    /// A class that represents assembly output as source of '.byte' pseudo-ops.
+    /// </summary>
+    public class ByteSourceFormatProvider : Core6502Base, IBinaryFormatProvider
     {
         const int BytesPerLine = 8;
 
+        /// <summary>
+        /// Constructs a new instance of the format provider.
+        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        public ByteSourceFormatProvider(AssemblyServices services)
+            :base(services)
+        {
+        }
+
         public IEnumerable<byte> GetFormat()
         {
-            var output = Assembler.Output.GetCompilation();
+            var output = Services.Output.GetCompilation();
             if (output.Count == 0)
                 return new List<byte>();
 
-            var byteSourceBuilder = new StringBuilder($"\t\t\t* = ${Assembler.Output.ProgramStart:x4}\n");
+            var byteSourceBuilder = new StringBuilder($"\t\t\t* = ${Services.Output.ProgramStart:x4}\n");
             if (output.Count == 1)
             {
                 byteSourceBuilder.AppendLine($"\n\t\t\t.byte ${output[0]:x2}");

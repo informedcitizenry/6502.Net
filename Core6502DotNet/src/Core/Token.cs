@@ -160,7 +160,7 @@ namespace Core6502DotNet
             if (string.IsNullOrEmpty(Name) && Children.Count == 0)
                 Position = token.Position;
 
-            /*Children = */Children.Add(token);
+            Children.Add(token);
         }
 
         /// <summary>

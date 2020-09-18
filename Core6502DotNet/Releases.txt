@@ -1,0 +1,33 @@
+# Release 2.2
+## Features
+* Added directives `.dsection` and `.section` to organize code into named sections
+* Added `--section` option to define sections in the command line
+* Added `--ignore-colons` option in command line to ignore colons made after semi-colon comments
+* Added `--config` option to load options from config file
+* Added `--createconfig` to generate config files
+## Changes
+* Leveraging third party open source CommandLineParser by Giacomo Scala for command line parsing and Newtonsoft.Json by James Newton-King for JSON processing
+* All variables defined inside block directives such as `.if`/`.endif`, `.for`/`.next` and `.switch`/`.endswitch` are now in their own scope
+* Better string support for variables
+* Removed `--arch` and `--target` command line options
+## Fixes
+* Fixed an issue with the `.goto` directive when goto labels were defined outside of scoped blocks 
+* Defined default values for macro and function parameters were not always working
+
+# Release 2.3
+## Features
+* Added Motorola M6800/M6809 Support, bringing total CPUs supported to 11
+* `.cpu` Directive can be used for all supported CPUs
+* New `.dp` directive to support M6809 direct page addressing mode
+* New pseudo-ops `.cbmflt` and `.cbmfltp` for CBM/MBF binary of floats
+* New functions `cbmflt` and `cbmfltp` to convert memory in CBM/MBF format to float value
+* New `log` function for any base
+* New `byte`, `dword`, `long` and `word` functions for value conversions
+## Changes
+* Retired `.comment` and `.uncomment` directives; these will now error
+* `echo` directive accepts numeric (non-string) expressions
+* Refactored code to be thread-safe in multi-threated contexts
+## Fixes
+* The output formats `srec` and `srecmos` should write all data now, not just that of the first line
+* Conditional constants `true` and `false` would error in conditional statements. This has been fixed.
+* Fixed `.org` directive

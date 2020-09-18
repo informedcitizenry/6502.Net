@@ -1,0 +1,8 @@
+﻿				.cpu	"m6809"
+stdout			=		$f810
+
+				ldx		#hello
+				jsr		stdout
+				swi
+
+hello			.string	"Hello, World!",$04

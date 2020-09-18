@@ -24,12 +24,22 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="fileName">The source file name.</param>
         /// <param name="lineNumber">The source line number.</param>
+        /// <param name="indexInSource">The index in the original source the line began.</param>
         /// <param name="originalSource">The original (unprocessed) source.</param>
         /// <param name="head">The head token used to parse down to label, instruction, and operand tokens.</param>
-        public SourceLine(string fileName, int lineNumber, string originalSource, Token head)
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="ignoreParsingError">Ignore any parsing errors.</param>
+        public SourceLine(string fileName, 
+                          int lineNumber, 
+                          int indexInSource,
+                          string originalSource, 
+                          Token head, 
+                          AssemblyServices services,
+                          bool ignoreParsingError)
         {
             LineNumber = lineNumber;
             Filename = fileName;
+            IndexInSource = indexInSource;
 
             UnparsedSource = originalSource;
             
@@ -42,7 +52,7 @@ namespace Core6502DotNet
             else
             {
                 IsParsed = true;
-                ParsedSource = Assembler.Options.CaseSensitive ? originalSource : originalSource.ToLower();
+                ParsedSource = services.Options.CaseSensitive ? originalSource : originalSource.ToLower();
                 var firstChild = head.Children[0];
                 // if there is an operand under first child treat it as a label
                 if (firstChild.Children.Count > 0)
@@ -68,8 +78,9 @@ namespace Core6502DotNet
                                 Operand.Children.AddRange(head.Children.Skip(1));
                             return;
                         }
-                        Assembler.Log.LogEntry(Filename, LineNumber, firstChild.Children[1].Position,
-                                   $"Unknown instruction \"{firstChild.Children[1].Name}\" found.", true);
+                        if (!ignoreParsingError)
+                            services.Log.LogEntry(Filename, LineNumber, firstChild.Children[1].Position,
+                                       $"Unknown instruction \"{firstChild.Children[1].Name}\" found.");
                     }
                 }
                 if (head.Children.Count > 1)
@@ -77,13 +88,20 @@ namespace Core6502DotNet
                     Instruction = head.Children[1];
 
                     if (head.Children.Count > 2)
-                        Operand = head.Children[2];
+                    {
+                        if (head.Children.Count > 3)
+                            services.Log.LogEntry(Filename, LineNumber, head.Children[3].Position,
+                                    $"Unexpected expression \"{head.Children[3].Name}\". found");
+                        else
+                            Operand = head.Children[2];
+                    }
                 }
             }            
         }
 
         SourceLine(string fileName, 
                    int lineNumber, 
+                   int indexInSource,
                    Token label, 
                    Token instruction, 
                    Token operand, 
@@ -93,6 +111,7 @@ namespace Core6502DotNet
         {
             Filename = fileName;
             LineNumber = lineNumber;
+            IndexInSource = indexInSource;
             Label = label;
             Instruction = instruction;
             Operand = operand;
@@ -113,6 +132,7 @@ namespace Core6502DotNet
         public SourceLine WithLineNumber(int lineNumber) =>
                             new SourceLine(Filename,
                                             lineNumber,
+                                            IndexInSource,
                                             Label,
                                             Instruction,
                                             Operand,
@@ -123,6 +143,7 @@ namespace Core6502DotNet
         public SourceLine NoLabel() =>
             new SourceLine(Filename,
                             LineNumber,
+                            IndexInSource,
                             null,
                             Instruction,
                             Operand,
@@ -194,6 +215,11 @@ namespace Core6502DotNet
         public int LineNumber { get; }
 
         /// <summary>
+        /// Gets the position in source the line's own source began.
+        /// </summary>
+        public int IndexInSource { get; }
+
+        /// <summary>
         /// Gets or sets the <see cref="SourceLine"/>'s original source filename.
         /// </summary>
         public string Filename { get; }
@@ -222,7 +248,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the operand's expression string.
         /// </summary>
-        public string OperandExpression => Operand == null ? string.Empty : Operand.ToString();
+        public string OperandExpression => Operand == null ? string.Empty : Operand.ToString().Trim();
 
         #endregion
     }
