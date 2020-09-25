@@ -32,12 +32,12 @@ namespace Core6502DotNet.m680x
         {
         }
 
-        public IEnumerable<byte> GetFormat()
+        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
         {
             var sRecBuilder = new StringBuilder();
 
             var pc = Services.Output.ProgramStart;
-            var fileBytes = Services.Output.GetCompilation().ToArray();
+            var fileBytes = objectBytes.ToArray();
             var bytesLeft = fileBytes.Length;
             var lineCount = 0;
 

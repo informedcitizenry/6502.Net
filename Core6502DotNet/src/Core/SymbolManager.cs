@@ -38,6 +38,7 @@ namespace Core6502DotNet
             Redefined,
             NonScalar,
             NotDefined,
+            MutabilityChanged,
             NotValid,
             InvalidBackReference,
             InvalidForwardReference,
@@ -46,7 +47,8 @@ namespace Core6502DotNet
 
         static readonly Dictionary<ExceptionReason, string> s_reasonMessages = new Dictionary<ExceptionReason, string>
         {
-            { ExceptionReason.Redefined,                "Cannot assign \"{0}\" after it has been assigned."           },
+            { ExceptionReason.MutabilityChanged,        "Cannot redeclare a variable as a label."                     },
+            { ExceptionReason.Redefined,                "Cannot redefine \"{0}\"."           },
             { ExceptionReason.NonScalar,                "Symbol \"{0}\" is non-scalar but is being used as a scalar." },
             { ExceptionReason.NotDefined,               "Symbol \"{0}\" is not defined."                              },
             { ExceptionReason.NotValid,                 "\"{0}\" is not a valid symbol name."                         },
@@ -493,52 +495,42 @@ namespace Core6502DotNet
 
             public double GetLineReferenceValue(string name)
             {
-                // cannot evaluate on forward references on first pass
-                if (name[0] == '+')
-                {
-                    if (Services.CurrentPass == 0)
-                    {
-                        Services.PassNeeded = true;
-                        return Services.Output.LogicalPC;
-                    }
-                }
+                var forward = name[0] == '+';
                 var places = name.Length;
                 var lastIndex = LineIterator.Index + 1;
                 int key = 0;
                 while (places > 0)
                 {
-                    if (name[0] == '-')
+                    if (forward)
                     {
-                        while (lastIndex > 0)
+                        // cannot evaluate forward references on first pass
+                        if (Services.CurrentPass == 0)
                         {
-                            key = _lineReferences.Keys.LastOrDefault(k => k < lastIndex);
-                            if (key == 0 || _lineReferences[key].Name[0] == '-')
-                                break;
-                            lastIndex = key;
+                            Services.PassNeeded = true;
+                            return Services.Output.LogicalPC;
                         }
+                        key = _lineReferences.Keys.FirstOrDefault(k => k > lastIndex);
                     }
                     else
                     {
-                        while (lastIndex <= _lineReferences.Keys.Max())
-                        {
-                            key = _lineReferences.Keys.FirstOrDefault(k => k > lastIndex);
-                            if (key == 0 || _lineReferences.ContainsKey(key) && _lineReferences[key].Name[0] == '+')
-                                break;
-                            lastIndex = key;
-                        }
+                        key = _lineReferences.Keys.LastOrDefault(k => k < lastIndex);
                     }
                     if (key == 0)
-                    {
-                        if (_parent != null)
-                            return _parent.GetLineReferenceValue(name.Substring(0, places));
-                        if (name[0] == '+')
-                            throw new SymbolException(name, 0, SymbolException.ExceptionReason.InvalidForwardReference);
-                        throw new SymbolException(name, 0, SymbolException.ExceptionReason.InvalidBackReference);
-                    }
-                    else
+                        break;
+                    if ((forward && _lineReferences[key].Name[0] == '+') || 
+                        (!forward && _lineReferences[key].Name[0] == '-'))
                         places--;
+                    lastIndex = key;
                 }
-                return _lineReferences[key].Value;
+                if (!_lineReferences.TryGetValue(key, out var lineReference))
+                {
+                    if (_parent != null)
+                        return _parent.GetLineReferenceValue(name.Substring(0, places));
+                    var reason = forward ? SymbolException.ExceptionReason.InvalidForwardReference : 
+                                           SymbolException.ExceptionReason.InvalidBackReference;
+                    throw new SymbolException(name, 0, reason);
+                }
+                return lineReference.Value;
             }
 
             public void DefineLineReferenceValue(string name, double value)
@@ -679,6 +671,9 @@ namespace Core6502DotNet
 
                 if (!existingSym.IsMutable && existingSym.DefinedAtPass == Services.CurrentPass)
                     throw new SymbolException(symbol.Name, 1, SymbolException.ExceptionReason.Redefined);
+
+                if (existingSym.IsMutable && !symbol.IsMutable)
+                    throw new SymbolException(symbol.Name, 1, SymbolException.ExceptionReason.MutabilityChanged);
 
                 if (!existingSym.IsValueEqual(symbol))
                 {

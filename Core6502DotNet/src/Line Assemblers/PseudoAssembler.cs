@@ -51,7 +51,7 @@ namespace Core6502DotNet
                 );
 
             Reserved.DefineType("Functions",
-                "cbmflt", "cbmfltp", "format", "peek", "poke");
+                "cbmflt", "cbmfltp", "format", "peek", "poke", "section");
 
             Services.Evaluator.AddFunctionEvaluator(this);
         }
@@ -316,7 +316,7 @@ namespace Core6502DotNet
                     Services.Output.AddUninitialized(packed ? 5 : 6);
                     continue;
                 }
-                var val = Services.Evaluator.Evaluate(operand.Children, -2.93783588E+39, 1.70141183E+38);
+                var val = Services.Evaluator.Evaluate(operand.Children, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue);
                 if (val != 0 && double.IsNormal(val))
                 {
                     // Convert float to binary.
@@ -353,7 +353,7 @@ namespace Core6502DotNet
                             bytes[1] = 1;
                     }
                 }
-                Services.Output.AddBytes(bytes);
+                Services.Output.AddBytes(bytes, true);
             }
         }
 
@@ -364,9 +364,10 @@ namespace Core6502DotNet
                 return double.NaN;
 
             var bytes = Services.Output.GetRange(address, size).ToList();
+            
             var ieeebytes = new byte[8];
             var exp = bytes[0] - CbmBias + IeeeBias;
-            var sign = 0;
+            int sign;
             if (packed)
             {
                 sign = bytes[1] & 0x80;
@@ -401,9 +402,13 @@ namespace Core6502DotNet
                 var str = StringHelper.GetStringFormat(parameters, Services.SymbolManager, Services.Evaluator);
                 return Services.Encoding.GetEncodedValue(str);
             }
-            if (parameters.Children.Count == 0)
+            if (parameters.Children.Count == 0 || parameters.Children[0].Children.Count == 0)
                 throw new ExpressionException(parameters.Position,
                 $"Too few arguments passed for function \"{function.Name}\".");
+
+            if (function.Name.Equals("section"))
+                return Services.Output.GetSectionStart(parameters.Children[0].Children[0].Name);
+
             var address = (int)Services.Evaluator.Evaluate(parameters.Children[0], ushort.MinValue, ushort.MaxValue);
 
             if (function.Name.Equals("peek"))

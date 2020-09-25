@@ -41,31 +41,31 @@ namespace Core6502DotNet.m680x
             : base(services)
         {
             Reserved.DefineType("Mnemonics",
-                "aba",  "abx",  "adca", "adcb",  "adda", "addb",
-                "addd", "anda", "andb", "andcc", "asl",  "asla",
-                "aslb", "asr",  "asra", "asrb",  "bcc",  "bcs",
-                "beq",  "bge",  "bgt",  "bhi",   "bita", "bitb",
-                "ble",  "bls",  "blt",  "bmi",   "bne",  "bpl",
-                "bra",  "bsr",  "bvc",  "bvs",   "cba",  "clc",
-                "cli",  "clr",  "clra", "clrb",  "clv",  "cmpa",
-                "cmpb", "cmpd", "cmps", "cmpu",  "cmpx", "cmpy",
-                "com",  "coma", "comb", "cpxa",  "cwai", "daa",
-                "dec",  "deca", "decb", "des",   "dex",  "eora",
-                "eorb", "inc",  "inca", "incb",  "ins",  "inx",
-                "jmp",  "jsr",  "lda",  "ldaa",  "ldab", "ldb",
-                "ldd",  "lds",  "ldu",  "ldx",   "ldy",  "leas",
-                "leau", "leax", "leay", "lsl",   "lsla", "lslb",
-                "lsr",  "lsra", "lsrb", "mul",   "neg",  "nega",
-                "negb", "nop",  "ora",  "oraa",  "orab", "orb",
-                "orcc", "psha", "pshb", "pshs",  "pshu", "pula",
-                "pulb", "puls", "pulu", "rol",   "rola", "rolb",
-                "ror",  "rora", "rorb", "rti",   "rts",  "sba",
-                "sbca", "sbcb", "sec",  "sei",   "sev",  "sex",
-                "sta",  "staa", "stab", "stb",   "std",  "sts",
-                "stu",  "stx",  "sty",  "suba",  "subb", "subd",
-                "swi",  "swi2", "swi3", "sync",  "tab",  "tap",
-                "tba",  "tpa",  "tst",  "tsta",  "tstb", "tsx",
-                "txs",  "wai");
+                "aba", "abx", "adca", "adcb", "adda", "addb",
+                "addd", "anda", "andb", "andcc", "asl", "asla",
+                "aslb", "asr", "asra", "asrb", "bcc", "bcs",
+                "beq", "bge", "bgt", "bhi", "bita", "bitb",
+                "ble", "bls", "blt", "bmi", "bne", "bpl",
+                "bra", "bsr", "bvc", "bvs", "cba", "clc",
+                "cli", "clr", "clra", "clrb", "clv", "cmpa",
+                "cmpb", "cmpd", "cmps", "cmpu", "cmpx", "cmpy",
+                "com", "coma", "comb", "cpxa", "cwai", "daa",
+                "dec", "deca", "decb", "des", "dex", "eora",
+                "eorb", "inc", "inca", "incb", "ins", "inx",
+                "jmp", "jsr", "lda", "ldaa", "ldab", "ldb",
+                "ldd", "lds", "ldu", "ldx", "ldy", "leas",
+                "leau", "leax", "leay", "lsl", "lsla", "lslb",
+                "lsr", "lsra", "lsrb", "mul", "neg", "nega",
+                "negb", "nop", "ora", "oraa", "orab", "orb",
+                "orcc", "psha", "pshb", "pshs", "pshu", "pula",
+                "pulb", "puls", "pulu", "rol", "rola", "rolb",
+                "ror", "rora", "rorb", "rti", "rts", "sba",
+                "sbca", "sbcb", "sec", "sei", "sev", "sex",
+                "sta", "staa", "stab", "stb", "std", "sts",
+                "stu", "stx", "sty", "suba", "subb", "subd",
+                "swi", "swi2", "swi3", "sync", "tab", "tap",
+                "tba", "tpa", "tst", "tsta", "tstb", "tsx",
+                "txs", "wai");
 
             Reserved.DefineType("PushPullsExchanges",
                 "pshs", "pshu", "puls", "pulu", "tfr", "exg");
@@ -90,7 +90,7 @@ namespace Core6502DotNet.m680x
 
             // for 6809, parsing line terminations is tricky for auto-increment indexing (e.g, ,x++)
             // so we need to redefine the parser.
-            if (CPU.Equals("m6809")) 
+            if (CPU.Equals("m6809"))
                 LexerParser.LineTerminationFunc = TerminatesLine;
 
             Services.Output.IsLittleEndian = false;
@@ -117,12 +117,12 @@ namespace Core6502DotNet.m680x
             return false;
         }
 
-        protected override bool IsCpuValid(string cpu) 
+        protected override bool IsCpuValid(string cpu)
             => cpu.Equals("m6800") || cpu.Equals("m6809");
 
         protected override void OnReset() { _dp = 0; }
 
-        protected override void OnSetCpu() 
+        protected override void OnSetCpu()
         {
             if (CPU.Equals("m6809"))
                 ActiveInstructions = new Dictionary<(string Mnem, Modes mode), CpuInstruction>(s_opcodes6809);
@@ -155,7 +155,7 @@ namespace Core6502DotNet.m680x
                 }
                 var evalMode = Evaluate(expression, 0);
                 if (!mode.HasFlag(Modes.ForceWidth))
-                    mode |= evalMode;   
+                    mode |= evalMode;
                 else if (evalMode > (mode & Modes.SizeMask))
                     throw new ExpressionException(firstToken.Position, "Width specifier does not match expression.");
 
@@ -171,8 +171,8 @@ namespace Core6502DotNet.m680x
                     mode = (mode & ~Modes.Absolute) | Modes.Relative;
                 else if (Reserved.IsOneOf("Longbranches", line.InstructionName))
                     mode |= Modes.Relative;
-                if (_dp > 0 && 
-                    (mode == Modes.ZeroPage || 
+                if (_dp > 0 &&
+                    (mode == Modes.ZeroPage ||
                     (mode == Modes.Absolute && (int)Evaluations[0] / 256 == _dp)))
                 {
                     if (mode == Modes.Absolute)
@@ -180,7 +180,7 @@ namespace Core6502DotNet.m680x
                         Evaluations[0] = (int)Evaluations[0] & 0xFF;
                         mode = Modes.ZeroPage;
                     }
-                    else 
+                    else
                     {
                         mode = Modes.Absolute;
                     }
@@ -215,8 +215,8 @@ namespace Core6502DotNet.m680x
                  )
                 )
                )
-            { 
-                try 
+            {
+                try
                 {
                     return AssembleIndexed(line);
                 }
@@ -225,7 +225,7 @@ namespace Core6502DotNet.m680x
                     Services.Log.LogEntry(line, synEx.Position, synEx.Message);
                     return string.Empty;
                 }
-            } 
+            }
             return base.OnAssembleLine(line);
         }
 
@@ -289,9 +289,9 @@ namespace Core6502DotNet.m680x
                 if (firstparam.Children.Count != 2)
                     throw new SyntaxException(firstparam.Children[2].Position,
                         $"Unexpected expression \"{firstparam.Children[2].ToString().Trim()}\".");
-                
+
                 var firstOp = firstparam.Children[0];
-                
+
                 if (firstOp.Children.Count == 0)
                 {
                     // auto-increment/decrement, e.g. "leax ,x++"
@@ -368,7 +368,7 @@ namespace Core6502DotNet.m680x
                         modes |= IndexModes.Dec1;
                     if (amount > 1)
                         modes |= IndexModes.Inc2;
-                    if (modes.HasFlag(IndexModes.Indir) && 
+                    if (modes.HasFlag(IndexModes.Indir) &&
                         !modes.HasFlag(IndexModes.By2Bit) &&
                         !modes.HasFlag(IndexModes.Offsbit))
                         throw new SyntaxException(firstOp.Position,
@@ -447,31 +447,40 @@ namespace Core6502DotNet.m680x
                         modes |= indexMode;
                     else if (!ixRegName.Equals("pc", Services.StringComparison) ||
                             offsRegMode != IndexModes.None)
-                            throw new SyntaxException(secondOp.Children[0].Position,
-                               $"\"{ixRegName}\" is not a valid register.");
-                   
+                        throw new SyntaxException(secondOp.Children[0].Position,
+                           $"\"{ixRegName}\" is not a valid register.");
+
                     disSb.Append($",{ixRegName}");
                 }
             }
             if (modes.HasFlag(IndexModes.Indir))
                 disSb.Append(']');
 
-            if (modes.HasFlag(IndexModes.Inc1))
+            if (offsRegMode == IndexModes.None)
             {
-                if (Evaluations[0] < sbyte.MinValue || Evaluations[0] > byte.MaxValue)
+                if (modes.HasFlag(IndexModes.Inc1))
                 {
-                    Evaluations[1] = ((int)Evaluations[0] & 0xFFFF) / 256;
-                    Evaluations[2] = (int)Evaluations[0] & 0xFF;
+                    if (Evaluations[0] < sbyte.MinValue ||
+                    Evaluations[0] > byte.MaxValue ||
+                    (modes & IndexModes.Offset16) == IndexModes.Offset16)
+                    {
+                        Evaluations[1] = ((int)Evaluations[0] & 0xFFFF) / 256;
+                        Evaluations[2] = (int)Evaluations[0] & 0xFF;
+                    }
+                    else if (modes != IndexModes.ExtInd)
+                    {
+                        Evaluations[1] = Evaluations[0];
+                    }
+                    Evaluations[0] = (int)modes;
                 }
-                else if (modes != IndexModes.ExtInd)
+                else
                 {
-                    Evaluations[1] = Evaluations[0];
+                    Evaluations[0] = (int)modes | (int)Evaluations[0];
                 }
-                Evaluations[0] = (int)modes;
             }
             else
             {
-                Evaluations[0] = (int)modes | (int)Evaluations[0];
+                Evaluations[0] = (int)modes;
             }
             Services.Output.Add(instruction.Opcode, instruction.Opcode.Size());
 
@@ -513,7 +522,7 @@ namespace Core6502DotNet.m680x
 
             byte registers = byte.MinValue;
             var registersEvaled = new SortedSet<string>(new PushPullComparer(!isExchange ? lookup : null));
-            foreach(var child in line.Operand.Children)
+            foreach (var child in line.Operand.Children)
             {
                 if (child.Children.Count == 0)
                     throw new SyntaxException(child.Position,
@@ -572,7 +581,7 @@ namespace Core6502DotNet.m680x
 
         public override bool Assembles(string s) => Reserved.IsReserved(s);
 
-        public override bool IsReserved(string token) 
+        public override bool IsReserved(string token)
             => base.IsReserved(token) || s_exchangeModes.ContainsKey(token);
 
         #endregion

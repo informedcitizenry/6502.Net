@@ -25,12 +25,12 @@ namespace Core6502DotNet.m680x
         {
         }
 
-        public IEnumerable<byte> GetFormat()
+        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
         {
             if (!string.IsNullOrEmpty(Services.OutputFormat) &&
                 !Services.OutputFormat.Equals("flat"))
                 throw new Exception($"Unrecognized file format: \"{Services.OutputFormat}\".");
-            return Services.Output.GetCompilation();
+            return objectBytes;
         }
     }
 }

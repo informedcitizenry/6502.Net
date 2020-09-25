@@ -51,16 +51,17 @@ namespace Core6502DotNet
                 }
                 else
                 {
+                    var isGlobal = line.InstructionName.Equals(".global");
                     if (line.LabelName.Equals("*"))
                     {
-                        if (line.InstructionName.Equals(".global"))
+                        if (isGlobal)
                             Services.Log.LogEntry(line, line.Instruction, "Invalid use of Program Counter in expression.", true);
                         else
                             Services.Output.SetPC((int)Services.Evaluator.Evaluate(line.Operand, short.MinValue, ushort.MaxValue));
                     }
                     else if (line.LabelName.Equals("+") || line.LabelName.Equals("-"))
                     {
-                        if (line.InstructionName.Equals(".global"))
+                        if (isGlobal)
                         {
                             Services.Log.LogEntry(line, line.Instruction, "Invalid use of reference label in expression.", true);
                         }
@@ -72,7 +73,7 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        if (line.InstructionName.Equals(".global"))
+                        if (isGlobal)
                         {
                             if (line.OperandHasToken)
                                 Services.SymbolManager.DefineGlobal(line.Label, line.Operand, false);
@@ -134,7 +135,7 @@ namespace Core6502DotNet
                 {
                     if (Services.SymbolManager.SymbolIsNumeric(symbol))
                     {
-                        var numValue = (int)Services.SymbolManager.GetNumericValue(symbol);
+                        var numValue = (long)Services.SymbolManager.GetNumericValue(symbol) & 0xFFFF_FFFF;
                         bool condition;
                         if (line.InstructionName.Equals(".let"))
                             condition = Services.Evaluator.ExpressionIsCondition(line.Operand.Children[0].Children.Skip(2));

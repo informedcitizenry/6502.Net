@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace Core6502DotNet
 {
@@ -139,8 +140,6 @@ namespace Core6502DotNet
                 bytesTaken = bytesTaken.Reverse();
             return bytesTaken;
         }
-
-
 
         #endregion
 
@@ -377,6 +376,8 @@ namespace Core6502DotNet
             }
             if (ProgramEnd < ProgramCounter)
                 ProgramEnd = ProgramCounter;
+            if (_sectionCollection.SectionSelected)
+                _sectionCollection.SetOutputCount(_pc - _sectionCollection.SelectedStartAddress);
         }
 
         /// <summary>
@@ -402,8 +403,27 @@ namespace Core6502DotNet
         /// <summary>
         /// Get the compilation bytes.
         /// </summary>
+        /// <returns>The object bytes.</returns>
         public ReadOnlyCollection<byte> GetCompilation()
             => new ReadOnlyCollection<byte>(_bytes.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
+
+        /// <summary>
+        /// Gets the compilation bytes.
+        /// </summary>
+        /// <param name="section">Gets the bytes of the defined section only.</param>
+        /// <returns>The object bytes.</returns>
+        public ReadOnlyCollection<byte> GetCompilation(string section)
+        {
+            if (string.IsNullOrEmpty(section))
+                return GetCompilation();
+
+            int count;
+            if (_sectionCollection.SetCurrentSection(section) == CollectionResult.NotFound ||
+                (count = _sectionCollection.GetSectionOutputCount()) == -1)
+                throw new Exception($"Could not get object for section {section}");
+            var start = _sectionCollection.SelectedStartAddress;
+            return new ReadOnlyCollection<byte>(_bytes.Skip(start).Take(count).ToArray());
+        }
 
         /// <summary>
         /// Get the relative offset between an address and the Program Counter. Useful for calculating
@@ -443,7 +463,7 @@ namespace Core6502DotNet
                 var diff = _logicalPc - start;
                 start = ProgramCounter - diff;
             }
-            if (start < ProgramStart)
+            if (start < ProgramStart || start >= ProgramEnd)
                 return new List<byte>().AsReadOnly();
             int range;
             if (!_sectionCollection.SectionSelected || 
@@ -517,16 +537,48 @@ namespace Core6502DotNet
                 _bytes[index] = value;
         }
 
+        string GetHashForOutput(int start, int count)
+        {
+            using var md5 = MD5.Create();
+            using var stream = new MemoryStream(_bytes, start, count);
+            var hash = BitConverter.ToString(md5.ComputeHash(stream));
+            return hash.Replace("-", string.Empty).ToLower();
+        }
+
         /// <summary>
         /// Gets the MD5 hash of the binary output.
         /// </summary>
         /// <returns>The calculated checksum of the binary output.</returns>
-        public string GetOutputHash()
+        public string GetOutputHash() => GetHashForOutput(ProgramStart, ProgramEnd - ProgramStart);
+
+        /// <summary>
+        /// Gets the MD5 hash of the binary output.
+        /// </summary>
+        /// <param name="section">The specified section's hash.</param>
+        /// <returns>The calculated checksum of the binary output.</returns>
+        public string GetOutputHash(string section)
         {
-            using var md5 = MD5.Create();
-            using var stream = new MemoryStream(_bytes, ProgramStart, ProgramEnd - ProgramStart);
-            var hash = BitConverter.ToString(md5.ComputeHash(stream));
-            return hash.Replace("-", string.Empty).ToLower();
+            if (string.IsNullOrEmpty(section))
+                return GetOutputHash();
+            int count;
+            if (_sectionCollection.SetCurrentSection(section) == CollectionResult.NotFound ||
+                (count = _sectionCollection.GetSectionOutputCount()) == -1)
+                throw new Exception($"Could not get object bytes for section {section}.");
+            return GetHashForOutput(_sectionCollection.SelectedStartAddress, count);
+        }
+
+        /// <summary>
+        /// Get the start address of a defined section.
+        /// </summary>
+        /// <param name="name">The section name.</param>
+        /// <returns>The section start address, if it is defined.</returns>
+        /// <exception cref="Exception"></exception>
+        public int GetSectionStart(string name)
+        {
+            var start = _sectionCollection.GetSectionStart(name);
+            if (start > int.MinValue)
+                return start;
+            throw new Exception($"Section {name} is not defined.");
         }
 
         /// <summary>
@@ -547,7 +599,7 @@ namespace Core6502DotNet
             if (starts >= ends)
                 throw new SectionException(1,
                     $"Section {name} start address cannot be equal or greater than end address.");
-            if (ends > MaxAddress)
+            if (ends > MaxAddress + 1)
                 throw new SectionException(1, 
                     $"Section {name} end address {ends} is not valid.");
             switch( _sectionCollection.Add(name, starts, ends))

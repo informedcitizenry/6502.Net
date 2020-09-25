@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Core6502DotNet
@@ -26,9 +27,9 @@ namespace Core6502DotNet
         {
         }
 
-        public IEnumerable<byte> GetFormat()
+        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
         {
-            var output = Services.Output.GetCompilation();
+            var output = objectBytes.ToList();
             if (output.Count == 0)
                 return new List<byte>();
 

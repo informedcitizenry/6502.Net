@@ -14,7 +14,8 @@ namespace Core6502DotNet
         /// <summary>
         /// Converts the assembly output to a custom binary format.
         /// </summary>
+        /// <param name="objectBytes">The object bytes to format.</param>
         /// <returns>A custom-formatted byte collection.</returns>
-        IEnumerable<byte> GetFormat();
+        IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes);
     }
 }

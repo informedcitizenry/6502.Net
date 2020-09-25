@@ -21,7 +21,8 @@ namespace Core6502DotNet
         bool EvaluatesFunction(Token function);
 
         /// <summary>
-        /// Evaluate the function.
+        /// Invoke the function with the given parameters, and return the value returned
+        /// from the function.
         /// </summary>
         /// <param name="function">The parsed <see cref="Token"/> containing the function name.</param>
         /// <param name="parameters">The parsed <see cref="Token"/> containing the list of function
@@ -30,7 +31,7 @@ namespace Core6502DotNet
         double EvaluateFunction(Token function, Token parameters);
 
         /// <summary>
-        /// Invoke the function.
+        /// Invoke the function with the given parameters.
         /// </summary>
         /// <param name="function">The parsed <see cref="Token"/> containing the function name.</param>
         /// <param name="parameters">The parsed <see cref="Token"/> containing the list of function
@@ -38,7 +39,7 @@ namespace Core6502DotNet
         void InvokeFunction(Token function, Token parameters);
 
         /// <summary>
-        /// Determines if the given symbol is a named function the evaluator evalutes.
+        /// Determines if the given symbol is a named function the evaluator evaluates.
         /// </summary>
         /// <param name="symbol">The symbol name.</param>
         /// <returns><c>true</c> if the symbol is a function name, <c>false</c> otherwise.</returns>

@@ -35,20 +35,35 @@ namespace Core6502DotNet
         public override bool ExecuteDirective()
         {
             var line = LineIterator.Current;
-            var scopeName = line.LabelName;
-            if (line.InstructionName.Equals(".block"))
+            string scopeName;
+            if (line.InstructionName.Equals(".block") || 
+                line.InstructionName.Equals(".namespace"))
             {
+                var isBlock = line.InstructionName[1] == 'b';
+                if (isBlock)
+                    scopeName = line.LabelName;
+                else
+                    scopeName = line.OperandExpression.Trim();
+                    
                 if (string.IsNullOrEmpty(scopeName))
                     scopeName = LineIterator.Index.ToString();
-                else if (!char.IsLetter(scopeName[0]))
+                else if (!char.IsLetter(scopeName[0]) || (!char.IsLetterOrDigit(scopeName[^1]) && scopeName[^1] != '_'))
                 {
+                    var type = isBlock ? "scope block" : "namespace";
                     throw new SyntaxException(line.Label.Position,
-                        $"Invalid name \"{scopeName}\" for scope block.");
+                        $"Invalid name \"{scopeName}\" for {type}.");
+                }
+                else if (!isBlock && Services.SymbolManager.SymbolExists(scopeName) && Services.CurrentPass == 0)
+                {
+                    Services.Log.LogEntry(line, line.Operand, 
+                        $"Namespace name \"{scopeName}\" clashes with existing symbol name.");
+                    return true;
                 }
                 Services.SymbolManager.PushScope(scopeName);
                 return true;
             }
-            else if (line.InstructionName.Equals(".endblock"))
+            else if (line.InstructionName.Equals(".endblock") || 
+                     line.InstructionName.Equals(".endnamespace"))
             {
                 Services.SymbolManager.PopScope();
                 return true;
@@ -68,5 +83,4 @@ namespace Core6502DotNet
 
         #endregion
     }
-
 }

@@ -1473,6 +1473,6 @@ namespace Core6502DotNet.z80
 			{ ("ld",    Z80Mode.SP,      Z80Mode.IY,      Z80Mode.Implied ), new CpuInstruction("z80", 0xf9fd,   2) }
 		};
 
-		static readonly double[] s_evals = new double[3];
+		readonly double[] _evals;
 	}
 }

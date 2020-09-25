@@ -52,7 +52,6 @@ namespace Core6502DotNet
         public AsmEncoding() :
             this(false)
         {
-
         }
 
         #endregion
@@ -74,7 +73,6 @@ namespace Core6502DotNet
             }
             return UTF8.GetBytes(s);
         }
-
 
         /// <summary>
         /// Get the encoded binary value of the given character as an 
@@ -223,7 +221,7 @@ namespace Core6502DotNet
             {
                 var elem = textEnumerator.GetTextElement();
                 if (_currentMap.ContainsKey(elem))
-                    numbytes += ((long)_currentMap[elem]).Size();
+                    numbytes += _currentMap[elem].Size();
                 else
                     numbytes += UTF8.GetByteCount(elem);
             }
@@ -421,7 +419,7 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// Sets the case sensitivity of the encoding definitions.
+        /// Gets or sets the case sensitivity of the encoding definitions.
         /// </summary>
         public bool CaseSensitive
         {

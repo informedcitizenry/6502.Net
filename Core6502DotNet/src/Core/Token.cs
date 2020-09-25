@@ -163,17 +163,6 @@ namespace Core6502DotNet
             Children.Add(token);
         }
 
-        /// <summary>
-        /// Clone's the token and all its children. 
-        /// </summary>
-        /// <returns>Returns a deep copy of the token, including deep copies of its children.</returns>
-        public Token Clone()
-        {
-            var copy = new Token(new string(Name), new string(Name), Type, OperatorType, Position);
-            Children.ForEach(child => copy.Children.Add(child.Clone()));
-            return copy;
-        }
-
         public override string ToString()
         {
             var sb = new StringBuilder(UnparsedName);

@@ -47,8 +47,8 @@ namespace Core6502DotNet.m680x
         // Examples:
 
         // leax +1,x    => 30 01
-        // leax $10,PC  => 30 8C 10
-        // leay [234,u] => 31 F8 EA
+        // leax $10,PC  => 30 8C 0D
+        // leay [234,u] => 31 D9 EA
         // lda ,--x     => A6 83
         enum IndexModes
         {

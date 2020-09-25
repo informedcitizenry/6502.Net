@@ -65,6 +65,8 @@ namespace Core6502DotNet
             public int Ends { get; }
 
             public bool Selected { get; set; }
+
+            public int OutputCount { get; set; }
         }
 
         #endregion
@@ -121,6 +123,18 @@ namespace Core6502DotNet
         }
 
         /// <summary>
+        /// Gets the start address for a given section.
+        /// </summary>
+        /// <param name="name">The section name.</param>
+        /// <returns>The start address for the section.</returns>
+        public int GetSectionStart(string name)
+        {
+            if (_collection.TryGetValue(name, out var section))
+                return section.Starts;
+            return int.MinValue;
+        }
+
+        /// <summary>
         /// Sets the current section by name.
         /// </summary>
         /// <param name="name">The section name.</param>
@@ -135,6 +149,34 @@ namespace Core6502DotNet
                 return CollectionResult.Success;
             }
             return CollectionResult.NotFound;
+        }
+
+        /// <summary>
+        /// Get the currently selected section's output count.
+        /// </summary>
+        /// <returns>The output count of the selected section.</returns>
+        public int GetSectionOutputCount()
+        {
+            if (_current != null)
+                return _current.OutputCount;
+            return -1;
+        }
+
+
+        /// <summary>
+        /// Sets the output byte count of the current section.
+        /// </summary>
+        /// <param name="count">The count.</param>
+        /// <returns><c>true</c> if the current section's output count was updated,
+        /// otherwise <c>false</c>.</returns>
+        public bool SetOutputCount(int count)
+        {
+            if (_current != null)
+            {
+                _current.OutputCount = count;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

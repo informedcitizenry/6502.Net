@@ -274,6 +274,7 @@ namespace Core6502DotNet
         /// <param name="labelFile">The label filename.</param>
         /// <param name="listingFile">The listing filename.</param>
         /// <param name="outputFile">The output filename.</param>
+        /// <param name="outputSection">The section to output.</param>
         /// <param name="quiet">The quiet mode flag.</param>
         /// <param name="noSource">The no-source flag.</param>
         /// <param name="verboseList">The verbose listing flag.</param>
@@ -297,6 +298,7 @@ namespace Core6502DotNet
                        string labelFile,
                        string listingFile,
                        string outputFile,
+                       string outputSection,
                        bool quiet,
                        bool noSource,
                        bool verboseList,
@@ -320,6 +322,7 @@ namespace Core6502DotNet
                                              labelDefines,
                                              caseSensitive,
                                              outputFile,
+                                             outputSection,
                                              includePath,
                                              ignoreColons)
         {
@@ -349,6 +352,7 @@ namespace Core6502DotNet
         /// <param name="sources">The input files.</param>
         /// <param name="caseSensitive">The case-sensitive flag.</param>
         /// <param name="outputFile">The output filename.</param>
+        /// <param name="outputSection">The section to output.</param>
         /// <param name="includePath">The include path.</param>
         /// <param name="ignoreColons">The ignore-colons flag.</param>
         [JsonConstructor]
@@ -360,6 +364,7 @@ namespace Core6502DotNet
                        IList<string> defines,
                        bool caseSensitive,
                        string outputFile,
+                       string outputSection,
                        string includePath,
                        bool ignoreColons)
         {
@@ -398,12 +403,11 @@ namespace Core6502DotNet
             ConfigFile = string.Empty;
             IncludePath = includePath ?? string.Empty;
             IgnoreColons = ignoreColons;
-
-            LabelDefines = defines == null ? new List<string>().AsReadOnly() : new ReadOnlyCollection<string>(defines);
-            InputFiles = sources == null ? new List<string>().AsReadOnly() : new ReadOnlyCollection<string>(sources);
-
+            OutputSection = outputSection == null ?  string.Empty : $"\"{outputSection}\"";
+            LabelDefines = GetReadOnlyList(defines);
+            InputFiles = GetReadOnlyList(sources);
             if (sections != null)
-                Sections = new ReadOnlyCollection<string>(new List<string>(sections.Select(s => s.ToString())));
+                Sections = GetReadOnlyList(sections.Select(s => s.ToString()).ToList());
             else
                 Sections = new List<string>().AsReadOnly();
             CreateConfig = null;
@@ -412,6 +416,9 @@ namespace Core6502DotNet
         #endregion
 
         #region Methods
+
+        ReadOnlyCollection<T> GetReadOnlyList<T>(IList<T> list) 
+            => list == null ? new List<T>().AsReadOnly() : new ReadOnlyCollection<T>(list);
 
         string JsonSerialize()
         {
@@ -469,6 +476,8 @@ namespace Core6502DotNet
 
             if (!string.IsNullOrEmpty(OutputFile) && !OutputFile.Equals("a.out"))
                 root.Add("outputFile", OutputFile);
+            if (!string.IsNullOrEmpty(OutputSection))
+                root.Add("outputSection", OutputSection);
             if (InputFiles.Count > 0)
             {
                 foreach (var i in InputFiles)
@@ -752,6 +761,12 @@ namespace Core6502DotNet
         public string OutputFile { get; }
 
         /// <summary>
+        /// Gets the section to output to object file.
+        /// </summary>
+        [Option("output-section", Required = false, HelpText = "Output the specified section only to object file.")]
+        public string OutputSection { get; }
+
+        /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
         [Option('q', "Quiet", Required = false, HelpText = "Assemble in quiet mode (no console)")]
@@ -796,8 +811,8 @@ namespace Core6502DotNet
         {
             get
             {
-                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, "output.bin", null, false));
-                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, null, null, null, false, null, null, null, false, false, false, false, false, false));
+                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, "output.bin", null, null, false));
+                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, null, null, null, false, null, null, null, null, false, false, false, false, false, false));
             }
         }
 

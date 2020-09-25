@@ -7,7 +7,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using ConversionDef = System.Func<string, double>;
 using OperationDef = System.Tuple<System.Func<System.Collections.Generic.List<double>, double>, int>;
@@ -39,6 +38,22 @@ namespace Core6502DotNet
     /// </summary>
     public class Evaluator
     {
+        #region Constants
+
+        /// <summary>
+        /// Represents the smallest possible value of a CBM/MBF floating
+        /// point value.
+        /// </summary>
+        public const double CbmFloatMinValue = -2.93783588E+39;
+
+        /// <summary>
+        /// Represents the largest possible value of a CBM/MBF floating
+        /// point value.
+        /// </summary>
+        public const double CbmFloatMaxValue = 1.70141183E+38;
+
+        #endregion
+
         #region Members
 
         static readonly HashSet<string> s_conditionals = new HashSet<string>
@@ -274,6 +289,11 @@ namespace Core6502DotNet
             var tokenAsString = token.ToString();
             if (string.IsNullOrEmpty(tokenAsString))
                 return false;
+            if (tokenAsString[0] == ',')
+                if (tokenAsString.Length < 2)
+                    return false;
+                else
+                    tokenAsString = tokenAsString.Substring(1);
             var name = tokenAsString.Replace("%", "0b")
                                     .Replace("$", "0x")
                                     .Trim()
@@ -355,6 +375,8 @@ namespace Core6502DotNet
             var tokenList = tokens.ToList();
             if (tokenList.Count == 1 && (tokenList[0].Name.Equals("true") || tokenList[0].Name.Equals("false")))
                 return true;
+            if (tokenList.Count == 2 && tokenList[0].Name.Equals("!") && tokenList[0].OperatorType == OperatorType.Unary)
+                return ExpressionIsCondition(tokenList.Skip(1));
             for (var i = 0; i < tokenList.Count; i++)
             {
                 var token = tokenList[i];
@@ -533,7 +555,7 @@ namespace Core6502DotNet
                     $"Unexpected expression found: \"{tokens.Last().LastChild}\".");
 
             var r = result.Pop();
-            if (double.IsNaN(r))
+            if (r != 0 && !double.IsNormal(r))
             {
                 if (isMath)
                     return 0xffff;

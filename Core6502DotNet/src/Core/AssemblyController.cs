@@ -132,7 +132,7 @@ namespace Core6502DotNet
             }
             if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
                 _services.Log.DumpWarnings();
-
+            int byteCount = 0;
             if (_services.Log.HasErrors)
             {
                 _services.Log.DumpErrors();
@@ -147,7 +147,7 @@ namespace Core6502DotNet
                                    $"// {DateTime.Now:f}\n\n// Input files:\n\n" +
                                    $"// {inputFiles}\n\n";
                 disassembly.Insert(0, disasmHeader);
-                WriteOutput(disassembly.ToString());
+                byteCount = WriteOutput(disassembly.ToString());
             }
             Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
             Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
@@ -156,9 +156,13 @@ namespace Core6502DotNet
             var ts = stopWatch.Elapsed.TotalSeconds;
             if (!_services.Log.HasErrors)
             {
-                Console.WriteLine($"{_services.Output.GetCompilation().Count} bytes, {ts} sec.");
+                var section = _services.Options.OutputSection;
+                if (!string.IsNullOrEmpty(section))
+                    Console.WriteLine($"Output section: {section}");
+
+                Console.WriteLine($"{byteCount} bytes, {ts} sec.");
                 if (_services.Options.ShowChecksums)
-                    Console.WriteLine($"Checksum: {_services.Output.GetOutputHash()}");
+                    Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
                 Console.WriteLine("*********************************");
                 Console.WriteLine("Assembly completed successfully.");
             }
@@ -248,19 +252,20 @@ namespace Core6502DotNet
 
         void OnPassChanged(object sender, EventArgs args) => _services.Output.Reset();
 
-        void WriteOutput(string disassembly)
+        int WriteOutput(string disassembly)
         {
             // no errors finish up
             // save to disk
             var outputFile = _services.Options.OutputFile;
+            var objectCode = _services.Output.GetCompilation(_services.Options.OutputSection);
             var formatProvider = _services.FormatSelector?.Invoke(_services.OutputFormat, _services);
             if (formatProvider != null)
-                File.WriteAllBytes(outputFile, formatProvider.GetFormat().ToArray());
+                File.WriteAllBytes(outputFile, formatProvider.GetFormat(objectCode).ToArray());
             else
-                File.WriteAllBytes(outputFile, _services.Output.GetCompilation().ToArray());
+                File.WriteAllBytes(outputFile, objectCode.ToArray());
 
             // write disassembly
-            if (!string.IsNullOrEmpty(disassembly) && !string.IsNullOrEmpty(_services.Options.ListingFile))
+             if (!string.IsNullOrEmpty(disassembly) && !string.IsNullOrEmpty(_services.Options.ListingFile))
                 File.WriteAllText(_services.Options.ListingFile, disassembly);
 
             // write listings
@@ -271,6 +276,7 @@ namespace Core6502DotNet
             Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
             Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
             Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
+            return objectCode.Count;
         }
         #endregion
     }

@@ -60,6 +60,7 @@ namespace Core6502DotNet
             { ".ifndef",    BlockType.ConditionalNdef },
             { ".for",       BlockType.ForNext         },
             { ".function",  BlockType.Functional      },
+            { ".namespace", BlockType.Namespace       },
             { ".page",      BlockType.Page            },
             { ".repeat",    BlockType.Repeat          },
             { ".switch",    BlockType.Switch          },
@@ -97,7 +98,8 @@ namespace Core6502DotNet
 
             _currentBlock = null;
 
-            Reserved.DefineType("Scope", ".block", ".endblock");
+            Reserved.DefineType("Scope", 
+                ".block", ".endblock", ".namespace", ".endnamespace");
 
             Reserved.DefineType("Conditional",
                 ".if", ".ifdef", ".ifndef", ".else", ".elseif",
@@ -124,6 +126,8 @@ namespace Core6502DotNet
             ExcludedInstructionsForLabelDefines.Add(".function");
 
             Services.Evaluator.AddFunctionEvaluator(this);
+
+            Services.IsReserved.Add(s => _functionDefs.ContainsKey(s));
         }
 
         #endregion
@@ -135,18 +139,29 @@ namespace Core6502DotNet
             if (Services.CurrentPass == 0)
             {
                 if (_currentBlock != null)
-                    throw new SyntaxException(_currentBlock.Line.Instruction.Position,
+                {
+                    Services.Log.LogEntry(_currentBlock.Line,
+                        _currentBlock.Line.Instruction.Position,
                         $"Function cannot be defined inside a \"{_currentBlock.Line.InstructionName}\" block.");
-
-                var fcnName = line.LabelName;
-                if (string.IsNullOrEmpty(fcnName))
-                    throw new SyntaxException(1, "Function name not specified.");
-                if (!char.IsLetter(fcnName[0]))
-                    throw new SyntaxException(line.Label.Position, $"Invalid function name \"{fcnName}\".");
-                else if (_functionDefs.ContainsKey(fcnName))
-                    throw new SyntaxException(line.Label.Position, $"Duplicate function declaration \"{fcnName}\".");
+                }
                 else
-                    _functionDefs.Add(fcnName, new Function(Services, line.Operand, _lineIterator));
+                {
+                    var fcnName = line.LabelName;
+                    if (string.IsNullOrEmpty(fcnName))
+                    {
+                        Services.Log.LogEntry(line, line.Instruction, "Function name not specified.");
+                    }
+                    else if (!Services.SymbolManager.SymbolIsValid(fcnName))
+                    {
+                        if (_functionDefs.ContainsKey(fcnName))
+                            Services.Log.LogEntry(line, line.Label.Position,
+                                $"Function name \"{fcnName}\" was previously declared.");
+                        else
+                            Services.Log.LogEntry(line, line.Label.Position, $"Invalid function name \"{fcnName}\".");
+                    }
+                    else
+                        _functionDefs.Add(fcnName, new Function(Services, line.Operand, _lineIterator));
+                }
             }
             else
             {
@@ -166,6 +181,7 @@ namespace Core6502DotNet
                 case BlockType.ConditionalDef:
                 case BlockType.ConditionalNdef:
                     return new ConditionalBlock(Services, _lineIterator, type);
+                case BlockType.Namespace:
                 case BlockType.Scope:
                     return new ScopeBlock(Services, _lineIterator, type);
                 case BlockType.Page:
@@ -175,17 +191,6 @@ namespace Core6502DotNet
                 default:
                     return new WhileBlock(Services, _lineIterator, type);
             }
-        }
-
-        class BlockLineCount
-        {
-            public BlockLineCount(SourceLine line, int count)
-            {
-                Lines = new List<SourceLine> { line };
-                Count = count;
-            }
-            public List<SourceLine> Lines { get; }
-            public int Count { get; set;  }
         }
 
         void ScanBlock(BlockType type)

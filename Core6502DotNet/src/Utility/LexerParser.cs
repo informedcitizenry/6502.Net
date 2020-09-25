@@ -23,6 +23,7 @@ namespace Core6502DotNet
         const char EOF = char.MinValue;
         const char SingleQuote = '\'';
         const char NewLine = '\n';
+        const char DigitSeparator = '_';
 
         #endregion
 
@@ -88,7 +89,11 @@ namespace Core6502DotNet
         }
 
         static bool FirstNonHex(char prev, char current, char next)
-            => !IsHex(current);
+        {
+            if (current == DigitSeparator)
+                return !(IsHex(prev) && IsHex(next));
+            return !IsHex(current);
+        }
 
         static bool FirstNonNonBase10(char prev, char current, char next)
         {
@@ -103,7 +108,10 @@ namespace Core6502DotNet
                 return false;
             if ((prev == 'x' || prev == 'X' || IsHex(prev)) && IsHex(current))
                 return false;
-
+            if (prev == DigitSeparator)
+                return !(IsHex(current));
+            if (current == DigitSeparator)
+                return !(IsHex(prev) && IsHex(next));
             return true;
         }
 
@@ -111,35 +119,37 @@ namespace Core6502DotNet
         {
             if (!char.IsDigit(current))
             {
-                if (current == '.')
+                switch (current)
                 {
-                    if (char.IsDigit(prev) || char.IsDigit(next))
-                        return false;
+                    case '.': 
+                        return !(char.IsDigit(prev) || char.IsDigit(next));
+                    case '+':
+                    case '-':
+                        return !((prev == 'E' || prev == 'e') && char.IsDigit(next));
+                    case 'e':
+                    case 'E':
+                        return !(char.IsDigit(prev) && (next == '+' || next == '-' || char.IsDigit(next)));
+                    case DigitSeparator:
+                        return !(char.IsDigit(prev) && char.IsDigit(next));
+                    default:
+                        return true;
                 }
-                else if (current == '+' || current == '-')
-                {
-                    if ((prev == 'E' || prev == 'e') && char.IsDigit(next))
-                        return false;
-                }
-                else if (current == 'E' || current == 'e')
-                {
-                    if (char.IsDigit(prev) &&
-                         (next == '+' || next == '-' || char.IsDigit(next)))
-                        return false;
-                }
-                return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         static bool FirstNonAltBin(char prev, char current, char next)
-            => !(current == '.' || current == '#');
-
+        {
+            if (current == DigitSeparator)
+                return !((prev == '.' || prev == '#') && (next == '.' || next == '#'));
+            return !(current == '.' || current == '#');
+        }
+            
         static bool FirstNonSymbol(char prev, char current, char next) =>
-            !char.IsLetterOrDigit(current) && current != '_' && current != '.' && current != SingleQuote;
+            !char.IsLetterOrDigit(current) && 
+            current != '_' && 
+            current != '.' && 
+            (current != SingleQuote || (!char.IsWhiteSpace(next) && next != EOF));
 
         static bool FirstNonLetterOrDigit(char prev, char current, char next)
             => !char.IsLetterOrDigit(current);
@@ -214,6 +224,8 @@ namespace Core6502DotNet
                     {
                         source = ScanTo(previousChar, iterator, FirstNonNumeric);
                     }
+                    if (source.Contains(DigitSeparator))
+                        source = source.Replace("_", string.Empty);
                 }
                 else if (c == '\\') // for macro expansions
                 {
@@ -246,6 +258,12 @@ namespace Core6502DotNet
                     else
                     {
                         tokenType = TokenType.Operand;
+                        if (previousToken != null &&
+                            previousToken.Name.Equals("$") && 
+                            previousToken.OperatorType == OperatorType.Unary &&
+                            source.Length > 2 &&
+                            source.Contains(DigitSeparator))
+                            source = source.Replace("_", string.Empty);
                     }
                 }
             }
@@ -258,6 +276,8 @@ namespace Core6502DotNet
                 tokenType = TokenType.Operand;
                 source = ScanTo(previousChar, iterator, FirstNonAltBin).Replace('.', '0')
                                                                        .Replace('#', '1');
+                if (source.Contains(DigitSeparator))
+                    source = source.Replace("_", string.Empty);
             }
             else if (c == '"' || c == SingleQuote)
             {
@@ -462,6 +482,8 @@ namespace Core6502DotNet
                 {
                     nextTokName = ScanTo(nextChar, iterCopy, FirstNonNumeric);
                 }
+                if (nextTokName.Length > 2 && nextTokName.Contains(DigitSeparator))
+                    nextTokName = nextTokName.Replace("_", string.Empty);
                 return !string.IsNullOrEmpty(nextTokName) && Regex.IsMatch(nextTokName, binRegex);
             }
         }
@@ -575,10 +597,12 @@ namespace Core6502DotNet
                         iterator.MoveNext();
                 }
                 if (iterator.Current == ';')
-                    _ = iterator.FirstOrDefault(c => c == NewLine || 
-                                                     c == EOF     || 
-                                                     (c == ':' && !services.Options.IgnoreColons));
-
+                {
+                    char c;
+                    while ((c = iterator.GetNext()) != NewLine &&
+                           (c != ':' || services.Options.IgnoreColons) &&
+                           c != EOF) { }
+                }
                 if (iterator.Current == NewLine || 
                     iterator.Current == ':'     || 
                     iterator.Current == EOF)
@@ -622,7 +646,9 @@ namespace Core6502DotNet
                         token = null;
                     }
                     lineIndex = iterator.Index;
-                    if (newLine)
+                    if (lineIndex == -1)
+                        break; // this means we've reached the end of the source!
+                    if (newLine && sourceLineIndex < iterator.Index)
                         sourceLineIndex = iterator.Index;
                 }
             }
@@ -638,7 +664,6 @@ namespace Core6502DotNet
                                          rootParent.Children[0], 
                                          services, 
                                          parseOneLine));
-
             return lines;
 
             void AddBlankSeparator()
@@ -651,8 +676,10 @@ namespace Core6502DotNet
 
             string GetSourceLineSource()
             {
-                if (iterator.Index > sourceLineIndex + 1)
+                if (sourceLineIndex > -1)
                     return source.Substring(sourceLineIndex + 1, iterator.Index - sourceLineIndex - 1);
+                else if (iterator.Index > -1)
+                    return source.Substring(0, iterator.Index);
                 return string.Empty;
             }
 

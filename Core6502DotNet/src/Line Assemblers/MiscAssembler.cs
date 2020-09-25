@@ -112,7 +112,7 @@ namespace Core6502DotNet
                         if (Services.Evaluator.ExpressionIsCondition(line.Operand.Children))
                             Output(line, Services.Evaluator.EvaluateCondition(line.Operand).ToString());
                         else
-                            Output(line, Services.Evaluator.Evaluate(line.Operand).ToString());
+                            Output(line, Services.Evaluator.Evaluate(line.Operand.Children, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue).ToString());
                     }
                     else
                     {
@@ -126,11 +126,9 @@ namespace Core6502DotNet
                 case ".invoke":
                     InvokeFunction(line);
                     break;
-                case ".pron":
-                    Services.PrintOff = false;
-                    break;
                 case ".proff":
-                    Services.PrintOff = true;
+                case ".pron":
+                    Services.PrintOff = instruction.Equals(".proff");
                     break;
                 case ".dsection":
                     DefineSection(line);
@@ -139,16 +137,19 @@ namespace Core6502DotNet
                     return SetSection(line);
                 case ".format":
                 case ".target":
-                    if (Services.Output.HasOutput)
-                        Services.Log.LogEntry(line, line.Instruction, "Cannot specify target format after assembly has started.");
-                    else if (!line.OperandHasToken || !line.OperandExpression.Trim().EnclosedInDoubleQuotes())
-                        Services.Log.LogEntry(line, line.Operand, "Expression must be a string.");
-                    else if (!string.IsNullOrEmpty(Services.OutputFormat))
-                        Services.Log.LogEntry(line, line.Operand, "Output format was previously specified.");
-                    else
-                        Services.SelectFormat(line.OperandExpression.Trim().TrimOnce('"'));
-                    if (instruction.Equals(".target"))
-                        Services.Log.LogEntry(line, line.Instruction, "\".target\" is deprecated. Use \".format\" instead.", false);
+                    if (Services.CurrentPass == 0)
+                    {
+                        if (Services.Output.HasOutput)
+                            Services.Log.LogEntry(line, line.Instruction, "Cannot specify target format after assembly has started.");
+                        else if (!line.OperandHasToken || !line.OperandExpression.Trim().EnclosedInDoubleQuotes())
+                            Services.Log.LogEntry(line, line.Operand, "Expression must be a string.");
+                        else if (!string.IsNullOrEmpty(Services.OutputFormat))
+                            Services.Log.LogEntry(line, line.Operand, "Output format was previously specified.");
+                        else
+                            Services.SelectFormat(line.OperandExpression.Trim().TrimOnce('"'));
+                        if (instruction.Equals(".target"))
+                            Services.Log.LogEntry(line, line.Instruction, "\".target\" is deprecated. Use \".format\" instead.", false);
+                    }
                     break;
                 default:
                     InitMem(line);
@@ -174,6 +175,10 @@ namespace Core6502DotNet
                 var name = parms[0].ToString().Trim();
                 if (!name.EnclosedInDoubleQuotes())
                     throw new SyntaxException(parms[0].Position, "Section name must be a string.");
+                if (!Services.Evaluator.ExpressionIsConstant(parms[1]) ||
+                    !Services.Evaluator.ExpressionIsConstant(parms[2]))
+                    throw new SyntaxException(parms[1].Position, 
+                        "Section start and end parameters must be constant expressions.");
                 var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms[1]));
                 var ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms[2]));
                 

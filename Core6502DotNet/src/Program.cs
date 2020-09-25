@@ -44,6 +44,9 @@ namespace Core6502DotNet
                 format.Equals("srecmos", services.StringComparison))
                 return new SRecordFormatProvider(services);
 
+            if (format.Equals("hex", services.StringComparison))
+                return new HexFormatProvider(services);
+
             if (format.Equals("bytesource", services.StringComparison))
                 return new ByteSourceFormatProvider(services);
             
@@ -55,8 +58,10 @@ namespace Core6502DotNet
 
             return format.ToLower() switch
             {
-                "d64" => new D64FormatProvider(services),
-                _     => new M6502FormatProvider(services),
+                "cart" => new C64CartFormatProvider(services),
+                "d64"  => new D64FormatProvider(services),
+                "t64"  => new T64FormatProvider(services),
+                _      => new M6502FormatProvider(services),
             };
         }
     }

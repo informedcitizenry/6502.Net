@@ -27,40 +27,40 @@ namespace Core6502DotNet.m65xx
         {
         }
 
-        public IEnumerable<byte> GetFormat()
+        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
         {
             var fmt = Services.OutputFormat;
-            var progstart = (ushort)Services.Output.ProgramStart;
-            var progend = (ushort)Services.Output.ProgramCounter;
-            var progsize = Services.Output.GetCompilation().Count;
+            byte startL = (byte)(Services.Output.ProgramStart & 0xFF);
+            byte startH = (byte)(Services.Output.ProgramStart / 256);
+            byte endL = (byte)(Services.Output.ProgramEnd & 0xFF);
+            byte endH = (byte)(Services.Output.ProgramEnd / 256);
+            byte sizeL = (byte)(objectBytes.Count() & 0xFF);
+            byte sizeH = (byte)(objectBytes.Count() / 256);
 
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            using var writer = new BinaryWriter(ms);
+            if (string.IsNullOrEmpty(fmt) || fmt.Equals("cbm"))
             {
-                using (var writer = new BinaryWriter(ms))
-                {
-                    if (string.IsNullOrEmpty(fmt) || fmt.Equals("cbm"))
-                    {
-                        writer.Write(progstart);
-                    }
-                    else if (fmt.Equals("atari-xex"))
-                    {
-                        writer.Write(new byte[] { 0xff, 0xff }); // FF FF
-                        writer.Write(progstart);
-                        writer.Write(progend);
-                    }
-                    else if (fmt.Equals("apple2"))
-                    {
-                        writer.Write(progstart);
-                        writer.Write(progsize);
-                    }
-                    else if (!fmt.Equals("flat"))
-                    {
-                        throw new ArgumentException($"Format \"{fmt}\" not supported with targeted CPU.");
-                    }
-                    writer.Write(Services.Output.GetCompilation().ToArray());
-                    return ms.ToArray();
-                }
+                writer.Write(startL);
+                writer.Write(startH);
             }
+            else if (fmt.Equals("atari-xex"))
+            {
+                writer.Write(new byte[] { 0xff, 0xff }); // FF FF
+                writer.Write(startL); writer.Write(startH);
+                writer.Write(endL); writer.Write(endH);
+            }
+            else if (fmt.Equals("apple2"))
+            {
+                writer.Write(startL); writer.Write(startH);
+                writer.Write(sizeL); writer.Write(sizeH);
+            }
+            else if (!fmt.Equals("flat"))
+            {
+                throw new ArgumentException($"Format \"{fmt}\" not supported with targeted CPU.");
+            }
+            writer.Write(objectBytes.ToArray());
+            return ms.ToArray();
         }
     }
 }

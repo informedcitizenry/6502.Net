@@ -180,7 +180,8 @@ namespace Core6502DotNet
                             throw new SyntaxException(line.Label.Position, 
                                 $"Macro named \"{line.LabelName}\" already defined.");
                         if (Services.IsReserved.Any(i => i.Invoke(macroName)) ||
-                            !char.IsLetter(line.LabelName[0]))
+                            !(char.IsLetter(line.LabelName[0]) && 
+                              (char.IsLetterOrDigit(macroName[^1]) || macroName[^1] == '_')))
                             throw new SyntaxException(line.Label.Position, 
                                 $"Macro name \"{line.LabelName}\" is not valid.");
                         
@@ -259,7 +260,6 @@ namespace Core6502DotNet
                 {
                     Services.Log.LogEntry(line, ex.Position, ex.Message);
                 }
-                
             }
             return macroProcessed;
         }
@@ -304,10 +304,9 @@ namespace Core6502DotNet
                 defineExpression += "=1";
 
             var defines = LexerParser.Parse(string.Empty, defineExpression, Services);
-            if (defines.Count() > 1)
+            if (defines.Count() != 1)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
-            //var defines = Preprocess(string.Empty, defineExpression);
-            var line = defines.ToList()[0];
+            var line = defines.First();
             if (line.Label == null || line.Instruction == null || !line.InstructionName.Equals("=") || line.Operand == null)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
             if (!line.OperandExpression.EnclosedInDoubleQuotes() && 
@@ -394,7 +393,7 @@ namespace Core6502DotNet
             // we cannot do proper parsing until the cpu assembler is properly configured first.
             string cpu = Services.Options.CPU;
             var firstLine = LexerParser.Parse(fileName, source, Services, true)
-                                      .FirstOrDefault(l => !string.IsNullOrEmpty(l.ParsedSource));
+                                       .FirstOrDefault(l => !string.IsNullOrEmpty(l.ParsedSource));
             if (firstLine != null && firstLine.InstructionName.Equals(".cpu"))
             {
                 if (_processingStarted)

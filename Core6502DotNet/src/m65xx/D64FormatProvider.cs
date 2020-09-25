@@ -115,7 +115,7 @@ namespace Core6502DotNet.m65xx
         {
         }
 
-        public IEnumerable<byte> GetFormat()
+        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
         {
             var diskImage = new byte[DiskSize];
             var availTrackSectors = s_trackSectorTable.ToDictionary(k => k.Key, k => ToBitMap(k.Value));
@@ -127,7 +127,7 @@ namespace Core6502DotNet.m65xx
             else if (fileName.Length > 4 && fileName.EndsWith(".D64"))
                 fileName = fileName[0..^4];
 
-            var fileBytes = new List<byte>(Services.Output.GetCompilation().Count + 2)
+            var fileBytes = new List<byte>(objectBytes.Count() + 2)
             {
                 // write load address
                 Convert.ToByte(Services.Output.ProgramStart % 256),
@@ -135,7 +135,7 @@ namespace Core6502DotNet.m65xx
             };
 
             // write file data
-            fileBytes.AddRange(Services.Output.GetCompilation());
+            fileBytes.AddRange(objectBytes);
 
             // write directory header
             var dirOffs = 0x16500;

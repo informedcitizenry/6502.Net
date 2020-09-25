@@ -33,6 +33,7 @@ namespace Core6502DotNet
     public enum BlockType
     {
         Scope,
+        Namespace,
         Conditional,
         ConditionalDef,
         ConditionalNdef,
@@ -55,16 +56,17 @@ namespace Core6502DotNet
         /// </summary>
         public static readonly Dictionary<BlockType, BlockDirective> Directives = new Dictionary<BlockType, BlockDirective>
             {
-                { BlockType.Scope,           new BlockDirective(".block",   ".endblock"     ) },
-                { BlockType.Conditional,     new BlockDirective(".if",      ".endif"        ) },
-                { BlockType.ConditionalDef,  new BlockDirective(".ifdef",   ".endif"        ) },
-                { BlockType.ConditionalNdef, new BlockDirective(".ifndef",  ".endif"        ) },
-                { BlockType.ForNext,         new BlockDirective(".for",     ".next"         ) },
-                { BlockType.Functional,      new BlockDirective(".function",".endfunction"  ) },
-                { BlockType.Page,            new BlockDirective(".page",    ".endpage"      ) },
-                { BlockType.Repeat,          new BlockDirective(".repeat",  ".endrepeat"    ) },
-                { BlockType.Switch,          new BlockDirective(".switch",  ".endswitch"    ) },
-                { BlockType.While,           new BlockDirective(".while",   ".endwhile"     ) }
+                { BlockType.Scope,           new BlockDirective(".block",     ".endblock"     ) },
+                { BlockType.Namespace,       new BlockDirective(".namespace", ".endnamespace" ) },
+                { BlockType.Conditional,     new BlockDirective(".if",        ".endif"        ) },
+                { BlockType.ConditionalDef,  new BlockDirective(".ifdef",     ".endif"        ) },
+                { BlockType.ConditionalNdef, new BlockDirective(".ifndef",    ".endif"        ) },
+                { BlockType.ForNext,         new BlockDirective(".for",       ".next"         ) },
+                { BlockType.Functional,      new BlockDirective(".function",  ".endfunction"  ) },
+                { BlockType.Page,            new BlockDirective(".page",      ".endpage"      ) },
+                { BlockType.Repeat,          new BlockDirective(".repeat",    ".endrepeat"    ) },
+                { BlockType.Switch,          new BlockDirective(".switch",    ".endswitch"    ) },
+                { BlockType.While,           new BlockDirective(".while",     ".endwhile"     ) }
 
             };
 

@@ -75,13 +75,13 @@ namespace Core6502DotNet
         public double Invoke(List<object> parameterList)
         {
             if (parameterList.Count > Params.Count)
-                throw new Exception("Unexpected argument passed to function.");
+                throw new SyntaxException(parameterList.Count, "Unexpected argument passed to function.");
             for (var i = 0; i < Params.Count; i++)
             {
                 if (i >= parameterList.Count || parameterList[i] == null)
                 {
                     if (string.IsNullOrEmpty(Params[i].DefaultValue))
-                        throw new Exception($"Missing argument \"{Params[i].Name}\" for function.");
+                        throw new SyntaxException(i + 1, $"Missing argument \"{Params[i].Name}\" for function.");
                     if (Params[i].DefaultValue.EnclosedInDoubleQuotes())
                         Services.SymbolManager.Define(Params[i].Name,
                             Params[i].DefaultValue.TrimOnce('"'));
