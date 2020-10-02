@@ -40,15 +40,15 @@ namespace Core6502DotNet
         /// <exception cref="ArgumentNullException"></exception>
         public AssemblyController(IEnumerable<string> args,
                                   Func<string, AssemblyServices, AssemblerBase> cpuSetHandler,
-                                  Func<string, AssemblyServices, IBinaryFormatProvider> formatSelector)
+                                  Func<string, string, IBinaryFormatProvider> formatSelector)
         {
             if (args == null || cpuSetHandler == null || formatSelector == null)
                 throw new ArgumentNullException();
 
             _services = new AssemblyServices(Options.FromArgs(args));
-            _services.PassChanged += OnPassChanged;
+            _services.PassChanged +=(s, a) => _services.Output.Reset();
             _services.FormatSelector = formatSelector;
-            _services.CPUAssemblerSelector = SetCpuAssembler;
+            _services.CPUAssemblerSelector = cpu => _assemblers.Add(_cpuSetHandler(cpu, _services));
             _cpuSetHandler = cpuSetHandler;
             _assemblers = new List<AssemblerBase>
             {
@@ -63,9 +63,6 @@ namespace Core6502DotNet
 
         #region Methods
 
-        void SetCpuAssembler(string cpu) 
-            => _assemblers.Add(_cpuSetHandler(cpu, _services));
-
         /// <summary>
         /// Begin the assembly process.
         /// </summary>
@@ -73,6 +70,9 @@ namespace Core6502DotNet
         /// <exception cref="Exception"></exception>
         public double Assemble()
         {
+            if (_services.Options.InputFiles.Count == 0)
+                throw new Exception("One or more required input files was not specified.");
+
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
@@ -83,90 +83,107 @@ namespace Core6502DotNet
             var preprocessor = new Preprocessor(_services);
             var processed = new List<SourceLine>();
 
-            // preprocess all passed option defines and sections
-            foreach (var define in _services.Options.LabelDefines)
-                processed.Add(preprocessor.PreprocessDefine(define));
-            foreach (var section in _services.Options.Sections)
-                processed.AddRange(LexerParser.Parse(string.Empty, $".dsection {section}", _services, true));
-
-            if (_services.Options.InputFiles.Count == 0)
-                throw new Exception("One or more required input files was not specified.");
-
-            // preprocess all input files 
-            foreach (var path in _services.Options.InputFiles)
-                processed.AddRange(preprocessor.PreprocessFile(path));
-
-            Console.WriteLine($"{Assembler.AssemblerName}");
-            Console.WriteLine($"{Assembler.AssemblerVersion}");
-
-            // set the iterator
-            var iterator = processed.TakeWhile(l => !l.InstructionName.Equals(".end"))
-                                    .GetIterator();
-
-            _services.SymbolManager.LineIterator = iterator;
-
-            // add the block assembler.
-            _assemblers.Add(new BlockAssembler(_services, iterator));
-
-            var disassembly = new StringBuilder();
-
-            // while passes are needed
-            while (_services.PassNeeded && !_services.Log.HasErrors)
+            try
             {
-                if (_services.DoNewPass() == 4)
-                    throw new Exception("Too many passes attempted.");
-                disassembly.Clear();
-                _ = MultiLineAssembler.AssembleLines(iterator,
-                                                     _assemblers,
-                                                     false,
-                                                     disassembly,
-                                                     _services.Options.VerboseList,
-                                                     AssemblyErrorHandler,
-                                                     _services);
-            }
-            var unused = _services.Output.UnusedSections;
-            if (unused.Count() > 0)
-            {
-                foreach (var section in unused)
-                    _services.Log.LogEntry(null, 1, 1, $"Section {section} was defined but never used.", false);
-            }
-            if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
-                _services.Log.DumpWarnings();
-            int byteCount = 0;
-            if (_services.Log.HasErrors)
-            {
-                _services.Log.DumpErrors();
-            }
-            else
-            {
-                var passedArgs = _services.Options.GetPassedArgs();
-                var exec = Process.GetCurrentProcess().MainModule.ModuleName;
-                var inputFiles = string.Join("\n// ", preprocessor.GetInputFiles());
-                var disasmHeader = $"// {Assembler.AssemblerNameSimple}\n" +
-                                   $"// {exec} {string.Join(' ', passedArgs)}\n" +
-                                   $"// {DateTime.Now:f}\n\n// Input files:\n\n" +
-                                   $"// {inputFiles}\n\n";
-                disassembly.Insert(0, disasmHeader);
-                byteCount = WriteOutput(disassembly.ToString());
-            }
-            Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
-            Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
+                // preprocess all passed option defines and sections
+                foreach (var define in _services.Options.LabelDefines)
+                    processed.Add(preprocessor.PreprocessDefine(define));
+                foreach (var section in _services.Options.Sections)
+                    processed.AddRange(LexerParser.Parse(string.Empty, $".dsection {section}", _services, true));
 
-            stopWatch.Stop();
-            var ts = stopWatch.Elapsed.TotalSeconds;
-            if (!_services.Log.HasErrors)
-            {
-                var section = _services.Options.OutputSection;
-                if (!string.IsNullOrEmpty(section))
-                    Console.WriteLine($"Output section: {section}");
+                // preprocess all input files 
+                foreach (var path in _services.Options.InputFiles)
+                    processed.AddRange(preprocessor.PreprocessFile(path));
 
-                Console.WriteLine($"{byteCount} bytes, {ts} sec.");
-                if (_services.Options.ShowChecksums)
-                    Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
-                Console.WriteLine("*********************************");
-                Console.WriteLine("Assembly completed successfully.");
+                Console.WriteLine($"{Assembler.AssemblerName}");
+                Console.WriteLine($"{Assembler.AssemblerVersion}");
+            
+                // set the iterator
+                var iterator = processed.TakeWhile(l => !l.InstructionName.Equals(".end"))
+                                        .GetIterator();
+
+                _services.SymbolManager.LineIterator = iterator;
+
+                // add the block assembler.
+                _assemblers.Add(new BlockAssembler(_services, iterator));
+                var disassembly = new StringBuilder();
+
+                // while passes are needed
+                while (_services.PassNeeded && !_services.Log.HasErrors)
+                {
+                    if (_services.DoNewPass() == 4)
+                        throw new Exception("Too many passes attempted.");
+                    disassembly.Clear();
+                    _ = MultiLineAssembler.AssembleLines(iterator,
+                                                         _assemblers,
+                                                         false,
+                                                         disassembly,
+                                                         _services.Options.VerboseList,
+                                                         AssemblyErrorHandler,
+                                                         _services);
+                }
+                if (!_services.Options.WarnNotUnusedSections)
+                {
+                    var unused = _services.Output.UnusedSections;
+                    if (unused.Count() > 0)
+                    {
+                        foreach (var section in unused)
+                            _services.Log.LogEntry(null, 1, 1, 
+                                $"Section {section} was defined but never used.", false);
+                    }
+                }
+                if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
+                    _services.Log.DumpWarnings();
+                int byteCount = 0;
+                if (_services.Log.HasErrors)
+                {
+                    _services.Log.DumpErrors();
+                }
+                else
+                {
+                    var passedArgs = _services.Options.GetPassedArgs();
+                    var exec = Process.GetCurrentProcess().MainModule.ModuleName;
+                    var inputFiles = string.Join("\n// ", preprocessor.GetInputFiles());
+                    var disasmHeader = $"// {Assembler.AssemblerNameSimple}\n" +
+                                       $"// {exec} {string.Join(' ', passedArgs)}\n" +
+                                       $"// {DateTime.Now:f}\n\n// Input files:\n\n" +
+                                       $"// {inputFiles}\n\n";
+                    disassembly.Insert(0, disasmHeader);
+                    byteCount = WriteOutput(disassembly.ToString());
+                }
+                Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
+                Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
+
+                stopWatch.Stop();
+                var ts = stopWatch.Elapsed.TotalSeconds;
+                if (!_services.Log.HasErrors)
+                {
+                    var section = _services.Options.OutputSection;
+                    if (!string.IsNullOrEmpty(section))
+                        Console.Write($"[{section}] ");
+
+                    Console.WriteLine($"{byteCount} bytes, {ts} sec.");
+                    if (_services.Options.ShowChecksums)
+                        Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
+                    Console.WriteLine("*********************************");
+                    Console.WriteLine("Assembly completed successfully.");
+                }
+                else
+                {
+                    _services.Log.ClearAll();
+                }
+                return ts;
             }
-            return ts;
+            catch (Exception ex)
+            {
+                _services.Log.LogEntrySimple(ex.Message);
+                return double.NaN;
+            }
+            finally
+            {
+                if (_services.Log.HasErrors)
+                    _services.Log.DumpErrors();
+            }
         }
 
         bool AssemblyErrorHandler(SourceLine line, AssemblyErrorReason reason, Exception ex)
@@ -250,25 +267,35 @@ namespace Core6502DotNet
             }
         }
 
-        void OnPassChanged(object sender, EventArgs args) => _services.Output.Reset();
-
         int WriteOutput(string disassembly)
         {
             // no errors finish up
             // save to disk
+            var section = _services.Options.OutputSection;
             var outputFile = _services.Options.OutputFile;
-            var objectCode = _services.Output.GetCompilation(_services.Options.OutputSection);
-            var formatProvider = _services.FormatSelector?.Invoke(_services.OutputFormat, _services);
-            if (formatProvider != null)
-                File.WriteAllBytes(outputFile, formatProvider.GetFormat(objectCode).ToArray());
-            else
-                File.WriteAllBytes(outputFile, objectCode.ToArray());
+            var objectCode = _services.Output.GetCompilation(section);
 
+            var formatProvider = _services.FormatSelector?.Invoke(_services.CPU, _services.OutputFormat);
+            if (formatProvider != null)
+            {
+                var startAddress = _services.Output.ProgramStart;
+                if (!string.IsNullOrEmpty(section))
+                    startAddress = _services.Output.GetSectionStart(section);
+                var format = _services.Options.CaseSensitive ? 
+                             _services.OutputFormat : 
+                             _services.OutputFormat.ToLower();
+                var info = new FormatInfo(outputFile, format, startAddress, objectCode);
+                File.WriteAllBytes(outputFile, formatProvider.GetFormat(info).ToArray());
+            }
+            else
+            {
+                File.WriteAllBytes(outputFile, objectCode.ToArray());
+            }
             // write disassembly
              if (!string.IsNullOrEmpty(disassembly) && !string.IsNullOrEmpty(_services.Options.ListingFile))
                 File.WriteAllText(_services.Options.ListingFile, disassembly);
 
-            // write listings
+            // write labels
             if (!string.IsNullOrEmpty(_services.Options.LabelFile))
                 File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels());
 

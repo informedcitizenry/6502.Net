@@ -14,7 +14,7 @@ namespace Core6502DotNet.m680x
     /// <summary>
     /// A class that outputs binary as a Motorola S-Record or S-Record type text file.
     /// </summary>
-    public class SRecordFormatProvider : Core6502Base, IBinaryFormatProvider
+    public class SRecordFormatProvider : IBinaryFormatProvider
     {
         const int RecordSize = 0x20;
         const int MosRecordSize = 21;
@@ -23,28 +23,19 @@ namespace Core6502DotNet.m680x
 
         static int GetSRecordchecksum(int value) => (~(value & 255)) & 255;
 
-        /// <summary>
-        /// Creates a new instance of the S-Record type format provider.
-        /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public SRecordFormatProvider(AssemblyServices services)
-            : base(services)
-        {
-        }
-
-        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
+        public IEnumerable<byte> GetFormat(FormatInfo info)
         {
             var sRecBuilder = new StringBuilder();
-
-            var pc = Services.Output.ProgramStart;
-            var fileBytes = objectBytes.ToArray();
+            var end = info.StartAddress + info.ObjectBytes.Count();
+            var pc = info.StartAddress;
+            var fileBytes = info.ObjectBytes.ToArray();
             var bytesLeft = fileBytes.Length;
             var lineCount = 0;
 
             string recHeader;
             int recordBytes;
-            var fmt = Services.OutputFormat;
-            if (fmt.Equals("srec", Services.StringComparison))
+            var fmt = info.FormatName.ToLower();
+            if (fmt.Equals("srec"))
             {
                 recHeader = "S1";
                 recordBytes = RecordSize;
@@ -56,7 +47,7 @@ namespace Core6502DotNet.m680x
                 recordBytes = MosRecordSize;
             }
 
-            while (pc < Services.Output.ProgramEnd)
+            while (pc < end)
             {
                 var lineBytes = bytesLeft < recordBytes ? bytesLeft % recordBytes : recordBytes;
                 var lineSize = recHeader[0] == 'S' ? lineBytes + 3 : lineBytes;
@@ -67,7 +58,7 @@ namespace Core6502DotNet.m680x
 
                 for (int i = 0; i < lineBytes; i++)
                 {
-                    var offset = (pc - Services.Output.ProgramStart) + i;
+                    var offset = (pc - info.StartAddress) + i;
                     checkSum += fileBytes[offset];
                     sRecBuilder.Append($"{fileBytes[offset]:X2}");
                 }

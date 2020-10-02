@@ -14,26 +14,17 @@ namespace Core6502DotNet
     /// <summary>
     /// A class that represents assembly output as source of '.byte' pseudo-ops.
     /// </summary>
-    public class ByteSourceFormatProvider : Core6502Base, IBinaryFormatProvider
+    public class ByteSourceFormatProvider : IBinaryFormatProvider
     {
         const int BytesPerLine = 8;
 
-        /// <summary>
-        /// Constructs a new instance of the format provider.
-        /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public ByteSourceFormatProvider(AssemblyServices services)
-            :base(services)
+        public IEnumerable<byte> GetFormat(FormatInfo info)
         {
-        }
-
-        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
-        {
-            var output = objectBytes.ToList();
+            var output = info.ObjectBytes.ToList();
             if (output.Count == 0)
                 return new List<byte>();
 
-            var byteSourceBuilder = new StringBuilder($"\t\t\t* = ${Services.Output.ProgramStart:x4}\n");
+            var byteSourceBuilder = new StringBuilder($"\t\t\t* = ${info.StartAddress:x4}\n");
             if (output.Count == 1)
             {
                 byteSourceBuilder.AppendLine($"\n\t\t\t.byte ${output[0]:x2}");

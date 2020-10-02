@@ -51,6 +51,7 @@ namespace Core6502DotNet
 
                 if (--_repetition > 0)
                     LineIterator.Rewind(Index);
+                return true;
             }
             return line.InstructionName.Equals(".repeat");
         }

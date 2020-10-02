@@ -54,6 +54,7 @@ namespace Core6502DotNet
                 Starts = starts;
                 Ends = ends;
                 Selected = false;
+                OutputCount = 0;
             }
 
             public bool AddressInBounds(int address) => address >= Starts && address < Ends;
@@ -119,7 +120,11 @@ namespace Core6502DotNet
         public void Reset()
         {
             _current = null;
-            _collection.Values.ToList().ForEach(s => s.Selected = false);
+            _collection.Values.ToList().ForEach(s =>
+            {
+                s.OutputCount = 0;
+                s.Selected = false;
+            });
         }
 
         /// <summary>

@@ -188,7 +188,7 @@ namespace Core6502DotNet
         /// <summary>
         /// The format selector invoked when the output format is changed.
         /// </summary>
-        public Func<string, AssemblyServices, IBinaryFormatProvider> FormatSelector { get; set; }
+        public Func<string, string, IBinaryFormatProvider> FormatSelector { get; set; }
 
         /// <summary>
         /// Gets the output format name.

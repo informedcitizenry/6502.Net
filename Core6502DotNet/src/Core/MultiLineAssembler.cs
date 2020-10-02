@@ -76,17 +76,25 @@ namespace Core6502DotNet
                         if (asm != null)
                         {
                             var disasm = asm.AssembleLine(line);
-                            if (disasmBuilder != null && !string.IsNullOrEmpty(disasm) && !services.PrintOff)
-                                disasmBuilder.AppendLine(disasm);
+                            if (disasmBuilder != null && !services.PrintOff)
+                            {
+                                if (disassembleAll)
+                                    disasmBuilder.Append($"\"{line.Filename}\"(")
+                                                 .Append($"{line.LineNumber}): ".PadLeft(8));
+                                if (!string.IsNullOrEmpty(disasm))
+                                    disasmBuilder.AppendLine(disasm);
+                            }
                         }
                         else if (line.Instruction != null)
                         {
                             if (!errorHandler(line, AssemblyErrorReason.NotFound, null))
                                 break;
                         }
-                        else if (disassembleAll && disasmBuilder != null)
+                        else if (disassembleAll && disasmBuilder != null && !services.PrintOff)
                         {
-                            disasmBuilder.AppendLine(line.UnparsedSource.PadLeft(50, ' '));
+                            disasmBuilder.Append($"\"{line.Filename}\"(")
+                                         .Append($"{line.LineNumber}): ".PadLeft(8))
+                                         .AppendLine(line.UnparsedSource.PadLeft(50, ' '));
                         }
                     }
                 }

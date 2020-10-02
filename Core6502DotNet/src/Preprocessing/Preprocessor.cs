@@ -275,7 +275,7 @@ namespace Core6502DotNet
                 }
                 else if (_macros.ContainsKey(line.InstructionName))
                 {
-                    Macro macro = _macros[line.InstructionName];
+                    var macro = _macros[line.InstructionName];
                     processed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
                 }
                 else if (line.InstructionName.Equals(".endmacro"))

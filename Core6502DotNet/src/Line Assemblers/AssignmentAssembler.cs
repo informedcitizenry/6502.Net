@@ -118,13 +118,14 @@ namespace Core6502DotNet
             }
             if (Reserved.IsOneOf("Pseudo", line.InstructionName))
                 return $".{Services.Output.LogicalPC,-8:x4}";
+            var unparsedSource = Services.Options.NoSource ? string.Empty : line.UnparsedSource;
             if (!line.LabelName.Equals("*") && !Services.PassNeeded)
             {
                 if (line.InstructionName.Equals(".org"))
                 {
                     return string.Format(".{0}{1}",
                         Services.Output.LogicalPC.ToString("x4").PadRight(41),
-                        line.UnparsedSource);
+                        unparsedSource);
                 }
                 string symbol;
                 if (line.InstructionName.Equals(".let"))
@@ -143,14 +144,14 @@ namespace Core6502DotNet
                             condition = Services.Evaluator.ExpressionIsCondition(line.Operand.Children);
                         if (condition)
                             return string.Format("={0}{1}",
-                                (numValue == 0 ? "false" : "true").PadRight(42), line.UnparsedSource);
+                                (numValue == 0 ? "false" : "true").PadRight(42), unparsedSource);
                         return string.Format("=${0}{1}",
                               numValue.ToString("x").PadRight(41),
-                              line.UnparsedSource);
+                              unparsedSource);
                         
                     }
                     var elliptical = $"\"{Services.SymbolManager.GetStringValue(symbol).Elliptical(38)}\"";
-                    return string.Format("={0}{1}", elliptical.PadRight(42), line.UnparsedSource);
+                    return string.Format("={0}{1}", elliptical.PadRight(42), unparsedSource);
                 }
             }
             return string.Empty;

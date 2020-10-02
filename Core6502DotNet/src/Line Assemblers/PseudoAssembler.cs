@@ -287,10 +287,14 @@ namespace Core6502DotNet
             var assembly = Services.Output.GetBytesFrom(PCOnAssemble);
             if (!Services.Options.NoAssembly)
             {
-                sb.Append(assembly.Take(8).ToString(PCOnAssemble).PadRight(43, ' '));
+                var firstBytes = assembly.Take(8).ToString(PCOnAssemble);
+                if (assembly.Count > 8 && Services.Options.TruncateAssembly)
+                    sb.Append(firstBytes).Append(" ...".PadRight(10, ' '));
+                else
+                    sb.Append(assembly.Take(8).ToString(PCOnAssemble).PadRight(43, ' '));
                 if (!Services.Options.NoSource)
                     sb.Append(line.UnparsedSource);
-                if (assembly.Count > 8)
+                if (assembly.Count > 8 && !Services.Options.TruncateAssembly)
                 {
                     sb.AppendLine();
                     sb.Append(assembly.Skip(8).ToString(PCOnAssemble + 8));
@@ -360,7 +364,7 @@ namespace Core6502DotNet
         double GetFloatFromMemory(int address, bool packed)
         {
             var size = packed ? 5 : 6;
-            if (address + size > BinaryOutput.MaxAddress)
+            if (address + size > Services.Output.ProgramEnd)
                 return double.NaN;
 
             var bytes = Services.Output.GetRange(address, size).ToList();
@@ -407,7 +411,12 @@ namespace Core6502DotNet
                 $"Too few arguments passed for function \"{function.Name}\".");
 
             if (function.Name.Equals("section"))
-                return Services.Output.GetSectionStart(parameters.Children[0].Children[0].Name);
+            {
+                var sectionName = parameters.Children[0].Children[0].Name;
+                if (!Services.Options.CaseSensitive)
+                    sectionName = sectionName.ToLower();
+                return Services.Output.GetSectionStart(sectionName);
+            }
 
             var address = (int)Services.Evaluator.Evaluate(parameters.Children[0], ushort.MinValue, ushort.MaxValue);
 

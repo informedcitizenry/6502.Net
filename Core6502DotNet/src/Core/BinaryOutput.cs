@@ -12,7 +12,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 
 namespace Core6502DotNet
 {
@@ -153,6 +152,7 @@ namespace Core6502DotNet
         public void Reset()
         {
             Array.Clear(_bytes, 0, BufferSize);
+            Transform = null;
             _compilingStarted = _started = false;
             _sectionCollection.Reset();
             CurrentBank = 0;
@@ -194,9 +194,9 @@ namespace Core6502DotNet
         /// <param name="value">The logical program counter value</param>
         public void SetLogicalPC(int value)
         {
-            if (!AddressIsValid(value))
+            if (value < -(MaxAddress / 2) || value > MaxAddress)
                 throw new InvalidPCAssignmentException(value);
-            LogicalPC = value;
+            _logicalPc = value & 0xFFFF;
         }
 
         /// <summary>
@@ -617,21 +617,16 @@ namespace Core6502DotNet
         /// <summary>
         /// Sets the current defined section.
         /// </summary>
-        /// <param name="section">The section as a parsed token.</param>
+        /// <param name="section">The section name.</param>
         /// <returns><c>true</c> if the section was able to be selected, otherwise <c>false</c>.</returns>
         /// <exception cref="SectionException"></exception>
-        public bool SetSection(Token section)
+        public bool SetSection(string section)
         {
-            var result = _sectionCollection.SetCurrentSection(section.ToString().Trim());
-            switch (result)
-            {
-                case CollectionResult.NotFound:
-                    return false;
-                case CollectionResult.PreviouslySelected:
-                    throw new SectionException(section.Position, $"Section {section} was previously selected.");
-            }
+            var result = _sectionCollection.SetCurrentSection(section);
+            if (result == CollectionResult.NotFound)
+                return false;
             _pc =
-            _logicalPc = _sectionCollection.SelectedStartAddress;
+            _logicalPc = _sectionCollection.SelectedStartAddress + _sectionCollection.GetSectionOutputCount();
             return true;
         }
 

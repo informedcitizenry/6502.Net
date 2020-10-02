@@ -25,8 +25,8 @@ namespace Core6502DotNet
         {
             Reserved.DefineType("Directives",
                     ".assert", ".bank", ".end",
-                    ".eor", ".echo", ".format",
-                    ".invoke",
+                    ".eor", ".echo", ".forcepass",
+                    ".format", ".invoke",
                     ".initmem", ".target",
                     ".error", ".errorif",
                     ".pron", ".proff",
@@ -34,6 +34,7 @@ namespace Core6502DotNet
                     ".dsection", ".section"
                 );
             ExcludedInstructionsForLabelDefines.Add(".section");
+            Services.PassChanged += (s, a) => Services.PrintOff = false;
         }
 
         #endregion
@@ -123,12 +124,23 @@ namespace Core6502DotNet
                 case ".eor":
                     SetEor(line);
                     break;
+                case ".forcepass":
+                    if (line.OperandHasToken)
+                        Services.Log.LogEntry(line, line.Operand,
+                            "Unexpected expression found.");
+                    else if (Services.CurrentPass == 0)
+                        Services.PassNeeded = true;
+                    break;
                 case ".invoke":
                     InvokeFunction(line);
                     break;
                 case ".proff":
                 case ".pron":
-                    Services.PrintOff = instruction.Equals(".proff");
+                    if (line.OperandHasToken)
+                        Services.Log.LogEntry(line, line.Operand,
+                            "Unexpected expression found.");
+                    else
+                        Services.PrintOff = instruction.Equals(".proff");
                     break;
                 case ".dsection":
                     DefineSection(line);
@@ -165,7 +177,7 @@ namespace Core6502DotNet
             if (Services.CurrentPass == 0)
             {
                 var parms = line.Operand.Children;
-                if (parms.Count < 3)
+                if (parms.Count < 2)
                     throw new SyntaxException(line.Operand.Position, 
                         "Section definition missing one or more parameters.");
                 if (parms.Count > 3)
@@ -175,12 +187,18 @@ namespace Core6502DotNet
                 var name = parms[0].ToString().Trim();
                 if (!name.EnclosedInDoubleQuotes())
                     throw new SyntaxException(parms[0].Position, "Section name must be a string.");
+                if (!Services.Options.CaseSensitive)
+                    name = name.ToLower();
+
+                var endsParameter = parms.Count == 3;
                 if (!Services.Evaluator.ExpressionIsConstant(parms[1]) ||
-                    !Services.Evaluator.ExpressionIsConstant(parms[2]))
+                    (endsParameter && !Services.Evaluator.ExpressionIsConstant(parms[2])))
                     throw new SyntaxException(parms[1].Position, 
                         "Section start and end parameters must be constant expressions.");
                 var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms[1]));
-                var ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms[2]));
+                var ends = BinaryOutput.MaxAddress + 1;
+                if (endsParameter)
+                    ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms[2]));
                 
                 Services.Output.DefineSection(name, starts, ends);
             }
@@ -203,8 +221,12 @@ namespace Core6502DotNet
         {
             if (!line.OperandExpression.EnclosedInDoubleQuotes())
                 throw new SyntaxException(line.Operand.Position, "Directive expects a string expression.");
-            if (!Services.Output.SetSection(line.Operand))
-                throw new SyntaxException(line.Operand.Position, $"Section {line.Operand} not defined.");
+            var sectionName = line.OperandExpression.Trim();
+            if (!Services.Options.CaseSensitive)
+                sectionName = sectionName.ToLower();
+            if (!Services.Output.SetSection(sectionName))
+                throw new SyntaxException(line.Operand.Position, 
+                    $"Section {line.Operand} not defined or previously selected.");
             if (!string.IsNullOrEmpty(line.LabelName))
             {
                 if (line.LabelName.Equals("*"))
@@ -237,22 +259,12 @@ namespace Core6502DotNet
 
         void Output(SourceLine line, string output)
         {
-            if (!Services.PassNeeded)
-            {
-                var type = line.InstructionName.Substring(0, 5);
-                switch (type)
-                {
-                    case ".echo":
-                        Console.WriteLine(output);
-                        break;
-                    case ".warn":
-                        Services.Log.LogEntry(line, line.Operand, output, false);
-                        break;
-                    default:
-                        Services.Log.LogEntry(line, line.Operand, output);
-                        break;
-                }
-            }
+            var type = line.InstructionName.Substring(0, 5);
+            var doEcho = type.Equals(".echo") && (Services.CurrentPass == 0 || Services.Options.EchoEachPass);
+            if (doEcho)
+                Console.WriteLine(output);
+            else if (Services.CurrentPass == 0)
+                Services.Log.LogEntry(line, line.Operand, output, type.Equals(".erro"));
         }
 
         void Output(SourceLine line, Token operand)

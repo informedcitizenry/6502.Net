@@ -40,11 +40,8 @@ namespace Core6502DotNet
                 line.InstructionName.Equals(".namespace"))
             {
                 var isBlock = line.InstructionName[1] == 'b';
-                if (isBlock)
-                    scopeName = line.LabelName;
-                else
-                    scopeName = line.OperandExpression.Trim();
-                    
+                scopeName = isBlock ? line.LabelName : line.OperandExpression.Trim();
+
                 if (string.IsNullOrEmpty(scopeName))
                     scopeName = LineIterator.Index.ToString();
                 else if (!char.IsLetter(scopeName[0]) || (!char.IsLetterOrDigit(scopeName[^1]) && scopeName[^1] != '_'))
@@ -53,7 +50,7 @@ namespace Core6502DotNet
                     throw new SyntaxException(line.Label.Position,
                         $"Invalid name \"{scopeName}\" for {type}.");
                 }
-                else if (!isBlock && Services.SymbolManager.SymbolExists(scopeName) && Services.CurrentPass == 0)
+                else if (!isBlock && Services.SymbolManager.SymbolExists(scopeName)) //&& Services.CurrentPass == 0)
                 {
                     Services.Log.LogEntry(line, line.Operand, 
                         $"Namespace name \"{scopeName}\" clashes with existing symbol name.");

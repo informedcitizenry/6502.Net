@@ -16,26 +16,19 @@ namespace Core6502DotNet.m65xx
     /// A class that handles disk/tape file formats for several popular 65xx-based
     /// architectures.
     /// </summary>
-    public class M6502FormatProvider : Core6502Base, IBinaryFormatProvider
+    public class M6502FormatProvider : IBinaryFormatProvider
     {
-        /// <summary>
-        /// Creates a new instance of the 65xx-based format provider.
-        /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public M6502FormatProvider(AssemblyServices services)
-            :base(services)
+        public IEnumerable<byte> GetFormat(FormatInfo info)
         {
-        }
-
-        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
-        {
-            var fmt = Services.OutputFormat;
-            byte startL = (byte)(Services.Output.ProgramStart & 0xFF);
-            byte startH = (byte)(Services.Output.ProgramStart / 256);
-            byte endL = (byte)(Services.Output.ProgramEnd & 0xFF);
-            byte endH = (byte)(Services.Output.ProgramEnd / 256);
-            byte sizeL = (byte)(objectBytes.Count() & 0xFF);
-            byte sizeH = (byte)(objectBytes.Count() / 256);
+            var fmt = info.FormatName;
+            var size = info.ObjectBytes.Count();
+            var end = info.StartAddress + size;
+            byte startL = (byte)(info.StartAddress & 0xFF);
+            var startH = (byte)(info.StartAddress / 256);
+            byte endL = (byte)(end & 0xFF);
+            byte endH = (byte)(end / 256);
+            byte sizeL = (byte)(size & 0xFF);
+            byte sizeH = (byte)(size / 256);
 
             using var ms = new MemoryStream();
             using var writer = new BinaryWriter(ms);
@@ -59,7 +52,7 @@ namespace Core6502DotNet.m65xx
             {
                 throw new ArgumentException($"Format \"{fmt}\" not supported with targeted CPU.");
             }
-            writer.Write(objectBytes.ToArray());
+            writer.Write(info.ObjectBytes.ToArray());
             return ms.ToArray();
         }
     }

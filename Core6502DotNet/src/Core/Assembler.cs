@@ -183,7 +183,7 @@ namespace Core6502DotNet
                 if (!double.IsNaN(labelValue))
                     return string.Format(".{0}{1}",
                                  ((int)labelValue).ToString("x4").PadRight(42),
-                                 line.UnparsedSource);
+                                 Services.Options.NoSource ? string.Empty : line.UnparsedSource);
             }
             return string.Empty;
         }

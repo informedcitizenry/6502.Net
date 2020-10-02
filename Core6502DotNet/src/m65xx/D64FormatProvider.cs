@@ -14,7 +14,7 @@ namespace Core6502DotNet.m65xx
     /// <summary>
     /// A class that encapsulates assembly output into a .D64 formatted disk.
     /// </summary>
-    public class D64FormatProvider : Core6502Base, IBinaryFormatProvider
+    public class D64FormatProvider : IBinaryFormatProvider
     {
         static readonly Dictionary<int, int> s_trackSectorTable = new Dictionary<int, int>
         {
@@ -106,36 +106,27 @@ namespace Core6502DotNet.m65xx
         const int BAMSize = 139;
         const int DiskSize = 683 * 256;
 
-        /// <summary>
-        /// Creates a new instance of a D64 format provider.
-        /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public D64FormatProvider(AssemblyServices services)
-            :base(services)
-        {
-        }
-
-        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
+        public IEnumerable<byte> GetFormat(FormatInfo info)
         {
             var diskImage = new byte[DiskSize];
             var availTrackSectors = s_trackSectorTable.ToDictionary(k => k.Key, k => ToBitMap(k.Value));
 
-            var fileName = Services.Options.OutputFile.ToUpper();
+            var fileName = info.FileName.ToUpper();
 
             if (fileName.Length > 16)
                 fileName = fileName.Substring(0, 16);
             else if (fileName.Length > 4 && fileName.EndsWith(".D64"))
                 fileName = fileName[0..^4];
 
-            var fileBytes = new List<byte>(objectBytes.Count() + 2)
+            var fileBytes = new List<byte>(info.ObjectBytes.Count() + 2)
             {
                 // write load address
-                Convert.ToByte(Services.Output.ProgramStart % 256),
-                Convert.ToByte(Services.Output.ProgramStart / 256)
+                Convert.ToByte(info.StartAddress % 256),
+                Convert.ToByte(info.StartAddress / 256)
             };
 
             // write file data
-            fileBytes.AddRange(objectBytes);
+            fileBytes.AddRange(info.ObjectBytes);
 
             // write directory header
             var dirOffs = 0x16500;

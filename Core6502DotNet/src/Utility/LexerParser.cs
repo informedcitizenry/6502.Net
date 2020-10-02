@@ -462,7 +462,7 @@ namespace Core6502DotNet
                 if (iterator.Current != source[^1])
                     iterator.Rewind(iterator.Index - 1);
             }
-            unparsedSb.Append(source);
+            unparsedSb.Append(unparsedSource);
             return new Token(source, unparsedSb.ToString(), tokenType, operatorType);
 
             bool TokenAfterNextIsNonBase10()

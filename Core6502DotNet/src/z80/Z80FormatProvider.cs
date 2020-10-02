@@ -16,32 +16,22 @@ namespace Core6502DotNet.z80
     /// <summary>
     /// A class to handle disk/tape formats for several popular Z80-based systems.
     /// </summary>
-    public class Z80FormatProvider : Core6502Base, IBinaryFormatProvider
+    public class Z80FormatProvider : IBinaryFormatProvider
     {
-        /// <summary>
-        /// Creates a new instance of the Z80 format provider.
-        /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public Z80FormatProvider(AssemblyServices services)
-            :base(services)
+        byte[] ConvertToBytes(int value)
         {
+            var lsb = (byte)(value & 0xFF);
+            var msb = (byte)(value / 256);
+            return new byte[] { lsb, msb };
         }
-
-        byte[] GetBytesFor(int value)
+ 
+        public IEnumerable<byte> GetFormat(FormatInfo info)
         {
-            var bytes = Services.Output.ConvertToBytes(value).Take(2).ToList();
-            if (bytes.Count < 2)
-                bytes.Add(0);
-            return bytes.ToArray();
-        }
-
-        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
-        {
-            var fmt = Services.OutputFormat;
-            var progstart = (ushort)Services.Output.ProgramStart;
-            var progend = (ushort)Services.Output.ProgramCounter;
-            var size = objectBytes.Count();
-            var name = Services.Options.OutputFile;
+            var fmt = info.FormatName;
+            var progstart = (ushort)info.StartAddress;
+            var progend = (ushort)(info.StartAddress + info.ObjectBytes.Count());
+            var size = info.ObjectBytes.Count();
+            var name = info.FileName.ToUpper();
 
             using var ms = new MemoryStream();
             using var writer = new BinaryWriter(ms);
@@ -62,11 +52,11 @@ namespace Core6502DotNet.z80
                 // file name
                 buffer.AddRange(Encoding.ASCII.GetBytes(name));
                 // file size
-                buffer.AddRange(GetBytesFor(size));
+                buffer.AddRange(ConvertToBytes(size));
                 // program start
-                buffer.AddRange(GetBytesFor(progstart));
+                buffer.AddRange(ConvertToBytes(progstart));
                 // unused
-                buffer.AddRange(GetBytesFor(0x8000));
+                buffer.AddRange(ConvertToBytes(0x8000));
 
                 // calculate checksum
                 byte checksum = 0x00;
@@ -123,19 +113,19 @@ namespace Core6502DotNet.z80
                 buffer.Add(2);
 
                 // size
-                buffer.AddRange(GetBytesFor(size));
+                buffer.AddRange(ConvertToBytes(size));
 
                 // start address
-                buffer.AddRange(GetBytesFor(progstart));
+                buffer.AddRange(ConvertToBytes(progstart));
 
                 // first block
                 buffer.Add(0xff);
 
                 // logical size
-                buffer.AddRange(GetBytesFor(size));
+                buffer.AddRange(ConvertToBytes(size));
 
                 // logical start
-                buffer.AddRange(GetBytesFor(progstart));
+                buffer.AddRange(ConvertToBytes(progstart));
 
                 // unallocated
                 buffer.AddRange(new byte[36]);
@@ -143,7 +133,7 @@ namespace Core6502DotNet.z80
                 if (fmt.Equals("amsdos"))
                 {
                     // file size (24-bit number)
-                    buffer.AddRange(GetBytesFor(size));
+                    buffer.AddRange(ConvertToBytes(size));
                     buffer.Add(0);
 
                     byte checksum = 0;
@@ -164,13 +154,13 @@ namespace Core6502DotNet.z80
                 writer.Write(0xfe);
 
                 // start address
-                writer.Write(GetBytesFor(progstart));
+                writer.Write(ConvertToBytes(progstart));
 
                 // end address
-                writer.Write(GetBytesFor(progend));
+                writer.Write(ConvertToBytes(progend));
 
                 // start address
-                writer.Write(GetBytesFor(progstart));
+                writer.Write(ConvertToBytes(progstart));
             }
             else if (string.IsNullOrEmpty(fmt) || fmt.Equals("flat"))
             {
@@ -180,7 +170,7 @@ namespace Core6502DotNet.z80
             {
                 throw new Exception($"Format \"{fmt}\" not supported with targetted CPU.");
             }
-            writer.Write(objectBytes.ToArray());
+            writer.Write(info.ObjectBytes.ToArray());
             return ms.ToArray();
         }
     }

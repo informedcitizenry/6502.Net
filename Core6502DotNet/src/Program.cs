@@ -38,30 +38,29 @@ namespace Core6502DotNet
             };
         }
 
-        static IBinaryFormatProvider SelectFormatProvider(string format, AssemblyServices services)
+        static IBinaryFormatProvider SelectFormatProvider(string cpu, string format)
         {
-            if (format.Equals("srec", services.StringComparison) || 
-                format.Equals("srecmos", services.StringComparison))
-                return new SRecordFormatProvider(services);
+            if (format.Equals("srec") || format.Equals("srecmos"))
+                return new SRecordFormatProvider();
 
-            if (format.Equals("hex", services.StringComparison))
-                return new HexFormatProvider(services);
+            if (format.Equals("hex"))
+                return new HexFormatProvider();
 
-            if (format.Equals("bytesource", services.StringComparison))
-                return new ByteSourceFormatProvider(services);
+            if (format.Equals("bytesource"))
+                return new ByteSourceFormatProvider();
             
-            if (services.CPU.Equals("z80"))
-                return new Z80FormatProvider(services);
+            if (cpu.Equals("z80"))
+                return new Z80FormatProvider();
 
-            if (services.CPU.StartsWith('m'))
-                return new MotorolaFormatProvider(services);
+            if (cpu.StartsWith('m'))
+                return new MotorolaFormatProvider();
 
-            return format.ToLower() switch
+            return format switch
             {
-                "cart" => new C64CartFormatProvider(services),
-                "d64"  => new D64FormatProvider(services),
-                "t64"  => new T64FormatProvider(services),
-                _      => new M6502FormatProvider(services),
+                "cart" => new C64CartFormatProvider(),
+                "d64"  => new D64FormatProvider(),
+                "t64"  => new T64FormatProvider(),
+                _      => new M6502FormatProvider(),
             };
         }
     }

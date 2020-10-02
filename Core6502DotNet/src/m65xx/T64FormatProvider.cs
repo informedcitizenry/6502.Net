@@ -1,4 +1,10 @@
-﻿using System;
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,18 +15,9 @@ namespace Core6502DotNet.m65xx
     /// <summary>
     /// A class that encapsulates assembly output into a .T64 formatted tape file.
     /// </summary>
-    public class T64FormatProvider : Core6502Base , IBinaryFormatProvider
+    public class T64FormatProvider : IBinaryFormatProvider
     {
         const string Header = "C64S tape image file\r\n";
-
-        /// <summary>
-        /// Creates a new instance of the T64 format provider.
-        /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public T64FormatProvider(AssemblyServices services)
-            : base(services)
-        {
-        }
 
         byte[] GetNameBytes(string file, int size)
         {
@@ -31,19 +28,17 @@ namespace Core6502DotNet.m65xx
             return Encoding.ASCII.GetBytes(file);
         }
 
-        public IEnumerable<byte> GetFormat(IEnumerable<byte> objectBytes)
+        public IEnumerable<byte> GetFormat(FormatInfo info)
         {
             using var ms = new MemoryStream();
             using var writer = new BinaryWriter(ms);
+            var endAddress = info.StartAddress + info.ObjectBytes.Count();
+            byte startL = (byte)(info.StartAddress & 0xFF);
+            byte startH = (byte)(info.StartAddress / 256);
+            byte endL = (byte)(endAddress & 0xFF);
+            byte endH = (byte)(endAddress / 256);
 
-            byte startL = (byte)(Services.Output.ProgramStart & 0xFF);
-            byte startH = (byte)(Services.Output.ProgramStart / 256);
-            byte endL = (byte)(Services.Output.ProgramEnd & 0xFF);
-            byte endH = (byte)(Services.Output.ProgramEnd / 256);
-
-            var start = Services.Output.ConvertToBytes(Services.Output.ProgramStart).ToArray();
-            var end = Services.Output.ConvertToBytes(Services.Output.ProgramEnd).ToArray();
-            var file = Services.Options.OutputFile.ToUpper();
+            var file = info.FileName.ToUpper();
             if (file.Length > 4 && file.EndsWith(".T64"))
                 file = file[0..^4];
             writer.Write(Encoding.ASCII.GetBytes(Header));  // 00-1F
@@ -66,7 +61,7 @@ namespace Core6502DotNet.m65xx
             writer.Write(new byte[4]);                      // 4C-4F
             writer.Write(GetNameBytes(file, 16));           // 50-5F
             writer.Write(new byte[0x3A0]);                  // 60-3FF
-            writer.Write(objectBytes.ToArray());            // 400-...
+            writer.Write(info.ObjectBytes.ToArray());       // 400-...
             return ms.ToArray();
         }
     }

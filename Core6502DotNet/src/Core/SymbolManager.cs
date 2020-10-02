@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -48,7 +49,7 @@ namespace Core6502DotNet
         static readonly Dictionary<ExceptionReason, string> s_reasonMessages = new Dictionary<ExceptionReason, string>
         {
             { ExceptionReason.MutabilityChanged,        "Cannot redeclare a variable as a label."                     },
-            { ExceptionReason.Redefined,                "Cannot redefine \"{0}\"."           },
+            { ExceptionReason.Redefined,                "Cannot redefine \"{0}\"."                                    },
             { ExceptionReason.NonScalar,                "Symbol \"{0}\" is non-scalar but is being used as a scalar." },
             { ExceptionReason.NotDefined,               "Symbol \"{0}\" is not defined."                              },
             { ExceptionReason.NotValid,                 "\"{0}\" is not a valid symbol name."                         },
@@ -111,7 +112,7 @@ namespace Core6502DotNet
     {
         #region Subclasses
 
-        class Symbol : SymbolBase
+        class Symbol : SymbolBase, IComparable<Symbol>
         {
             public double NumericValue { get; set; }
 
@@ -449,6 +450,28 @@ namespace Core6502DotNet
                     }
                 }
                 return false;
+            }
+
+            public int CompareTo(Symbol other)
+            {
+                if (IsScalar())
+                {
+                    if (!other.IsScalar())
+                        return -1;
+                    if (DataType == DataType.String)
+                    {
+                        if (other.DataType != DataType.String)
+                            return 1;
+                        return string.Compare(StringValue, other.StringValue);
+                    }
+                    if (other.DataType == DataType.String)
+                        return -1;
+                    return Comparer<double>.Default.Compare(NumericValue, other.NumericValue);
+                }
+                else
+                {
+                    return string.Compare(Name, other.Name);
+                }
             }
 
             public int Length
@@ -1226,6 +1249,8 @@ namespace Core6502DotNet
             return symObj.GetNumericValue(Services.Output.CurrentBank);
         }
 
+
+
         /// <summary>
         /// Get a string listing of all defined label symbols.
         /// </summary>
@@ -1233,10 +1258,25 @@ namespace Core6502DotNet
         public string ListLabels()
         {
             var listBuilder = new StringBuilder();
-            var labels = _symbols.Where(s => !s.Value.IsMutable);
+            var labels = _symbols.Where(s => !s.Value.IsMutable && !s.Key.Equals("CURRENT_PASS"))
+                                 .OrderBy(s => s.Key);
             foreach (var label in labels)
             {
-                listBuilder.Append($"{label.Key}=");
+                var name = label.Key;
+                if (!char.IsLetter(name[0]) && name[0] != '_')
+                {
+                    var paths = name.Split('.', StringSplitOptions.RemoveEmptyEntries);
+                    var namesNoAnons = new List<string>();
+                    foreach(var path in paths)
+                    {
+                        if (char.IsLetter(path[0]) || path[0] == '_')
+                            namesNoAnons.Add(path);
+                        else
+                            namesNoAnons.Add("::");
+                    }
+                    name = string.Join('.', namesNoAnons);
+                }
+                listBuilder.Append($"{name}".Elliptical(33).PadRight(33)).Append(" = ");
                 switch (label.Value.DataType)
                 {
                     case DataType.String:
