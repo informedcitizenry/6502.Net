@@ -196,6 +196,7 @@ namespace Core6502DotNet
         {
             if (value < -(MaxAddress / 2) || value > MaxAddress)
                 throw new InvalidPCAssignmentException(value);
+            _started = true;
             _logicalPc = value & 0xFFFF;
         }
 
