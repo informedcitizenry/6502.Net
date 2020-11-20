@@ -642,7 +642,12 @@ namespace Core6502DotNet
             return bytes;
         }
 
-        bool AddressIsValid(int address)
+        /// <summary>
+        /// Determines if the given address is valid to read from and write to the output.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns><c>true</c> if the address is valid; otherwise <c>false</c>.</returns>
+        public bool AddressIsValid(int address)
         {
             if (_sectionCollection.SectionSelected)
                 return _sectionCollection.AddressInBounds(address);

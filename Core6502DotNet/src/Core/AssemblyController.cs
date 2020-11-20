@@ -281,7 +281,12 @@ namespace Core6502DotNet
                             if (_services.CurrentPass <= 0 || _services.PassNeeded)
                             {
                                 if (assembler != null)
-                                    _services.Output.AddUninitialized(assembler.GetInstructionSize(line));
+                                {
+                                    var instructionSize = assembler.GetInstructionSize(line);
+                                    if (_services.Output.AddressIsValid(instructionSize + _services.Output.LogicalPC))
+                                        _services.Output.AddUninitialized(instructionSize);
+
+                                }
                                 _services.PassNeeded = true;
                                 return true;
                             }
