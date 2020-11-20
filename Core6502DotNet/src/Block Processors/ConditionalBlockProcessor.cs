@@ -21,12 +21,7 @@ namespace Core6502DotNet
         bool _elseEvaluated;
         bool _ifTrue;
 
-        static readonly HashSet<string> s_keywords = new HashSet<string>
-        {
-            ".if", ".ifdef", ".ifndef",
-            ".else", ".elseif", ".elseif", ".elseifdef", ".elseifndef",
-            ".endif"
-        };
+        readonly HashSet<string> _opens;
 
         readonly Dictionary<(string, int), bool> _ifDefEvaluations;
 
@@ -38,14 +33,21 @@ namespace Core6502DotNet
         /// Creates a new instance of a conditional block processor.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public ConditionalBlock(AssemblyServices services, 
-                                RandomAccessIterator<SourceLine> iterator, 
-                                BlockType type)
-            : base(services, iterator, type)
+        /// <param name="index">The index at which the block is defined.</param>
+        public ConditionalBlock(AssemblyServices services, int index)
+            : base(services, index)
         {
+            _opens = new HashSet<string>(services.StringComparer)
+            {
+                ".if", ".ifdef", ".ifndef"
+            };
+            Reserved.DefineType("Keywords",
+                ".if", ".ifdef", ".ifndef", ".else", ".elseif",
+                ".elseif", ".elseifdef", ".elseifndef", ".endif");
+
+            Reserved.DefineType("Defs",
+                ".ifdef", ".ifndef");
+
             _ifDefEvaluations = new Dictionary<(string, int), bool>();
             _ifTrue =
             _ifEvaluated = _elseEvaluated = false;
@@ -57,40 +59,41 @@ namespace Core6502DotNet
 
         void EvaluateCondition(SourceLine line)
         {
-            if (line.InstructionName.EndsWith("def"))
+            if (Reserved.IsOneOf("Defs", line.Instruction.Name))
             {
+                if (line.Operands.Count != 1)
+                    throw new SyntaxException(line.Instruction.Position, "Expected expression");
+
                 if (!_ifDefEvaluations.TryGetValue((line.Filename, line.LineNumber), out _ifTrue))
                 {
-                    if (line.InstructionName.EndsWith("ndef"))
-                        _ifTrue = !Services.SymbolManager.SymbolExists(line.OperandExpression);
-                    else if (line.InstructionName.EndsWith("def"))
-                        _ifTrue = Services.SymbolManager.SymbolExists(line.OperandExpression);
-                    // save the evaluation
+                    if (line.Instruction.Name.ToString().EndsWith("ndef", Services.StringComparison))
+                        _ifTrue = !Services.SymbolManager.SymbolExists(line.Operands[0].Name);
+                    else
+                        _ifTrue = Services.SymbolManager.SymbolExists(line.Operands[0].Name);
                     _ifDefEvaluations.Add((line.Filename, line.LineNumber), _ifTrue);
                 }
             }
             else
             {
-                _ifTrue = Services.Evaluator.EvaluateCondition(line.Operand.Children);
+                _ifTrue = Services.Evaluator.EvaluateCondition(line.Operands.GetIterator());
             }
         }
 
-        public override bool ExecuteDirective()
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> iterator)
         {
-            SourceLine line = LineIterator.Current;
-            if (!s_keywords.Contains(line.InstructionName))
-                return false;
-
+            var line = iterator.Current;
             if (_ifTrue)
             {
-                SeekBlockEnd();
+                SeekBlockEnd(iterator);
             }
             else
             {
-                while (line != null && !line.InstructionName.Equals(".endif") && !_ifTrue)
+                while (line != null && !line.Instruction.Name.Equals(".endif", Services.StringComparison) && !_ifTrue)
                 {
-                    var instruction = LineIterator.Current.InstructionName;
-                    var position = LineIterator.Current.Instruction.Position;
+                    if (iterator.Current.Instruction == null)
+                        continue;
+                    var instruction = Services.Options.CaseSensitive ? iterator.Current.Instruction.Name.ToString() :
+                                                                       iterator.Current.Instruction.Name.ToLower();
                     if (instruction.StartsWith(".if"))
                     {
                         _ifEvaluated = true;
@@ -99,12 +102,13 @@ namespace Core6502DotNet
                     else
                     {
                         if (!_ifEvaluated)
-                            throw new SyntaxException(position, $"Missing \".if\" directive.");
+                            throw new SyntaxException(iterator.Current.Instruction, $"Missing \".if\" directive.");
 
                         if (!instruction.Equals(".endif"))
                         {
                             if (_elseEvaluated)
-                                throw new SyntaxException(position, $"Invalid use of \"{instruction}\" directive.");
+                                throw new SyntaxException(iterator.Current.Instruction, 
+                                    $"Invalid use of \"{instruction}\" directive.");
 
                             _elseEvaluated = instruction.Equals(".else");
 
@@ -115,23 +119,17 @@ namespace Core6502DotNet
                         }
                     }
                     if (_ifTrue)
-                    {
                         break;
-                    }
-                    else
-                    {
-                        if (!LineIterator.MoveNext())
-                            throw new SyntaxException(position, "Missing closure for \".if\" directive.");
-                        else if (s_keywords.Contains(LineIterator.Current.InstructionName))
-                            throw new SyntaxException(position, "Empty sub-block under conditional directive.");
-                        SeekBlockDirectives(s_keywords.ToArray());
-                    }
-                    line = LineIterator.Current;
+                    if (!iterator.MoveNext())
+                        throw new SyntaxException(iterator.Current.Instruction, "Missing closure for \".if\" directive.");
+                    else if (Reserved.IsReserved(iterator.Current.Instruction.Name))
+                        throw new SyntaxException(iterator.Current.Instruction, "Empty sub-block under conditional directive.");
+                    SeekBlockDirectives(iterator, Reserved.GetReserved("Keywords").ToArray());
+                    line = iterator.Current;
                 }
                 if (line == null)
-                    throw new SyntaxException(line.Instruction.Position, $"Missing \".endif\" directive.");
+                    throw new SyntaxException(line.Instruction, $"Missing \".endif\" directive.");
             }
-            return true;
         }
 
         #endregion
@@ -144,7 +142,10 @@ namespace Core6502DotNet
 
         public override bool AllowContinue => false;
 
+        public override IEnumerable<string> BlockOpens => _opens;
+
+        public override string BlockClosure => ".endif";
+
         #endregion
     }
-
 }

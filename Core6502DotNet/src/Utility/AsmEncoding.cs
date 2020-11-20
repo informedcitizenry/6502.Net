@@ -22,8 +22,8 @@ namespace Core6502DotNet
     {
         #region Members
 
-        Dictionary<string, Dictionary<string, int>> _maps;
-        Dictionary<string, int> _currentMap;
+        Dictionary<StringView, Dictionary<int, int>> _maps;
+        Dictionary<int, int> _currentMap;
         bool _caseSensitive;
 
         #endregion
@@ -40,9 +40,9 @@ namespace Core6502DotNet
         public AsmEncoding(bool caseSensitive)
         {
             _caseSensitive = caseSensitive;
-            StringComparer comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-            _maps = new Dictionary<string, Dictionary<string, int>>(comparer);
-            SelectEncoding("none");
+            StringViewComparer comparer = caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
+            _maps = new Dictionary<StringView, Dictionary<int, int>>(comparer);
+            SelectEncoding("\"none\"");
         }
 
         /// <summary>
@@ -65,9 +65,9 @@ namespace Core6502DotNet
         /// <returns>An array of encoded bytes for the character.</returns>
         byte[] GetCharBytes(string s)
         {
-            if (_currentMap.ContainsKey(s))
+            var utf32 = char.ConvertToUtf32(s, 0);
+            if (_currentMap.TryGetValue(utf32, out var code))
             {
-                long code = _currentMap[s];
                 var codebytes = BitConverter.GetBytes(code);
                 return codebytes.Take(code.Size()).ToArray();
             }
@@ -125,21 +125,13 @@ namespace Core6502DotNet
                     throw new ArgumentException(mapping);
 
                 while (first <= last)
-                {
-                    var firstAsStr = char.ConvertFromUtf32(first);
-                    if (_currentMap.ContainsKey(firstAsStr))
-                        _currentMap[firstAsStr] = code++;
-                    else
-                        _currentMap.Add(firstAsStr, code++);
-                    first++;
-                }
+                    _currentMap[first++] = code++;
             }
             else
             {
-                if (_currentMap.ContainsKey(mapping))
-                    _currentMap[mapping] = code;
-                else
-                    _currentMap.Add(mapping, code);
+                if (mapping.Length > 1)
+                    throw new ArgumentException(mapping);
+                _currentMap[char.ConvertToUtf32(mapping, 0)] = code;
             }
         }
 
@@ -180,30 +172,29 @@ namespace Core6502DotNet
                     throw new ArgumentException(mapping);
 
                 while (first <= last)
-                {
-                    var firstAsStr = char.ConvertFromUtf32(first++);
-                    _currentMap.Remove(firstAsStr);
-                }
+                    _currentMap.Remove(first);
             }
             else
             {
-                _currentMap.Remove(mapping);
+                if (mapping.Length > 0)
+                    throw new ArgumentException(mapping);
+                _currentMap.Remove(char.ConvertToUtf32(mapping, 0));
             }
         }
 
         /// <summary>
         /// Select the current encoding to the default UTF-8 encoding
         /// </summary>
-        public void SelectDefaultEncoding() => _currentMap = _maps["none"];
+        public void SelectDefaultEncoding() => _currentMap = _maps["\"none\""];
 
         /// <summary>
         /// Select the current named encoding
         /// </summary>
         /// <param name="encodingName">The encoding name</param>
-        public void SelectEncoding(string encodingName)
+        public void SelectEncoding(StringView encodingName)
         {
             if (!_maps.ContainsKey(encodingName))
-                _maps.Add(encodingName, new Dictionary<string, int>());
+                _maps.Add(encodingName, new Dictionary<int, int>());
             _currentMap = _maps[encodingName];
         }
 
@@ -220,8 +211,9 @@ namespace Core6502DotNet
             while (textEnumerator.MoveNext())
             {
                 var elem = textEnumerator.GetTextElement();
-                if (_currentMap.ContainsKey(elem))
-                    numbytes += _currentMap[elem].Size();
+                var cu = char.ConvertToUtf32(elem, 0);
+                if (_currentMap.ContainsKey(cu))
+                    numbytes += _currentMap[cu].Size();
                 else
                     numbytes += UTF8.GetByteCount(elem);
             }
@@ -382,10 +374,11 @@ namespace Core6502DotNet
 
             SetChar:
                 var key = _currentMap.First(e => e.Value.Equals(encoding)).Key;
-                var utfchars = key.ToCharArray();
+                var utfchars = char.ConvertFromUtf32(key);
                 foreach (var utfc in utfchars)
                     chars[j++] = utfc;
                 i += displ;
+
             }
             return j - charIndex;
         }
@@ -427,8 +420,8 @@ namespace Core6502DotNet
             set
             {
                 _caseSensitive = value;
-                StringComparer comparer = _caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-                _maps = new Dictionary<string, Dictionary<string, int>>(_maps, comparer);
+                StringViewComparer comparer = _caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
+                _maps = new Dictionary<StringView, Dictionary<int, int>>(_maps, comparer);
             }
         }
 

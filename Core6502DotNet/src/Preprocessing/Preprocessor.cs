@@ -15,16 +15,126 @@ using System.Text;
 namespace Core6502DotNet
 {
     /// <summary>
-    /// A class responsible for processing source text before proper assembly, such as
-    /// macro expansion and comment scrubbing.
+    /// A preprocessor error.
     /// </summary>
-    public class Preprocessor : AssemblerBase
+    public class ProcessorException : Exception
     {
+        /// <summary>
+        /// Create a new instance of a preprocessor error.
+        /// </summary>
+        /// <param name="fileName">The name of the source file that raised the error.</param>
+        /// <param name="lineLinumber">The line number in the source that raised the error.</param>
+        /// <param name="linePosition">The position in the line that raised the error.</param>
+        /// <param name="message">The error message.</param>
+        public ProcessorException(string fileName, int lineLinumber, int linePosition, string message)
+            : base(message)
+        {
+            FileName = fileName;
+            LineNumber = lineLinumber;
+            LinePosition = linePosition;
+        }
+
+        /// <summary>
+        /// The originating error's file name.
+        /// </summary>
+        public string FileName { get; }
+
+        /// <summary>
+        /// The originating error's line number in source.
+        /// </summary>
+        public int LineNumber { get; }
+
+        /// <summary>
+        /// The originating error's position in the line in source.
+        /// </summary>
+        public int LinePosition { get; }
+    }
+
+    /// <summary>
+    /// Represents various processor options.
+    /// </summary>
+    public class ProcessorOptions
+    {
+        /// <summary>
+        /// Gets or sets the instruction lookup function for determining whether tokens are
+        /// instructions or other identifiers.
+        /// </summary>
+        public Func<StringView, bool> InstructionLookup { get; set; }
+
+        /// <summary>
+        /// Gets or sets the function that determines whether the processor is at a new line.
+        /// </summary>
+        public Func<List<Token>, bool> LineTerminates { get; set; }
+
+        /// <summary>
+        /// gets or sets the case-sensitivity of how the processor parses keywords.
+        /// </summary>
+        public bool CaseSensitive { get; set; }
+
+        /// <summary>
+        /// Gets or sets the flag to ignore comment colons.
+        /// </summary>
+        public bool IgnoreCommentColons { get; set; }
+
+        /// <summary>
+        /// Gets or sets the flag to determine whether to ignore unclosed block comments.
+        /// </summary>
+        public bool IgnoreUnclosedBlockComment { get; set; }
+
+        /// <summary>
+        /// Gets or sets the flag to determine whether to warn if a label does not begin in the
+        /// leftmost position in a source line.
+        /// </summary>
+        public bool WarnOnLabelLeft { get; set; }
+
+        /// <summary>
+        /// Gets or sets the log to write processing errors to.
+        /// </summary>
+        public ErrorLog Log { get; set; }
+
+        /// <summary>
+        /// The CPU Assembler selector method.
+        /// </summary>
+        public Action<string> CPUAssemblerSelector { get; set; }
+
+    }
+
+    /// <summary>
+    /// Performs preprocessing and parsing of source files and text into <see cref="SourceLine"/> and <see cref="Token"/>
+    /// objects.
+    /// </summary>
+    public class Preprocessor
+    {
+        #region Constants 
+
+        const char EOS = '\0';
+
+        #endregion
+
         #region Members
 
+        static readonly Dictionary<char, char> s_openclose = new Dictionary<char, char>
+        {
+            { '(', ')' },
+            { '{', '}' },
+            { '[', ']' }
+        };
+
+        static readonly Dictionary<char, List<char>> s_compounds = new Dictionary<char, List<char>>()
+        {
+            { '|', new List<char>{ '|' } },
+            { '&', new List<char>{ '&' } },
+            { '<', new List<char>{ '<', '=' } },
+            { '>', new List<char>{ '>', '=' } },
+            { '=', new List<char>{ '=' } },
+            { '!', new List<char>{ '=' } }
+        };
+
+        readonly ProcessorOptions _options;
         readonly Dictionary<string, Macro> _macros;
+        readonly ReservedWords _preprocessors;
         readonly HashSet<string> _includedFiles;
-        bool _processingStarted;
+        int _index;
 
         #endregion
 
@@ -33,407 +143,714 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of the preprocessor class.
         /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public Preprocessor(AssemblyServices services)
-            : base(services)
+        public Preprocessor()
+            : this(new ProcessorOptions())
         {
-            Reserved.DefineType("Directives",
-                ".macro",".endmacro", ".include", ".binclude");
 
-            Reserved.DefineType("MacroNames");
+        }
 
-            _processingStarted = false;
+        /// <summary>
+        /// Constructs a new instance of the preprocessor class. 
+        /// </summary>
+        /// <param name="opt">The <see cref="ProcessorOptions"/>.</param>
+        public Preprocessor(ProcessorOptions opt)
+        {
             _includedFiles = new HashSet<string>();
-            _macros = new Dictionary<string, Macro>();
+            _index = 0;
+            _options = opt;
+            _macros = new Dictionary<string, Macro>(_options.CaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            _preprocessors = new ReservedWords(_options.CaseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase);
+            _preprocessors.DefineType("Macros",
+                ".macro", ".endmacro");
+            _preprocessors.DefineType("Includes",
+                ".binclude", ".include");
+            _preprocessors.DefineType("End",
+                ".end");
         }
 
         #endregion
 
         #region Methods
 
-        IEnumerable<SourceLine> ExpandInclude(SourceLine line)
+        /// <summary>
+        /// Set the preprocessor's options.
+        /// </summary>
+        /// <param name="opt">The <see cref="ProcessorOptions"/>.</param>
+        /// <returns>This preprocessor.</returns>
+        public Preprocessor WithOptions(Func<ProcessorOptions> opt)
         {
-            var expanded = new List<SourceLine>();
-            if (!line.OperandHasToken)
-                throw new Exception();
-            var include = line.OperandExpression;
-            if (!include.EnclosedInDoubleQuotes())
-                throw new Exception();
-
-            include = include.TrimOnce('"');
-
-            if (line.InstructionName[1] == 'b')
-                expanded.Add(GetBlockDirectiveLine(include, line.LineNumber, line.LabelName, ".block"));
-
-            expanded.AddRange(PreprocessFile(include));
-
-            if (line.InstructionName[1] == 'b')
-                expanded.Add(GetBlockDirectiveLine(include, line.LineNumber, ".endblock"));
-
-            return expanded;
+            var options = opt();
+            _options.IgnoreUnclosedBlockComment = options.IgnoreUnclosedBlockComment;
+            _options.IgnoreCommentColons = options.IgnoreCommentColons;
+            if (options.Log != null)
+                _options.Log = options.Log;
+            if (options.InstructionLookup != null)
+                _options.InstructionLookup = options.InstructionLookup;
+            if (options.LineTerminates != null)
+                _options.LineTerminates = options.LineTerminates;
+            return this;
         }
 
-        static string ProcessComments(string fileName, string source)
+        void LogError(string fileName, int lineNumber, int position, string message)
         {
-            char c;
-            int lineNumber = 1;
-            var iterator = source.GetIterator();
-            var uncommented = new StringBuilder();
-            while ((c = iterator.GetNext()) != char.MinValue)
+            if (_options.Log != null)
+                _options.Log.LogEntry(fileName, ++lineNumber, position, message);
+            else
+                throw new ProcessorException(fileName, ++lineNumber, position, message);
+        }
+
+        SourceLine GetBlockDirective(string fileName, int lineNumber, string directive, Token label)
+        {
+            var tokens = new List<Token>();
+            if (label != null)
+                tokens.Add(label);
+            if (!string.IsNullOrEmpty(directive))
+                tokens.Add(new Token(directive, TokenType.Instruction));
+            string src;
+            if (label == null)
+                src = directive;
+            else if (string.IsNullOrEmpty(directive))
+                src = label.Name.ToString();
+            else
+                src = $"{label.Name} {directive}";
+            return new SourceLine(fileName, lineNumber, new List<string> { src }, tokens, _index++);
+        }
+
+        void IncludeFile(string fileName)
+        {
+            var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
+            var dirInfo = new DirectoryInfo(location.AbsolutePath);
+            if (Path.GetDirectoryName(dirInfo.FullName).Equals(Path.GetDirectoryName(fileName)))
+                fileName = new FileInfo(fileName).Name;
+            if (_includedFiles.Contains(fileName))
+                throw new FileLoadException($"File \"{fileName}\" already included in source.");
+            _includedFiles.Add(fileName);
+        }
+
+        List<SourceLine> ProcessFromStream(string fileName, int lineNumber, StreamReader sr, bool stopAtFirstInstruction = false)
+        {
+            var sourceLines = new List<SourceLine>();
+            var lineSources = new List<string>();
+            var blockComment = false;
+            var readyForNewLine = true;
+            var expected = TokenType.LabelInstr;
+            var previousType = TokenType.None;
+            var opens = new Stack<char>();
+            Macro definingMacro = null;
+            string nextLine;
+            var stopProcessing = false;
+            var previousWasPlus = false;
+            List<Token> tokens = null;
+            var linesProcessed = lineNumber;
+            while ((nextLine = sr.ReadLine()) != null && !stopProcessing)
             {
-                var peekNext = iterator.PeekNext();
-                if (c == '/' && peekNext == '*')
-                {
-                    var endBlock = false;
-                    iterator.MoveNext();
-                    while ((c = iterator.FirstOrDefault(c => c == '\n' || c == '*')) != char.MinValue)
-                    {
-                        if (c == '\n')
-                        {
-                            lineNumber++;
-                            uncommented.Append(c);
-                        }
-                        else if ((peekNext = iterator.PeekNext()) == '/')
-                        {
-                            endBlock = true;
-                            break;
-                        }
-                    }
-                    if (!endBlock)
-                        throw new Exception($"{fileName}({lineNumber}): End of file reached before \"*/\" found.");
-                    if (!iterator.MoveNext())
-                        break;
-                }
-                else if (c == '*' && peekNext == '/')
-                {
-                    throw new Exception($"{fileName}({lineNumber}): \"*/\" does not close a comment block.");
-                }
+                if (readyForNewLine)
+                    StartNewLine();
                 else
+                    lineSources.Add(nextLine);
+
+                linesProcessed++;
+                var it = nextLine.GetIterator();
+                char c;
+                var previous = EOS;
+                var isWidth = false;
+                while ((c = it.GetNext()) != EOS)
                 {
-                    var isSemi = c == ';';
-                    if (isSemi || (c == '/' && peekNext == '/'))
+                    if (char.IsWhiteSpace(c))
                     {
-                        while (c != '\n' && c != char.MinValue)
+                        while (c == ' ' || c == '\t')
                         {
-                            if (isSemi)
-                                uncommented.Append(c);
-                            c = iterator.GetNext();
+                            previous = c;
+                            c = it.GetNext();
                         }
-                        if (c == char.MinValue)
+                        if (c == EOS)
                             break;
                     }
-                    uncommented.Append(c);
-                    if (c == '"' || c == '\'')
+                    if (blockComment)
                     {
-                        var close = c;
-                        while ((c = iterator.GetNext()) != char.MinValue)
-                        {
-                            uncommented.Append(c);
-                            if (c == '\\')
-                            {
-                                if ((c = iterator.GetNext()) == char.MinValue)
-                                    break;
-                                uncommented.Append(c);
-                            }
-                            else if (c == close)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    else if (c == '\n')
-                        lineNumber++;
-                }
-            }
-            return uncommented.ToString(); 
-        }
-
-        IEnumerable<SourceLine> ProcessDirectives(IEnumerable<SourceLine> uncommented)
-        {
-            var macroProcessed = new List<SourceLine>();
-            RandomAccessIterator<SourceLine> lineIterator = uncommented.GetIterator();
-            SourceLine line = null;
-            while ((line = lineIterator.GetNext()) != null)
-            {
-                try
-                {
-                    if (string.IsNullOrWhiteSpace(line.ParsedSource))
-                    {
-                        macroProcessed.Add(line);
+                        if (c == '*' && it.PeekNext() == '/')
+                            blockComment = !it.MoveNext();
                         continue;
                     }
-                    if (line.InstructionName.Equals(".cpu"))
-                        throw new SyntaxException(line.Instruction.Position,
-                                "\".cpu\" directive must be precede all others in sources.");
+                    char peek = it.PeekNext();
 
-                    _processingStarted = true;
-
-                    if (line.InstructionName.Equals(".macro"))
+                    if (c == '/' && peek == '/')
+                        break;
+                    if (c == '*' && peek == '/')
                     {
-                        if (string.IsNullOrEmpty(line.LabelName))
-                            throw new SyntaxException(line.Instruction.Position,
-                                "Macro name not specified.");
-
-                        var macroName = "." + line.LabelName;
-
-                        if (_macros.ContainsKey(macroName))
-                            throw new SyntaxException(line.Label.Position, 
-                                $"Macro named \"{line.LabelName}\" already defined.");
-                        if (Services.IsReserved.Any(i => i.Invoke(macroName)) ||
-                            !(char.IsLetter(line.LabelName[0]) && 
-                              (char.IsLetterOrDigit(macroName[^1]) || macroName[^1] == '_')))
-                            throw new SyntaxException(line.Label.Position, 
-                                $"Macro name \"{line.LabelName}\" is not valid.");
-                        
-                        Reserved.AddWord("MacroNames", macroName);
-
-                        var macro = new Macro(Services, 
-                                              line.Operand, 
-                                              line.ParsedSource);
-                        _macros[macroName] = macro;
-                        macro.AddSource(GetBlockDirectiveLine(line.Filename, line.LineNumber, ".block"));
-                        var instr = line;
-                        while ((line = lineIterator.GetNext()) != null && !line.InstructionName.Equals(".endmacro"))
+                        LogError(fileName, lineNumber, it.Index + 1, "\"*/\" does not close a block comment.");
+                        break;
+                    }
+                    if (c == '/' && peek == '*')
+                    {
+                        it.MoveNext();
+                        blockComment = true;
+                        continue;
+                    }
+                    if (c == ';')
+                    {
+                        if (!_options.IgnoreCommentColons)
+                            c = it.FirstOrDefault(chr => chr == ':');
+                        else c = EOS;
+                        if (c == EOS)
+                            break;
+                    }
+                    if (c == ':')
+                    {
+                        if (expected != TokenType.Instruction && expected != TokenType.EndOrBinary)
                         {
-                            if (macroName.Equals(line.InstructionName))
-                                throw new SyntaxException(line.Instruction.Position,
-                                    "Recursive macro call not allowed.");
-                            if (line.InstructionName.Equals(".macro"))
-                                throw new SyntaxException(line.Instruction.Position,
-                                    "Nested macro definitions not allowed.");
-                            
-                            if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
+                            LogError(fileName, lineNumber, it.Index + 1, "Unexpected expression.");
+                            break;
+                        }
+                        lineSources[^1] = lineSources[^1].Substring(0, it.Index);
+                        if (!it.MoveNext())
+                            break;
+                        ProcessLine();
+                        nextLine = nextLine.Substring(it.Index);
+                        StartNewLine();
+                        it = nextLine.GetIterator();
+                    }
+                    else
+                    {
+                        var position = it.Index;
+                        var type = TokenType.Misc;
+                        var size = 1;
+                        bool isIdent = false, isInstruction = false;
+                        if (char.IsLetterOrDigit(c) ||
+                            (c == '.' && (previous == '%'  || char.IsLetterOrDigit(peek))) ||
+                            (c == '#' &&  previous == '%') ||
+                             c == '"'  ||
+                             c == '\'' ||
+                             c == '_')
+                        {
+                            type = TokenType.Operand;
+                            if ((previous == '$' && c.IsHex() && previousType == TokenType.Radix) ||
+                                        (c == '0' && (peek == 'x' || peek == 'X')))
                             {
-                                var includes = ExpandInclude(line);
-                                foreach (var incl in includes)
+                                if (previous != '$')
+                                    previous = it.GetNext();
+
+                                while ((c = it.GetNext()).IsHex() || (c == '_' && previous.IsHex() && peek.IsHex()))
                                 {
-                                    if (macroName.Equals(incl.InstructionName))
-                                        throw new SyntaxException(incl.Instruction.Position,
-                                            "Recursive macro call not allowed.");
-                                    
-                                    macro.AddSource(incl);
+                                    previous = c;
+                                    peek = it.PeekNext();
+                                }
+                            }
+                            else if (c == '0' && (peek == 'o' || peek == 'O'))
+                            {
+                                it.MoveNext();
+                                while (char.IsDigit(c = it.GetNext()))
+                                {
+                                    previous = c;
+                                    peek = it.PeekNext();
+                                }
+                            }
+                            else if ((previous == '%' && previousType == TokenType.Radix) ||
+                                        (c == '0' && (peek == 'b' || peek == 'B')))
+                            {
+                                char firstdigit = c;
+                                if (previous != '%')
+                                {
+                                    it.MoveNext();
+                                    firstdigit = it.PeekNext();
+                                    previous = firstdigit;
+                                }
+                                bool alt = firstdigit == '.' || firstdigit == '#';
+                                if (!alt && firstdigit != '0' && firstdigit != '1')
+                                    continue;
+                                char zero = alt ? '.' : '0';
+                                char one = alt ? '#' : '1';
+
+                                while ((c = it.GetNext()) == zero || c == one ||
+                                    (c == '_' && (previous == zero || previous == one) && (peek == zero || peek == one)))
+                                {
+                                    previous = c;
+                                    peek = it.PeekNext();
+                                }
+                            }
+                            else if (char.IsDigit(c) || (c == '.' && char.IsDigit(peek)))
+                            {
+                                bool decFound = c == '.';
+                                bool expFound = false;
+                                while (true)
+                                {
+                                    previous = c;
+                                    if (!char.IsDigit(c = it.GetNext()))
+                                    {
+                                        peek = it.PeekNext();
+                                        if (c == '.')
+                                        {
+                                            if (decFound || !char.IsDigit(peek))
+                                                break;
+                                            decFound = true;
+                                        }
+                                        else if (c == 'e' || c == 'E')
+                                        {
+                                            if (expFound || !char.IsDigit(previous) || !(char.IsDigit(peek) || peek != '-' || peek != '+'))
+                                                break;
+                                            expFound = true;
+                                        }
+                                        else if ((c != '-' && c != '+' && c != '.' && c != 'e' && c != 'E' && c != '_') ||
+                                                ((c == '-' || c == '+') && (!expFound || (previous != 'e' && previous != 'E'))) ||
+                                                 (c == '_' && !char.IsDigit(previous) && !char.IsDigit(peek)))
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else if (c == '"' || c == '\'')
+                            {
+                                previous = c;
+                                while ((c = it.GetNext()) != previous && c != EOS)
+                                {
+                                    if (c == '\\')
+                                    {
+                                        if (!it.MoveNext())
+                                        {
+                                            LogError(fileName, lineNumber, it.Index + 1, "String not enclosed.");
+                                            continue;
+                                        }
+                                    }
+                                }
+                                if (c == EOS)
+                                {
+                                    LogError(fileName, lineNumber, it.Index + 1, "String not enclosed.");
+                                    continue;
                                 }
                             }
                             else
                             {
-                                macro.AddSource(line);
+                                isIdent = true;
+                                while ((c == '.' && (char.IsLetter(peek) || peek == '_')) || 
+                                        char.IsLetterOrDigit(c) || c == '_')
+                                {
+                                    isInstruction = c == '.';
+                                    previous = c;
+                                    c = it.GetNext();
+                                    peek = it.PeekNext();
+                                }
+                            }
+                            size = it.Index - position;
+                            if (previous == '\'' || previous == '"')
+                            {
+                                size++;
+                            }
+                            else
+                            {
+                                it.Rewind(it.Index - 1);
+                                c = it.Current;
+                                peek = it.PeekNext();
                             }
                         }
-                        if (!string.IsNullOrEmpty(line.LabelName))
+                        else if (c.IsOpenOperator())
                         {
-                            if (line.OperandHasToken)
-                                throw new SyntaxException(line.Operand.Position,
-                                    "Unexpected argument found for macro definition closure.");
-                            macro.AddSource(LexerParser.Parse(line.Filename, line.LabelName, Services, true)
-                                                        .First()
-                                                        .WithLineNumber(line.LineNumber));
+                            type = TokenType.Open;
+                            opens.Push(c);
+                            isWidth = c == '[' && previousType == TokenType.Instruction;
                         }
-                        else if (line == null)
+                        else if (c.IsClosedOperator())
                         {
-                            line = instr;
-                            throw new SyntaxException(instr.Instruction.Position,
-                                "Missing closure for macro definition.");
+                            type = TokenType.Closed;
+                            if (opens.Count == 0 || s_openclose[opens.Peek()] != c)
+                            {
+                                LogError(fileName, lineNumber, it.Index + 1, "Invalid closure.");
+                                break;
+                            }
+                            opens.Pop();
                         }
-                        macro.AddSource(GetBlockDirectiveLine(line.Filename, line.LineNumber, ".endblock"));
-                    }
-                    else if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
-                    {
-                        macroProcessed.AddRange(ExpandInclude(line));
-                    }
-                    else if (_macros.ContainsKey(line.InstructionName))
-                    {
-                        if (!string.IsNullOrEmpty(line.LabelName))
-                            macroProcessed.AddRange(LexerParser.Parse(line.Filename, line.LabelName, Services));
-                        Macro macro = _macros[line.InstructionName];                        
-                        macroProcessed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
-                    }
-                    else if (line.InstructionName.Equals(".endmacro"))
-                    {
-                        throw new SyntaxException(line.Instruction.Position,
-                            "Directive \".endmacro\" does not close a macro definition.");                    }
-                    else
-                    {
-                        macroProcessed.Add(line);
+                        else if (c == ',')
+                        {
+                            type = TokenType.Separator;
+                        }
+                        else if (c.IsOperator())
+                        {
+                            type = TokenType.Binary;
+                            if (s_compounds.TryGetValue(c, out var comp) && comp.Contains(peek))
+                            {
+                                c = it.GetNext();
+                                size++;
+                            }
+                        }
+                        switch (expected)
+                        {
+                            case TokenType.LabelInstr:
+                                if (isIdent || c == '=' || c == '*')
+                                {
+                                    if (c == '=' || isInstruction || _options.InstructionLookup(new StringView(nextLine, position, size)))
+                                    {
+                                        type = TokenType.Instruction;
+                                        expected = TokenType.StartOrOperand;
+                                        if (stopAtFirstInstruction)
+                                            stopProcessing = true;
+                                    }
+                                    else
+                                    {
+                                        type = TokenType.Label;
+                                        expected = TokenType.Instruction;
+                                        if (c != '*' && position > 0 && _options.WarnOnLabelLeft)
+                                            _options.Log?.LogEntry(fileName, lineNumber, position + 1, "Label is not at the beginning of the line.", false);
+                                    }
+                                }
+                                else if (!c.IsSpecialOperator() || (c.IsSpecialOperator() && !char.IsWhiteSpace(peek)))
+                                {
+                                    if (!char.IsWhiteSpace(c))
+                                    {
+                                        LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    type = TokenType.Label;
+                                    expected = TokenType.Instruction;
+                                }
+                                break;
+                            case TokenType.Instruction:
+                                if (c == '=' || _options.InstructionLookup(new StringView(nextLine, position, size)))
+                                {
+                                    type = TokenType.Instruction;
+                                    expected = TokenType.StartOrOperand;
+                                    if (stopAtFirstInstruction)
+                                        stopProcessing = true;
+                                }
+                                else if (stopAtFirstInstruction)
+                                {
+                                    stopProcessing = true;
+                                }
+                                else
+                                {
+                                    LogError(fileName, lineNumber, it.Index + 1, "Unknown instruction.");
+                                    continue;
+                                }
+                                break;
+                            case TokenType.StartOrOperand:
+                                if (type == TokenType.Operand)
+                                {
+                                    if (isIdent && it.PeekNextSkipping(chr => char.IsWhiteSpace(chr)) == '(')
+                                    {
+                                        type = TokenType.Function;
+                                        expected = TokenType.Open;
+                                    }
+                                    else
+                                    {
+                                        expected = TokenType.EndOrBinary;
+                                    }
+                                }
+                                else if (c == '*' || c == '?')
+                                {
+                                    type = TokenType.Operand;
+                                    expected = TokenType.EndOrBinary;
+                                }
+                                else if (c.IsUnaryOperator())
+                                {
+                                    if (size > 1)
+                                    {
+                                        size--;
+                                        it.Rewind(it.Index - 1);
+                                    }
+                                    if (c.IsSpecialOperator())
+                                    {
+                                        int ix = it.Index;
+                                        while (it.GetNext() == c) { }
+                                        int count = it.Index - ix;
+                                        if (!char.IsWhiteSpace(it.Current))
+                                            peek = it.Current;
+                                        else
+                                            peek = it.PeekNextSkipping(chr => char.IsWhiteSpace(chr));
+                                        type = TokenType.Operand;
+                                        expected = TokenType.EndOrBinary;
+                                        if (char.IsLetterOrDigit(peek) ||
+                                            peek == '.' ||
+                                            peek == '_' ||
+                                            peek.IsOpenOperator() ||
+                                            peek == '%' || peek == '$')
+                                        {
+                                            if (count == 1)
+                                            {
+                                                type = TokenType.Unary;
+                                                expected = TokenType.StartOrOperand;
+                                            }
+                                            else
+                                            {
+                                                count--;
+                                            }
+                                        }
+                                        it.Rewind(ix + count - 1);
+                                        size = count;
+                                    }
+                                    else
+                                    {
+                                        if (c == '%' || c == '$')
+                                        {
+                                            type = TokenType.Radix;
+                                            if ((c == '$' && !peek.IsHex() ||
+                                                (c == '%' && !char.IsDigit(peek) && peek != '.' && peek != '#')))
+                                                LogError(fileName, lineNumber, it.Index + 1, "Unexpected operator.");
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            type = TokenType.Unary;
+                                        }
+                                    }
+                                }
+                                else if (type != TokenType.Separator &&
+                                         type != TokenType.Open &&
+                                        !(c == ']' && previousWasPlus) &&
+                                        !(c == ')' && previousType == TokenType.Open) &&
+                                         type != TokenType.Misc)
+                                {
+                                    LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                }
+                                break;
+                            case TokenType.EndOrBinary:
+                                if (type == TokenType.Closed)
+                                {
+                                    if (c == ']' && isWidth)
+                                    {
+                                        expected = TokenType.StartOrOperand;
+                                        isWidth = false;
+                                    }
+                                }
+                                else if (TokenType.MoreTokens.HasFlag(type))
+                                {
+                                    previousWasPlus = type == TokenType.Binary && c == '+';
+                                    if (type == TokenType.Open && c != '[')
+                                    {
+                                        LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                        continue;
+                                    }
+                                    expected = TokenType.StartOrOperand;
+                                }
+                                else if (c != EOS)
+                                {
+                                    LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                }
+                                break;
+                            case TokenType.Open:
+                            default:
+                                type = TokenType.Open;
+                                expected = TokenType.StartOrOperand;
+                                break;
+
+                        }
+                        previous = it.Current;
+                        previousType = type;
+                        tokens.Add(new Token(new StringView(nextLine, position, size), type, position + 1));
                     }
                 }
-                catch (SyntaxException ex)
+                if (blockComment && tokens.Count == 0)
                 {
-                    Services.Log.LogEntry(line, ex.Position, ex.Message);
+                    readyForNewLine = true;
+                }
+                else if (LineTerminates())
+                {
+                    ProcessLine();
                 }
             }
-            return macroProcessed;
-        }
-
-        IEnumerable<SourceLine> ProcessExpansion(IEnumerable<SourceLine> sources)
-        {
-            var processed = new List<SourceLine>();
-            foreach (SourceLine line in sources)
+            if (!stopAtFirstInstruction)
             {
-                if (line.InstructionName.Equals(".include") || line.InstructionName.Equals(".binclude"))
+                if (blockComment && !_options.IgnoreUnclosedBlockComment)
+                    LogError(fileName, lineNumber, 1, "End of source reached without finding \"*/\".");
+                else if (definingMacro != null)
+                    LogError(fileName, lineNumber, 1,
+                        $"End of source reached without defining macro \"{_macros.FirstOrDefault(kvp => ReferenceEquals(kvp.Value, definingMacro)).Key}\".");
+                else if (!stopAtFirstInstruction && !LineTerminates())
+                    LogError(fileName, lineNumber, 1, "Unexpected end of source reached.");
+            }
+            return sourceLines;
+
+            bool LineTerminates()
+            {
+                return (_options.LineTerminates != null && _options.LineTerminates(tokens)) ||
+                        previousType == TokenType.None ||
+                        (!TokenType.MoreTokens.HasFlag(previousType) && opens.Count == 0);
+            }
+
+            void ProcessLine()
+            {
+                var line = new SourceLine(fileName, lineNumber + 1, lineSources, tokens, _index++);
+                if (line.Instruction != null)
                 {
-                    processed.AddRange(ExpandInclude(line));
-                }
-                else if (_macros.ContainsKey(line.InstructionName))
-                {
-                    var macro = _macros[line.InstructionName];
-                    processed.AddRange(ProcessExpansion(macro.Expand(line.Operand)));
-                }
-                else if (line.InstructionName.Equals(".endmacro"))
-                {
-                    Services.Log.LogEntry(line, line.Instruction,
-                        "Directive \".endmacro\" does not close a macro definition.");
-                    break;
+                    if (_preprocessors.IsOneOf("End", line.Instruction.Name))
+                    {
+                        stopProcessing = true;
+                        return;
+                    }
+                    StringComparison stringComparison = _options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                    if (definingMacro != null)
+                    {
+                        if (_preprocessors.IsOneOf("Macros", line.Instruction.Name))
+                        {
+                            if (line.Instruction.Name.Equals(".macro", stringComparison))
+                            {
+                                LogError(fileName, lineNumber, line.Instruction.Position, "Recursive macro definition not allowed.");
+                                return;
+                            }
+                            if (line.Operands.Count > 0)
+                            {
+                                LogError(fileName, lineNumber, line.Operands[0].Position, "Unexpected expression.");
+                                return;
+                            }
+                            if (line.Label != null)
+                                definingMacro.AddSource(GetBlockDirective(fileName, lineNumber, string.Empty, line.Label));
+                            definingMacro = null;
+                        }
+                        else
+                        {
+                            definingMacro.AddSource(line);
+                        }
+                    }
+                    else if (_preprocessors.IsReserved(line.Instruction.Name) && !stopAtFirstInstruction)
+                    {
+                        if (_preprocessors.IsOneOf("Macros", line.Instruction.Name))
+                        {
+                            if (line.Instruction.Name.Equals(".endmacro", stringComparison))
+                            {
+                                LogError(fileName, lineNumber, line.Instruction.Position, "Directive does not close a macro definition.");
+                                return;
+                            }
+                            if (line.Label == null)
+                            {
+                                LogError(fileName, lineNumber, 1, "Macro name not specified.");
+                                return;
+                            }
+                            var macroname = "." + line.Label.Name.ToString();
+                            if (_macros.ContainsKey(macroname))
+                            {
+                                LogError(fileName, lineNumber, 1, "Redefinition of macro.");
+                                return;
+                            }
+                            definingMacro = new Macro(line.Operands, _options.CaseSensitive, this);
+                            _macros[macroname] = definingMacro;
+                        }
+                        else
+                        {
+                            if (line.Operands.Count != 1 || !line.Operands[0].IsDoubleQuote())
+                            {
+                                LogError(fileName, lineNumber, line.Instruction.Position + line.Instruction.Name.Length, "Invalid filename.");
+                            }
+                            else
+                            {
+                                var includeFile = line.Operands[0].Name.ToString().TrimOnce('"');
+                                if (line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B')
+                                    sourceLines.Add(GetBlockDirective(includeFile, lineNumber, ".block", line.Label));
+                                sourceLines.AddRange(Process(includeFile));
+                                if (line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B')
+                                    sourceLines.Add(GetBlockDirective(includeFile, lineNumber, ".endblock", null));
+                            }
+                        }
+                    }
+                    else if (!stopAtFirstInstruction && _macros.TryGetValue(line.Instruction.Name.ToString(), out var macro))
+                    {
+                        sourceLines.AddRange(ExpandMacros(line, macro));
+                    }
+                    else
+                    {
+                        sourceLines.Add(line);
+                    }
                 }
                 else
                 {
-                    processed.Add(line);
+                    sourceLines.Add(line);
                 }
+                readyForNewLine = true;
+                lineNumber = linesProcessed;
             }
-            return processed;
+
+            void StartNewLine()
+            {
+                lineSources = new List<string> { nextLine };
+                tokens = new List<Token>();
+                previousType = TokenType.None;
+                expected = TokenType.LabelInstr;
+                readyForNewLine = false;
+            }
+        }
+
+        IEnumerable<SourceLine> ExpandMacros(SourceLine line, Macro macro)
+        {
+            var expandedSources = new List<SourceLine>();
+            if (line.Label != null)
+                expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, string.Empty, line.Label));
+            expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, ".block", null));
+            var sources = macro.Expand(line.Operands);
+            foreach(var source in sources)
+            {
+                if (source.Instruction != null &&
+                    _macros.TryGetValue(source.Instruction.Name.ToString(), out var submacro))
+                    expandedSources.AddRange(ExpandMacros(source, submacro));
+                else
+                    expandedSources.Add(source);
+            }
+            expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, ".endblock", null));
+            return expandedSources;
+        }
+
+
+        /// <summary>
+        /// Process the source.
+        /// </summary>
+        /// <param name="fileName">The source file name.</param>
+        /// <param name="lineNumber">The source line number.</param>
+        /// <param name="source">The source text.</param>
+        /// <returns>A list of parsed <see cref="SourceLine"/> records.</returns>
+        public List<SourceLine> Process(string fileName, int lineNumber, string source)
+        {
+            if (_options.InstructionLookup == null)
+                throw new Exception("Instruction lookup option not configured.");
+            var sourceBytes = Encoding.UTF8.GetBytes(source);
+            using MemoryStream ms = new MemoryStream(sourceBytes);
+            using StreamReader sr = new StreamReader(ms);
+            return ProcessFromStream(fileName, lineNumber, sr);
         }
 
         /// <summary>
-        /// Perforsm preprocessing of the input string as a label define expression.
+        /// Process a define expression.
         /// </summary>
-        /// <param name="defineExpression">The define</param>
-        /// <returns>A <see cref="SourceLine"/> representing the parsed label define.</returns>
-        /// <exception cref="Exception"/>
-        public SourceLine PreprocessDefine(string defineExpression)
+        /// <param name="defineExpression">The define expression.</param>
+        /// <returns>The parsed <see cref="SourceLine"/>.</returns>
+        public SourceLine ProcessDefine(string defineExpression)
         {
             if (!defineExpression.Contains('='))
                 defineExpression += "=1";
 
-            var defines = LexerParser.Parse(string.Empty, defineExpression, Services);
+            var defines = Process(string.Empty, 1, defineExpression);
             if (defines.Count() != 1)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
             var line = defines.First();
-            if (line.Label == null || line.Instruction == null || !line.InstructionName.Equals("=") || line.Operand == null)
+            if (line.Label == null || line.Instruction == null || !line.Instruction.Name.Equals("=") || line.Operands.Count == 0)
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
-            if (!line.OperandExpression.EnclosedInDoubleQuotes() && 
-                !Services.Evaluator.ExpressionIsConstant(line.Operand))
-                throw new Exception($"Define expression \"{line.Operand}\" is not a constant.");
             return line;
         }
 
         /// <summary>
-        /// Returns a new source line representing a block or endblock directive.
+        /// Process a source file.
         /// </summary>
-        /// <param name="fileName">The original file name.</param>
-        /// <param name="lineNumber">The source's line number.</param>
-        /// <param name="directive">The directive name.</param>
-        /// <returns></returns>
-        public SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string directive)
-            => GetBlockDirectiveLine(fileName, lineNumber, string.Empty, directive);
-
-        /// <summary>
-        /// Returns a new source line representing a block or endblock directive.
-        /// </summary>
-        /// <param name="fileName">The original file name.</param>
-        /// <param name="lineNumber">The source's line number.</param>
-        /// <param name="label">The label to attach the block line.</param>
-        /// <param name="directive">The directive name.</param>
-        /// <returns></returns>
-        public SourceLine GetBlockDirectiveLine(string fileName, int lineNumber, string label, string directive)
+        /// <param name="fileName">The source file name.</param>
+        /// <returns>A list of parsed <see cref="SourceLine"/> records.</returns>
+        public List<SourceLine> Process(string fileName)
         {
-            var source = string.IsNullOrEmpty(label) ? directive : $"{label} {directive}";
-            var parsed = LexerParser.Parse(fileName, source, Services, true).First();
-            return parsed.WithLineNumber(lineNumber);
+            IncludeFile(fileName);
+            if (_options.InstructionLookup == null)
+                throw new Exception("Instruction lookup option not configured.");
+
+            using FileStream fs = File.OpenRead(fileName);
+            using BufferedStream bs = new BufferedStream(fs);
+            using StreamReader sr = new StreamReader(bs);
+            return ProcessFromStream(fileName, 0, sr);
         }
 
-        /// <summary>
-        /// Perform preprocessing of the source text within the source file, 
-        /// including comment scrubbing and macro creation and expansion.
-        /// </summary>
-        /// <param name="fileName">The source file.</param>
-        /// <returns>A collection of parsed <see cref="SourceLine"/>s.</returns>
-        public IEnumerable<SourceLine> PreprocessFile(string fileName)
+        public SourceLine ProcessToFirstDirective(string fileName)
         {
-            string source = string.Empty;
-            string fullPath = string.Empty;
-            var fileInfo = new FileInfo(fileName);
-            if (fileInfo.Exists)
-            {
-                using var fs = fileInfo.OpenText();
-                fullPath = fileInfo.FullName;
-                source = fs.ReadToEnd();
-            }
-            else if (!string.IsNullOrEmpty(Services.Options.IncludePath))
-            {
-                fullPath = Path.Combine(Services.Options.IncludePath, fileName);
-                if (File.Exists(fullPath))
-                    source = File.ReadAllText(fullPath);
-                else
-                    throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
-            }
-            else
-            {
-                throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
-            }
-            var sourceInvalid = string.IsNullOrEmpty(source) ||
-                                source.Take(5).Any(c => char.IsControl(c) && !char.IsWhiteSpace(c));
-            
-            if (sourceInvalid)
-                throw new Exception($"File \"{fileName}\" may be empty or in an unrecognized file format.");
-
-            var location = new Uri(System.Reflection.Assembly.GetEntryAssembly().GetName().CodeBase);
-            var dirInfo = new DirectoryInfo(location.AbsolutePath);
-            if (Path.GetDirectoryName(dirInfo.FullName).Equals(Path.GetDirectoryName(fullPath)))
-                fullPath = fileName;
-            if (_includedFiles.Contains(fullPath))
-                throw new FileLoadException($"File \"{fullPath}\" already included in source.");
-            _includedFiles.Add(fullPath);
-            return Preprocess(fileName, source);
-        }
-
-        IEnumerable<SourceLine> Preprocess(string fileName, string source)
-        {
-            source = source.Replace("\r", string.Empty); // remove Windows CR
-            source = ProcessComments(fileName, source);
-
-            // we cannot do proper parsing until the cpu assembler is properly configured first.
-            string cpu = Services.Options.CPU;
-            var firstLine = LexerParser.Parse(fileName, source, Services, true)
-                                       .FirstOrDefault(l => !string.IsNullOrEmpty(l.ParsedSource));
-            if (firstLine != null && firstLine.InstructionName.Equals(".cpu"))
-            {
-                if (_processingStarted)
-                {
-                    Services.Log.LogEntry(firstLine, firstLine.Instruction,
-                          "\".cpu\" directive must precede all others in sources.");
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(firstLine.LabelName))
-                        Services.Log.LogEntry(firstLine, firstLine.Label, 
-                            "Label definition ignored for directive \".cpu\".", false);
-                    if (!string.IsNullOrEmpty(Services.Options.CPU))
-                        Services.Log.LogEntry(firstLine, firstLine.Instruction,
-                            "\".cpu\" directive ignores option '--cpu'.", false);
-                    cpu = firstLine.OperandExpression.Trim();
-                    if (!cpu.EnclosedInDoubleQuotes())
-                    {
-                        Services.Log.LogEntry(firstLine, firstLine.Operand,
-                           "Expression must be a string.");
-                    }
-                    else
-                    {
-                        cpu = cpu.TrimOnce('"');
-
-                        // scrub out the .cpu directive line since it's been evaluated.
-                        var postIndex = firstLine.IndexInSource + firstLine.UnparsedSource.Length;
-                        var preSource = string.Empty;
-                        if (firstLine.IndexInSource != 0)
-                            preSource = source.Substring(0, firstLine.IndexInSource);
-                        if (source.Length > postIndex)
-                            source = preSource + source.Substring(postIndex);
-                        else
-                            source = preSource;
-                    }
-                }
-            }
-            if (!_processingStarted)
-                Services.SelectCPU(cpu);
-            return ProcessDirectives(LexerParser.Parse(fileName, source, Services));
+            using FileStream fs = File.OpenRead(fileName);
+            using BufferedStream bs = new BufferedStream(fs);
+            using StreamReader sr = new StreamReader(bs);
+            var sources = ProcessFromStream(fileName, 0, sr, true);
+            if (sources.Count > 0)
+                return sources[^1];
+            return null;
         }
 
         /// <summary>
@@ -442,11 +859,6 @@ namespace Core6502DotNet
         /// <returns>A collection of input files.</returns>
         public ReadOnlyCollection<string> GetInputFiles()
             => new ReadOnlyCollection<string>(_includedFiles.ToList());
-
-        protected override string OnAssembleLine(SourceLine line) => throw new NotImplementedException();
-
-        public override bool Assembles(string keyword)
-            => Reserved.IsReserved(keyword) || (!string.IsNullOrEmpty(keyword) && keyword[0] == '.');
 
         #endregion
     }

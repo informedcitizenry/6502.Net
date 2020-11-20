@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace Core6502DotNet
 {
     /// <summary>
@@ -18,34 +20,33 @@ namespace Core6502DotNet
         /// Creates a new instance of a page block processor.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
+        /// <param name="index">The index at which the block is defined.</param>
         public PageBlockProcessor(AssemblyServices services,
-                                  RandomAccessIterator<SourceLine> iterator,
-                                  BlockType type)
-            : base(services, iterator, type, false) => _page = GetPage();
+                                  int index)
+            : base(services, index, false) => _page = GetPage();
 
         int GetPage() => Services.Output.LogicalPC & 0xF00;
 
         int GetPage(int address) => address & 0xF00;
 
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
+        {
+            var line = lines.Current;
+            if (line.Instruction.Name.Equals(".endpage", Services.StringComparison))
+            {
+                if (!Services.PassNeeded && GetPage(Services.Output.LogicalPC - 1) != _page)
+                    Services.Log.LogEntry(line.Instruction, "Page boundary crossed.");
+            }
+        }
+
         public override bool AllowBreak => false;
 
         public override bool AllowContinue => false;
 
-        public override bool ExecuteDirective()
-        {
-            var line = LineIterator.Current;
-            if (line.InstructionName.Equals(".endpage"))
-            {
-                if (!Services.PassNeeded && GetPage(Services.Output.LogicalPC - 1) != _page)
-                    Services.Log.LogEntry(line, "Page boundary crossed.");
-                return true;
-            }
-            return line.InstructionName.Equals(".page");
-        }
+        public override IEnumerable<string> BlockOpens => new string[] { ".page" };
 
-        public override void PopScope() { }
+        public override string BlockClosure => ".endpage";
+
+        public override void PopScope(RandomAccessIterator<SourceLine> unused) { }
     }
 }

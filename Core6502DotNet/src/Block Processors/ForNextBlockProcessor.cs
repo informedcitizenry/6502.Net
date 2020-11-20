@@ -6,7 +6,6 @@
 //-----------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Core6502DotNet
 {
@@ -17,8 +16,8 @@ namespace Core6502DotNet
     {
         #region Members
 
-        readonly IEnumerable<Token> _condition;
-        readonly Token _iterations;
+        List<Token> _condition;
+        List<Token> _iterations;
 
         #endregion
 
@@ -28,58 +27,69 @@ namespace Core6502DotNet
         /// Creates a new instance of the for next block processor.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public ForNextBlock(AssemblyServices services,
-                            RandomAccessIterator<SourceLine> iterator, 
-                            BlockType type)
-            : base(services, iterator, type)
-        {
-            var line = iterator.Current;
-            if (line.Operand == null ||
-                line.Operand.Children.Count < 3)
-            {
-                throw new SyntaxException(line.Operand.Position, "Missing operands for \".for\" directive.");
-            }
-
-            if (line.Operand.Children[1].Children.Count > 0)
-                _condition = line.Operand.Children[1].Children;
-            _iterations = new Token(string.Empty,
-                                    string.Empty,
-                                    TokenType.Operator,
-                                    OperatorType.Separator,
-                                    line.Operand.Children[2].Position,
-                                    line.Operand.Children.Skip(2));
-            if (Line.Operand.Children[0].Children.Count > 0)
-                Services.SymbolManager.Define(Line.Operand.Children[0].Children, true);
-        }
+        /// <param name="index">The index at which the block is defined.</param>
+        public ForNextBlock(AssemblyServices services, int index)
+            : base(services, index) { }
 
         #endregion
 
         #region Methods
 
-        public override bool ExecuteDirective()
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
-        if (LineIterator.Current.InstructionName.Equals(".next"))
+            if (lines.Current.Instruction.Name.Equals(".for", Services.StringComparison))
             {
-                foreach (var child in _iterations.Children)
-                {
-                    if (child.Children.Count == 0)
-                        throw new SyntaxException(child.Position, "Iteration expression cannot be empty.");
+                var line = lines.Current;
+                if (line.Operands.Count == 0)
+                    throw new SyntaxException(line.Instruction, "Missing operands for \".for\" directive.");
+                var it = line.Operands.GetIterator();
+                if (!Token.IsEnd(it.GetNext()))
+                    Services.SymbolManager.DefineSymbol(it);
 
-                    if (!Services.SymbolManager.SymbolExists(child.Children[0].Name))
+                if (!it.MoveNext())
+                    throw new SyntaxException(line.Operands[^1], "Missing condition clause.");
+                _condition = new List<Token>();
+                while (!Token.IsEnd(it.Current))
+                {
+                    if (it.Current.Name.Equals("("))
                     {
-                        throw new SyntaxException(child.Children[0].Position,
-                            $"Variable \"{child.Children[0].Name}\" must be defined before it is used.");
+                        _condition.AddRange(Token.GetGroup(it));
                     }
-                    Services.SymbolManager.Define(child.Children, true);
+                    else
+                    {
+                        _condition.Add(it.Current);
+                        it.MoveNext();
+                    }
                 }
-                if (_condition == null || Services.Evaluator.EvaluateCondition(_condition))
-                    LineIterator.Rewind(Index);
-                return true;
+                if (_condition.Count > 0 && !Services.Evaluator.EvaluateCondition(_condition.GetIterator()))
+                {
+                    SeekBlockEnd(lines);
+                }
+                else
+                {
+                    if (it.Current == null)
+                        throw new SyntaxException(line.Operands[^1], "Expression expected.");
+                    _iterations = new List<Token>();
+                    while ((it.GetNext()) != null)
+                        _iterations.Add(it.Current);
+                    if (_iterations.Count == 0 || _iterations[^1].IsSeparator())
+                        throw new SyntaxException(line.Operands[^1], "Expression expected.");
+                }
             }
-            return LineIterator.Current.InstructionName.Equals(".for");
+            else
+            {
+                var it = _iterations.GetIterator();
+                while (it.GetNext() != null)
+                {
+                    Services.SymbolManager.DefineSymbol(it);
+                    if (it.Current == null)
+                        break;
+                    if (it.Current.IsSeparator())
+                        continue;
+                }
+                if (_condition.Count > 0 && Services.Evaluator.EvaluateCondition(_condition.GetIterator()))
+                    lines.Rewind(Index);
+            }
         }
         #endregion
 
@@ -88,6 +98,10 @@ namespace Core6502DotNet
         public override bool AllowBreak => true;
 
         public override bool AllowContinue => true;
+
+        public override IEnumerable<string> BlockOpens => new string[] { ".for" };
+
+        public override string BlockClosure => ".next";
 
         #endregion
     }

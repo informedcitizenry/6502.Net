@@ -42,7 +42,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="message">The custom overflow message.</param>
         public ProgramOverflowException(string message)
-            :base(message)
+            : base(message)
         {
         }
     }
@@ -69,9 +69,9 @@ namespace Core6502DotNet
 
         readonly SectionCollection _sectionCollection;
         readonly byte[] _bytes;
+        bool _compilingStarted;
         int _logicalPc;
         int _pc;
-        bool _compilingStarted;
         bool _started;
 
         #endregion
@@ -82,10 +82,11 @@ namespace Core6502DotNet
         /// Initializes a new compilation
         /// </summary>
         /// <param name="isLittleEndian">Determines whether to compile as little endian</param>
-        public BinaryOutput(bool isLittleEndian)
+        public BinaryOutput(bool isLittleEndian, bool caseSensitive)
         {
+            _compilingStarted = false;
             _bytes = new byte[BufferSize];
-            _sectionCollection = new SectionCollection();
+            _sectionCollection = new SectionCollection(caseSensitive);
             IsLittleEndian = isLittleEndian;
             Reset();
         }
@@ -95,7 +96,7 @@ namespace Core6502DotNet
         /// Initializes a new compilation.
         /// </summary>
         public BinaryOutput()
-            : this(true)
+            : this(true, false)
         {
 
         }
@@ -156,7 +157,7 @@ namespace Core6502DotNet
             _compilingStarted = _started = false;
             _sectionCollection.Reset();
             CurrentBank = 0;
-            ProgramEnd = PreviousPC = 
+            ProgramEnd = PreviousPC =
             _pc = _logicalPc = 0;
             PCOverflow = false;
         }
@@ -217,7 +218,7 @@ namespace Core6502DotNet
         /// <param name="value">The value to add.</param>
         /// <param name="size">The size, in bytes, of the value.</param>
         /// of the bytes added to the compilation.</returns>
-        public void Add(long value, int size) 
+        public void Add(long value, int size)
             => AddBytes(BitConvertLittleEndian(value), size, false);
 
         /// <summary>
@@ -467,12 +468,12 @@ namespace Core6502DotNet
             if (start < ProgramStart || start >= ProgramEnd)
                 return new List<byte>().AsReadOnly();
             int range;
-            if (!_sectionCollection.SectionSelected || 
+            if (!_sectionCollection.SectionSelected ||
                 _sectionCollection.AddressInBounds(ProgramEnd))
                 range = ProgramEnd - start;
             else
                 range = ProgramCounter - start;
-            
+
             if (range < 0 || range > MaxAddress)
                 return new List<byte>().AsReadOnly();
             return _bytes.Skip(start).Take(range).ToList().AsReadOnly();
@@ -527,7 +528,7 @@ namespace Core6502DotNet
             if (!AddressIsValid(address))
                 throw new ProgramOverflowException(
                     $"Address ${address:x4} is not within the bounds of program or section space.");
-            
+
             _started = _compilingStarted = true;
             var index = address - ProgramStart;
             if (address < ProgramStart)
@@ -574,7 +575,7 @@ namespace Core6502DotNet
         /// <param name="name">The section name.</param>
         /// <returns>The section start address, if it is defined.</returns>
         /// <exception cref="Exception"></exception>
-        public int GetSectionStart(string name)
+        public int GetSectionStart(StringView name)
         {
             var start = _sectionCollection.GetSectionStart(name);
             if (start > int.MinValue)
@@ -589,26 +590,26 @@ namespace Core6502DotNet
         /// <param name="starts">The section start address.</param>
         /// <param name="ends">The section end address..</param>
         /// <exception cref="SectionException"/>
-        public void DefineSection(string name, int starts, int ends)
+        public void DefineSection(StringView name, int starts, int ends)
         {
             if (_started)
-                throw new SectionException(1, 
+                throw new SectionException(1,
                     "Cannot define a section after assembly has started.");
             if (starts < 0)
-                throw new SectionException(1, 
+                throw new SectionException(1,
                     $"Section {name} start address {starts} is not valid.");
             if (starts >= ends)
                 throw new SectionException(1,
                     $"Section {name} start address cannot be equal or greater than end address.");
             if (ends > MaxAddress + 1)
-                throw new SectionException(1, 
+                throw new SectionException(1,
                     $"Section {name} end address {ends} is not valid.");
-            switch( _sectionCollection.Add(name, starts, ends))
+            switch (_sectionCollection.Add(name, starts, ends))
             {
                 case CollectionResult.Duplicate:
                     throw new SectionException(1, $"Section {name} already defined.");
                 case CollectionResult.RangeOverlap:
-                    throw new SectionException(1, 
+                    throw new SectionException(1,
                         $"Section {name} start and end address intersect existing section's.");
                 default:
                     break;
@@ -621,7 +622,7 @@ namespace Core6502DotNet
         /// <param name="section">The section name.</param>
         /// <returns><c>true</c> if the section was able to be selected, otherwise <c>false</c>.</returns>
         /// <exception cref="SectionException"></exception>
-        public bool SetSection(string section)
+        public bool SetSection(StringView section)
         {
             var result = _sectionCollection.SetCurrentSection(section);
             if (result == CollectionResult.NotFound)
@@ -630,6 +631,8 @@ namespace Core6502DotNet
             _logicalPc = _sectionCollection.SelectedStartAddress + _sectionCollection.GetSectionOutputCount();
             return true;
         }
+
+        public override string ToString() => $"{ProgramStart:X4}:{ProgramCounter:X4} [{LogicalPC:X4}]";
 
         IEnumerable<byte> BitConvertLittleEndian(long value)
         {
@@ -688,7 +691,7 @@ namespace Core6502DotNet
         /// Gets the names of any defined sections not used during 
         /// assembly.
         /// </summary>
-        public IEnumerable<string> UnusedSections 
+        public IEnumerable<string> UnusedSections
             => _sectionCollection.SectionsNotSelected;
 
         /// <summary>

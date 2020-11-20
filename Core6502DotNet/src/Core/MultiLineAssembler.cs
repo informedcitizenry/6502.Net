@@ -19,92 +19,189 @@ namespace Core6502DotNet
     {
         NotFound = 0,
         ReturnNotAllowed,
-        OutsideBounds,
         ExceptionRaised
     }
 
     /// <summary>
     /// A utility for providing multi line assembly functionality.
     /// </summary>
-    public static class MultiLineAssembler
+    public class MultiLineAssembler
     {
+        #region Subclasses
+
         /// <summary>
-        /// Assembles the lines within the iterator.
+        /// The options to pass to a <see cref="MultiLineAssembler"/> for assembly.
         /// </summary>
-        /// <param name="lines">The lines.</param>
-        /// <param name="withAssemblers">The assemblers to assemble.</param>
-        /// <param name="allowReturn">Allow .return directive.</param>
-        /// <param name="allowOutput">Allow the assemblers to emit output data.</param>
-        /// <param name="disasmBuilder">The disassembly builder.</param>
-        /// <param name="disassembleAll">Disassemble all lines, even those without instructions.</param>
-        /// <param name="errorHandler">A function or delegate to handle any errors during assembly.</param>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <returns>The return value if a .return directive is assembled.</returns>
-        public static double AssembleLines(RandomAccessIterator<SourceLine> lines,
-                                           IEnumerable<AssemblerBase> withAssemblers,
-                                           bool allowReturn,
-                                           StringBuilder disasmBuilder,
-                                           bool disassembleAll,
-                                           Func<SourceLine,
-                                                AssemblyErrorReason, 
-                                                Exception, 
-                                                bool> errorHandler,
-                                           AssemblyServices services)
+        public class Options
         {
-            foreach(var line in lines)
+            #region Properties
+
+            /// <summary>
+            /// Allow the <see cref="MultiLineAssembler"/> to return a value when encountering the
+            /// .return directive.
+            /// </summary>
+            public bool AllowReturn { get; set; }
+
+            /// <summary>
+            /// Emit disassembly for all lines.
+            /// </summary>
+
+            public bool DisassembleAll { get; set; }
+
+            /// <summary>
+            /// The <see cref="Evaluator"/> object to help when processing a .return directive.
+            /// </summary>
+            public Evaluator Evaluator { get; set; }
+
+            /// <summary>
+            /// The callback function that determines whether disassembly should stop.
+            /// </summary>
+            public Func<bool> StopDisassembly { get; set; }
+
+            /// <summary>
+            /// The error handler function.
+            /// </summary>
+            public Func<AssemblerBase,
+                        SourceLine,
+                        AssemblyErrorReason,
+                        Exception,
+                        bool> ErrorHandler
+            { get; set; }
+
+            #endregion
+        };
+
+        #endregion
+
+        #region Members
+
+        readonly Options _options;
+        IEnumerable<AssemblerBase> _assemblers;
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Constructs a new instance of multi-line assembler.
+        /// </summary>
+        public MultiLineAssembler()
+        {
+            _options = new Options
+            {
+                Evaluator = new Evaluator(),
+                AllowReturn = false,
+                DisassembleAll = false,
+                ErrorHandler =
+                (AssemblerBase assembler, SourceLine line, AssemblyErrorReason reason, Exception ex) => false,
+                StopDisassembly = () => false
+            };
+            _assemblers = new List<AssemblerBase>();
+        }
+
+        /// <summary>
+        /// Constructs a new instance of multi-line assembler.
+        /// </summary>
+        /// <param name="options">The <see cref="Options"/> object.</param>
+        public MultiLineAssembler(Options options)
+            => _options = options;
+
+        #endregion
+
+        #region Methods
+
+
+        /// <summary>
+        /// Set the <see cref="AssemblerBase"/>es to use when assembling.
+        /// </summary>
+        /// <param name="assemblers"></param>
+        /// <returns>This <see cref="MultiLineAssembler"/> object.</returns>
+        public MultiLineAssembler WithAssemblers(IEnumerable<AssemblerBase> assemblers)
+        {
+            _assemblers = assemblers;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the <see cref="Options"/> when assembling.
+        /// </summary>
+        /// <param name="options">The multi-line assembly options.</param>
+        /// <returns>This <see cref="MultiLineAssembler"/> object.</returns>
+        public MultiLineAssembler WithOptions(Options options)
+        {
+            _options.AllowReturn = options.AllowReturn;
+            _options.DisassembleAll = options.DisassembleAll;
+            _options.ErrorHandler = options.ErrorHandler;
+            _options.StopDisassembly = options.StopDisassembly;
+            _options.Evaluator = options.Evaluator;
+            return this;
+        }
+
+        /// <summary>
+        /// Assembles a collection of <see cref="SourceLine"/>s.
+        /// </summary>
+        /// <param name="iterator">An iterator to the collection of lines.</param>
+        /// <param name="disassembly">The resulting disassembly.</param>
+        /// <returns>The return value if a .return directive is assembled.</returns>
+        public double AssembleLines(RandomAccessIterator<SourceLine> iterator, out string disassembly)
+        {
+            disassembly = string.Empty;
+            var disasmBuilder = new StringBuilder();
+            SourceLine line;
+            AssemblerBase asm = null;
+            while ((line = iterator.GetNext()) != null)
             {
                 try
                 {
                     if (line.Label != null || line.Instruction != null)
                     {
-                        if (line.InstructionName.Equals(".return"))
+                        if (line.Instruction != null && line.Instruction.Name.Equals(".return"))
                         {
-                            if (allowReturn)
+                            if (_options.AllowReturn)
                             {
-                                if (line.OperandHasToken)
-                                    return services.Evaluator.Evaluate(line.Operand);
+                                if (line.Operands.Count > 0)
+                                    return _options.Evaluator.Evaluate(line.Operands.GetIterator());
                                 return double.NaN;
                             }
                             else
                             {
-                                if (errorHandler(line, AssemblyErrorReason.ReturnNotAllowed, null))
+                                if (_options.ErrorHandler(null, line, AssemblyErrorReason.ReturnNotAllowed, null))
                                     continue;
                                 break;
                             }
                         }
-                        var asm = withAssemblers.FirstOrDefault(a => a.AssemblesLine(line));
+                        asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
+                        if (asm == null && line.Instruction != null && !_options.ErrorHandler(null, line, AssemblyErrorReason.NotFound, null))
+                            break;
                         if (asm != null)
                         {
-                            var disasm = asm.AssembleLine(line);
-                            if (disasmBuilder != null && !services.PrintOff)
+                            var disasm = asm.Assemble(iterator);
+                            if (!_options.StopDisassembly())
                             {
-                                if (disassembleAll)
+                                if (_options.DisassembleAll)
                                     disasmBuilder.Append($"\"{line.Filename}\"(")
-                                                 .Append($"{line.LineNumber}): ".PadLeft(8));
+                                                 .AppendLine($"{line.LineNumber}): ".PadLeft(8));
                                 if (!string.IsNullOrEmpty(disasm))
                                     disasmBuilder.AppendLine(disasm);
                             }
                         }
-                        else if (line.Instruction != null)
-                        {
-                            if (!errorHandler(line, AssemblyErrorReason.NotFound, null))
-                                break;
-                        }
-                        else if (disassembleAll && disasmBuilder != null && !services.PrintOff)
+                        else if (_options.DisassembleAll && !_options.StopDisassembly())
                         {
                             disasmBuilder.Append($"\"{line.Filename}\"(")
                                          .Append($"{line.LineNumber}): ".PadLeft(8))
-                                         .AppendLine(line.UnparsedSource.PadLeft(50, ' '));
+                                         .AppendLine(line.Source.PadLeft(50, ' '));
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (!errorHandler(line, AssemblyErrorReason.ExceptionRaised, ex))
+                    if (!_options.ErrorHandler(asm, line, AssemblyErrorReason.ExceptionRaised, ex))
                         break;
                 }
             }
+            disassembly = disasmBuilder.ToString();
             return double.NaN;
         }
+        #endregion
     }
 }

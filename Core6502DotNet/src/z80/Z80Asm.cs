@@ -22,7 +22,7 @@ namespace Core6502DotNet.z80
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         public Z80Asm(AssemblyServices services)
-            :base(services)
+            : base(services)
         {
             Reserved.DefineType("Mnemonics",
                     "adc", "add", "ccf", "cpd", "cpdr", "cpi", "cpir", "cpl",
@@ -59,22 +59,48 @@ namespace Core6502DotNet.z80
                     "djnz", "jr"
                 );
 
-            Services.SymbolManager.AddValidSymbolNameCriterion(s => !s_namedModes.ContainsKey(s));
+            Reserved.DefineType("Directives",
+                ".cpu");
+
+            _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
+            {
+                { "a",   Z80Mode.A         },
+                { "af",  Z80Mode.AF        },
+                { "af'", Z80Mode.ShadowAF  },
+                { "b",   Z80Mode.B         },
+                { "bc",  Z80Mode.BC        },
+                { "c",   Z80Mode.C         },
+                { "d",   Z80Mode.D         },
+                { "de",  Z80Mode.DE        },
+                { "e",   Z80Mode.E         },
+                { "h",   Z80Mode.H         },
+                { "hl",  Z80Mode.HL        },
+                { "i",   Z80Mode.I         },
+                { "ix",  Z80Mode.IX        },
+                { "ixh", Z80Mode.XH        },
+                { "ixl", Z80Mode.XL        },
+                { "iy",  Z80Mode.IY        },
+                { "iyh", Z80Mode.YH        },
+                { "iyl", Z80Mode.YL        },
+                { "l",   Z80Mode.L         },
+                { "m",   Z80Mode.M         },
+                { "nc",  Z80Mode.NC        },
+                { "nz",  Z80Mode.NZ        },
+                { "p",   Z80Mode.P         },
+                { "pe",  Z80Mode.PE        },
+                { "po",  Z80Mode.PO        },
+                { "r",   Z80Mode.R         },
+                { "sp",  Z80Mode.SP        },
+                { "z",   Z80Mode.Z         }
+            };
+
+            Services.SymbolManager.AddValidSymbolNameCriterion(s => !_namedModes.ContainsKey(s));
             _evals = new double[3];
         }
 
-        Z80Mode GetValueMode(IEnumerable<Token> tokens, int i)
+        Z80Mode GetValueMode(RandomAccessIterator<Token> tokens, bool doNotAdavance, double minValue, double maxValue, int i)
         {
-            var value = Services.Evaluator.Evaluate(tokens, short.MinValue, ushort.MaxValue);
-            _evals[i] = value;
-            if (value < sbyte.MinValue || value > byte.MaxValue)
-                return Z80Mode.Extended;
-            return Z80Mode.PageZero;
-        }
-
-        Z80Mode GetValueMode(Token token, int i)
-        {
-            var value = Services.Evaluator.Evaluate(token, short.MinValue, ushort.MaxValue);
+            var value = Services.Evaluator.Evaluate(tokens, doNotAdavance, minValue, maxValue);
             _evals[i] = value;
             if (value < sbyte.MinValue || value > byte.MaxValue)
                 return Z80Mode.Extended;
@@ -85,118 +111,86 @@ namespace Core6502DotNet.z80
         {
             _evals[0] = _evals[1] = _evals[2] = double.NaN;
             var modes = new Z80Mode[3];
-            if (line.OperandHasToken)
+            var operands = line.Operands.GetIterator();
+            Token operand;
+            int i = 0;
+            while (i < 3 && (operand = operands.GetNext()) != null)
             {
-                for (var i = 0; i < 3; i++)
+                Z80Mode mode = Z80Mode.Implied;
+                if (operand.IsSeparator())
+                    throw new SyntaxException(operand, "Expression expected.");
+                while (!Token.IsEnd(operand))
                 {
-                    var mode = Z80Mode.Implied;
-                    if (line.Operand.Children.Count > i)
+                    if (line.Instruction.Name.Equals("rst", Services.StringComparison))
                     {
-                        var child = line.Operand.Children[i];
-                        if (child.Children.Count > 0)
+                        var rst = Services.Evaluator.Evaluate(operands, false, 0, 0x38);
+                        if (!rst.IsInteger() && (rst != 0 || ((int)rst & 8) != 8))
+                            throw new IllegalQuantityException(operand, rst);
+                        mode |= (Z80Mode)(rst / 8) | Z80Mode.BitOp;
+                        operand = operands.Current;
+                    }
+                    else if ((Reserved.IsOneOf("Bits", line.Instruction.Name) && i == 0))
+                    {
+                        mode = (Z80Mode)Services.Evaluator.Evaluate(operands, false, 0, 7) | Z80Mode.BitOp;
+                        operand = operands.Current;
+                    }
+                    else
+                    {
+                        if (operand.Name.Equals("("))
                         {
-                            if (child.Children[0].Name.Equals("("))
+                            mode |= Z80Mode.Indirect;
+                            operand = operands.GetNext();
+                        }
+                        if (_namedModes.TryGetValue(operand.Name, out var regMode))
+                        {
+                            mode |= regMode;
+                            if (!Token.IsEnd((operand = operands.GetNext())))
                             {
-                                if (child.Children.Count == 1)
-                                {
-                                    mode |= Z80Mode.Indirect;
-                                    if (child.Children[0].Children.Count > 0 && child.Children[0].Children[0].Children.Count > 0)
-                                    {
-                                        var firstExInParen = child.Children[0].Children[0];
-                                        var firstInParen = firstExInParen.Children[0];
-                                        if (s_namedModes.ContainsKey(firstInParen.Name))
-                                        {
-                                            mode |= s_namedModes[firstInParen.Name];
-                                            if (firstExInParen.Children.Count > 1)
-                                            {
-                                                var nextInParen = firstExInParen.Children[1];
-                                                if (!nextInParen.Name.Equals("+") && !nextInParen.Name.Equals("-"))
-                                                {
-                                                    Services.Log.LogEntry(line, nextInParen.Position,
-                                                        $"Unexpected operation \"{nextInParen.Name}\" found in index expression.");
-                                                }
-                                                else if (firstExInParen.Children.Count < 3)
-                                                {
-                                                    Services.Log.LogEntry(line, nextInParen.Position,
-                                                        "Index expression is incomplete.");
-                                                }
-                                                else
-                                                {
-                                                    mode |= Z80Mode.Indexed;
-                                                    var expression = new List<Token>(firstExInParen.Children.Skip(1));
-                                                    expression[0] = new Token(expression[0].Name, TokenType.Operator, OperatorType.Unary);
-                                                    mode |= GetValueMode(expression, i);
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            mode |= GetValueMode(child.Children[0].Children[0], i);
-                                            if (Reserved.IsOneOf("Relatives", line.InstructionName))
-                                                mode |= Z80Mode.Extended;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Services.Log.LogEntry(line, child.Children[0].Position,
-                                            "Expected expression not given.");
-                                    }
-                                }
-                                else
-                                {
-                                    mode |= GetValueMode(child, i);
-                                    if (Reserved.IsOneOf("Relatives", line.InstructionName))
-                                        mode |= Z80Mode.Extended;
-                                }
-
+                                if (!operand.IsSpecialOperator() || operand.Name.Equals("*"))
+                                    throw new SyntaxException(operand, "Unexpected expression.");
+                                mode |= Z80Mode.Indexed;
+                                var sign = operand.Name.Equals("+") ? 1 : -1;
+                                mode |= GetValueMode(operands, true, 0, sbyte.MaxValue + 1, i);
+                                _evals[i] *= sign;
                             }
-                            else if (s_namedModes.ContainsKey(child.Children[0].Name))
-                            {
-                                if (child.Children.Count > 1)
-                                    Services.Log.LogEntry(line, child.Children[1].Parent,
-                                        $"Unexpected expression \"{child.Children[1].ToString().Trim()}\".");
-                                else
-                                    mode |= s_namedModes[child.Children[0].Name];
-                            }
-                            else if (line.InstructionName.Equals("rst"))
-                            {
-                                var value = Services.Evaluator.Evaluate(child, 0, 0x38);
-                                if ((value % 8) != 0)
-                                {
-                                    Services.Log.LogEntry(line, $"Expression \"{child.ToString().Trim()}\" not valid for instruction \"rst\".");
-                                }
-                                else
-                                {
-                                    mode |= (Z80Mode)(value / 8) | Z80Mode.BitOp;
-                                }
-                            }
-                            else if (Reserved.IsOneOf("Bits", line.InstructionName) ||
-                                (line.InstructionName.Equals("out") && i == 1))
-                            {
-                                mode = (Z80Mode)Services.Evaluator.Evaluate(child, 0, 7) | Z80Mode.BitOp;
-                            }
-                            else
-                            {
-                                mode |= GetValueMode(child, i);
-                                if (Reserved.IsOneOf("Relatives", line.InstructionName))
-                                    mode |= Z80Mode.Extended;
-                            }
+                        }
+                        else if (line.Instruction.Name.Equals("out", Services.StringComparison) && i == 1)
+                        {
+                            mode = (Z80Mode)Services.Evaluator.Evaluate(operands, false, 0, 7) | Z80Mode.BitOp0;
                         }
                         else
                         {
-                            Services.Log.LogEntry(line, child.Position, "Expected expression not given.");
+                            var ix = operands.Index;
+                            mode |= GetValueMode(operands, false, short.MinValue, ushort.MaxValue, i);
+                            if (mode.HasFlag(Z80Mode.Indirect) && !Token.IsEnd(operands.PeekNext()))
+                            {
+                                operands.SetIndex(ix);
+                                mode = GetValueMode(operands, false, short.MinValue, ushort.MaxValue, i);
+                            }
+                            if (Reserved.IsOneOf("Relatives", line.Instruction.Name))
+                                mode |= Z80Mode.Extended;
+                        }
+                        operand = operands.Current;
+                        if (mode.HasFlag(Z80Mode.Indirect) || (operand != null && operand.Name.Equals(")")))
+                        {
+                            if (!operand.Name.Equals(")"))
+                                throw new SyntaxException(operand, "Unexpected expression.");
+                            operand = operands.GetNext();
                         }
                     }
-                    modes[i] = mode;
                 }
+                modes[i++] = mode;
             }
+            if (operands.Current != null)
+                throw new SyntaxException(operands.Current, "Unexpected expression.");
             return modes;
         }
 
         (Z80Mode[] modes, CpuInstruction instruction) GetModeAndInstruction(SourceLine line)
         {
             var modes = ParseExpressionToModes(line);
-            var mnemMode = (line.Instruction.Name, modes[0], modes[1], modes[2]);
+            var instruction = Services.Options.CaseSensitive ? line.Instruction.Name.ToString() : line.Instruction.Name.ToLower();
+            var mnemMode = (instruction, modes[0], modes[1], modes[2]);
             if (s_z80Instructions.ContainsKey(mnemMode))
                 return (modes, s_z80Instructions[mnemMode]);
 
@@ -208,15 +202,37 @@ namespace Core6502DotNet.z80
                         return m | Z80Mode.Extended;
                     return m;
                 }).ToArray();
-                mnemMode = (line.Instruction.Name, modes[0], modes[1], modes[2]);
+                mnemMode = (instruction, modes[0], modes[1], modes[2]);
                 if (s_z80Instructions.ContainsKey(mnemMode))
                     return (modes, s_z80Instructions[mnemMode]);
             }
             return (null, default);
         }
 
-        protected override string OnAssembleLine(SourceLine line)
+        internal override int GetInstructionSize(SourceLine line)
         {
+            try
+            {
+                if (!Reserved.IsOneOf("Directives", line.Instruction.Name))
+                    return GetModeAndInstruction(line).instruction.Size;
+                return 0;
+            }
+            catch
+            {
+                return 2;
+            }
+        }
+
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        {
+            var line = lines.Current;
+            if (Reserved.IsOneOf("Directives", line.Instruction.Name))
+            {
+                if (line.Operands.Count != 1 || (!line.Operands[0].Name.Equals("\"z80\"") && !line.Operands[0].Name.Equals("\"Z80\"")))
+                    Services.Log.LogEntry(line.Instruction,
+                        "Unsupported CPU.");
+                return string.Empty;
+            }
             var mnemMode = GetModeAndInstruction(line);
 
             if (!string.IsNullOrEmpty(mnemMode.instruction.CPU))
@@ -239,10 +255,20 @@ namespace Core6502DotNet.z80
                             displayEvals[i] = (int)_evals[i] & 0xFFFF;
                         else if (modeSize == Z80Mode.PageZero)
                             displayEvals[i] = (int)_evals[i] & 0xFF;
-                        if (Reserved.IsOneOf("Relatives", line.InstructionName))
+                        if (Reserved.IsOneOf("Relatives", line.Instruction.Name))
                         {
-                            _evals[i] = Convert.ToSByte(Services.Output.GetRelativeOffset((int)_evals[i], 1));
-                            Services.Output.Add(_evals[i], 1);
+                            try
+                            {
+                                _evals[i] = Convert.ToSByte(Services.Output.GetRelativeOffset((int)_evals[i], 1));
+                                Services.Output.Add(_evals[i], 1);
+                            }
+                            catch (OverflowException ex)
+                            {
+                                if (Services.CurrentPass > 0)
+                                    throw ex;
+                                Services.PassNeeded = true;
+                                Services.Output.AddUninitialized(1);
+                            }
                         }
                         else
                         {
@@ -254,9 +280,7 @@ namespace Core6502DotNet.z80
                     Services.Output.Add(instruction.Opcode >> 16, 1);
                 if (Services.Output.LogicalPC - PCOnAssemble != instruction.Size && !Services.PassNeeded)
                 {
-                    Services.Log.LogEntry(line, 
-                                           line.Instruction, 
-                                           $"Mode not supported for instruction \"{line.InstructionName}\".");
+                    Services.Log.LogEntry(line.Instruction, $"Mode not supported for instruction \"{line.Instruction}\".");
                 }
                 else
                 {
@@ -274,14 +298,14 @@ namespace Core6502DotNet.z80
                     }
                     if (!Services.Options.NoDisassembly)
                     {
-                        var asmBuilder = new StringBuilder($"{line.InstructionName} ");
+                        var asmBuilder = new StringBuilder($"{line.Instruction.Name.ToLower()} ");
                         for (var i = 0; i < 3; i++)
                         {
                             if (modes[i] == Z80Mode.Implied)
                                 break;
                             if (i > 0)
                                 asmBuilder.Append(',');
-                            if (line.InstructionName.Equals("rst"))
+                            if (line.Instruction.Name.Equals("rst", Services.StringComparison))
                             {
                                 asmBuilder.Append($"${(int)(modes[i] & Z80Mode.Bit7) * 8:x2}");
                             }
@@ -305,14 +329,13 @@ namespace Core6502DotNet.z80
                         disasmBuilder.Append("                  ");
                     }
                     if (!Services.Options.NoSource)
-                        disasmBuilder.Append(line.UnparsedSource);
+                        disasmBuilder.Append(line.Source);
                     return disasmBuilder.ToString();
                 }
             }
             else if (!Services.PassNeeded)
             {
-                Services.Log.LogEntry(line, line.Instruction,
-                    $"Mode not supported for instruction \"{line.InstructionName}\".");
+                Services.Log.LogEntry(line.Instruction, $"Mode not supported for instruction \"{line.Instruction}\".");
             }
             return string.Empty;
         }

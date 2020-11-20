@@ -12,6 +12,9 @@ namespace Core6502DotNet
     /// </summary>
     public class SyntaxException : ExpressionException
     {
+        public SyntaxException(Token token, string message)
+            : base(token, message) { }
+
         public SyntaxException(int position, string message)
             : base(position, message) { }
     }

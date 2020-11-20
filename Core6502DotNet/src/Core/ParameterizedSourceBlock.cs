@@ -14,7 +14,7 @@ namespace Core6502DotNet
     /// A bass class for an abstraction of grouped or related source
     /// lines that expects parameters when invoked in code. This class must be inherited.
     /// </summary>
-    public abstract class ParameterizedSourceBlock : Core6502Base
+    public abstract class ParameterizedSourceBlock
     {
         #region Subclasses
 
@@ -23,12 +23,24 @@ namespace Core6502DotNet
         /// </summary>
         public readonly struct Param
         {
-            public Param(string name, string defaultValue) 
+            /// <summary>
+            /// Constructs a new parameter.
+            /// </summary>
+            /// <param name="name">The parameter name.</param>
+            /// <param name="defaultValue">The parameter's default value as a collection of
+            /// parsed <see cref="Token"/>s.</param>
+            public Param(StringView name, List<Token> defaultValue)
                 => (Name, DefaultValue) = (name, defaultValue);
 
-            public string Name { get; }
+            /// <summary>
+            /// Gets the parameter's name.
+            /// </summary>
+            public StringView Name { get; }
 
-            public string DefaultValue { get; }
+            /// <summary>
+            /// Gets the parameter's default value.
+            /// </summary>
+            public List<Token> DefaultValue { get; }
         }
 
         #endregion
@@ -38,51 +50,40 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new instance of a <see cref="ParameterizedSourceBlock"/>.
         /// </summary>
-        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="parms">The parameters the definition expects when invoked.</param>
-        /// <param name="source">The associated source string.</param>
-        protected ParameterizedSourceBlock(AssemblyServices services,
-                                           Token parms, 
-                                           string source)
-            :base(services)
+        /// <param name="caseSensitive">Determines whether to compare the passed parameters
+        /// to the source block's own defined parameters should be case-sensitive.</param>
+        protected ParameterizedSourceBlock(List<Token> parms, bool caseSensitive)
         {
+            CaseSensitive = caseSensitive;
+            var comp = caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
             Params = new List<Param>();
-
-            if (parms != null)
+            if (parms.Count != 0)
             {
-                for (var i = 0; i < parms.Children.Count; i++)
+                var it = parms.GetIterator();
+                Token t;
+                while ((t = it.GetNext()) != null)
                 {
-                    var parameter = parms.Children[i];
-                    if (parameter.Children.Count > 0)
+                    if (t.Type != TokenType.Separator)
                     {
-                        var definedParm = parameter.Children[0];
-                        if (Params.Any(p => p.Name.Equals(definedParm.Name, Services.StringComparison)))
+                        if (Params.Any(p => p.Name.Equals(t.Name, comp)))
                         {
-                            throw new ExpressionException(definedParm.Position,
-                                $"Parameter \"{definedParm.Name}\" previously defined in parameter list.");
-                        }
-                        var parmName = definedParm.UnparsedName.Trim();
-                        if (string.IsNullOrEmpty(parmName))
-                            Params.Add(new Param());
-                        else if (!Services.SymbolManager.SymbolIsValid(parmName))
-                            throw new SyntaxException(definedParm.Position, $"Invalid parameter name \"{parmName}\".");
+                            throw new ExpressionException(t.Position,
+                                $"Parameter \"{t.Name}\" previously defined in parameter list.");
 
-                        var defaultValue = string.Empty;
-                        if (parameter.Children.Count > 1)
+                        }
+                        var parmName = t.Name;
+                        if (!char.IsLetter(parmName[0]))
+                            throw new ExpressionException(t.Position, "Invalid parameter name.");
+                        var defaultValue = new List<Token>();
+                        if (it.PeekNext() != null && it.PeekNext().Type != TokenType.Separator)
                         {
-                            var assign = parameter.Children[1];
-                            if (!assign.Name.Equals("=") || parameter.Children.Count < 3)
-                                throw new SyntaxException(assign.Position, "Syntax error.");
-                            var defaultIx = parameter.Children[2].Position - 1;
-                            if (i < parms.Children.Count - 1)
-                            {
-                                var len = parms.Children[i + 1].Position - 1 - defaultIx;
-                                defaultValue = source.Substring(defaultIx, len);
-                            }
-                            else
-                            {
-                                defaultValue = source.Substring(defaultIx);
-                            }
+
+                            t = it.GetNext();
+                            if (!t.Name.Equals("=") || it.PeekNext() == null || TokenType.End.HasFlag(it.PeekNext().Type))
+                                throw new ExpressionException(t.Position, "Syntax error.");
+                            while ((t = it.GetNext()) != null && t.Type != TokenType.Separator)
+                                defaultValue.Add(t);
                         }
                         Params.Add(new Param(parmName, defaultValue));
                     }
@@ -100,7 +101,11 @@ namespace Core6502DotNet
         /// </summary>
         protected List<Param> Params { get; }
 
-        #endregion
+        /// <summary>
+        /// Gets the case-sensitivity of the parameter name comparison.
+        /// </summary>
+        protected bool CaseSensitive { get; }
 
+        #endregion
     }
 }

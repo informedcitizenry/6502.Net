@@ -15,26 +15,6 @@ namespace Core6502DotNet
     public static class String_Extension
     {
         /// <summary>
-        /// Tests whether the string is enclosed in single or double quotes.
-        /// </summary>
-        /// <param name="s">The string to evaluate.</param>
-        /// <returns><c>true</c> if string is fully enclosed in quotes, otherwise <c>false</c>.</returns>
-        public static bool EnclosedInQuotes(this string s)
-            => EnclosedInSingleQuotes(s) || EnclosedInDoubleQuotes(s);
-
-        /// <summary>
-        /// Tests whether the string is enclosed in single quotes.
-        /// </summary>
-        /// <param name="s">The string to evaluate.</param>
-        /// <returns><c>true</c> if the string is enclosed in single quotes, otherwise <c>false</c>.</returns>
-        public static bool EnclosedInSingleQuotes(this string s)
-        {
-            if (s.Length < 2 || s[0] != '\'' || s[^1] != '\'')
-                return false;
-            return s.Length < 4;
-        }
-
-        /// <summary>
         /// Returns an elliptical representation of the string if it 
         /// exceeds the specified length.
         /// </summary>
@@ -67,14 +47,6 @@ namespace Core6502DotNet
             }
             return true;
         }
-
-        /// <summary>
-        /// Converts the string so that the first character is in uppercase.
-        /// </summary>
-        /// <param name="s">The string to convert.</param>
-        /// <returns>The case-converted string.</returns>
-        public static string ToFirstUpper(this string s)
-            => Char.ToUpper(s[0]) + s.Substring(1);
 
         /// <summary>
         /// Trims one instance of the specified character at the start of the string.
@@ -111,23 +83,6 @@ namespace Core6502DotNet
         /// <param name="str">String.</param>
         /// <param name="c">The character to trim.</param>
         public static string TrimOnce(this string str, char c) => str.TrimStartOnce(c).TrimEndOnce(c);
-
-        /// <summary>
-        /// Determines whether the string is a binary extractor operator string.
-        /// </summary>
-        /// <param name="str">The string.</param>
-        /// <returns><c>true</c>, if the string represents a binary extractor operator, <c>false</c> otherwise.</returns>
-        public static bool IsByteExtractor(this string str) 
-            => str.Equals("<") || str.Equals(">") || str.Equals("^") || str.Equals("&");
-
-        /// <summary>
-        /// Indicates whether the specified string could be an operand or
-        /// mathematical operator per usage in an expression.
-        /// </summary>
-        /// <param name="str">The string.</param>
-        /// <returns><c>true</c>, if the string is of this type, <c>false</c> otherwise.</returns>
-        public static bool IsSpecialOperator(this string str)
-            => str.Length == 1 && str[0].IsSpecialOperator();
     }
 
     public static class Char_Extension
@@ -159,14 +114,15 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="c">The Unicode character.</param>
         /// <returns><c>true</c>, if the character is a unary operator, <c>false</c> otherwise.</returns>
-        public static bool IsUnaryOperator(this char c) => c == '-' || c == '+' || c == '<' || c == '>' || c == '^' || c == '!' || c == '&' || c == '~';
+        public static bool IsUnaryOperator(this char c) => c == '-' || c == '+' || c == '~' || c == '!' || c == '`' || 
+                                                           c == '<' || c == '>' || c == '^' || c == '&' || c == '$' || c == '%';
 
         /// <summary>
-        /// Indicates whether the specified Unicode character is a separator operator
+        /// Indicates whether the specified Unicode character is a hex operator
         /// </summary>
         /// <param name="c">The Unicode character.</param>
-        /// <returns><c>true</c>, if the character is a separator, <c>false</c> otherwise.</returns>
-        public static bool IsSeparator(this char c) => c == ',' || c == ':';
+        /// <returns><c>true</c>, if the character is a hex, <c>false</c> otherwise.</returns>
+        public static bool IsHex(this char c) => char.IsDigit(c) || ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a radix operator.
@@ -283,17 +239,6 @@ namespace Core6502DotNet
         /// <returns>A string representation of the byte collection.</returns>
         public static string ToString(this IEnumerable<byte> byteCollection, int pc, char startChar)
             => ToString(byteCollection, pc, startChar, true);
-
-        /// <summary>
-        /// Get a hex string representation of the sequence of bytes in the collection.
-        /// </summary>
-        /// <param name="byteCollection">The byte collection.</param>
-        /// <param name="pc">The initial Program Counter.</param>
-        /// <param name="appendStartPc">If true, the string will append the initial Program 
-        /// Counter passed in the <paramref name="pc"/> parameter.</param>
-        /// <returns>A string representation of the byte collection.</returns>
-        public static string ToString(this IEnumerable<byte> byteCollection, int pc, bool appendStartPc)
-            => ToString(byteCollection, pc, '>', appendStartPc);
 
         /// <summary>
         /// Get a hex string representation of the sequence of bytes in the collection.

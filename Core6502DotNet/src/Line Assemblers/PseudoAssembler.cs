@@ -12,22 +12,22 @@ using System.Text;
 
 namespace Core6502DotNet
 {
-    /// <summary>
+      /// <summary>
     /// A class responsible for multi-byte assembly, including string types.
     /// </summary>
-    public sealed class PseudoAssembler : AssemblerBase, IFunctionEvaluator
+    public class PseudoAssembler : AssemblerBase, IFunctionEvaluator
     {
         #region Constants
 
         const int IeeeBias = 1023;
-        
+
         const int CbmBias = 129;
 
         #endregion
 
         #region Members
 
-        readonly Dictionary<string, BinaryFile> _includedBinaries;
+        readonly Dictionary<StringView, BinaryFile> _includedBinaries;
 
         #endregion
 
@@ -37,11 +37,9 @@ namespace Core6502DotNet
         /// Constructs an instance of a <see cref="PseudoAssembler"/> line assembler.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        public PseudoAssembler(AssemblyServices services)
-            :base(services)
+        public PseudoAssembler(AssemblyServices services) 
+            : base(services)
         {
-            _includedBinaries = new Dictionary<string, BinaryFile>();
-
             Reserved.DefineType("Types",
                     ".addr", ".align", ".binary", ".byte", ".sbyte",
                     ".char", ".dint", ".dword", ".fill", ".lint",
@@ -52,62 +50,31 @@ namespace Core6502DotNet
 
             Reserved.DefineType("Functions",
                 "cbmflt", "cbmfltp", "format", "peek", "poke", "section");
-
-            Services.Evaluator.AddFunctionEvaluator(this);
+            services.Evaluator.AddFunctionEvaluator(this);
+            _includedBinaries = new Dictionary<StringView, BinaryFile>(services.StringViewComparer);
         }
 
         #endregion
 
         #region Methods
 
-        void AssembleFills(SourceLine line)
+        void AssembleValues(SourceLine line, double minValue, double maxValue, int setSize, bool isRta = false)
         {
-            var alignval = (int)Services.Evaluator.Evaluate(line.Operand.Children[0].Children, 1, ushort.MaxValue);
-            if (line.Operand.Children.Count > 1 && !line.Operand.Children[1].ToString().Trim().Equals("?"))
+            Token token;
+            var iterator = line.Operands.GetIterator();
+            while ((token = iterator.GetNext()) != null)
             {
-                if (line.Operand.Children.Count > 2)
+                if (token.Name.Equals("?"))
                 {
-                    Services.Log.LogEntry(line, line.Operand, $"Too many arguments specified for instruction \"{line.InstructionName}\".");
-                    return;
-                }
-                var fillval = (int)Services.Evaluator.Evaluate(line.Operand.Children[1]);
-                if (line.InstructionName.Equals(".align"))
-                    Services.Output.Align(alignval, fillval);
-                else
-                    Services.Output.Fill(alignval, fillval);
-            }
-            else
-            {
-                if (line.InstructionName.Equals(".align"))
-                    Services.Output.Align(alignval);
-                else
-                    Services.Output.Fill(alignval);
-            }
-        }
-
-        void AssembleValues(SourceLine line, long minValue, long maxValue, int setSize)
-            => AssembleValues(line, minValue, maxValue, setSize, false);
-
-        void AssembleValues(SourceLine line, long minValue, long maxValue, int setSize, bool isRta)
-        {
-            foreach (var child in line.Operand.Children)
-            {
-                if (child.Children.Count == 0)
-                {
-                    Services.Log.LogEntry(line, child.Position, "Expression expected.");
-                    return;
-                }
-                var firstInExpression = child.Children[0];
-                if (firstInExpression.Name.Equals("?"))
-                {
-                    if (child.Children.Count > 1)
-                        Services.Log.LogEntry(line, child.Children[1].Position,
-                            $"Unexpected expression \"{child.Children[1].Name}\".");
+                    if (!Token.IsEnd(token = iterator.GetNext()))
+                        throw new SyntaxException(token.Position,
+                            "Unexpected expression.");
                     Services.Output.AddUninitialized(setSize);
+                    
                 }
                 else
                 {
-                    var val = Services.Evaluator.Evaluate(child.Children, minValue, maxValue);
+                    var val = Services.Evaluator.Evaluate(iterator, false, minValue, maxValue);
                     if (isRta)
                         val = ((int)(val - 1)) & 0xFFFF;
                     Services.Output.Add(val, setSize);
@@ -117,36 +84,31 @@ namespace Core6502DotNet
 
         void AssembleBinaryFile(SourceLine line)
         {
-            BinaryFile file;
-            var filename = line.Operand.Children[0].Children[0].Name;
-            if (_includedBinaries.ContainsKey(filename))
+            var iterator = line.Operands.GetIterator();
+            var filename = iterator.GetNext();
+            if (Token.IsEnd(filename))
+                throw new ExpressionException(line.Instruction, "Filename not specified.");
+            if (!filename.IsDoubleQuote())
+                throw new ExpressionException(line.Instruction, "Specified filename not valid.");
+            var fileName = filename.Name;
+            if (!_includedBinaries.TryGetValue(fileName, out var file))
             {
-                file = _includedBinaries[filename];
-            }
-            else
-            {
-                if (!filename.EnclosedInDoubleQuotes())
-                    throw new ExpressionException(line.Operand.Position, "Filename not given in quotes.");
-                file = new BinaryFile(filename.TrimOnce('"'));
+                file = new BinaryFile(fileName.ToString().TrimOnce('"'));
                 if (!file.Open())
-                    throw new ExpressionException(line.Operand.Position, $"Unable to open file \"{filename}\".");
-                _includedBinaries.Add(filename, file);
+                    throw new ExpressionException(line.Operands[0], $"Unable to open file {fileName}.");
+                _includedBinaries[fileName] = file;
             }
-
             var offset = 0;
             var size = file.Data.Length;
-            if (size > ushort.MaxValue)
-                throw new ExpressionException(line.Operand.Position, "File size is too large.");
-            if (line.Operand.Children.Count > 1)
+            if (iterator.MoveNext())
             {
-                if (line.Operand.Children.Count > 2)
+                offset = (int)Services.Evaluator.Evaluate(iterator, ushort.MinValue, ushort.MaxValue);
+                if (iterator.Current != null)
                 {
-                    if (line.Operand.Children.Count > 3)
-                        throw new ExpressionException(line.Operand.Children[3].Position, "Too many arguments specified for directive.");
-                    size = (int)Services.Evaluator.Evaluate(line.Operand.Children[2].Children, ushort.MinValue, ushort.MaxValue);
+                    size = (int)Services.Evaluator.Evaluate(iterator, ushort.MinValue, ushort.MaxValue);
+                    if (iterator.Current != null)
+                        throw new ExpressionException(iterator.Current, "Too many arguments specified for directive.");
                 }
-                offset = (int)Services.Evaluator.Evaluate(line.Operand.Children[1].Children, ushort.MinValue, ushort.MaxValue);
-
             }
             if (offset > size - 1)
                 offset = size - 1;
@@ -154,173 +116,26 @@ namespace Core6502DotNet
                 size = file.Data.Length - offset;
 
             if (size > ushort.MaxValue)
-                throw new ExpressionException(line.Operand.Position, $"Difference between specified offset and size is greater than the maximum allowed amount.");
-
-            Services.Output.AddBytes(file.Data.Skip(offset), size);
-        }
-
-        void AssembleStrings(SourceLine line)
-        {
-            var stringBytes = new List<byte>();
-            foreach (Token child in line.Operand.Children)
-            {
-                var element = child.Children[0];
-                if (element.ToString().Trim().Equals("?"))
-                {
-                    if (child.Children.Count > 1)
-                        Services.Log.LogEntry(line, child.Children[1].Position,
-                            $"Unexpected expression \"{child.Children[1].Name}\".");
-                    Services.Output.AddUninitialized(1);
-                }
-                else
-                {
-                    if (StringHelper.ExpressionIsAString(child, Services.SymbolManager))
-                    {
-                        stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(child, Services.SymbolManager, Services.Evaluator)));
-                    }
-                    else 
-                    {
-                        if (Services.SymbolManager.SymbolExists(element.ToString().Trim()))
-                        {
-                            var symVal = Services.SymbolManager.GetStringValue(element);
-                            if (!string.IsNullOrEmpty(symVal))
-                                stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(child.Children[0], Services.SymbolManager, Services.Evaluator)));
-                            else
-                                stringBytes.AddRange(Services.Output.ConvertToBytes(Services.SymbolManager.GetNumericValue(element)));
-                        }
-                        else
-                        {
-                            stringBytes.AddRange(Services.Output.ConvertToBytes(Services.Evaluator.Evaluate(child)));
-                        }   
-                    }
-                }
-            }
-            switch (line.InstructionName)
-            {
-                case ".cstring":
-                    stringBytes.Add(0x00);
-                    break;
-                case ".pstring":
-                    if (stringBytes.Count > 255)
-                        throw new ExpressionException(line.Operand.Position, $"String expression exceeds the maximum length of \".pstring\" directive.");
-
-                    stringBytes.Insert(0, Convert.ToByte(stringBytes.Count));
-                    break;
-                case ".lstring":
-                case ".nstring":
-                    if (stringBytes.Any(b => b > 0x7f))
-                        throw new ExpressionException(line.Operand.Position, $"One or more elements in expression \"{line.Operand}\" exceeds maximum value.");
-                    if (line.InstructionName.Equals(".lstring"))
-                    {
-                        stringBytes = stringBytes.Select(b => Convert.ToByte(b << 1)).ToList();
-                        stringBytes[^1] |= 1;
-                    }
-                    else
-                    {
-                        stringBytes[^1] |= 0x80;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            Services.Output.AddBytes(stringBytes, true);
-        }
-
-        protected override string OnAssembleLine(SourceLine line)
-        {
-            if (line.Operand.Children.Count == 0)
-            {
-                Services.Log.LogEntry(line, line.Operand,
-                    $"Instruction \"{line.InstructionName}\" expects one or more arguments.");
-                return string.Empty;
-            }
-            switch (line.InstructionName)
-            {
-                case ".addr":
-                case ".word":
-                    AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2);
-                    break;
-                case ".align":
-                case ".fill":
-                    AssembleFills(line);
-                    break;
-                case ".binary":
-                    AssembleBinaryFile(line);
-                    break;
-                case ".byte":
-                    AssembleValues(line, byte.MinValue, byte.MaxValue, 1);
-                    break;
-                case ".sbyte":
-                case ".char":
-                    AssembleValues(line, sbyte.MinValue, sbyte.MaxValue, 1);
-                    break;
-                case ".dint":
-                    AssembleValues(line, int.MinValue, int.MaxValue, 4);
-                    break;
-                case ".dword":
-                    AssembleValues(line, uint.MinValue, uint.MaxValue, 4);
-                    break;
-                case ".lint":
-                    AssembleValues(line, Int24.MinValue, Int24.MaxValue, 3);
-                    break;
-                case ".long":
-                    AssembleValues(line, UInt24.MinValue, UInt24.MaxValue, 3);
-                    break;
-                case ".rta":
-                    AssembleValues(line, short.MinValue, ushort.MaxValue, 2, true);
-                    break;
-                case ".sint":
-                case ".short":
-                    AssembleValues(line, short.MinValue, short.MaxValue, 2);
-                    break;
-                case ".cbmflt":
-                case ".cbmfltp":
-                    AssembleCbmFloat(line);
-                    break;
-                default:
-                    AssembleStrings(line);
-                    break;
-            }
-            if (Services.PassNeeded || string.IsNullOrEmpty(Services.Options.ListingFile))
-                return string.Empty;
-            var sb = new StringBuilder();
-            var assembly = Services.Output.GetBytesFrom(PCOnAssemble);
-            if (!Services.Options.NoAssembly)
-            {
-                var firstBytes = assembly.Take(8).ToString(PCOnAssemble);
-                if (assembly.Count > 8 && Services.Options.TruncateAssembly)
-                    sb.Append(firstBytes).Append(" ...".PadRight(10, ' '));
-                else
-                    sb.Append(assembly.Take(8).ToString(PCOnAssemble).PadRight(43, ' '));
-                if (!Services.Options.NoSource)
-                    sb.Append(line.UnparsedSource);
-                if (assembly.Count > 8 && !Services.Options.TruncateAssembly)
-                {
-                    sb.AppendLine();
-                    sb.Append(assembly.Skip(8).ToString(PCOnAssemble + 8));
-                }
-            }
+                throw new ExpressionException(line.Operands[0], $"Binary file data is too great.");
+            if (!Services.PassNeeded)
+                Services.Output.AddBytes(file.Data.Skip(offset), size);
             else
-            {
-                sb.Append($">{PCOnAssemble:x4}");
-                if (!Services.Options.NoSource)
-                    sb.Append($"{line.UnparsedSource,43}");
-            }
-            return sb.ToString();
+                Services.Output.AddUninitialized(size);
         }
 
         void AssembleCbmFloat(SourceLine line)
         {
-            var packed = line.InstructionName.EndsWith('p');
+            var packed = line.Instruction.Name[^1] == 'p' || line.Instruction.Name[^1] == 'P';
             var bytes = packed ? new byte[5] : new byte[6];
-            foreach (var operand in line.Operand.Children)
+            var iterator = line.Operands.GetIterator();
+            while (iterator.MoveNext())
             {
-                if (operand.ToString().Trim().Equals('?'))
+                if (iterator.Current.Name.Equals("?"))
                 {
                     Services.Output.AddUninitialized(packed ? 5 : 6);
                     continue;
                 }
-                var val = Services.Evaluator.Evaluate(operand.Children, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue);
+                var val = Services.Evaluator.Evaluate(iterator, false, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue);
                 if (val != 0 && double.IsNormal(val))
                 {
                     // Convert float to binary.
@@ -358,7 +173,275 @@ namespace Core6502DotNet
                     }
                 }
                 Services.Output.AddBytes(bytes, true);
+                if (iterator.Current == null)
+                    break;
             }
+        }
+
+        void AssembleFills(SourceLine line)
+        {
+            var iterator = line.Operands.GetIterator();
+            var alignval = (int)Services.Evaluator.Evaluate(iterator, 1, ushort.MaxValue);
+            if (iterator.Current != null)
+            {
+                var fillval = (int)Services.Evaluator.Evaluate(iterator);
+                if (iterator.Current != null)
+                    throw new SyntaxException(iterator.Current, "Unexpected expression.");
+                if (line.Instruction.Name.ToLower().Equals(".align"))
+                    Services.Output.Align(alignval, fillval);
+                else
+                    Services.Output.Fill(alignval, fillval);
+            }
+            else
+            {
+                if (line.Instruction.Name.ToLower().Equals(".align"))
+                    Services.Output.Align(alignval);
+                else
+                    Services.Output.Fill(alignval);
+            }
+        }
+        
+        void AssembleStrings(SourceLine line)
+        {
+            var stringBytes = new List<byte>();
+            var iterator = line.Operands.GetIterator();
+            Token token;
+            while ((token = iterator.GetNext()) != null)
+            {
+                if (StringHelper.IsStringLiteral(iterator) || token.Name.Equals("?"))
+                {
+                    if (token.IsDoubleQuote())
+                    {
+                        stringBytes.AddRange(Services.Encoding.GetBytes(token.Name.ToString().TrimOnce('"')));
+                    }
+                    else
+                    {
+                        if (stringBytes.Count == 0)
+                            Services.Output.AddUninitialized(1);
+                        else
+                            stringBytes.Add(0);
+                    }
+                    if (!iterator.MoveNext())
+                        break;
+                    if (!Token.IsEnd(iterator.Current))
+                        throw new SyntaxException(iterator.Current, "Unexpected expression.");
+                }
+                else if (StringHelper.ExpressionIsAString(iterator, Services))
+                {
+                    stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(iterator, Services)));
+                }
+                else
+                {
+                    stringBytes.AddRange(Services.Output.ConvertToBytes(Services.Evaluator.Evaluate(iterator, false)));
+                }
+            }
+            var instructionName = line.Instruction.Name.ToLower();
+            switch (instructionName)
+            {
+                case ".cstring":
+                    stringBytes.Add(0x00);
+                    break;
+                case ".pstring":
+                    if (stringBytes.Count > 255)
+                        throw new ExpressionException(line.Operands[0].Position, $"String expression exceeds the maximum length of \".pstring\" directive.");
+
+                    stringBytes.Insert(0, Convert.ToByte(stringBytes.Count));
+                    break;
+                case ".lstring":
+                case ".nstring":
+                    if (stringBytes.Any(b => b > 0x7f))
+                        throw new ExpressionException(line.Operands[0].Position, $"One or more elements in expression exceeds maximum value.");
+                    if (instructionName.Equals(".lstring"))
+                    {
+                        stringBytes = stringBytes.Select(b => Convert.ToByte(b << 1)).ToList();
+                        stringBytes[^1] |= 1;
+                    }
+                    else
+                    {
+                        stringBytes[^1] |= 0x80;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            Services.Output.AddBytes(stringBytes, true);
+        }
+
+        public override bool Assembles(StringView s) => Reserved.IsOneOf("Types", s);
+
+        internal override int GetInstructionSize(SourceLine line)
+        {
+            var instruction = line.Instruction.Name.ToLower();
+            var iterator = line.Operands.GetIterator();
+            Token token;
+            if (instruction.EndsWith("string"))
+            {
+                int len = instruction.Equals(".cstring") || instruction.Equals(".pstring") ? 1 : 0;
+                while ((token = iterator.GetNext()) != null)
+                {
+                    if (token.IsDoubleQuote())
+                    {
+                        len += Services.Encoding.GetByteCount(token.Name.TrimOnce('"').ToString());
+                        if (!iterator.MoveNext())
+                            break;
+                    }
+                    else if (token.Name.Equals("format", Services.StringComparison))
+                    {
+                        len += Services.Encoding.GetByteCount(StringHelper.GetString(iterator, Services));
+                        if (iterator.Current == null)
+                            break;
+                    }
+                    else if (token.Name.Equals("?"))
+                    {
+                        len++;
+                        if (!iterator.MoveNext())
+                            break;
+                    }
+                    else
+                    {
+                        len += Services.Evaluator.Evaluate(iterator, false).Size();
+                        if (iterator.Current == null)
+                            break;
+                    }
+                }
+                return len;
+            }
+            else if (instruction.Equals(".fill"))
+            {
+                var times = (int)Services.Evaluator.Evaluate(iterator);
+                if (iterator.Current != null)
+                {
+                    var size = Services.Evaluator.Evaluate(iterator).Size();
+                    return times * size;
+                }
+                return times;
+            }
+            else if (instruction.Equals(".align"))
+            {
+                var align = (int)Services.Evaluator.Evaluate(iterator);
+                return BinaryOutput.GetAlignmentSize(Services.Output.LogicalPC, align);
+            }
+            else
+            {
+                var operandCount = 1;
+                int opens = 0;
+                while ((token = iterator.GetNext()) != null)
+                {
+                    if (token.Type == TokenType.Open)
+                        opens++;
+                    else if (token.Type == TokenType.Closed)
+                        opens--;
+                    else if (token.Type == TokenType.Separator && opens == 0)
+                        operandCount++;
+                }
+                switch (instruction)
+                {
+                    case ".byte":
+                    case ".char":
+                    case ".sbyte":
+                        return operandCount;
+                    case ".addr":
+                    case ".word":
+                    case ".rta":
+                    case ".short":
+                    case ".sint":
+                        return operandCount * 2;
+                    case ".long":
+                    case ".lint":
+                        return operandCount * 3;
+                    case ".dword":
+                    case ".dint":
+                        return operandCount * 4;
+                    case ".cbmfltp":
+                        return operandCount * 5;
+                    default:
+                        return operandCount * 6;
+                }
+            }
+        }
+
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> iterator)
+        {
+            var line = iterator.Current;
+            if (line.Operands.Count == 0)
+            {
+                Services.Log.LogEntry(line.Instruction, "Expression expected.");
+                return string.Empty;
+            }
+            var instruction = line.Instruction.Name.ToLower();
+            switch (instruction)
+            {
+                case ".byte":
+                    AssembleValues(line, byte.MinValue, byte.MaxValue, 1);
+                    break;
+                case ".char":
+                case ".sbyte":
+                    AssembleValues(line, sbyte.MinValue, sbyte.MaxValue, 1);
+                    break;
+                case ".addr":
+                case ".word":
+                    AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2);
+                    break;
+                case ".rta":
+                    AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2, true);
+                    break;
+                case ".short":
+                case ".sint":
+                    AssembleValues(line, short.MinValue, short.MaxValue, 2);
+                    break;
+                case ".long":
+                    AssembleValues(line, UInt24.MinValue, UInt24.MaxValue, 3);
+                    break;
+                case ".lint":
+                    AssembleValues(line, Int24.MinValue, Int24.MaxValue, 3);
+                    break;
+                case ".dword":
+                    AssembleValues(line, uint.MinValue, uint.MaxValue, 4);
+                    break;
+                case ".dint":
+                    AssembleValues(line, int.MinValue, int.MaxValue, 4);
+                    break;
+                case ".align":
+                case ".fill":
+                    AssembleFills(line);
+                    break;
+                case ".binary":
+                    AssembleBinaryFile(line);
+                    break;
+                case ".cbmflt":
+                case ".cbmfltp":
+                    AssembleCbmFloat(line);
+                    break;
+                default:
+                    AssembleStrings(line);
+                    break;
+            }
+            if (Services.PassNeeded || string.IsNullOrEmpty(Services.Options.ListingFile))
+                return string.Empty;
+            var sb = new StringBuilder();
+            var assembly = Services.Output.GetBytesFrom(PCOnAssemble);
+            if (!Services.Options.NoAssembly)
+            {
+                var firstBytes = assembly.Take(8).ToString(PCOnAssemble);
+                if (assembly.Count > 8 && Services.Options.TruncateAssembly)
+                    sb.Append(firstBytes).Append(" ...".PadRight(10, ' '));
+                else
+                    sb.Append(assembly.Take(8).ToString(PCOnAssemble).PadRight(43, ' '));
+                if (!Services.Options.NoSource)
+                    sb.Append(line.Source);
+                if (assembly.Count > 8 && !Services.Options.TruncateAssembly)
+                {
+                    sb.AppendLine();
+                    sb.Append(assembly.Skip(8).ToString(PCOnAssemble + 8));
+                }
+            }
+            else
+            {
+                sb.Append($">{PCOnAssemble:x4}");
+                if (!Services.Options.NoSource)
+                    sb.Append($"{line.Source,43}");
+            }
+            return sb.ToString();
         }
 
         double GetFloatFromMemory(int address, bool packed)
@@ -368,7 +451,7 @@ namespace Core6502DotNet
                 return double.NaN;
 
             var bytes = Services.Output.GetRange(address, size).ToList();
-            
+
             var ieeebytes = new byte[8];
             var exp = bytes[0] - CbmBias + IeeeBias;
             int sign;
@@ -382,7 +465,7 @@ namespace Core6502DotNet
                     return double.NaN;
                 sign = bytes[1] * 0x80;
                 bytes[1] = (byte)((bytes[1] << 7) | bytes[2]);
-                for(var i = 2; i < 5; i++)
+                for (var i = 2; i < 5; i++)
                     bytes[i] = bytes[i + 1];
             }
             exp |= sign << 4;
@@ -397,63 +480,55 @@ namespace Core6502DotNet
             return BitConverter.ToDouble(ieeebytes);
         }
 
-        public bool EvaluatesFunction(Token function) => IsFunctionName(function.Name);
+        public bool EvaluatesFunction(Token function) => Reserved.IsOneOf("Functions", function.Name);
 
-        public double EvaluateFunction(Token function, Token parameters)
+        public double EvaluateFunction(RandomAccessIterator<Token> tokens)
         {
-            if (function.Name.Equals("format"))
-            {   
-                var str = StringHelper.GetStringFormat(parameters, Services.SymbolManager, Services.Evaluator);
+            var function = tokens.Current;
+            var functionName = function.Name.ToLower();
+            if (functionName.Equals("format"))
+            {
+                var str = StringHelper.GetFormatted(tokens, Services);
                 return Services.Encoding.GetEncodedValue(str);
             }
-            if (parameters.Children.Count == 0 || parameters.Children[0].Children.Count == 0)
-                throw new ExpressionException(parameters.Position,
-                $"Too few arguments passed for function \"{function.Name}\".");
-
-            if (function.Name.Equals("section"))
+            tokens.MoveNext();
+            if (Token.IsEnd(tokens.GetNext()))
+                throw new SyntaxException(function, "Expression expected.");
+            if (functionName.Equals("section"))
             {
-                var sectionName = parameters.Children[0].Children[0].Name;
-                if (!Services.Options.CaseSensitive)
-                    sectionName = sectionName.ToLower();
-                return Services.Output.GetSectionStart(sectionName);
+                var section = tokens.Current;
+                if (!section.IsDoubleQuote() || !Token.IsEnd(tokens.GetNext()))
+                    throw new SyntaxException(function, "String expression expected.");
+                return Services.Output.GetSectionStart(section.Name);
             }
-
-            var address = (int)Services.Evaluator.Evaluate(parameters.Children[0], ushort.MinValue, ushort.MaxValue);
-
-            if (function.Name.Equals("peek"))
+            var address = (int)Services.Evaluator.Evaluate(tokens, false, ushort.MinValue, ushort.MaxValue);
+            if (functionName.Equals("peek"))
             {
-                if (parameters.Children.Count != 1)
-                    throw new ExpressionException(parameters.Position,
-                        "Too many arguments passed for function \"peek\".");
-
+                if (!tokens.Current.Name.Equals(")"))
+                    throw new SyntaxException(tokens.Current, "Unexpected expression.");
                 return Services.Output.Peek(address);
             }
-            else if (function.Name.Equals("cbmflt") || function.Name.Equals("cbmfltp"))
+            if (functionName.Equals("cbmflt") || functionName.Equals("cbmfltp"))
             {
-                var doubleVal = GetFloatFromMemory(address, function.Name[^1] == 'p');
+                if (!tokens.Current.Name.Equals(")"))
+                    throw new SyntaxException(tokens.Current, "Unexpected expression.");
+                var doubleVal = GetFloatFromMemory(address, functionName[^1] == 'p');
                 if (double.IsNaN(doubleVal))
-                    throw new ExpressionException(parameters.Position, 
-                        $"Content at address ${address:x4} is not in the proper format.");
+                    throw new SyntaxException(function, $"Content at address ${address:x4} is not in the proper format.");
                 return doubleVal;
             }
-            else
-            {
-                if (parameters.Children.Count != 2)
-                    throw new ExpressionException(parameters.Position,
-                        "Too many arguments passed for function \"poke\".");
-                var value = (byte)Services.Evaluator.Evaluate(parameters.Children[1], sbyte.MinValue, byte.MaxValue);
-
-                Services.Output.Poke(address, value);
-                return double.NaN;
-            }
+            if (!tokens.Current.IsSeparator())
+                throw new SyntaxException(tokens.Current, "Unexpected expression.");
+            var value = (byte)Services.Evaluator.Evaluate(tokens, sbyte.MinValue, byte.MaxValue);
+            if (!tokens.Current.Name.Equals(")"))
+                throw new SyntaxException(tokens.Current, "Unexpected expression.");
+            Services.Output.Poke(address, value);
+            return double.NaN;
         }
 
-        public override bool Assembles(string s) => Reserved.IsOneOf("Types", s);
+        public void InvokeFunction(RandomAccessIterator<Token> tokens) => _ = EvaluateFunction(tokens);
 
-        public void InvokeFunction(Token unused, Token parameters)
-            => _ = EvaluateFunction(unused, parameters);
-
-        public bool IsFunctionName(string symbol) => Reserved.IsOneOf("Functions", symbol);
+        public bool IsFunctionName(StringView symbol) => Reserved.IsOneOf("Functions", symbol);
 
         #endregion
     }

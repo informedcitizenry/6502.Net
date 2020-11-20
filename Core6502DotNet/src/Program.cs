@@ -12,7 +12,7 @@ using System;
 
 namespace Core6502DotNet
 {
-    static class Core6502DotNet
+    static class Program
     {
         static void Main(string[] args)
         {

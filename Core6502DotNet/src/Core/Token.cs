@@ -7,34 +7,36 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Core6502DotNet
 {
-    /// <summary>
-    /// An enumeration of the token's type.
+        /// <summary>
+    /// An enumeration of the token's type in an expression.
     /// </summary>
-    public enum TokenType
+    public enum TokenType : uint
     {
         None = 0,
-        Operator,
-        Operand,
-        Instruction
-    };
-
-    /// <summary>
-    /// An enumeration of the token's operator type, if applicable.
-    /// </summary>
-    public enum OperatorType
-    {
-        None = 0,
-        Open,
-        Closed,
-        Separator,
-        Function,
-        Unary,
-        Binary
-    };
+        Start           = 0b000000000001,
+        Open            = 0b000000000010,
+        Operand         = 0b000000000100,
+        Unary           = 0b000000001000,
+        Radix           = 0b000000010000,
+        StartOrOperand  = 0b000000011111,
+        Closed          = 0b000000100000,
+        Separator       = 0b000001000000,
+        End             = 0b000001100000,
+        Binary          = 0b000010000000,
+        Function        = 0b000100000000,
+        EndOrBinary     = 0b000111100000,
+        Instruction     = 0b001000000000,
+        Label           = 0b010000000000,
+        LabelInstr      = 0b011000000000,
+        Misc            = 0b100000000000,
+        MoreTokens      = Binary | Separator | Open,
+        Evaluation      = Binary | Separator | Function
+    }
 
     /// <summary>
     /// Represents a token class useed in lexical analysis of 
@@ -42,105 +44,105 @@ namespace Core6502DotNet
     /// </summary>
     public class Token : IEquatable<Token>, IComparable<Token>
     {
+        #region Members
+
+        /// <summary>
+        /// Gets the key-value pairs of opens and closures.
+        /// </summary>
+        public static readonly Dictionary<StringView, StringView> OpenClose = new Dictionary<StringView, StringView>
+        {
+            { "(", ")" },
+            { "{", "}" },
+            { "[", "]" }
+        };
+
+        #endregion
+
         #region Constructors
 
         /// <summary>
         /// Constructs a new token object.
         /// </summary>
-        public Token() => Children = new List<Token>();
-
-        /// <summary>
-        /// Constructs a new token object.
-        /// </summary>
-        /// <param name="source">The source for which to derive the token's name.</param>
-        public Token(string source) : this() => Name = source;
-
-
-        /// <summary>
-        /// Constructs a new token object.
-        /// </summary>
-        /// <param name="source">The source for which to derive the token's name.</param>
-        /// <param name="type">The token's <see cref="TokenType"/>.</param>
-        public Token(string source, TokenType type) : this() =>
-           (Name, Type) = (source, type);
-
-        /// <summary>
-        /// constructs a new token object.
-        /// </summary>
-        /// <param name="name">The token's (parsed) name.</param>
-        /// <param name="source">The source for which to derive the token's name.</param>
-        /// <param name="type">The token's <see cref="TokenType"/>.</param>
-        public Token(string name, string source, TokenType type)
-            : this(name, source, type, OperatorType.None) { }
-
-        /// <summary>
-        /// Constructs a new token object.
-        /// </summary>
-        /// <param name="source">The source for which to derive the token's name.</param>
-        /// <param name="type">The token's <see cref="TokenType"/>.</param>
-        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
-        public Token(string source, TokenType type, OperatorType operatorType)
-            : this(source, source, type, operatorType, 1) { }
-
-        /// <summary>
-        /// Constructs a new token object.
-        /// </summary>
-        /// <param name="name">The token's (parsed) name.</param>
-        /// <param name="source">The original unparsed source.</param>
-        /// <param name="type">The token's <see cref="TokenType"/>.</param>
-        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
-        public Token(string name, string source, TokenType type, OperatorType operatorType)
-            : this(name, source, type, operatorType, 1) { }
-
-        /// <summary>
-        /// Constructs a new token object.
-        /// </summary>
-        /// <param name="name">The token's (parsed) name.</param>
-        /// <param name="source">The original unparsed source.</param>
-        /// <param name="type">The token's <see cref="TokenType"/>.</param>
-        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
-        /// <param name="position">The token's column position in the original source.</param>
-        public Token(string name, string source, TokenType type, OperatorType operatorType, int position)
-            : this()
+        public Token()
         {
-            Name = name;
-            UnparsedName = source;
+
+        }
+
+        /// <summary>
+        /// Constructs a new token object
+        /// </summary>
+        /// <param name="name">The token's (parsed) name.</param>
+        /// <param name="type">The token's <see cref="TokenType"/>.</param>
+        /// <param name="position">The token's position in its line.</param>
+        public Token(StringView name, TokenType type, int position)
+        {
             Type = type;
-            OperatorType = type == TokenType.Operator ? operatorType : OperatorType.None;
+            Name = name;
             Position = position;
         }
 
         /// <summary>
-        /// Constructs a new token object.
+        /// Constructs a new token object
         /// </summary>
         /// <param name="name">The token's (parsed) name.</param>
-        /// <param name="source">The original unparsed source.</param>
         /// <param name="type">The token's <see cref="TokenType"/>.</param>
-        /// <param name="operatorType">The token's <see cref="OperatorType"/>.</param>
-        /// <param name="position">The token's column position in the original source.</param>
-        /// <param name="children">The token's child tokens.</param>
-        public Token(string name, string source, TokenType type, OperatorType operatorType, int position, IEnumerable<Token> children)
-            : this(name, source, type, operatorType, position) => Children = new List<Token>(children);
+        public Token(StringView name, TokenType type)
+        {
+            Name = name;
+            Type = type;
+            Position = 1;
+        }
 
         #endregion
 
         #region Methods
 
-        public bool Equals(Token other)
-            => other != null && 
-            Name.Equals(other.Name) && 
-            Type == other.Type && 
-            OperatorType == other.OperatorType;
+        /// <summary>
+        /// Determines whether the token is a quoted string or char literal.
+        /// </summary>
+        /// <returns><c>true</c> if the token is a quote, <c>false</c> otherwise.</returns>
+        public bool IsQuote() => Name[0] == '"' || Name[0] == '\'';
 
-        public override int GetHashCode()
+        /// <summary>
+        /// Determines whether the token is a double-quoted string literal.
+        /// </summary>
+        /// <returns><c>true</c> if the token is a double-quoted string, <c>false</c> otherwise.</returns>
+        public bool IsDoubleQuote() => Name[0] == '"';
+
+        /// <summary>
+        /// Determines whether the token is a separator.
+        /// </summary>
+        /// <returns><c>true</c> if the token is a separator, <c>false</c> otherwise.</returns>
+        public bool IsSeparator() => Type.HasFlag(TokenType.Separator);
+
+        /// <summary>
+        /// Determines whether the token is a special operator type.
+        /// </summary>
+        /// <returns><c>true</c> if the token is a special operator type, <c>false</c> otherwise.</returns>
+        public bool IsSpecialOperator() => Name[0] == '+' || Name[0] == '-' || Name[0] == '*';
+
+        /// <summary>
+        /// Determines whether the token is a group/expression opening.
+        /// </summary>
+        /// <returns><c>true</c> if the token is an opening, <c>false</c> otherwise.</returns>
+        public bool IsOpen() => Type.HasFlag(TokenType.Open);
+
+
+        public bool Equals(Token other) 
+            => Name.Equals(other.Name) && Type == other.Type;
+
+
+        public int CompareTo(Token other)
         {
-            unchecked
+            if (other != null)
             {
-                var hash = 17   * 23 + Name.GetHashCode();
-                hash = hash     * 23 + Type.GetHashCode();
-                hash = hash     * 23 + OperatorType.GetHashCode();
-                return hash;
+                var nameComp = StringViewComparer.Ordinal.Compare(Name, other.Name);
+                if (nameComp == 0)
+                    return Type.CompareTo(other.Type);
+
+                return nameComp;
             }
+            return 1;
         }
 
         public override bool Equals(object obj)
@@ -150,65 +152,111 @@ namespace Core6502DotNet
             return false;
         }
 
-        /// <summary>
-        /// Adds a child to the token's children graph.
-        /// </summary>
-        /// <param name="token">The child token to add.</param>
-        public void AddChild(Token token)
+        public override int GetHashCode()
         {
-            token.Parent = this;
-            if (string.IsNullOrEmpty(Name) && Children.Count == 0)
-                Position = token.Position;
-
-            Children.Add(token);
+            unchecked
+            {
+                var hash = 17 * 23 + Name.GetHashCode();
+                hash = hash * 23 + Type.GetHashCode();
+                return hash;
+            }
         }
 
         public override string ToString()
         {
-            var sb = new StringBuilder(UnparsedName);
-            if (Children != null)
+            return Name.ToString();
+
+        }
+
+        #region Static Methods
+
+        /// <summary>
+        /// Determines whether the token is an end of an expression, either as a closure,
+        /// separator, or a null.
+        /// </summary>
+        /// <param name="token">The token.</param>
+        /// <returns></returns>
+        public static bool IsEnd(Token token) => token == null || TokenType.End.HasFlag(token.Type);
+
+        /// <summary>
+        /// Gets a grouping of tokens.
+        /// </summary>
+        /// <param name="tokens">The iterator to the full token expression.</param>
+        /// <returns>The grouped tokens</returns>
+        public static IEnumerable<Token> GetGroup(RandomAccessIterator<Token> tokens)
+        {
+            var list = new List<Token> { tokens.Current };
+            var open = tokens.Current.Name;
+            var closed = OpenClose[open];
+            var opens = 1;
+            while (tokens.MoveNext() && opens > 0)
             {
-                foreach (Token t in Children)
-                    sb.Append(t.ToString());
+                list.Add(tokens.Current);
+                if (tokens.Current.Name.Equals(open))
+                    opens++;
+                else if (tokens.Current.Name.Equals(closed))
+                    opens--;
             }
-            if (OperatorType == OperatorType.Open)
-                sb.Append(LexerParser.Groups[Name]);
-            return sb.ToString();
+            return list;
         }
 
         /// <summary>
-        /// Auto-creates a separator token.
+        /// Joins the collection of tokens into a string.
         /// </summary>
-        /// <returns>A parsed token that represents a separator.</returns>
-        public static Token SeparatorToken()
-            => new Token(string.Empty, string.Empty, TokenType.Operator, OperatorType.Separator);
-
-        public int CompareTo(Token other)
+        /// <param name="tokens">The collection of tokens.</param>
+        /// <returns>A string representing the joint tokens.</returns>
+        public static string Join(IEnumerable<Token> tokens)
         {
-            if (other != null)
+            var first = tokens.First();
+            var source = first.Name.String;
+            if (tokens.Any(t => !ReferenceEquals(t.Name.String, source)))
             {
-                var nameCompare = Name.CompareTo(other.Name);
-                if (nameCompare == 0)
+                var leadingNonTokenString = first.Name.Position == 0 ? string.Empty : source.Substring(0, first.Name.Position);
+
+                var sb = new StringBuilder(leadingNonTokenString);
+                var it = tokens.GetIterator();
+                while (it.MoveNext())
                 {
-                    var typeCompare = Type.CompareTo(other.Type);
-                    if (typeCompare == 0)
-                        return OperatorType.CompareTo(other.OperatorType);
-                    return typeCompare;
+                    var t = it.Current;
+                    var n = it.PeekNext();
+                    var offs = t.Name.Position;
+                    int size;
+                    if (n == null || !ReferenceEquals(t.Name.String, n.Name.String))
+                    {
+                        sb.Append(t.Name.String.Substring(offs, t.Name.Length));
+                        var afterChars = t.Name.String.Substring(offs + t.Name.Length);
+                        var firstNonWhite = afterChars.ToList()
+                            .FindIndex(c => !char.IsWhiteSpace(c));
+                        if (firstNonWhite > 0)
+                            sb.Append(afterChars.Substring(0, firstNonWhite));   
+                    }
+                    else
+                    {
+                        size = n.Name.Position - offs;
+                        sb.Append(t.Name.String.Substring(offs, size));
+                    }
                 }
-                return nameCompare;
+                return sb.ToString();
             }
-            return 1;
+            else
+            {
+                var offs = first.Name.Position;
+                if (offs > 0)
+                {
+                    var leadingWs = source.Substring(0, first.Name.Position).ToList().FindLastIndex(c => !char.IsWhiteSpace(c));
+                    if (leadingWs >= 0)
+                        offs = leadingWs + 1;
+                }
+                int size = tokens.Last().Name.Position + tokens.Last().Name.Length - offs;
+                return source.Substring(offs, size);
+            }
         }
 
         #endregion
 
-        #region Properties
+        #endregion
 
-        /// <summary>
-        /// Gets or sets the token's position (or column) in the source line from
-        /// which it was decoded.
-        /// </summary>
-        public int Position { get; set; }
+        #region Properties
 
         /// <summary>
         /// Gets the token's type.
@@ -216,43 +264,20 @@ namespace Core6502DotNet
         public TokenType Type { get; }
 
         /// <summary>
-        /// Gets the token's operator type.
+        /// Gets the token's position in its source line.
         /// </summary>
-        public OperatorType OperatorType { get; }
+        public int Position { get; }
 
         /// <summary>
-        /// Gets or the token's name.
+        /// Gets the token's parsed name.
         /// </summary>
-        public string Name { get; }
+        public StringView Name { get; }
 
         /// <summary>
-        /// Gets the token's unparsed name.
+        /// Gets or sets the token's parsed <see cref="SourceLine"/> in which it appears.
         /// </summary>
-        public string UnparsedName { get; }
+        public SourceLine Line { get; internal set; }
 
-        /// <summary>
-        /// Gets the token's parent.
-        /// </summary>
-        public Token Parent { get; private set; }
-
-        /// <summary>
-        /// Gets the list of the token's child tokens.
-        /// </summary>
-        public List<Token> Children { get; }
-
-        /// <summary>
-        /// Gets the last child in the token's own hierarchy, or itself if it
-        /// has no children.
-        /// </summary>
-        public Token LastChild
-        {
-            get
-            {
-                if (Children.Count > 0)
-                    return Children[^1].LastChild;
-                return this;
-            }
-        }
         #endregion
     }
 }

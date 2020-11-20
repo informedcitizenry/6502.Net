@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace Core6502DotNet
 {
     /// <summary>
@@ -24,36 +26,30 @@ namespace Core6502DotNet
         /// Creates a new instance of a repeat block processor.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public RepeatBlock(AssemblyServices services,
-                           RandomAccessIterator<SourceLine> iterator,
-                           BlockType type)
-            : base(services, iterator, type)
+        /// <param name="index">The index at which the block is defined.</param>
+        public RepeatBlock(AssemblyServices services, int index)
+            : base(services, index)
         {
-            _repetition = Services.Evaluator.Evaluate(Line.Operand.Children, 1, uint.MaxValue);
-            if (!_repetition.IsInteger())
-                throw new ExpressionException(Line.Operand.Position, $"Repetition must be an integer");
+
         }
 
         #endregion
 
         #region Methods
 
-        public override bool ExecuteDirective()
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
-            SourceLine line = LineIterator.Current;
-            if (line.InstructionName.Equals(".endrepeat"))
+            SourceLine line = lines.Current;
+            if (line.Instruction.Name.Equals(".repeat", Services.StringComparison))
             {
-                if (_repetition < 1)
-                    throw new ExpressionException(line.Instruction.Position, $"Missing matching \".repeat\" directive.");
-
-                if (--_repetition > 0)
-                    LineIterator.Rewind(Index);
-                return true;
+                _repetition = Services.Evaluator.Evaluate(line.Operands.GetIterator(), 1, uint.MaxValue);
+                if (!_repetition.IsInteger())
+                    throw new ExpressionException(line.Operands[0], $"Repetition must be an integer");
             }
-            return line.InstructionName.Equals(".repeat");
+            else if (--_repetition > 0)
+            {
+                lines.Rewind(Index);
+            }
         }
 
         #endregion
@@ -63,6 +59,10 @@ namespace Core6502DotNet
         public override bool AllowBreak => true;
 
         public override bool AllowContinue => true;
+
+        public override IEnumerable<string> BlockOpens => new string[] { ".repeat" };
+
+        public override string BlockClosure => ".endrepeat";
 
         #endregion
     }

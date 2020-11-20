@@ -18,6 +18,7 @@ namespace Core6502DotNet
         #region Members
 
         readonly IList<SourceLine> _definedLines;
+        AssemblyServices _services;
 
         #endregion
 
@@ -27,38 +28,45 @@ namespace Core6502DotNet
         /// Creates a new instance of the Function class.
         /// </summary>
         /// <param name="parameterList">The list of parameters for the function.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator.</param>
+        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse to define the function block.</param>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="caseSensitive">Determines whether to compare the passed parameters
+        /// to the source block's own defined parameters should be case-sensitive.</param>
         /// <exception cref="SyntaxException"></exception>
-        public Function(AssemblyServices services,
-                        Token parameterList,
-                        RandomAccessIterator<SourceLine> iterator)
-            : base(services,
-                  parameterList, 
-                  iterator.Current.ParsedSource)
+        public Function(List<Token> parameterList,
+                        RandomAccessIterator<SourceLine> iterator,
+                        AssemblyServices services,
+                        bool caseSensitive)
+            : base(parameterList,
+                  caseSensitive)
         {
+            _services = services;
             _definedLines = new List<SourceLine>();
             SourceLine line;
             while ((line = iterator.GetNext()) != null)
             {
-                if (line.LabelName.Equals("+"))
+                if (line.Label != null && line.Label.Name.Equals("+"))
                 {
-                    Services.Log.LogEntry(line, line.Label, 
+                    _services.Log.LogEntry(line.Label,
                         "Anonymous labels are not supported inside functions.", false);
                 }
-                if (line.InstructionName.Equals(".global"))
-                    throw new SyntaxException(line.Instruction.Position,
-                        $"Directive \".global\" not allowed inside a function block.");
-                if (line.InstructionName.Equals(".endfunction"))
+                if (line.Instruction != null)
                 {
-                    if (line.OperandHasToken)
-                        throw new SyntaxException(line.Operand.Position, 
-                            "Unexpected expression found after \".endfunction\" directive.");
-                    break;
+                    if (line.Instruction.Name.Equals(".global", _services.StringViewComparer))
+                        throw new SyntaxException(line.Instruction,
+                            $"Directive \".global\" not allowed inside a function block.");
+                    if (line.Instruction.Name.Equals(".endfunction", _services.StringViewComparer))
+                    {
+                        if (line.Operands.Count > 0)
+                            throw new SyntaxException(line.Operands[0],
+                                "Unexpected expression found after \".endfunction\" directive.");
+                        break;
+                    }
                 }
                 _definedLines.Add(line);
             }
             if (line == null)
-                throw new SyntaxException(iterator.Current.Instruction.Position, 
+                throw new SyntaxException(iterator.Current.Instruction,
                                           "Function definition does not have a closing \".endfunction\" directive.");
         }
 
@@ -80,63 +88,61 @@ namespace Core6502DotNet
             {
                 if (i >= parameterList.Count || parameterList[i] == null)
                 {
-                    if (string.IsNullOrEmpty(Params[i].DefaultValue))
+                    if (Params[i].DefaultValue.Count == 0)
                         throw new SyntaxException(i + 1, $"Missing argument \"{Params[i].Name}\" for function.");
-                    if (Params[i].DefaultValue.EnclosedInDoubleQuotes())
-                        Services.SymbolManager.Define(Params[i].Name,
-                            Params[i].DefaultValue.TrimOnce('"'));
+                    var it = Params[i].DefaultValue.GetIterator();
+                    if (StringHelper.ExpressionIsAString(it, _services))
+                        _services.SymbolManager.DefineSymbol(Params[i].Name, StringHelper.GetString(it, _services));
                     else
-                        Services.SymbolManager.Define(Params[i].Name,
-                            Services.Evaluator.Evaluate(Params[i].DefaultValue), true);
+                        _services.SymbolManager.DefineSymbol(Params[i].Name,
+                            _services.Evaluator.Evaluate(it));
                 }
                 else
                 {
                     var parm = parameterList[i];
-                    if (parm.ToString().EnclosedInDoubleQuotes())
-                        Services.SymbolManager.Define(Params[i].Name, parm.ToString().TrimOnce('"'), true);
+                    if (parm is string)
+                        _services.SymbolManager.DefineSymbol(Params[i].Name, parm.ToString().TrimOnce('"'));
                     else
-                        Services.SymbolManager.Define(Params[i].Name, (double)parm, true);
+                        _services.SymbolManager.DefineSymbol(Params[i].Name, (double)parm);
                 }
             }
             var iterator = _definedLines.GetIterator();
             var assemblers = new List<AssemblerBase>
                 {
-                    new AssignmentAssembler(Services),
-                    new EncodingAssembler(Services),
-                    new MiscAssembler(Services),
-                    new BlockAssembler(Services, iterator)
+                    new AssignmentAssembler(_services),
+                    new BlockAssembler(_services),
+                    new EncodingAssembler(_services),
+                    new MiscAssembler(_services)
                 };
-            return MultiLineAssembler.AssembleLines(iterator,
-                                                    assemblers,
-                                                    true,
-                                                    null,
-                                                    false,
-                                                    ErrorHandler,
-                                                    Services);
+            return new MultiLineAssembler()
+                .WithAssemblers(assemblers)
+                .WithOptions(new MultiLineAssembler.Options()
+                {
+                    AllowReturn = true,
+                    DisassembleAll = false,
+                    ErrorHandler = ErrorHandler,
+                    Evaluator = _services.Evaluator,
+                    StopDisassembly = () => _services.PrintOff
+                }).AssembleLines(_definedLines.GetIterator(), out string disassembly);
         }
 
-        bool ErrorHandler(SourceLine line, AssemblyErrorReason reason, Exception ex)
+        bool ErrorHandler(AssemblerBase assembler, SourceLine line, AssemblyErrorReason reason, Exception ex)
         {
             if (reason == AssemblyErrorReason.ExceptionRaised)
             {
-                if (Services.CurrentPass > 0)
+                if (_services.CurrentPass > 0)
                 {
-                    Services.Log.LogEntry(line, line.Instruction,
-                                            ex.Message);
+                    _services.Log.LogEntry(line.Instruction, ex.Message);
                     return false;
                 }
                 return true;
             }
-            if (reason == AssemblyErrorReason.OutsideBounds)
-                Services.Log.LogEntry(line, line.Instruction,
-                            $"\".goto\" destination \"{line.OperandExpression}\" is outside of function block.");
-            
             if (reason == AssemblyErrorReason.NotFound)
-                Services.Log.LogEntry(line, line.Instruction,
-                        $"Directive \"{line.InstructionName}\" not allowed inside a function block.");
+                _services.Log.LogEntry(line.Instruction,
+                        $"Directive \"{line.Instruction}\" not allowed inside a function block.");
             return false;
         }
-        #endregion
+        #endregion        
     }
 
     /// <summary>
@@ -144,21 +150,30 @@ namespace Core6502DotNet
     /// </summary>
     public sealed class FunctionBlock : BlockProcessorBase
     {
+        #region Constructors
+
         /// <summary>
         /// Creates a new instance of a function block processor placeholder.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public FunctionBlock(AssemblyServices services,
-                             RandomAccessIterator<SourceLine> iterator, 
-                             BlockType type)
-            : base(services, iterator, type, false) { }
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="index">The index at which the block is defined.</param>
+        public FunctionBlock(AssemblyServices services, int index)
+            : base(services, index) { }
+
+        #endregion
+
+        #region Properties
 
         public override bool AllowBreak => false;
-         
+
         public override bool AllowContinue => false;
 
-        public override bool ExecuteDirective() => false;
+        public override IEnumerable<string> BlockOpens => new string[] { ".function" };
+
+        public override string BlockClosure => ".endfunction";
+
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> iterator) { }
+
+        #endregion
     }
 }

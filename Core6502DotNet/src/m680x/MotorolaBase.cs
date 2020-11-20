@@ -12,10 +12,21 @@ using System.Text;
 
 namespace Core6502DotNet
 {
+     /// <summary>
+    /// An assembler for Motorola m68xx and MOS 65xx-based CPUs. This class must be inherited.
+    /// </summary>
     public abstract class MotorolaBase : AssemblerBase
     {
+        #region Constants
+
+        /// <summary>
+        /// The column padding for disassembly.
+        /// </summary>
         protected const int Padding = 25;
 
+        /// <summary>
+        /// An enumeration of all possible addressing modes for m68xx and m65xx-based CPUs.
+        /// </summary>
         protected enum Modes 
         {
             Implied      = 0b000000000000000000000,
@@ -94,6 +105,10 @@ namespace Core6502DotNet
             TestBitFlag  = TestBitZp    & MemModMask
         };
 
+        #endregion
+
+        #region Members
+
         static readonly IReadOnlyDictionary<Modes, string> s_modeFormats = new Dictionary<Modes, string>
         {
             { Modes.Implied,        string.Empty                },
@@ -145,9 +160,14 @@ namespace Core6502DotNet
             { Modes.ThreeOpAbs,     "${0:x4},${1:x4},${2:x4}"   }
         };
 
+        #endregion
+
+        #region Constructors
+
         public MotorolaBase(AssemblyServices services)
             :base(services)
         {
+            Reserved.DefineType("CPU", ".cpu");
             Reserved.DefineType("RelativeSecond");
             
             Evaluations = new double[]
@@ -164,6 +184,13 @@ namespace Core6502DotNet
             Services.PassChanged += OnPassChanged;
         }
 
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Reset the state of the <see cref="MotorolaBase"/> assembler. This method must be inherited.
+        /// </summary>
         protected abstract void OnReset();
 
         void OnPassChanged(object sender, EventArgs args)
@@ -178,43 +205,81 @@ namespace Core6502DotNet
         /// <param name="expressionCount">The total expression count.</param>
         /// <returns>The forced width size, if the token is a forced width specifier.</returns>
         /// <exception cref="ExpressionException"></exception>
-        protected Modes GetForcedModifier(Token firstToken, int expressionCount)
+        protected Modes GetForcedModifier(RandomAccessIterator<Token> tokens)
         {
-            if (firstToken.Name.Equals("[") && expressionCount > 1)
+            var ix = tokens.Index;
+            if (tokens.MoveNext())
             {
-                var opSize = Services.Evaluator.Evaluate(firstToken.Children, 8, 24);
-                var forcedMode = opSize switch
+                var firstToken = tokens.Current;
+
+                if (firstToken.Name.Equals("["))
                 {
-                    8  => Modes.ZeroPage,
-                    16 => Modes.Absolute,
-                    24 => Modes.Long,
-                    _  => throw new ExpressionException(firstToken.Position, 
-                            $"Illegal quantity {opSize} for bit-width specifier."),
-                };
-                return forcedMode | Modes.ForceWidth;
+                    var forcedGroup = Token.GetGroup(tokens).Skip(1).SkipLast(1).GetIterator();
+                    if (!Token.IsEnd(tokens.Current))
+                    {
+                        var opSize = Services.Evaluator.Evaluate(forcedGroup, 8, 24);
+                        if (forcedGroup.Current != null)
+                            throw new SyntaxException(forcedGroup.Current.Position, "Unexpected expression.");
+                        var forcedMode = opSize switch
+                        {
+                            8    => Modes.ZeroPage,
+                            16   => Modes.Absolute,
+                            24   => Modes.Long,
+                            _    => throw new ExpressionException(firstToken.Position,
+                                    $"Illegal quantity {opSize} for bit-width specifier."),
+                        };
+                        tokens.Rewind(tokens.Index - 1);
+                        return forcedMode | Modes.ForceWidth;
+                    }
+
+                }
             }
+            tokens.Reset();
             return Modes.Implied;
         }
 
-        protected Modes Evaluate(IEnumerable<Token> tokens, int operandIndex)
+        /// <summary>
+        /// Evaluates the current expression.
+        /// </summary>
+        /// <param name="tokens">An iterator to the collection of parsed tokens in the current expression.</param>
+        /// <param name="doNotAdvance">Do not advance the iterator past its current point when beginning evaluation.</param>
+        /// <param name="evaluationIndex">The index of the evaluation.</param>
+        /// <returns></returns>
+        protected Modes Evaluate(RandomAccessIterator<Token> tokens, bool doNotAdvance, int evaluationIndex)
         {
             var mode = Modes.ZeroPage;
-            var result = Services.Evaluator.Evaluate(tokens, Int24.MinValue, UInt24.MaxValue);
+            var result = Services.Evaluator.Evaluate(tokens, doNotAdvance, Int24.MinValue, UInt24.MaxValue);
             if (result < sbyte.MinValue || result > byte.MaxValue)
             {
                 mode |= Modes.Absolute;
                 if (result < short.MinValue || result > ushort.MaxValue)
                     mode |= Modes.Long;
             }
-            Evaluations[operandIndex] = result;
+            Evaluations[evaluationIndex] = result;
             return mode;
         }
 
+        /// <summary>
+        /// Evaluates the current expression.
+        /// </summary>
+        /// <param name="tokens">An iterator to the collection of parsed tokens in the current expression.</param>
+        /// <param name="evaluationIndex">The index of the evaluation.</param>
+        /// <returns></returns>
+        protected Modes Evaluate(RandomAccessIterator<Token> tokens, int evaluationIndex)
+            => Evaluate(tokens, true, evaluationIndex);
+
+        /// <summary>
+        /// Parses the operand expression into its addressing mode and saves the evaluation.
+        /// This method must be inherited.
+        /// </summary>
+        /// <param name="line">The parsed source lne.</param>
+        /// <returns>The <see cref="Modes"/>.</returns>
         protected abstract Modes ParseOperand(SourceLine line);
 
-        protected (Modes mode, CpuInstruction instruction) GetModeInstruction(SourceLine line)
+        (Modes mode, CpuInstruction instruction) GetModeInstruction(SourceLine line)
         {
-            var instruction = line.InstructionName;
+            Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
+            var instruction = line.Instruction.Name.ToLower();
             var mnemmode = (Mnem: instruction, Mode: ParseOperand(line));
 
             // remember if force width bit was set
@@ -236,29 +301,61 @@ namespace Core6502DotNet
             return (mnemmode.Mode, foundInstruction);
         }
 
+        /// <summary>
+        /// Actions to perform when the CPU is set. This method must be inherited.
+        /// </summary>
         protected abstract void OnSetCpu();
 
+        /// <summary>
+        /// Determines whether the CPU selected is valid. This method must be inherited.
+        /// </summary>
+        /// <param name="cpu">The CPU name.</param>
+        /// <returns><c>true</c> if the CPU is valid, <c>false</c> otherwise.</returns>
         protected abstract bool IsCpuValid(string cpu);
 
-        protected override string OnAssembleLine(SourceLine line)
+        internal override int GetInstructionSize(SourceLine line)
         {
-            var instruction = line.InstructionName;
-            Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
+            if (Reserved.IsOneOf("CPU", line.Instruction.Name))
+                return 0;
+            try
+            {
+                return GetModeInstruction(line).instruction.Size;
+            }
+            catch
+            {
+                return 2;
+            }
+        }
+
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        {
+            var line = lines.Current;
+            if (Reserved.IsOneOf("CPU", line.Instruction.Name))
+            {
+                var iterator = line.Operands.GetIterator();
+                if (!iterator.MoveNext() || !iterator.Current.IsDoubleQuote() || iterator.PeekNext() != null)
+                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        "String expression expected.");
+                else
+                {
+                    CPU = iterator.Current.Name.ToString().TrimOnce('"');
+                    OnSetCpu();
+                }
+                return string.Empty;
+            }
             var modeInstruction = GetModeInstruction(line);
             if (!string.IsNullOrEmpty(modeInstruction.instruction.CPU))
             {
                 if (modeInstruction.mode.HasFlag(Modes.RelativeBit))
                 {
                     int evalIx;
-                    if (Reserved.IsOneOf("RelativeSecond", instruction))
+                    if (Reserved.IsOneOf("RelativeSecond", line.Instruction.Name))
                         evalIx = 1;
                     else
                         evalIx = 0;
-
+                    var offsIx = modeInstruction.instruction.Size;
                     try
                     {
-                        var offsIx = modeInstruction.instruction.Size;
-
                         Evaluations[evalIx] = modeInstruction.mode == Modes.RelativeAbs
                             ? Convert.ToInt16(Services.Output.GetRelativeOffset((int)Evaluations[evalIx], offsIx))
                             : Convert.ToSByte(Services.Output.GetRelativeOffset((int)Evaluations[evalIx], offsIx));
@@ -270,10 +367,10 @@ namespace Core6502DotNet
                         {
                             var errorMsg = "Relative offset for branch was too far.";
                             if (PseudoBranchSupported)
-                                Services.Log.LogEntry(line, line.Operand,
+                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position,
                                     $"{errorMsg}. Consider using a pseudo branch directive.");
                             else
-                                Services.Log.LogEntry(line, line.Operand, errorMsg);
+                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position, errorMsg);
                             return string.Empty;
                         }
                         Evaluations[evalIx] = 0;
@@ -313,21 +410,21 @@ namespace Core6502DotNet
                 }
                 var instructionSize = Services.Output.LogicalPC - PCOnAssemble;
                 if (!Services.PassNeeded && instructionSize != modeInstruction.instruction.Size)
-                    Services.Log.LogEntry(line, line.Instruction, 
-                        $"Mode not supporter for \"{line.InstructionName.Trim()}\" in selected CPU.");
+                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        "Mode not supported in selected CPU.");
             }
             else
             {
-                if (ActiveInstructions.Keys.Any(k => k.Mnem.Equals(line.InstructionName)))
+                if (ActiveInstructions.Keys.Any(k => k.Mnem.Equals(line.Instruction.Name, Services.StringComparison)))
                 {
                     if (!Services.PassNeeded)
-                        Services.Log.LogEntry(line, line.Instruction, 
-                            $"Mode not supported for \"{line.InstructionName.Trim()}\" in selected CPU.");
+                        Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                            "Mode not supported in selected CPU.");
                 }
                 else
                 {
-                    Services.Log.LogEntry(line, line.Instruction, 
-                        $"Mnemonic \"{line.InstructionName.Trim()}\" not supported for selected CPU.");
+                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        "Mnemonic not supported for selected CPU.");
                 }
                 return string.Empty;
             }
@@ -343,13 +440,12 @@ namespace Core6502DotNet
             {
                 sb.Append($".{PCOnAssemble:x4}                        ");
             }
-
             if (!Services.Options.NoDisassembly)
             {
                 var disSb = new StringBuilder();
                 if (sb.Length > 29)
                     disSb.Append(' ');
-                disSb.Append(line.Instruction.Name);
+                disSb.Append(line.Instruction.Name.ToLower());
                 if (modeInstruction.mode != Modes.Implied)
                 {
                     disSb.Append(' ');
@@ -368,7 +464,7 @@ namespace Core6502DotNet
                     {
                         if (memoryMode.HasFlag(Modes.RelativeBit))
                         {
-                            if (Reserved.IsOneOf("RelativeSecond", instruction))
+                            if (Reserved.IsOneOf("RelativeSecond", line.Instruction.Name))
                             {
                                 eval1 = (int)Evaluations[0] & 0xFF;
                                 eval2 = Services.Output.LogicalPC + (int)Evaluations[1];
@@ -398,7 +494,6 @@ namespace Core6502DotNet
                             eval3 = (int)Evaluations[2] & 0xFF;
                     }
                     disSb.AppendFormat(s_modeFormats[modeInstruction.mode], eval1, eval2, eval3);
-
                 }
                 sb.Append(disSb.ToString().PadRight(18));
             }
@@ -407,18 +502,36 @@ namespace Core6502DotNet
                 sb.Append("                  ");
             }
             if (!Services.Options.NoSource)
-                sb.Append(line.UnparsedSource);
+                sb.Append(line.Source);
             return sb.ToString();
         }
 
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets whether pseud-branch mnemonics are supported.
+        /// This property must be inherited.
+        /// </summary>
         protected abstract bool PseudoBranchSupported { get; }
 
+        /// <summary>
+        /// Gets the CPU.
+        /// </summary>
         protected string CPU { get; private set; }
 
+        /// <summary>
+        /// Gets the individual evaluations in the expression.
+        /// </summary>
         protected double[] Evaluations { get; }
 
+        /// <summary>
+        /// Gets or sets the active instruction set for the selected CPU.
+        /// </summary>
         protected IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> 
             ActiveInstructions { get; set; }
 
+        #endregion
     }
 }

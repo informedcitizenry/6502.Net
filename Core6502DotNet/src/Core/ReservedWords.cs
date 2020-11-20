@@ -17,9 +17,9 @@ namespace Core6502DotNet
     {
         #region Members
 
-        HashSet<string> _values;
-        Dictionary<string, HashSet<string>> _types;
-        StringComparer _comparer;
+        HashSet<StringView> _values;
+        Dictionary<string, HashSet<StringView>> _types;
+        StringViewComparer _comparer;
 
         #endregion
 
@@ -30,7 +30,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="comparer">A <see cref="StringComparer"/> object to indicate whether
         /// to enforce case-sensitivity.</param>
-        public ReservedWords(StringComparer comparer) 
+        public ReservedWords(StringViewComparer comparer)
             => Comparer = comparer;
 
         #endregion
@@ -43,9 +43,9 @@ namespace Core6502DotNet
         /// <param name="type">The defined type</param>
         /// <param name="word">The reserved word to include</param>
         /// <exception cref="KeyNotFoundException"></exception>
-        public void AddWord(string type, string word)
+        public void AddWord(string type, StringView word)
         {
-            HashSet<string> t = _types[type];
+            HashSet<StringView> t = _types[type];
             t.Add(word);
             _values.Add(word);
         }
@@ -55,7 +55,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="type">The type name.</param>
         /// <exception cref="ArgumentException"></exception>
-        public void DefineType(string type) => _types.Add(type, new HashSet<string>(_comparer));
+        public void DefineType(string type) => _types.Add(type, new HashSet<StringView>(_comparer));
 
         /// <summary>
         /// Define a type of reserved words.
@@ -64,9 +64,9 @@ namespace Core6502DotNet
         /// <param name="values">The collection of values that comprise the type. </param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public void DefineType(string type, params string[] values)
+        public void DefineType(string type, params StringView[] values)
         {
-            _types.Add(type, new HashSet<string>(values, _comparer));
+            _types.Add(type, new HashSet<StringView>(values, _comparer));
             foreach (var v in values)
                 _values.Add(v); // grr!!!
         }
@@ -79,7 +79,7 @@ namespace Core6502DotNet
         /// <returns><c>true</c> if the specified token is one of the specified type, otherwise <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public bool IsOneOf(string type, string token) => _types[type].Contains(token);
+        public bool IsOneOf(string type, StringView token) => _types[type].Contains(token);
 
         /// <summary>
         /// Determines if the token is in the list of reserved words for all types.
@@ -87,10 +87,10 @@ namespace Core6502DotNet
         /// <param name="token">The token or keyword.</param>
         /// <returns><c>true</c> if the specified token is in the collection of reserved words,
         /// regardless of type, otherwise <c>false</c>.</returns>
-        public bool IsReserved(string token) =>  _values.Contains(token);
+        public bool IsReserved(StringView token) => _values.Contains(token);
 
+        public IEnumerable<StringView> GetReserved(string type) => _types[type];
 
-        public IEnumerable<string> GetReserved() => _values;
 
         #endregion
 
@@ -101,13 +101,13 @@ namespace Core6502DotNet
         /// <see cref="ReservedWords"/> collection. Setting this value
         /// will clear the collection values.
         /// </summary>
-        public StringComparer Comparer
+        public StringViewComparer Comparer
         {
             set
             {
                 _comparer = value;
-                _types = new Dictionary<string, HashSet<string>>(_comparer);
-                _values = new HashSet<string>(_comparer);
+                _types = new Dictionary<string, HashSet<StringView>>();
+                _values = new HashSet<StringView>(_comparer);
             }
         }
 

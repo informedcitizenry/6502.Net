@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -34,16 +35,15 @@ namespace Core6502DotNet
         {
             PassNeeded = true;
             CurrentPass = -1;
-            IsReserved = new List<Func<string, bool>>();
-            InstructionLookupRules = new List<Func<string, bool>>();
+            IsReserved = new List<Func<StringView, bool>>();
+            InstructionLookupRules = new List<Func<StringView, bool>> { sv => sv[0] == '.' };
             Options = options;
             OutputFormat = Options.Format;
             CPU = Options.CPU;
             Encoding = new AsmEncoding(Options.CaseSensitive);
-            SymbolManager = new SymbolManager(this);
-            Evaluator = new Evaluator(Options.CaseSensitive, EvaluateSymbol);
+            Evaluator = new Evaluator(Options.CaseSensitive) { SymbolEvaluator = EvaluateSymbol };
+            SymbolManager = new SymbolManager(options.CaseSensitive, Evaluator);
             SymbolManager.AddValidSymbolNameCriterion(s => !Evaluator.IsReserved(s));
-            Evaluator.AddFunctionEvaluator(SymbolManager);
             Log = new ErrorLog(Options.WarningsAsErrors);
             Output = new BinaryOutput();
         }
@@ -52,29 +52,65 @@ namespace Core6502DotNet
 
         #region Methods
 
-        double EvaluateSymbol(Token token, Token subscript)
+        double EvaluateSymbol(RandomAccessIterator<Token> tokens)
         {
-            // no, is it a named symbol?
+            var token = tokens.Current;
+            var subscript = -1;
             var converted = double.NaN;
             if (char.IsLetter(token.Name[0]) || token.Name[0] == '_')
             {
-                if (subscript != null)
-                    converted = SymbolManager.GetNumericVectorElementValue(token, subscript);
+                var next = tokens.GetNext();
+                if (next != null && next.IsOpen() && next.Name.Equals("["))
+                    subscript = (int)Evaluator.Evaluate(tokens, 0, int.MaxValue);
+                var symbol = SymbolManager.GetSymbol(token, CurrentPass > 0);
+                if (symbol == null)
+                {
+                    if (CurrentPass == 0)
+                    {
+                        PassNeeded = true; 
+                        return 0xffff;
+                    }
+                    throw new SymbolException(token, SymbolException.ExceptionReason.NotDefined);
+                }
+                if (subscript >= 0)
+                {
+                    if (symbol.StorageType != StorageType.Vector)
+                        throw new SyntaxException(token.Position, "Type mismatch.");
+                    if ((symbol.IsNumeric && subscript >= symbol.NumericVector.Count) ||
+                        (!symbol.IsNumeric && subscript >= symbol.StringVector.Count))
+                        throw new SyntaxException(token.Position, "Index was out of range.");
+                    if (symbol.IsNumeric)
+                        return symbol.NumericVector[subscript];
+                    token = new Token(symbol.StringVector[subscript], TokenType.Operand);
+                }
+                else if (symbol.IsNumeric)
+                {
+                    if (symbol.DataType == DataType.Address && symbol.Bank != Output.CurrentBank)
+                        return (int)symbol.NumericValue | (symbol.Bank * 0x10000);
+                    return symbol.NumericValue;
+                }
                 else
-                    converted = SymbolManager.GetNumericValue(token);
-                // on first pass this will be true if symbol not yet defined
-                if (double.IsNaN(converted) && CurrentPass == 0) 
-                    converted = 0xffff;
+                {
+                    token = new Token(symbol.StringValue, TokenType.Operand);
+                }
             }
-            else if (token.Name.EnclosedInQuotes())
+            if (token.IsQuote())
             {
                 // is it a string literal?
-                var literal = token.Name.TrimOnce(token.Name[0]);
+                var literal = token.Name.TrimOnce(token.Name[0]).ToString();
                 if (string.IsNullOrEmpty(literal))
-                    throw new SyntaxException(token.Position, $"Cannot evaluate empty string.");
-
+                    throw new SyntaxException(token.Position, "Cannot evaluate empty string.");
+                literal = Regex.Unescape(literal);
+                if (!token.IsDoubleQuote())
+                {
+                    var charsize = 1;
+                    if (char.IsSurrogate(literal[0]))
+                        charsize++;
+                    if (literal.Length > charsize)
+                        throw new SyntaxException(token.Position, "Invalid char literal.");
+                }
                 // get the integral equivalent from the code points in the string
-                converted = Encoding.GetEncodedValue(token.Name.TrimOnce(token.Name[0]));
+                converted = Encoding.GetEncodedValue(literal);
             }
             else if (token.Name.Equals("*"))
             {    // get the program counter
@@ -82,7 +118,21 @@ namespace Core6502DotNet
             }
             else if (token.Name[0].IsSpecialOperator())
             {    // get the special character value
-                converted = SymbolManager.GetLineReference(token);
+                if (token.Name[0] == '+' && CurrentPass == 0)
+                {
+                    converted = Output.LogicalPC;
+                    PassNeeded = true;
+                }
+                else
+                {
+                    converted = SymbolManager.GetLineReference(token.Name, token);
+                    if (double.IsNaN(converted))
+                    {
+                        var reason = token.Name[0] == '+' ? SymbolException.ExceptionReason.InvalidForwardReference :
+                                                            SymbolException.ExceptionReason.InvalidBackReference;
+                        throw new SymbolException(token, reason);
+                    }
+                }
             }
             if (double.IsNaN(converted))
                 throw new ExpressionException(token.Position,
@@ -102,24 +152,13 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Selects the CPU.
-        /// </summary>
-        /// <param name="cpu">The CPU family/name.</param>
-        public void SelectCPU(string cpu)
-        {
-            if (!Options.CaseSensitive) cpu = cpu.ToLower();
-            CPU = cpu;
-            CPUAssemblerSelector?.Invoke(cpu);
-        }
-
-        /// <summary>
         /// Increment the pass counter.
         /// </summary>
         /// <returns>The new value of the pass counter.</returns>
         public int DoNewPass()
         {
             CurrentPass++;
-            SymbolManager.Define("CURRENT_PASS", CurrentPass + 1, false);
+            SymbolManager.DefineGlobal("CURRENT_PASS", CurrentPass + 1);
             PassChanged?.Invoke(this, new EventArgs());
             PassNeeded = false;
             return CurrentPass;
@@ -162,7 +201,7 @@ namespace Core6502DotNet
         /// Gets the list of functions that
         /// determine whether a given keyword is reserved.
         /// </summary>
-        public List<Func<string, bool>> IsReserved { get; private set; }
+        public List<Func<StringView, bool>> IsReserved { get; private set; }
 
         /// <summary>
         /// The <see cref="ErrorLog"/> object used for all error and warning
@@ -179,11 +218,6 @@ namespace Core6502DotNet
         /// The <see cref="BinaryOutput"/> object managing all output of assembly.
         /// </summary>
         public BinaryOutput Output { get; }
-        
-        /// <summary>
-        /// The CPU Assembler selector method.
-        /// </summary>
-        public Action<string> CPUAssemblerSelector { get; set; }
 
         /// <summary>
         /// The format selector invoked when the output format is changed.
@@ -196,15 +230,15 @@ namespace Core6502DotNet
         public string OutputFormat { get; private set; }
 
         /// <summary>
-        /// Gets the CPU.
+        /// Gets or sets the CPU.
         /// </summary>
-        public string CPU { get; private set; }
+        public string CPU { get; set; }
 
         /// <summary>
         /// Gets a list of functions that determine
         /// whether a given keyword is a mnemonic, pseudo-op or other assembler directive.
         /// </summary>
-        public List<Func<string, bool>> InstructionLookupRules { get; private set; }
+        public List<Func<StringView, bool>> InstructionLookupRules { get; private set; }
 
         /// <summary>
         /// The <see cref="AsmEncoding"/> responsible for all encoding.
@@ -217,12 +251,27 @@ namespace Core6502DotNet
         /// </summary>
         public Evaluator Evaluator { get; }
 
+
+        /// <summary>
+        /// Gets or sets the function that determines whether a line 
+        /// should terminate during processing.
+        /// </summary>
+        public Func<List<Token>, bool> LineTerminates { get; set; }
+
+
         /// <summary>
         /// Gets the <see cref="StringComparer"/> on the case-sensitive flag of
         /// the set <see cref="Options"/>.
         /// </summary>
         public StringComparer StringComparer
             => Options.CaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
+        /// <summary>
+        /// Gets the <see cref="StringViewComparer"/> on the case-sensitive flag of 
+        /// the set <see cref="Options"/>.
+        /// </summary>
+        public StringViewComparer StringViewComparer
+            => Options.CaseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
 
         /// <summary>
         /// Gets the <see cref="StringComparison"/> on the case-sensitive flag of the set <see cref="Options"/>.

@@ -24,25 +24,21 @@ namespace Core6502DotNet
         /// Invoke the function with the given parameters, and return the value returned
         /// from the function.
         /// </summary>
-        /// <param name="function">The parsed <see cref="Token"/> containing the function name.</param>
-        /// <param name="parameters">The parsed <see cref="Token"/> containing the list of function
-        /// parameters.</param>
+        /// <param name="tokens">The collection of tokens that comprise the function call, including parameters.</param>
         /// <returns>The value as a <see cref="double"/>.</returns>
-        double EvaluateFunction(Token function, Token parameters);
+        double EvaluateFunction(RandomAccessIterator<Token> tokens);
 
         /// <summary>
         /// Invoke the function with the given parameters.
         /// </summary>
-        /// <param name="function">The parsed <see cref="Token"/> containing the function name.</param>
-        /// <param name="parameters">The parsed <see cref="Token"/> containing the list of function
-        /// parameters.</param>
-        void InvokeFunction(Token function, Token parameters);
+        /// <param name="tokens">The collection of tokens that comprise the function call, including parameters.</param>
+        void InvokeFunction(RandomAccessIterator<Token> tokens);
 
         /// <summary>
         /// Determines if the given symbol is a named function the evaluator evaluates.
         /// </summary>
         /// <param name="symbol">The symbol name.</param>
         /// <returns><c>true</c> if the symbol is a function name, <c>false</c> otherwise.</returns>
-        bool IsFunctionName(string symbol);
+        bool IsFunctionName(StringView symbol);
     }
 }

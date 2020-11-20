@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace Core6502DotNet
 {
     /// <summary>
@@ -18,13 +20,9 @@ namespace Core6502DotNet
         /// Creates a new instance of a scoped block processor.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public ScopeBlock(AssemblyServices services,
-                          RandomAccessIterator<SourceLine> iterator,
-                          BlockType type)
-            : base(services, iterator, type, false)
+        /// <param name="index">The index at which the block is defined.</param>
+        public ScopeBlock(AssemblyServices services, int index)
+            : base(services, index, false)
         {
         }
 
@@ -32,43 +30,31 @@ namespace Core6502DotNet
 
         #region Methods
 
-        public override bool ExecuteDirective()
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
-            var line = LineIterator.Current;
-            string scopeName;
-            if (line.InstructionName.Equals(".block") || 
-                line.InstructionName.Equals(".namespace"))
+            var line = lines.Current;
+            if (line.Instruction.Name.Equals(".block", Services.StringComparison))
             {
-                var isBlock = line.InstructionName[1] == 'b';
-                scopeName = isBlock ? line.LabelName : line.OperandExpression.Trim();
-
-                if (string.IsNullOrEmpty(scopeName))
-                    scopeName = LineIterator.Index.ToString();
-                else if (!char.IsLetter(scopeName[0]) || (!char.IsLetterOrDigit(scopeName[^1]) && scopeName[^1] != '_'))
+                StringView scopeName;
+                if (line.Label != null && !line.Label.IsSpecialOperator())
                 {
-                    var type = isBlock ? "scope block" : "namespace";
-                    throw new SyntaxException(line.Label.Position,
-                        $"Invalid name \"{scopeName}\" for {type}.");
+                    if (!char.IsLetter(line.Label.Name[0]) || (!char.IsLetterOrDigit(line.Label.Name[^1]) && line.Label.Name[^1] != '_'))
+                        throw new SyntaxException(line.Label, $"Invalid name \"{line.Label.Name}\" for block.");
+                    scopeName = line.Label.Name;
                 }
-                else if (!isBlock && Services.SymbolManager.SymbolExists(scopeName)) //&& Services.CurrentPass == 0)
+                else
                 {
-                    Services.Log.LogEntry(line, line.Operand, 
-                        $"Namespace name \"{scopeName}\" clashes with existing symbol name.");
-                    return true;
+                    scopeName = lines.Index.ToString();
                 }
                 Services.SymbolManager.PushScope(scopeName);
-                return true;
             }
-            else if (line.InstructionName.Equals(".endblock") || 
-                     line.InstructionName.Equals(".endnamespace"))
+            else
             {
                 Services.SymbolManager.PopScope();
-                return true;
             }
-            return false;
         }
 
-        public override void PopScope() { }
+        public override void PopScope(RandomAccessIterator<SourceLine> unused) { }
 
         #endregion
 
@@ -78,6 +64,59 @@ namespace Core6502DotNet
 
         public override bool AllowContinue => false;
 
+        public override IEnumerable<string> BlockOpens => new string[] { ".block" };
+
+        public override string BlockClosure => ".endblock";
+
         #endregion
+    }
+
+    public sealed class NamespaceBlock : BlockProcessorBase
+    {
+        public NamespaceBlock(AssemblyServices services, int index)
+            : base(services, index, false)
+        {
+
+        }
+
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
+        {
+            var line = lines.Current;
+            StringView scopeName = null;
+            if (line.Instruction.Name.Equals(".namespace", Services.StringComparison))
+            {
+                // to avoid symbol clashes with later ".block" directives of the same name.
+                Services.PassNeeded = Services.CurrentPass == 0; 
+
+                if (line.Operands.Count > 0)
+                {
+                    if (line.Operands.Count > 1 ||
+                        !char.IsLetter(line.Operands[0].Name[0]) || (!char.IsLetterOrDigit(line.Operands[0].Name[^1]) && line.Operands[0].Name[^1] != '_'))
+                        throw new SyntaxException(line.Operands[1], "Invalid namespace name.");
+                    scopeName = line.Operands[0].Name;
+                }
+                if (scopeName == null)
+                    scopeName = lines.Index.ToString();
+                else if (Services.SymbolManager.SymbolExists(scopeName))
+                {
+                    Services.Log.LogEntry(line.Operands[0], $"Namespace name \"{scopeName}\" clashes with existing symbol name.");
+                    return;
+                }
+                Services.SymbolManager.PushScope(scopeName);
+            }
+            else
+            {
+                Services.SymbolManager.PopScope();
+            }
+        }
+
+        public override IEnumerable<string> BlockOpens => new string[] { ".namespace" };
+
+        public override string BlockClosure => ".endnamespace";
+
+        public override bool AllowBreak => false;
+
+        public override bool AllowContinue => false;
+
     }
 }

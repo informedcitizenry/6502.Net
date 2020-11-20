@@ -7,6 +7,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -16,136 +17,136 @@ namespace Core6502DotNet
     public static class StringHelper
     {
         /// <summary>
-        /// Gets the string format from the parsed token.
+        /// Determines whether the tokenized expression is a string literal.
         /// </summary>
-        /// <param name="formatToken">The tokenfrom which to evaluate the string expression.</param>
-        /// <param name="symbolManager">The symbol manager to reference symbols.</param>
-        /// <param name="evaluator">The evaluator to help evaluate expressions.</param>
-        /// <returns>Returns the format string from the parsed token.</returns>
-        /// <exception cref="SyntaxException"></exception>
-        public static string GetStringFormat(Token formatToken, SymbolManager symbolManager, Evaluator evaluator)
-        {
-            if (formatToken.Children.Count == 0)
-                throw new SyntaxException(formatToken.Position, "String format argument not supplied.");
-
-            string fmtString;
-            Token firstChild = formatToken.Children[0];
-            var tokenChildren = formatToken.Children;
-            if (firstChild.Children.Count > 0 &&
-                firstChild.Children[0].OperatorType == OperatorType.Function &&
-                firstChild.Children[0].Name.Equals("format"))
-            {
-                fmtString = GetStringFormat(firstChild.Children[1], symbolManager, evaluator);
-            }
-            else
-            {
-                fmtString = firstChild.ToString();
-                if (!fmtString.EnclosedInDoubleQuotes())
-                    throw new ExpressionException(formatToken.Children[0].Position, "String format argument must be a string.");
-                fmtString = fmtString.TrimOnce('"');
-            }
-
-            List<object> objects = null;
-            if (tokenChildren.Count > 1)
-            {
-                if (tokenChildren[1].OperatorType != OperatorType.Separator)
-                    throw new ExpressionException(tokenChildren[1].Position, "Expected argument list in format call.");
-                objects = new List<object>();
-                IEnumerable<Token> args = tokenChildren.Skip(1);
-                foreach (Token arg in args)
-                {
-                    if (arg.Children.Count == 0)
-                        throw new SyntaxException(arg.Position, "Value not specified.");
-                    var argChild = arg.Children[0];
-
-                    if (argChild.OperatorType == OperatorType.Function && argChild.Name.Equals("format"))
-                    {
-                        objects.Add(GetStringFormat(arg.Children[1], symbolManager, evaluator));
-                    }
-                    else if (argChild.Name.EnclosedInDoubleQuotes())
-                    {
-                        objects.Add(argChild.Name.TrimOnce('"'));
-                    }
-                    else
-                    {
-                        if (symbolManager.SymbolExists(argChild.Name))
-                        {
-                            var symbol = symbolManager.GetStringValue(argChild);
-                            if (!string.IsNullOrEmpty(symbol))
-                                objects.Add(symbol);
-                            else
-                                objects.Add((long)symbolManager.GetNumericValue(argChild));
-                        }
-                        else
-                        {
-                            objects.Add((long)evaluator.Evaluate(arg));
-                        }
-                    }
-                }
-            }
-            return string.Format(fmtString, objects.ToArray());
-        }
+        /// <param name="iterator">The iterator to the tokenized expression.</param>
+        /// <returns></returns>
+        public static bool IsStringLiteral(RandomAccessIterator<Token> iterator)
+            => iterator.Current != null && iterator.Current.IsDoubleQuote() && Token.IsEnd(iterator.PeekNext());
 
         /// <summary>
-        /// Determines whether the tokenized expression is in fact a complete string.
+        /// Determines whether the tokenized expression is a string.
         /// </summary>
-        /// <param name="expression">The tokenized expression.</param>
-        /// <returns><c>true</c> if the expression is a string, otherwise <c>false</c>.</c></returns>
-        public static bool ExpressionIsAString(Token expression, SymbolManager symbolManager)
+        /// <param name="iterator">The iterator to the tokenized expression.</param>
+        /// <param name="services">The shared assembly services.</param>
+        /// <returns></returns>
+        public static bool ExpressionIsAString(RandomAccessIterator<Token> iterator, AssemblyServices services)
         {
-            if (expression.Children.Count > 2)
-                return false;
-            var first = expression.Children[0];
-            if ((first.OperatorType == OperatorType.Function && first.Name.Equals("format")) ||
-                    (expression.Children.Count == 1 && first.Name.EnclosedInDoubleQuotes()))
-                return true;
-            if (expression.Children.Count == 2 &&
-                first.Type == TokenType.Operand &&
-                expression.Children[1].Name.Equals("["))
-            {
-                var symbol = symbolManager.GetStringVectorElementValue(expression.Children[0],
-                                                                       expression.Children[1]);
-                return !string.IsNullOrEmpty(symbol);
+            var token = iterator.Current;
 
+            if (token.IsDoubleQuote())
+                return Token.IsEnd(iterator.PeekNext());
+            if (token.Type == TokenType.Function && token.Name.Equals("format", services.StringComparison))
+            {
+                var ix = iterator.Index;
+                iterator.MoveNext();
+                var open = 1;
+                while (open > 0)
+                {
+                    token = iterator.GetNext();
+                    if (token.Name.Equals("("))
+                        open++;
+                    else if (token.Name.Equals(")"))
+                        open--;
+
+                }
+                var last = iterator.PeekNext();
+                iterator.SetIndex(ix);
+                return Token.IsEnd(last);
             }
             return false;
         }
 
         /// <summary>
-        /// Converts the tokenized expression to its string literal 
-        /// component.
+        /// Gets a string from the tokenized expression.
         /// </summary>
-        /// <param name="expression">The expression as a parsed <see cref="Token"/>.</param>
-        /// <param name="symbolManager">The symbol manager to reference symbols.</param>
-        /// <param name="evaluator">The evaluator to help evaluate expressions.</param>
-        /// <returns>The string literal, if it is a string.</returns>
-        public static string GetString(Token expression, SymbolManager symbolManager, Evaluator evaluator)
+        /// <param name="iterator">The iterator to the tokenized expression.</param>
+        /// <param name="services">The shared assembly services.</param>
+        /// <returns></returns>
+        public static string GetString(RandomAccessIterator<Token> iterator, AssemblyServices services)
         {
-            if (expression.Children.Count == 1)
+            if (iterator.Current == null && !iterator.MoveNext())
+                return string.Empty;
+            var token = iterator.Current;
+            if (Token.IsEnd(iterator.PeekNext()) && token.IsDoubleQuote())
             {
-                if (expression.Children[0].Name.EnclosedInDoubleQuotes())
-                    return expression.Children[0].Name.TrimOnce('"');
-                if (expression.Children[0].Type == TokenType.Operand)
-                    return symbolManager.GetStringValue(expression.Children[0].Name);
+                iterator.MoveNext();
+                return Regex.Unescape(token.Name.ToString()).TrimOnce('"');
             }
-            if (expression.Children.Count == 2)
+            else if (token.Type == TokenType.Function && token.Name.Equals("format", services.StringComparison))
             {
-                if (expression.Children[0].OperatorType == OperatorType.Function &&
-                   expression.Children[0].Name.Equals("format"))
-                    return GetStringFormat(expression.Children[1], symbolManager, evaluator);
-                if (expression.Children[0].Type == TokenType.Operand &&
-                    expression.Children[1].Name.Equals("["))
+                var str = GetFormatted(iterator, services);
+                if (!string.IsNullOrEmpty(str) && Token.IsEnd(iterator.Current))
+                    return str;
+            }
+            else if (token.Type == TokenType.Operand && (char.IsLetter(token.Name[0]) || token.Name[0] == '_'))
+            {
+                var sym = services.SymbolManager.GetSymbol(token, true);
+                if (sym.DataType == DataType.String)
                 {
-                    var stringVal = symbolManager.GetStringVectorElementValue(expression.Children[0], expression.Children[1]);
-                    if (stringVal == string.Empty)
-                        throw new SyntaxException(expression.Children[0].Position, "Type mismatch");
-                    if (stringVal == null)
-                        throw new SyntaxException(expression.Children[1].Position,
-                            "Index is out of range.");
-                    return stringVal;
+                    if (Token.IsEnd(iterator.Current))
+                    {
+                        if (sym.StorageType == StorageType.Scalar)
+                            return sym.StringValue.ToString();
+                    }
+                    else if (sym.StorageType == StorageType.Vector && iterator.Current.Name.Equals("["))
+                    {
+                        var current = iterator.Current;
+                        var subscript = (int)services.Evaluator.Evaluate(iterator);
+                        if (subscript >= 0 && subscript < sym.StringVector.Count)
+                            return sym.StringVector[subscript].ToString();
+                        throw new SyntaxException(current, "Index out of range.");
+                    }
                 }
             }
-            return string.Empty;
+            throw new SyntaxException(token, "Type mismatch.");
+        }
+
+        /// <summary>
+        /// Gets the formatted string from the tokenized expression.
+        /// </summary>
+        /// <param name="iterator">The iterator to the tokenized expression.</param>
+        /// <param name="services">The shared assembly services.</param>
+        /// <returns></returns>
+        public static string GetFormatted(RandomAccessIterator<Token> iterator, AssemblyServices services)
+        {
+            iterator.MoveNext();
+            var format = iterator.GetNext();
+            if (Token.IsEnd(format))
+                return null;
+            string fmt;
+            if (!format.IsDoubleQuote())
+            {
+                if (format.Type != TokenType.Function && !format.Name.Equals("format", services.StringComparison))
+                    return null;
+                fmt = GetFormatted(iterator, services);
+            }
+            else
+            {
+                fmt = Regex.Unescape(format.Name.TrimOnce('"').ToString());
+            }
+            var parms = new List<object>();
+            if (iterator.MoveNext())
+            {
+                Token token;
+                while (!Token.IsEnd(token = iterator.GetNext()))
+                {
+                    if (ExpressionIsAString(iterator, services))
+                    {
+                        if (token.IsDoubleQuote())
+                            parms.Add(token.Name.ToString().TrimOnce('"'));
+                        else
+                            parms.Add(GetFormatted(iterator, services));
+                    }
+                    else
+                    {
+                        parms.Add((int)services.Evaluator.Evaluate(iterator, false));
+                    }
+                }
+            }
+            if (parms.Count == 0)
+                return fmt;
+            return string.Format(fmt, parms.ToArray());
         }
     }
 }

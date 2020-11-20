@@ -8,8 +8,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ConversionDef = System.Func<string, double>;
-using OperationDef = System.Tuple<System.Func<System.Collections.Generic.List<double>, double>, int>;
+
+using ConversionDef = System.Func<Core6502DotNet.StringView, double>;
+using OperationDef  = System.Tuple<System.Func<System.Collections.Generic.List<double>, double>, int>;
 
 namespace Core6502DotNet
 {
@@ -56,182 +57,79 @@ namespace Core6502DotNet
 
         #region Members
 
-        static readonly HashSet<string> s_conditionals = new HashSet<string>
+        static readonly HashSet<StringView> s_conditionals = new HashSet<StringView>
         {
             "||", "&&", "<", "<=", ">", ">=", "==", "!="
         };
 
-        static readonly HashSet<string> s_comparers = new HashSet<string>
+        static readonly HashSet<StringView> s_comparers = new HashSet<StringView>
         {
             "<", "<=", "!=", "==", ">=", ">"
         };
 
-        static readonly IReadOnlyDictionary<string, ConversionDef> s_radixOperators = new Dictionary<string, ConversionDef>
+        static readonly IReadOnlyDictionary<StringView, ConversionDef> s_radixOperators = new Dictionary<StringView, ConversionDef>
         {
-            { "$", new ConversionDef(parm => Convert.ToInt64(parm, 16)) },
-            { "%", new ConversionDef(parm => Convert.ToInt64(parm,  2)) }
-        };
-        static readonly IReadOnlyDictionary<Token, OperationDef> s_operators = new Dictionary<Token, OperationDef>
-        {
-            {
-                new Token("||", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (!parms[1].AlmostEquals(0)?1:0) | (!parms[0].AlmostEquals(0)?1:0),  0)
-            },
-            {
-                new Token("&&", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (!parms[1].AlmostEquals(0)?1:0) & (!parms[0].AlmostEquals(0)?1:0),  1)
-            },
-            {
-                new Token("|", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (long)parms[1]                | (long)parms[0],      2)
-            },
-            {
-                new Token("^", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (long)parms[1]                ^ (long)parms[0],      3)
-            },
-            {
-                new Token("&", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (long)parms[1]                & (long)parms[0],      4)
-            },
-            {
-                new Token("!=", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => !parms[1].AlmostEquals(parms[0])          ? 1 : 0,   5)
-            },
-            {
-                new Token("==", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1].AlmostEquals(parms[0])           ? 1 : 0,   5)
-            },
-            {
-                new Token("<", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      <  parms[0] ? 1 : 0,   6)
-            },
-            {
-                new Token("<=", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      <= parms[0] ? 1 : 0,   6)
-            },
-            {
-                new Token(">=", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      >= parms[0] ? 1 : 0,   6)
-            },
-            {
-                new Token(">", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      >  parms[0] ? 1 : 0,   6)
-            },
-            {
-                new Token("<<", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (int)parms[1]                 << (int)parms[0],      7)
-            },
-            {
-                new Token(">>", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (int)parms[1]                 >> (int)parms[0],      7)
-            },
-            {
-                new Token("-", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      -  parms[0],           8)
-            },
-            {
-                new Token("+", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      +  parms[0],           8)
-            },
-            {
-                new Token("/", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(delegate(List<double> parms)
+            { "$", new ConversionDef(parm => Convert.ToInt64(parm.ToString(), 16)) },
+            { "%", new ConversionDef(parm =>
                 {
-                    if (parms[0].AlmostEquals(0)) throw new DivideByZeroException();
-                    return parms[1] / parms[0];
-                },                                                                             9)
-            },
-            {
-                new Token("*", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => parms[1]                      *  parms[0],           9)
-            },
-            {
-                new Token("%", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => (long)parms[1]                %  (long)parms[0],     9)
-            },
-            {
-                new Token("^^", TokenType.Operator, OperatorType.Binary),
-                new OperationDef(parms => Math.Pow(parms[1], parms[0]),                       10)
-            },
-            {
-                new Token("~", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => ~((long)parms[0]),                                  11)
-            },
-            {
-                new Token("!", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => parms[0].AlmostEquals(0) ? 1 : 0,                   11)
-            },
-            {
-                new Token("&", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => (long)parms[0]  & 65535,                            11)
-            },
-            {
-                new Token("^", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => ((long)parms[0] & UInt24.MaxValue) / 0x10000,       11)
-            },
-            {
-                new Token("-", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => -parms[0],                                          11)
-            },
-            {
-                new Token("+", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => +parms[0],                                          11)
-            },
-            {
-                new Token(">", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => ((long)parms[0] & 65535) / 0x100,                   11)
-            },
-            {
-                new Token("<", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => (long)parms[0]  & 255,                              11)
-            },
-            {
-                new Token("$", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => parms[0],                                           11)
-            },
-            {
-                new Token("%", TokenType.Operator, OperatorType.Unary),
-                new OperationDef(parms => parms[0],                                           11)
+                    if (parm[0] == '.' || parm[0] == '#')
+                        return Convert.ToInt64(parm.ToString()
+                                                   .Replace('.', '0')
+                                                   .Replace('#', '1'), 2);
+                    return Convert.ToInt64(parm.ToString(),  2);
+                })
             }
         };
-        static readonly Random s_rng = new Random();
 
-        static readonly IReadOnlyDictionary<string, OperationDef> s_functions = new Dictionary<string, OperationDef>
+        static readonly IReadOnlyDictionary<Token, OperationDef> s_operators = new Dictionary<Token, OperationDef>
         {
-            { "abs",    new OperationDef(parms => Math.Abs(parms[0]),                                       1) },
-            { "acos",   new OperationDef(parms => Math.Acos(parms[0]),                                      1) },
-            { "atan",   new OperationDef(parms => Math.Atan(parms[0]),                                      1) },
-            { "byte",   new OperationDef(parms => (int)parms[0] & 0xFF,                                     1) },
-            { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),                            1) },
-            { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),                                   1) },
-            { "cos",    new OperationDef(parms => Math.Cos(parms[0]),                                       1) },
-            { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),                                      1) },
-            { "deg",    new OperationDef(parms => parms[0] * 180 / Math.PI,                                 1) },
-            { "dword",  new OperationDef(parms => (long)parms[0] & 0xFFFFFFFF,                              1) },
-            { "exp",    new OperationDef(parms => Math.Exp(parms[0]),                                       1) },
-            { "floor",  new OperationDef(parms => Math.Floor(parms[0]),                                     1) },
-            { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))),   1) },
-            { "hypot",  new OperationDef(parms => Math.Sqrt(Math.Pow(parms[0], 2) + Math.Pow(parms[1], 2)), 2) },
-            { "ln",     new OperationDef(parms => Math.Log(parms[0]),                                       1) },
-            { "log",    new OperationDef(parms => Math.Log(parms[0], parms[1]),                             2) },
-            { "log10",  new OperationDef(parms => Math.Log10(parms[0]),                                     1) },
-            { "long",   new OperationDef(parms => (int)parms[0] & 0xFFFFFF,                                 1) },
-            { "pow",    new OperationDef(parms => Math.Pow(parms[0], parms[1]),                             2) },
-            { "rad",    new OperationDef(parms => parms[0] * Math.PI / 180,                                 1) },
-            { "random", new OperationDef(parms => s_rng.Next((int)parms[0], (int)parms[1]),                 2) },
-            { "round",  new OperationDef(parms => Math.Round(parms[0]),                                     1) },
-            { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),                                      1) },
-            { "sin",    new OperationDef(parms => Math.Sin(parms[0]),                                       1) },
-            { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),                                      1) },
-            { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),                                      1) },
-            { "tan",    new OperationDef(parms => Math.Tan(parms[0]),                                       1) },
-            { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),                                      1) },
-            { "word",   new OperationDef(parms => (int)parms[0] & 0xFFFF,                                   1) } 
+            { new Token(",",  TokenType.Separator), new OperationDef(parms => parms[0],                                             0) },
+            { new Token(">",  TokenType.Unary),     new OperationDef(parms => ((long)parms[0] & 65535) / 0x100,                     1) },
+            { new Token("<",  TokenType.Unary),     new OperationDef(parms => (long)parms[0]  & 255,                                1) },
+            { new Token("&",  TokenType.Unary),     new OperationDef(parms => (long)parms[0]  & 65535,                              1) },
+            { new Token("^",  TokenType.Unary),     new OperationDef(parms => ((long)parms[0] & UInt24.MaxValue) / 0x10000,         1) },
+            { new Token("||", TokenType.Binary),    new OperationDef(parms => ((long)parms[1]!=0?1:0) | ((long)parms[0]!=0?1:0),    2) },
+            { new Token("&&", TokenType.Binary),    new OperationDef(parms => ((long)parms[1]!=0?1:0) & ((long)parms[0]!=0?1:0),    3) },
+            { new Token("|",  TokenType.Binary),    new OperationDef(parms => (long)parms[1] | (long)parms[0],                      4) },
+            { new Token("^",  TokenType.Binary),    new OperationDef(parms => (long)parms[1] ^ (long)parms[0],                      5) },
+            { new Token("&",  TokenType.Binary),    new OperationDef(parms => (long)parms[1] & (long)parms[0],                      6) },
+            { new Token("!=", TokenType.Binary),    new OperationDef(parms => !parms[1].AlmostEquals(parms[0])?1:0,                 7) },
+            { new Token("==", TokenType.Binary),    new OperationDef(parms =>  parms[1].AlmostEquals(parms[0])?1:0,                 7) },
+            { new Token("<",  TokenType.Binary),    new OperationDef(parms =>  parms[1]  < parms[0] ? 1 : 0,                        8) },
+            { new Token("<=", TokenType.Binary),    new OperationDef(parms =>  parms[1] <= parms[0] ? 1 : 0,                        8) },
+            { new Token(">=", TokenType.Binary),    new OperationDef(parms =>  parms[1] >= parms[0] ? 1 : 0,                        8) },
+            { new Token(">",  TokenType.Binary),    new OperationDef(parms =>  parms[1]  > parms[0] ? 1 : 0,                        8) },
+            { new Token("<<", TokenType.Binary),    new OperationDef(parms =>  (int)parms[1] << (int)parms[0],                      9) },
+            { new Token(">>", TokenType.Binary),    new OperationDef(parms =>  (int)parms[1] >> (int)parms[0],                      9) },
+            { new Token("-",  TokenType.Binary),    new OperationDef(parms =>  parms[1] - parms[0],                                10) },
+            { new Token("+",  TokenType.Binary),    new OperationDef(parms =>  parms[1] + parms[0],                                10) },
+            { new Token("/",  TokenType.Binary),
+                new OperationDef(delegate(List<double> parms)
+                {
+                    if (parms[0].AlmostEquals(0)) throw new DivideByZeroException(); return parms[1] / parms[0];
+                },                                                                                                                 11) },
+            { new Token("*",  TokenType.Binary),    new OperationDef(parms => parms[1] * parms[0],                                 11) },
+            { new Token("%",  TokenType.Binary),    new OperationDef(parms => (long)parms[1] % (long)parms[0],                     11) },
+            { new Token("^^", TokenType.Binary),    new OperationDef(parms => Math.Pow(parms[1], parms[0]),                        12) },
+            { new Token("~",  TokenType.Unary),     new OperationDef(parms => ~((long)parms[0]),                                   13) },
+            { new Token("!",  TokenType.Unary),     new OperationDef(parms =>  parms[0].AlmostEquals(0) ? 1 : 0,                   13) },
+            { new Token("-",  TokenType.Unary),     new OperationDef(parms => -parms[0],                                           13) },
+            { new Token("+",  TokenType.Unary),     new OperationDef(parms => +parms[0],                                           13) },
+            { new Token("$",  TokenType.Radix),     new OperationDef(parms =>  parms[0],                                           13) },
+            { new Token("%",  TokenType.Radix),     new OperationDef(parms =>  parms[0],                                           13) }
         };
 
+        static readonly Dictionary<char, char> s_openclose = new Dictionary<char, char>
+        {
+            { '(', ')' },
+            { '{', '}' },
+            { '[', ']' }
+        };
+
+        static readonly Random s_rng = new Random();
+        readonly IReadOnlyDictionary<StringView, OperationDef> _functions;
         readonly List<IFunctionEvaluator> _functionEvaluators;
-        readonly Func<Token, Token, double> _symbolEvaluator;
-        readonly Dictionary<string, double> _constants;
+        readonly Dictionary<StringView, double> _constants;
 
         #endregion
 
@@ -240,17 +138,54 @@ namespace Core6502DotNet
         /// <summary>
         /// Creates a new instance of the expression evaluator.
         /// </summary>
+        public Evaluator()
+            : this(false)
+        {
+
+        }
+
+        /// <summary>
+        /// Creates a new instance of the expression evaluator.
+        /// </summary>
         /// <param name="caseSensitive">Sets whether constants should be treated as
         /// case sensitive or not.</param>
-        /// <param name="symbolEvaluator">An evaluator of symbols the evaluator does
-        /// not recognize.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public Evaluator(bool caseSensitive, Func<Token, Token, double> symbolEvaluator) 
+        public Evaluator(bool caseSensitive)
         {
-            _functionEvaluators = new List<IFunctionEvaluator>();
-            var comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-            _symbolEvaluator = symbolEvaluator ?? throw new ArgumentNullException();
-            _constants = new Dictionary<string, double>(comparer)
+            var comp = caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
+            _functions = new Dictionary<StringView, OperationDef>(comp)
+            {
+                { "abs",    new OperationDef(parms => Math.Abs(parms[0]),                                       1) },
+                { "acos",   new OperationDef(parms => Math.Acos(parms[0]),                                      1) },
+                { "atan",   new OperationDef(parms => Math.Atan(parms[0]),                                      1) },
+                { "byte",   new OperationDef(parms => (int)parms[0] & 0xFF,                                     1) },
+                { "cbrt",   new OperationDef(parms => Math.Pow(parms[0], 1.0 / 3.0),                            1) },
+                { "ceil",   new OperationDef(parms => Math.Ceiling(parms[0]),                                   1) },
+                { "cos",    new OperationDef(parms => Math.Cos(parms[0]),                                       1) },
+                { "cosh",   new OperationDef(parms => Math.Cosh(parms[0]),                                      1) },
+                { "deg",    new OperationDef(parms => parms[0] * 180 / Math.PI,                                 1) },
+                { "dword",  new OperationDef(parms => (long)parms[0] & 0xFFFFFFFF,                              1) },
+                { "exp",    new OperationDef(parms => Math.Exp(parms[0]),                                       1) },
+                { "floor",  new OperationDef(parms => Math.Floor(parms[0]),                                     1) },
+                { "frac",   new OperationDef(parms => Math.Abs(parms[0] - Math.Abs(Math.Round(parms[0], 0))),   1) },
+                { "hypot",  new OperationDef(parms => Math.Sqrt(Math.Pow(parms[0], 2) + Math.Pow(parms[1], 2)), 2) },
+                { "ln",     new OperationDef(parms => Math.Log(parms[0]),                                       1) },
+                { "log",    new OperationDef(parms => Math.Log(parms[0], parms[1]),                             2) },
+                { "log10",  new OperationDef(parms => Math.Log10(parms[0]),                                     1) },
+                { "long",   new OperationDef(parms => (int)parms[0] & 0xFFFFFF,                                 1) },
+                { "pow",    new OperationDef(parms => Math.Pow(parms[0], parms[1]),                             2) },
+                { "rad",    new OperationDef(parms => parms[0] * Math.PI / 180,                                 1) },
+                { "random", new OperationDef(parms => s_rng.Next((int)parms[0], (int)parms[1]),                 2) },
+                { "round",  new OperationDef(parms => Math.Round(parms[0]),                                     1) },
+                { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),                                      1) },
+                { "sin",    new OperationDef(parms => Math.Sin(parms[0]),                                       1) },
+                { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),                                      1) },
+                { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),                                      1) },
+                { "tan",    new OperationDef(parms => Math.Tan(parms[0]),                                       1) },
+                { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),                                      1) },
+                { "word",   new OperationDef(parms => (int)parms[0] & 0xFFFF,                                   1) }
+            };
+            _constants = new Dictionary<StringView, double>(comp)
             {
                 { "true",       1               },
                 { "false",      0               },
@@ -273,91 +208,12 @@ namespace Core6502DotNet
                 { "UINT8_MIN",  byte.MinValue   },
                 { "INT8_MIN",   sbyte.MinValue  }
             };
+            _functionEvaluators = new List<IFunctionEvaluator>();
         }
 
         #endregion
 
         #region Methods
-
-        /// <summary>
-        /// Determines if the tokenized expression is constant.
-        /// </summary>
-        /// <param name="token">The token expression.</param>
-        /// <returns><c>true</c> if the expression is a constant, otherwise <c>false</c>.</returns>
-        public bool ExpressionIsConstant(Token token)
-        {
-            var tokenAsString = token.ToString();
-            if (string.IsNullOrEmpty(tokenAsString))
-                return false;
-            if (tokenAsString[0] == ',')
-                if (tokenAsString.Length < 2)
-                    return false;
-                else
-                    tokenAsString = tokenAsString.Substring(1);
-            var name = tokenAsString.Replace("%", "0b")
-                                    .Replace("$", "0x")
-                                    .Trim()
-                                    .TrimStart('(')
-                                    .TrimEnd(')');
-            try { _ = EvaluateAtomic(new Token(name, TokenType.Operand)); }
-            catch { return false; }
-            return true;
-        }
-
-        double EvaluateAtomic(Token token)
-        {
-            if (token.Type != TokenType.Operand)
-                throw new SyntaxException(token.Position, 
-                    $"Invalid operand \"{token.Name}\" encountered.");
-
-            // is the operand a string representation of a numerical value?
-            if (!double.TryParse(token.Name, out var converted))
-            {
-                if (token.Name[0] == '0' && token.Name.Length > 2)
-                {
-                    // try to convert non-base 10 literals in 0x/0b/0o notation.
-                    try
-                    {
-                        if (token.Name[1] == 'b' || token.Name[1] == 'B')
-                            converted = Convert.ToInt64(token.Name.Substring(2), 2);
-                        else if (token.Name[1] == 'o' || token.Name[1] == 'O')
-                            converted = Convert.ToInt64(token.Name.Substring(2), 8);
-                        else if (token.Name[1] == 'x' || token.Name[1] == 'X')
-                            converted = Convert.ToInt64(token.Name.Substring(2), 16);
-                        else
-                            throw new ExpressionException(token.Position,
-                                $"\"{token.Name}\" is not a valid numeric constant.");
-                    }
-                    catch
-                    {
-                        throw new ExpressionException(token.Position,
-                            $"\"{token.Name}\" is not a valid numeric constant.");
-                    }
-                }
-                else if (!_constants.TryGetValue(token.Name, out converted))
-                {
-                    converted = _symbolEvaluator(token, null);
-                }
-            }
-            else if (token.Name[0] == '0' &&
-                     token.Name.Length > 1 &&
-                     token.Name[1] != '.' &&
-                     token.Name[1] != 'e' &&
-                     token.Name[1] != 'E')
-            {
-                // all leading zeros treated as octal
-                try
-                {
-                    converted = Convert.ToInt64(token.Name, 8);
-                }
-                catch
-                {
-                    throw new ExpressionException(token.Position,
-                        $"\"{token.Name}\" is not a valid numeric constant.");
-                }
-            }
-            return converted;
-        }
 
         /// <summary>
         /// Determines whether the collection of parsed tokens comprise a conditional
@@ -375,12 +231,12 @@ namespace Core6502DotNet
             var tokenList = tokens.ToList();
             if (tokenList.Count == 1 && (tokenList[0].Name.Equals("true") || tokenList[0].Name.Equals("false")))
                 return true;
-            if (tokenList.Count == 2 && tokenList[0].Name.Equals("!") && tokenList[0].OperatorType == OperatorType.Unary)
+            if (tokenList.Count == 2 && tokenList[0].Name.Equals("!") && tokenList[0].Type == TokenType.Unary)
                 return ExpressionIsCondition(tokenList.Skip(1));
             for (var i = 0; i < tokenList.Count; i++)
             {
                 var token = tokenList[i];
-                if (token.OperatorType == OperatorType.Binary)
+                if (token.Type == TokenType.Binary)
                 {
                     if (s_conditionals.Contains(token.Name))
                     {
@@ -396,164 +252,175 @@ namespace Core6502DotNet
                     }
                     lastBinary = i;
                 }
-                else if (token.Children.Count > 0)
+                else if (token.Type == TokenType.Open)
                 {
-                    if (ExpressionIsCondition(token.Children))
+                    var opens = 1;
+                    var afterExpression = i;
+                    var isFunction = i > 0 && tokenList[i - 1].Type == TokenType.Function;
+                    while (opens != 0)
                     {
-                        if (i > 0 && 
-                            tokenList[i - 1].OperatorType == OperatorType.Unary && 
+                        if (tokenList[++afterExpression].Type == TokenType.Open)
+                            opens++;
+                        else if (tokenList[afterExpression].Type == TokenType.Closed)
+                            opens--;
+                    }
+                    if (!isFunction && ExpressionIsCondition(tokenList.GetRange(i + 1, afterExpression - i - 1)))
+                    {
+                        if (i > 0 &&
+                            tokenList[i - 1].Type == TokenType.Unary &&
                             tokenList[i - 1].Name[0] != '!')
-                                return false;
+                            return false;
                         if (lastBinary > lastLogicalFound)
                             return false;
                         lastWasCompound = true;
                         lastComparerFound = i;
                     }
+                    i = afterExpression;
                 }
+                else if (token.Type == TokenType.Closed)
+                    break;
             }
             return lastComparerFound > -1 && lastComparerFound > lastLogicalFound;
         }
 
-        Stack<double> EvaluateInternal(IEnumerable<Token> tokens)
+        Stack<double> EvaluateInternal(RandomAccessIterator<Token> iterator, bool fromGroup = false)
         {
-            var result = new Stack<double>();
-            var operands = new Stack<string>();
+            var results = new Stack<double>();
             var operators = new Stack<Token>();
-            var lastType = OperatorType.None;
-            var lastToken = string.Empty;
-            var nonBase10 = string.Empty;
-            var iterator = tokens.GetIterator();
+            var lastType = TokenType.None;
+            StringView lastToken = "";
+            StringView nonBase10 = "";
             Token token;
-            while ((token = iterator.GetNext()) != null)
+            var end = TokenType.End;
+            while ((token = iterator.GetNext()) != null && !(token.Type == TokenType.Closed || (!fromGroup && end.HasFlag(token.Type))))
             {
                 if (token.Type == TokenType.Operand)
                 {
-                    if (lastType == OperatorType.Unary && s_radixOperators.ContainsKey(lastToken))
+                    if (lastType == TokenType.Radix)
                     {
-                        if (!string.IsNullOrEmpty(nonBase10))
-                            throw new SyntaxException(iterator.Current.Position, $"Unexpected token {token.Name}.");
+                        if (!nonBase10.Equals(""))
+                            throw new ExpressionException(token, "Unexpected token.");
                         nonBase10 = token.Name;
                     }
-                    else if (iterator.PeekNext() != null && iterator.PeekNext().Name == "[")
+                    else if (iterator.PeekNext() != null && iterator.PeekNext().Name.Equals("["))
                     {
-                        var value = _symbolEvaluator(token, iterator.GetNext());
+                        var value = SymbolEvaluator(iterator);
                         if (double.IsNegativeInfinity(value))
-                            throw new ExpressionException(iterator.Current, "Index is out of range.");
-                        result.Push(value);
+                            throw new ExpressionException(token, "Index is out of range.");
+                        results.Push(value);
                     }
                     else
                     {
-                        result.Push(EvaluateAtomic(token));
+                        results.Push(Evaluate(token));
                     }
                 }
-                else if (token.Type == TokenType.Operator)
+                else
                 {
-                    lastType = token.OperatorType;
+                    lastType = token.Type;
                     lastToken = token.Name;
-                    if (token.Children.Count > 0)
+                    if (token.Type == TokenType.Open)
                     {
-                        var subResults = EvaluateInternal(token.Children);
+                        var subResults = EvaluateInternal(iterator, true);
+                        if (subResults.Count < 1)
+                            return subResults;
                         foreach (var sr in subResults)
-                            result.Push(sr);
-                        if (lastToken.IsByteExtractor())
-                            operators.Push(token);
+                            results.Push(sr);
                     }
-                    else if (token.OperatorType == OperatorType.Function && !s_functions.ContainsKey(lastToken))
+                    else if (token.Type == TokenType.Function && !_functions.ContainsKey(lastToken))
                     {
                         var fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(token));
                         if (fe == null)
-                            throw new SyntaxException(token.Position, $"Unknown function \"{lastToken}\".");
-                        result.Push(fe.EvaluateFunction(token, iterator.GetNext()));
+                            throw new SyntaxException(token, "Unknown function.");
+                        results.Push(fe.EvaluateFunction(iterator));
                     }
-                    else if (token.OperatorType == OperatorType.Unary)
+                    else if (token.Type == TokenType.Unary || token.Type == TokenType.Radix)
                     {
                         operators.Push(token);
                     }
                     else
                     {
+                        if (!TokenType.Evaluation.HasFlag(token.Type))
+                            return new Stack<double>();
                         if (operators.Count > 0)
                         {
-                            if (!s_operators.ContainsKey(token) && !s_functions.ContainsKey(lastToken))
-                                throw new SyntaxException(token.Position, $"Unknown operator.");
-
-                            Token top = operators.Peek();
-                            var opOrder = token.OperatorType == OperatorType.Function ? int.MaxValue : s_operators[token].Item2;
-
-                            while ((top.OperatorType == OperatorType.Function || s_operators[top].Item2 >= opOrder) && operators.Count > 0)
+                            var top = operators.Peek();
+                            var opOrder = token.Type == TokenType.Function ? int.MaxValue : s_operators[token].Item2;
+                            while ((top.Type == TokenType.Function || s_operators[top].Item2 >= opOrder) && operators.Count > 0)
                             {
                                 operators.Pop();
-                                DoOperation(top);
+                                DoOperation(top, ref nonBase10, results);
                                 if (operators.Count > 0)
                                     top = operators.Peek();
                             }
                         }
-                        if (token.OperatorType != OperatorType.Function && !s_operators.ContainsKey(token))
-                            throw new SyntaxException(token.Position, "Invalid expression.");
-                        operators.Push(token);
+                        if (token.Type != TokenType.Separator)
+                            operators.Push(token);
                     }
-                }
-                else
-                {
-                    throw new SyntaxException(token.Position, $"Invalid expression.");
                 }
             }
             while (operators.Count > 0)
-                DoOperation(operators.Pop());
-            return result;
+                DoOperation(operators.Pop(), ref nonBase10, results);
 
-            void DoOperation(Token op)
+            return results;
+        }
+
+        private void DoOperation(Token op, ref StringView nonBase10, Stack<double> output)
+        {
+            if (nonBase10.Length > 0)
             {
-                if (!string.IsNullOrEmpty(nonBase10))
+                try
                 {
-                    try
-                    {
-                        result.Push(s_radixOperators[op.Name](nonBase10));
-                        nonBase10 = string.Empty;
-                    }
-                    catch
-                    {
-                        throw new ExpressionException(op.Position, $"\"{op.Name}{nonBase10}\" is not a valid expression.");
-                    }
+                    output.Push(s_radixOperators[op.Name](nonBase10));
+                    nonBase10 = "";
+                }
+                catch
+                {
+                    throw new SyntaxException(op, $"\"{op.Name}{nonBase10}\" is not a valid expression.");
+                }
+            }
+            else
+            {
+                OperationDef operation;
+                var parms = new List<double>();
+                var parmCount = 1;
+                if (op.Type == TokenType.Function)
+                {
+                    operation = _functions[op.Name];
+                    parmCount = operation.Item2;
                 }
                 else
                 {
-                    OperationDef operation;
-                    var parms = new List<double>();
-                    var parmCount = 1;
-                    if (op.OperatorType == OperatorType.Function)
-                    {
-                        operation = s_functions[op.Name];
-                        parmCount = operation.Item2;
-                    }
-                    else
-                    {
-                        if (!s_operators.ContainsKey(op))
-                            throw new SyntaxException(op.Position, $"Invalid expression \"{op.Name}\".");
-                        operation = s_operators[op];
-                        if (op.OperatorType == OperatorType.Binary)
-                            parmCount++;
-                    }
-                    while (parmCount-- >= parms.Count)
-                    {
-                        if (result.Count == 0)
-                        {
-                            var opType = op.OperatorType == OperatorType.Function ? "function" : "operator";
-                            throw new SyntaxException(op.Position, $"Missing operand argument for {opType} \"{op.Name}\".");
-                        }
-                        parms.Add(result.Pop());
-                    }
-                    result.Push(operation.Item1(parms));
+                    operation = s_operators[op];
+                    if (op.Type == TokenType.Binary)
+                        parmCount++;
                 }
+                while (parmCount-- >= parms.Count)
+                {
+                    if (output.Count == 0)
+                    {
+                        var opType = op.Type == TokenType.Function ? "function" : "operator";
+                        throw new SyntaxException(op, $"Missing operand argument for {opType} \"{op}\".");
+                    }
+                    parms.Add(output.Pop());
+                }
+                output.Push(operation.Item1(parms));
             }
         }
 
-        double DoEvaluation(IEnumerable<Token> tokens, double minValue, double maxValue, bool isMath)
+        double DoEvaluation(RandomAccessIterator<Token> tokens, bool advanceIterator, double minValue, double maxValue, bool isMath)
         {
+            var first = tokens.Current;
+            if (first == null)
+            {
+                first = tokens.GetNext();
+                tokens.Reset();
+            }
+            if (!advanceIterator)
+                tokens.Rewind(tokens.Index - 1);
+            var ix = tokens.Index;
             var result = EvaluateInternal(tokens);
             if (result.Count != 1)
-                throw new SyntaxException(tokens.Last().LastChild.Position,
-                    $"Unexpected expression found: \"{tokens.Last().LastChild}\".");
-
+                throw new SyntaxException(first, "Invalid expression.");
             var r = result.Pop();
             if (r != 0 && !double.IsNormal(r))
             {
@@ -563,26 +430,62 @@ namespace Core6502DotNet
                     return 0;
             }
             if (isMath && (r < minValue || r > maxValue))
-                throw new IllegalQuantityException(tokens.First(), r);
-            else if (!isMath && !ExpressionIsCondition(tokens))
-                throw new ExpressionException(tokens.First().Position, "Invalid conditional expression.");
+                throw new IllegalQuantityException(first, r);
+
+            if (!isMath)
+            {
+                var ienumtokens = new RandomAccessIterator<Token>(tokens, true)
+                                        .Skip(ix + 1)
+                                        .Take(tokens.Index - ix - 1);
+                if (!ExpressionIsCondition(ienumtokens))
+                    throw new SyntaxException(first, "Invalid conditional expression.");
+            }
             return r;
         }
 
+        public double Evaluate(RandomAccessIterator<Token> tokens, bool advanceIterator)
+            => DoEvaluation(tokens, advanceIterator, int.MinValue, uint.MaxValue, true);
+
         /// <summary>
-        /// Invoke a function call, discarding the return value.
+        /// Evaluates a collection of parsed tokens as a mathematical expression.
         /// </summary>
-        /// <param name="function">The parsed token representing the function call.</param>
+        /// <param name="tokens">An iterator to the collection of parsed tokens representing the expression.</param>
+        /// <returns>The result of the evaluation.</returns>
+        /// <exception cref="DivideByZeroException"></exception>
+        /// <exception cref="ExpressionException"></exception>
+        /// <exception cref="IllegalQuantityException>"></exception>
         /// <exception cref="SyntaxException"></exception>
-        public void Invoke(Token function, Token parms)
-        {
-            if (s_functions.ContainsKey(function.Name))
-                return;
-            var fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(function));
-            if (fe == null)
-                throw new SyntaxException(function.Position, $"Unknown function \"{function}\".");
-            fe.InvokeFunction(function, parms);
-        }
+        public double Evaluate(RandomAccessIterator<Token> tokens)
+            => DoEvaluation(tokens, true, int.MinValue, uint.MaxValue, true);
+
+        /// <summary>
+        /// Evaluates a collection of parsed tokens as a mathematical expression.
+        /// </summary>
+        /// <param name="tokens">An iterator to the collection of parsed tokens representing the expression.</param>
+        /// <param name="minValue">The minimum value allowed in the evaluation.</param>
+        /// <param name="maxValue">The maximum value allowed in the evaluation.</param>
+        /// <returns>The result of the evaluation.</returns>
+        /// <exception cref="DivideByZeroException"></exception>
+        /// <exception cref="ExpressionException"></exception>
+        /// <exception cref="IllegalQuantityException>"></exception>
+        /// <exception cref="SyntaxException"></exception>
+        public double Evaluate(RandomAccessIterator<Token> tokens, double minValue, double maxValue)
+            => DoEvaluation(tokens, true, minValue, maxValue, true);
+
+        /// <summary>
+        /// Evaluates a collection of parsed tokens as a mathematical expression.
+        /// </summary>
+        /// <param name="tokens">An iterator to the collection of parsed tokens representing the expression.</param>
+        /// <param name="doNotAdvance">Will not advance the iterator before beginning evaluation.</param>
+        /// <param name="minValue">The minimum value allowed in the evaluation.</param>
+        /// <param name="maxValue">The maximum value allowed in the evaluation.</param>
+        /// <returns>The result of the evaluation.</returns>
+        /// <exception cref="DivideByZeroException"></exception>
+        /// <exception cref="ExpressionException"></exception>
+        /// <exception cref="IllegalQuantityException>"></exception>
+        /// <exception cref="SyntaxException"></exception>
+        public double Evaluate(RandomAccessIterator<Token> tokens, bool doNotAdvance, double minValue, double maxValue)
+            => DoEvaluation(tokens, doNotAdvance, minValue, maxValue, true);
 
         /// <summary>
         /// Evaluates a parsed token as a mathematical expression.
@@ -593,7 +496,8 @@ namespace Core6502DotNet
         /// <exception cref="ExpressionException"></exception>
         /// <exception cref="IllegalQuantityException>"></exception>
         /// <exception cref="SyntaxException"></exception>
-        public double Evaluate(Token token) => Evaluate(token, int.MinValue, uint.MaxValue);
+        public double Evaluate(Token token)
+            => Evaluate(token, int.MinValue, uint.MaxValue);
 
         /// <summary>
         /// Evaluates a parsed tokens as a mathematical expression.
@@ -606,82 +510,73 @@ namespace Core6502DotNet
         /// <exception cref="ExpressionException"></exception>
         /// <exception cref="IllegalQuantityException>"></exception>
         /// <exception cref="SyntaxException"></exception>
-        public double Evaluate(Token token, long minValue, long maxValue)
+        public double Evaluate(Token token, double minValue, double maxValue)
         {
-            if (token.Children.Count == 0)
+            if (!double.TryParse(token.Name.ToString(), out var converted))
             {
-                var atomic = EvaluateAtomic(token);
-                if (atomic < minValue || atomic > maxValue)
-                    throw new IllegalQuantityException(token, atomic);
-                return atomic;
+                if (token.Name[0] == '0' && token.Name.Length > 2)
+                {
+                    // try to convert non-base 10 literals in 0x/0b/0o notation.
+                    try
+                    {
+                        if (token.Name[1] == 'b' || token.Name[1] == 'B')
+                            converted = Convert.ToInt64(token.Name.Substring(2), 2);
+                        else if (token.Name[1] == 'o' || token.Name[1] == 'O')
+                            converted = Convert.ToInt64(token.Name.Substring(2), 8);
+                        else if (token.Name[1] == 'x' || token.Name[1] == 'X')
+                            converted = Convert.ToInt64(token.Name.Substring(2), 16);
+                        else
+                            throw new ExpressionException(token, "Not a valid numeric constant.");
+                    }
+                    catch
+                    {
+                        throw new ExpressionException(token, "Not a valid numeric constant.");
+                    }
+                }
+                else if (!_constants.TryGetValue(token.Name, out converted))
+                {
+                    var tokens = new List<Token> { token };
+                    var it = tokens.GetIterator();
+                    it.MoveNext();
+                    converted = SymbolEvaluator(it);
+                }
             }
-            return Evaluate(token.Children, minValue, maxValue);
+            else if (token.Name[0] == '0' &&
+                     token.Name.Length > 1 &&
+                     token.Name[1] >= '0' &&
+                     token.Name[1] <= '7')
+            {
+                // all leading zeros treated as octal
+                try
+                {
+                    converted = Convert.ToInt64(token.ToString(), 8);
+                }
+                catch
+                {
+                    throw new ExpressionException(token, "Not a valid numeric constant.");
+                }
+            }
+            if (converted < minValue || converted > maxValue)
+            {
+                throw new ExpressionException(token, "Illegal quantity.");
+            }
+            return converted;
         }
 
-        /// <summary>
-        /// Evaluates a collection of parsed tokens as a mathematical expression.
-        /// </summary>
-        /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
-        /// <param name="minValue">The minimum value allowed in the evaluation.</param>
-        /// <param name="maxValue">The maximum value allowed in the evaluation.</param>
-        /// <returns>The result of the evaluation.</returns>
-        /// <exception cref="DivideByZeroException"></exception>
-        /// <exception cref="ExpressionException"></exception>
-        /// <exception cref="IllegalQuantityException>"></exception>
-        /// <exception cref="SyntaxException"></exception>
-        public double Evaluate(IEnumerable<Token> tokens) => Evaluate(tokens, int.MinValue, uint.MaxValue);
-
-        /// <summary>
-        /// Evaluates a collection of parsed tokens as a mathematical expression.
-        /// </summary>
-        /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
-        /// <param name="minValue">The minimum value allowed in the evaluation.</param>
-        /// <param name="maxValue">The maximum value allowed in the evaluation.</param>
-        /// <returns>The result of the evaluation.</returns>
-        /// <exception cref="DivideByZeroException"></exception>
-        /// <exception cref="ExpressionException"></exception>
-        /// <exception cref="IllegalQuantityException>"></exception>
-        /// <exception cref="SyntaxException"></exception>
-        public double Evaluate(IEnumerable<Token> tokens, long minValue, long maxValue)
-            => DoEvaluation(tokens, minValue, maxValue, true);
-
-        /// <summary>
-        /// Evaluates a collection of parsed tokens as a mathematical expression.
-        /// </summary>
-        /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
-        /// <param name="minValue">The minimum value allowed in the evaluation.</param>
-        /// <param name="maxValue">The maximum value allowed in the evaluation.</param>
-        /// <returns>The result of the evaluation.</returns>
-        /// <exception cref="DivideByZeroException"></exception>
-        /// <exception cref="ExpressionException"></exception>
-        /// <exception cref="IllegalQuantityException>"></exception>
-        /// <exception cref="SyntaxException"></exception>
-        public double Evaluate(IEnumerable<Token> tokens, double minValue, double maxValue)
-            => DoEvaluation(tokens, minValue, maxValue, true);
-
-        /// <summary>
-        /// Evaluates a string as a mathematical expression.
-        /// </summary>
-        /// <param name="expression">The expression.</param>
-        /// <returns>The result of the evaluation.</returns>
-        /// <exception cref="DivideByZeroException"></exception>
-        /// <exception cref="ExpressionException"></exception>
-        /// <exception cref="IllegalQuantityException>"></exception>
-        /// <exception cref="SyntaxException"></exception>
-        public double Evaluate(string expression)
-            => EvaluateAtomic(new Token(expression, TokenType.Operand));
+        public bool EvaluateCondition(RandomAccessIterator<Token> tokens, bool advanceIterator)
+            => DoEvaluation(tokens, advanceIterator, 0, 1, false) == 1;
 
         /// <summary>
         /// Evaluates a collection of parsed tokens as a conditional expression.
         /// </summary>
-        /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
+        /// <param name="tokens">An iterator to the collection of parsed tokens representing the expression.</param>
         /// <returns><c>true</c> if the condition evaluated to true, <c>false</c> otherwise.</returns>
         /// <exception cref="DivideByZeroException"></exception>
         /// <exception cref="ExpressionException"></exception>
         /// <exception cref="IllegalQuantityException>"></exception>
         /// <exception cref="SyntaxException"></exception>
-        public bool EvaluateCondition(IEnumerable<Token> tokens)
-            => DoEvaluation(tokens, 0, 1, false) == 1;
+        public bool EvaluateCondition(RandomAccessIterator<Token> tokens)
+            => DoEvaluation(tokens, true, 0, 1, false) == 1;
 
         /// <summary>
         /// Evaluates a parsed token as a conditional expression.
@@ -694,10 +589,10 @@ namespace Core6502DotNet
         /// <exception cref="SyntaxException"></exception>
         public bool EvaluateCondition(Token token)
         {
-            if (token.Children.Count == 0)
-                return EvaluateAtomic(token).AlmostEquals(1);
-            return EvaluateCondition(token.Children);
-            
+            var eval = Evaluate(token);
+            if (eval != 1 && eval != 0)
+                throw new ExpressionException(token, "Expression is not a condition.");
+            return eval == 1;
         }
 
         /// <summary>
@@ -706,10 +601,35 @@ namespace Core6502DotNet
         /// <param name="symbol">The symbol name.</param>
         /// <returns><c>true</c> if the specified token is in the collection of reserved words,
         /// regardless of type, otherwise <c>false</c>.</returns>
-        public bool IsReserved(string symbol)
-            => _constants.ContainsKey(symbol)  ||
-               s_functions.ContainsKey(symbol) ||
-               _functionEvaluators.Any(fe => fe.IsFunctionName(symbol));
+        public bool IsReserved(StringView symbol)
+           => _constants.ContainsKey(symbol) ||
+              _functions.ContainsKey(symbol) ||
+              _functionEvaluators.Any(fe => fe.IsFunctionName(symbol));
+
+        /// <summary>
+        /// Invoke a function call, discarding the return value.
+        /// </summary>
+        /// <param name="function">The parsed token representing the function.</param>
+        /// <param name="functionCall">The parsed token collectiong representing the function call.</param>
+        /// <exception cref="SyntaxException"></exception>
+        public void Invoke(Token function, RandomAccessIterator<Token> functionCall)
+        {
+            if (_functions.ContainsKey(function.Name))
+                return;
+            var fe = _functionEvaluators.FirstOrDefault(fe => fe.EvaluatesFunction(function));
+            if (fe == null)
+                throw new SyntaxException(function, $"Unknown function \"{function}\".");
+            fe.InvokeFunction(functionCall);
+        }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// An evaluator of symbols the evaluator does not recognize
+        /// </summary>
+        public Func<RandomAccessIterator<Token>, double> SymbolEvaluator { get; set; }
 
         /// <summary>
         /// Add a custom function evaluator to the evaluator.

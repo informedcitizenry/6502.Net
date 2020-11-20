@@ -5,6 +5,8 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace Core6502DotNet
 {
     /// <summary>
@@ -14,17 +16,15 @@ namespace Core6502DotNet
     {
         #region Constructors
 
+        IEnumerable<Token> _condition;
+
         /// <summary>
         /// Creates a new instance of a while block processor.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> containing the instruction
-        /// and operands invoking or creating the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public WhileBlock(AssemblyServices services,
-                          RandomAccessIterator<SourceLine> iterator,
-                          BlockType type)
-            : base(services, iterator, type)
+        /// <param name="index">The index at which the block is defined.</param>
+        public WhileBlock(AssemblyServices services, int index)
+            : base(services, index)
         {
         }
 
@@ -32,21 +32,22 @@ namespace Core6502DotNet
 
         #region Methods
 
-        public override bool ExecuteDirective()
+        public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
-            if (!LineIterator.Current.InstructionName.Equals(".while") && 
-                !LineIterator.Current.InstructionName.Equals(".endwhile"))
-                return false;
-            if (Services.Evaluator.EvaluateCondition(Line.Operand.Children))
+            if (lines.Current.Instruction.Name.Equals(".while", Services.StringComparison))
+                _condition = lines.Current.Operands;
+            var iterator = _condition.GetIterator();
+            if (Services.Evaluator.EvaluateCondition(iterator))
             {
-                if (LineIterator.Current.InstructionName.Equals(".endwhile"))
-                    LineIterator.Rewind(Index);
+                if (lines.Current.Instruction.Name.Equals(".endwhile", Services.StringComparison))
+                    lines.Rewind(Index);
             }
             else
             {
-                SeekBlockEnd();
+                SeekBlockEnd(lines);
             }
-            return true;
+            if (iterator.Current != null)
+                throw new SyntaxException(iterator.Current, "Unexpected expression.");
         }
 
         #endregion
@@ -56,6 +57,10 @@ namespace Core6502DotNet
         public override bool AllowBreak => true;
 
         public override bool AllowContinue => true;
+
+        public override IEnumerable<string> BlockOpens => new string[] { ".while" };
+
+        public override string BlockClosure => ".endwhile";
 
         #endregion
     }

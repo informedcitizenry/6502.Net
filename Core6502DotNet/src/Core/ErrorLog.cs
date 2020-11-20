@@ -312,7 +312,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The The <see cref="SourceLine"/>.</param>
+        /// <param name="line">The <see cref="SourceLine"/>.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="source">The message source.</param>
         public void LogEntry(SourceLine line, string message, params object[] source)
@@ -321,7 +321,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The The <see cref="SourceLine"/>.</param>
+        /// <param name="line">The <see cref="SourceLine"/>.</param>
         /// <param name="message">The custom string message.</param>
         /// <param name="isError">Indicate if the mesage is an error.</param>
         public void LogEntry(SourceLine line, string message, bool isError) =>
@@ -330,18 +330,37 @@ namespace Core6502DotNet
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The The <see cref="SourceLine"/>.</param>
+        /// <param name="line">The <see cref="SourceLine"/>.</param>
         /// <param name="message">The custom string message.</param>
         public void LogEntry(SourceLine line, string message) =>
             LogEntry(line.Filename, line.LineNumber, 1, message, true, null);
 
+
         /// <summary>
         /// Log a message.
         /// </summary>
-        /// <param name="line">The <see cref="SourceLine"/>.</param>
-        /// <param name="isError">Indicate if the mesage is an error.</param>
-        public void LogEntry(SourceLine line, bool isError) => 
-            LogEntry(line.Filename, line.LineNumber, 1, string.Empty, isError, null);
+        /// <param name="token">The <see cref="Token"/>.</param>
+        /// <param name="message">The custom string message.</param>
+        /// <param name="isError">Indicate if the message is an error.</param>
+        /// <param name="source">The message source.</param>
+        public void LogEntry(Token token, string message, bool isError, params object[] source) =>
+            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, isError, source);
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
+        /// <param name="token">The <see cref="Token"/>.</param>
+        /// <param name="message">The custom string message.</param>
+        /// <param name="isError">Indicate if the message is an error.</param>
+        public void LogEntry(Token token, string message, bool isError) =>
+            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, isError, null);
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
+        /// <param name="token">The <see cref="Token"/>.</param>
+        public void LogEntry(Token token, string message) =>
+            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, true, null);
 
         #endregion
 

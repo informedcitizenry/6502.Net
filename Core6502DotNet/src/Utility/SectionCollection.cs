@@ -46,9 +46,9 @@ namespace Core6502DotNet
     public class SectionCollection
     {
         #region Subclasses
-        class Section 
+        class Section
         {
-            public Section(string name, int starts, int ends)
+            public Section(StringView name, int starts, int ends)
             {
                 Name = name;
                 Starts = starts;
@@ -59,7 +59,7 @@ namespace Core6502DotNet
 
             public bool AddressInBounds(int address) => address >= Starts && address < Ends;
 
-            public string Name { get; }
+            public StringView Name { get; }
 
             public int Starts { get; }
 
@@ -74,7 +74,7 @@ namespace Core6502DotNet
 
         #region Members
 
-        readonly Dictionary<string, Section> _collection;
+        readonly Dictionary<StringView, Section> _collection;
 
         Section _current;
 
@@ -85,7 +85,8 @@ namespace Core6502DotNet
         /// <summary>
         /// Creates a new instance of the <see cref="SectionCollection"/> class.
         /// </summary>
-        public SectionCollection() => _collection = new Dictionary<string, Section>();
+        public SectionCollection(bool caseSensitive)
+            => _collection = new Dictionary<StringView, Section>(caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase);
 
         #endregion
 
@@ -99,11 +100,11 @@ namespace Core6502DotNet
         /// <param name="ends">The section end address.</param>
         /// <returns>The <see cref="CollectionResult"/> of the attempt to add the section to the collection..</returns>
         /// <exception cref="ExpressionException"/>
-        public CollectionResult Add(string name, int starts, int ends) 
+        public CollectionResult Add(StringView name, int starts, int ends)
         {
             Section section = new Section(name, starts, ends);
             name = section.Name;
-            
+
             if (_collection.Any(kvp =>
                 section.Starts <= (kvp.Value.Ends - 1) && kvp.Value.Starts <= (section.Ends - 1)))
                 return CollectionResult.RangeOverlap;
@@ -132,7 +133,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="name">The section name.</param>
         /// <returns>The start address for the section.</returns>
-        public int GetSectionStart(string name)
+        public int GetSectionStart(StringView name)
         {
             if (_collection.TryGetValue(name, out var section))
                 return section.Starts;
@@ -144,7 +145,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="name">The section name.</param>
         /// <returns>The <see cref="CollectionResult"/> of setting the section.</returns>
-        public CollectionResult SetCurrentSection(string name)
+        public CollectionResult SetCurrentSection(StringView name)
         {
             if (_collection.TryGetValue(name, out _current))
             {
@@ -190,7 +191,7 @@ namespace Core6502DotNet
         /// <param name="address">The address to test.</param>
         /// <returns><c>true</c>, if the address lies within the current selected section's bounds,
         /// otherwise <c>false</c>.</returns>
-        public bool AddressInBounds(int address) => 
+        public bool AddressInBounds(int address) =>
             _current != null && _current.AddressInBounds(address);
 
         #endregion
@@ -216,8 +217,8 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the names of the sections in the collection that have not been selected.
         /// </summary>
-        public IEnumerable<string> SectionsNotSelected => 
-            _collection.Where(kvp => !kvp.Value.Selected).Select(kvp => kvp.Key);
+        public IEnumerable<string> SectionsNotSelected =>
+            _collection.Where(kvp => !kvp.Value.Selected).Select(kvp => kvp.Key.ToString());
 
         #endregion
     }

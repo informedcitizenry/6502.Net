@@ -499,9 +499,9 @@ namespace Core6502DotNet.m65xx
             { ("isb", Modes.AbsoluteY   ), new CpuInstruction( "6502i",   0xfb, 3) },
             { ("isb", Modes.AbsoluteX   ), new CpuInstruction( "6502i",   0xff, 3) },
         };
-        
-        static readonly IReadOnlyDictionary<string, string> s_pseudoBranchTranslations = 
-            new Dictionary<string, string>
+
+        static readonly IReadOnlyDictionary<StringView, string> s_pseudoBranchTranslations =
+            new Dictionary<StringView, string>
         {
             { "jcc", "bcs" },
             { "jcs", "bcc" },

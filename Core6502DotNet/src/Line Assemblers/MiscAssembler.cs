@@ -21,7 +21,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         public MiscAssembler(AssemblyServices services)
-            :base(services)
+            : base(services)
         {
             Reserved.DefineType("Directives",
                     ".assert", ".bank", ".end",
@@ -30,7 +30,7 @@ namespace Core6502DotNet
                     ".initmem", ".target",
                     ".error", ".errorif",
                     ".pron", ".proff",
-                    ".warnif", ".warn", 
+                    ".warnif", ".warn",
                     ".dsection", ".section"
                 );
             ExcludedInstructionsForLabelDefines.Add(".section");
@@ -43,51 +43,64 @@ namespace Core6502DotNet
 
         void ThrowConditional(SourceLine line)
         {
-            if (line.Operand.Children.Count < 2 ||
-                line.Operand.Children[1].Children.Count == 0)
+            var iterator = line.Operands.GetIterator();
+            if (!iterator.MoveNext())
             {
-                Services.Log.LogEntry(line, line.Operand, $"Missing arguments for directive \"{line.InstructionName}\".");
+                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                    "Expected expression.");
             }
-            else if (line.Operand.Children.Count > 2 || !line.Operand.Children[1].Children[0].ToString().Trim().EnclosedInDoubleQuotes())
+            else
             {
-                Services.Log.LogEntry(line, line.Operand, $"Argument error for directive \"{line.InstructionName}\".");
-            }
-            else if (Services.Evaluator.EvaluateCondition(line.Operand.Children[0].Children))
-            {
-                if (line.Operand.Children.Count > 1)
-                    Output(line, line.Operand.Children[1]);
-                else
-                    Output(line, $"Expression \"{line.UnparsedSource.Substring(line.Operand.Position)}\" evaluated to true.");
+                if (Services.Evaluator.EvaluateCondition(iterator, false))
+                {
+                    if (iterator.Current == null || iterator.PeekNext() == null)
+                    {
+                        Output(line, $"Expression \"{Token.Join(line.Operands)}\" evaluated to true.");
+                    }
+                    else
+                    {
+                        iterator.MoveNext();
+                        Output(line, StringHelper.GetString(iterator, Services));
+                        if (iterator.Current != null)
+                            Services.Log.LogEntry(line.Filename, line.LineNumber, iterator.Current.Position,
+                                "Unexpected expression.");
+                    }
+                }
+
             }
         }
 
         void SetEor(SourceLine line)
         {
-            if (!line.OperandHasToken)
+            if (line.Operands.Count == 0)
             {
-                Services.Log.LogEntry(line, line.Instruction, "Too few arguments for directive \".eor\".");
-                return;
+                Services.Log.LogEntry(line.Instruction, "Expected expression.");
             }
-            var eor = Services.Evaluator.Evaluate(line.Operand.Children, sbyte.MinValue, byte.MaxValue);
-            var eor_b = Convert.ToByte(eor);
-            Services.Output.Transform = (delegate (byte b)
+            else
             {
-                b ^= eor_b;
-                return b;
-            });
+                var eor = Services.Evaluator.Evaluate(line.Operands.GetIterator(), sbyte.MinValue, byte.MaxValue);
+                var eor_b = Convert.ToByte(eor);
+                Services.Output.Transform = (delegate (byte b)
+                {
+                    b ^= eor_b;
+                    return b;
+                });
+            }
         }
 
         void SetBank(SourceLine line)
         {
-            if (!line.OperandHasToken)
-                Services.Log.LogEntry(line, "Too few arguments for directive \".bankmode\".");
+            if (line.Operands.Count == 0)
+                Services.Log.LogEntry(line.Instruction, "Expected expression.");
             else
-                Services.Output.SetBank((int)Services.Evaluator.Evaluate(line.Operand, sbyte.MinValue, byte.MaxValue));
+                Services.Output.SetBank((int)Services.Evaluator.Evaluate(line.Operands.GetIterator(), sbyte.MinValue, byte.MaxValue));
         }
 
-        protected override string OnAssembleLine(SourceLine line)
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
         {
-            var instruction = line.InstructionName;
+            var line = lines.Current;
+            var instruction = line.Instruction.Name.ToLower();
+            var iterator = line.Operands.GetIterator();
             switch (instruction)
             {
                 case ".assert":
@@ -103,31 +116,28 @@ namespace Core6502DotNet
                 case ".echo":
                 case ".error":
                 case ".warn":
-                    if (line.OperandHasToken && line.Operand.Children.Count == 1 &&
-                        StringHelper.ExpressionIsAString(line.Operand.Children[0], Services.SymbolManager))
+                    if (iterator.MoveNext() && StringHelper.ExpressionIsAString(iterator, Services))
                     {
-                        Output(line, line.Operand.Children[0]);
+                        Output(line, StringHelper.GetString(iterator, Services));
                     }
                     else if (instruction.Equals(".echo"))
                     {
-                        if (Services.Evaluator.ExpressionIsCondition(line.Operand.Children))
-                            Output(line, Services.Evaluator.EvaluateCondition(line.Operand).ToString());
+                        if (Services.Evaluator.ExpressionIsCondition(iterator))
+                            Output(line, Services.Evaluator.EvaluateCondition(iterator).ToString());
                         else
-                            Output(line, Services.Evaluator.Evaluate(line.Operand.Children, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue).ToString());
+                            Output(line, Services.Evaluator.Evaluate(iterator, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue).ToString());
                     }
                     else
                     {
-                        Services.Log.LogEntry(line, line.Operand,
-                            "String expression expected.");
+                        Services.Log.LogEntry(line.Instruction, "String expression expected.");
                     }
                     break;
                 case ".eor":
                     SetEor(line);
                     break;
                 case ".forcepass":
-                    if (line.OperandHasToken)
-                        Services.Log.LogEntry(line, line.Operand,
-                            "Unexpected expression found.");
+                    if (line.Operands.Count > 0)
+                        Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
                     else if (Services.CurrentPass == 0)
                         Services.PassNeeded = true;
                     break;
@@ -136,9 +146,8 @@ namespace Core6502DotNet
                     break;
                 case ".proff":
                 case ".pron":
-                    if (line.OperandHasToken)
-                        Services.Log.LogEntry(line, line.Operand,
-                            "Unexpected expression found.");
+                    if (line.Operands.Count > 0)
+                        Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
                     else
                         Services.PrintOff = instruction.Equals(".proff");
                     break;
@@ -152,15 +161,23 @@ namespace Core6502DotNet
                     if (Services.CurrentPass == 0)
                     {
                         if (Services.Output.HasOutput)
-                            Services.Log.LogEntry(line, line.Instruction, "Cannot specify target format after assembly has started.");
-                        else if (!line.OperandHasToken || !line.OperandExpression.Trim().EnclosedInDoubleQuotes())
-                            Services.Log.LogEntry(line, line.Operand, "Expression must be a string.");
-                        else if (!string.IsNullOrEmpty(Services.OutputFormat))
-                            Services.Log.LogEntry(line, line.Operand, "Output format was previously specified.");
+                        {
+                            Services.Log.LogEntry(line.Instruction, "Cannot specify target format after assembly has started.");
+                        }
                         else
-                            Services.SelectFormat(line.OperandExpression.Trim().TrimOnce('"'));
+                        {
+                            if (!iterator.MoveNext() || !StringHelper.ExpressionIsAString(iterator, Services))
+                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                                    "Expression must be a string.");
+                            else if (!string.IsNullOrEmpty(Services.OutputFormat))
+                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                                    "Output format was previously specified.");
+                            else
+                                Services.SelectFormat(StringHelper.GetString(iterator, Services));
+                        }
                         if (instruction.Equals(".target"))
-                            Services.Log.LogEntry(line, line.Instruction, "\".target\" is deprecated. Use \".format\" instead.", false);
+                            Services.Log.LogEntry(line.Instruction,
+                                "\".target\" is deprecated. Use \".format\" instead.", false);
                     }
                     break;
                 default:
@@ -172,128 +189,128 @@ namespace Core6502DotNet
 
         void DefineSection(SourceLine line)
         {
-            if (!string.IsNullOrEmpty(line.LabelName))
-                throw new SyntaxException(line.Label.Position, "Label definitions are not allowed for directive \".dsection\".");
+            if (line.Label != null)
+                throw new SyntaxException(line.Label, "Label definitions are not allowed for directive \".dsection\".");
             if (Services.CurrentPass == 0)
             {
-                var parms = line.Operand.Children;
-                if (parms.Count < 2)
-                    throw new SyntaxException(line.Operand.Position, 
-                        "Section definition missing one or more parameters.");
-                if (parms.Count > 3)
-                    throw new SyntaxException(line.Operand.LastChild.Position,
-                        $"Unexpected parameter \"{parms[3]}\" in section definition.");
+                var parms = line.Operands.GetIterator();
+                if (!parms.MoveNext() || !StringHelper.IsStringLiteral(parms))
+                    throw new SyntaxException(line.Instruction.Position,
+                        "Section name must be a string.");
+                var name = parms.Current.Name;
+                if (!parms.MoveNext() || Token.IsEnd(parms.PeekNext()))
+                    throw new SyntaxException(line.Operands[0],
+                        "Expected expression.");
+                if (!Token.IsEnd(parms.Current))
+                    throw new SyntaxException(parms.Current,
+                        "Unexpected expression.");
 
-                var name = parms[0].ToString().Trim();
-                if (!name.EnclosedInDoubleQuotes())
-                    throw new SyntaxException(parms[0].Position, "Section name must be a string.");
-                if (!Services.Options.CaseSensitive)
-                    name = name.ToLower();
-
-                var endsParameter = parms.Count == 3;
-                if (!Services.Evaluator.ExpressionIsConstant(parms[1]) ||
-                    (endsParameter && !Services.Evaluator.ExpressionIsConstant(parms[2])))
-                    throw new SyntaxException(parms[1].Position, 
-                        "Section start and end parameters must be constant expressions.");
-                var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms[1]));
+                var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms, ushort.MinValue, ushort.MaxValue));
                 var ends = BinaryOutput.MaxAddress + 1;
-                if (endsParameter)
-                    ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms[2]));
-                
+                if (!Token.IsEnd(parms.PeekNext()))
+                    ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms, ushort.MinValue, ushort.MaxValue));
+                if (parms.MoveNext())
+                    throw new SyntaxException(parms.Current, "Unexpected expression.");
                 Services.Output.DefineSection(name, starts, ends);
             }
         }
 
         void InvokeFunction(SourceLine line)
         {
-            if (!line.OperandHasToken || line.Operand.Children[0].Children.Count == 0)
-                Services.Log.LogEntry(line, line.Operand, "Missing function name from invocation directive.");
-            else if (line.Operand.Children[0].Children.Count < 2)
-                Services.Log.LogEntry(line, line.Operand, "Missing function parameters.");
-            else if (line.Operand.Children[0].Children.Count > 2)
-                Services.Log.LogEntry(line, line.Operand.Children[0].Children[2],
-                    "Unexpected expression.");
+            var iterator = line.Operands.GetIterator();
+            if (!iterator.MoveNext() || iterator.Current.Type != TokenType.Function)
+            {
+                Services.Log.LogEntry(line.Instruction, "Invalid or missing function call.");
+            }
             else
-                Services.Evaluator.Invoke(line.Operand.Children[0].Children[0], line.Operand.Children[0].Children[1]);
+            {
+                Services.Evaluator.Invoke(iterator.Current, iterator);
+                if (iterator.PeekNext() != null)
+                    Services.Log.LogEntry(iterator.PeekNext(), "Unexpected expression.");
+            }
         }
 
         string SetSection(SourceLine line)
         {
-            if (!line.OperandExpression.EnclosedInDoubleQuotes())
-                throw new SyntaxException(line.Operand.Position, "Directive expects a string expression.");
-            var sectionName = line.OperandExpression.Trim();
-            if (!Services.Options.CaseSensitive)
-                sectionName = sectionName.ToLower();
-            if (!Services.Output.SetSection(sectionName))
-                throw new SyntaxException(line.Operand.Position, 
-                    $"Section {line.Operand} not defined or previously selected.");
-            if (!string.IsNullOrEmpty(line.LabelName))
+            var iterator = line.Operands.GetIterator();
+            if (!iterator.MoveNext() || !iterator.Current.IsDoubleQuote() || iterator.PeekNext() != null)
+                throw new SyntaxException(line.Instruction, "Directive expects a string expression.");
+            if (!Services.Output.SetSection(iterator.Current.Name))
+                throw new SyntaxException(line.Operands[0], $"Section {line.Operands[0].Name} not defined or previously selected.");
+            if (line.Label != null)
             {
-                if (line.LabelName.Equals("*"))
-                    Services.Log.LogEntry(line, "Redundant assignment of program counter for directive \".section\".", false);
-                else if (line.LabelName[0].IsSpecialOperator())
-                    Services.SymbolManager.DefineLineReference(line.LabelName, Services.Output.LogicalPC);
+                if (line.Label.Name.Equals("*"))
+                    Services.Log.LogEntry(line.Label, "Redundant assignment of program counter for directive \".section\".", false);
+                else if (line.Label.Name[0].IsSpecialOperator())
+                    Services.SymbolManager.DefineLineReference(line.Label, Services.Output.LogicalPC);
                 else
-                    Services.SymbolManager.DefineSymbolicAddress(line.LabelName);
-                return $"=${Services.Output.LogicalPC:x4}                  {line.LabelName}  // section {line.Operand}";
+                    Services.SymbolManager.DefineSymbolicAddress(line.Label.Name, Services.Output.LogicalPC, Services.Output.CurrentBank);
+                return $"=${Services.Output.LogicalPC:x4}                  {line.Label}  // section {line.Operands[0]}";
             }
-            return $"* = ${Services.Output.LogicalPC:x4}  // section {line.Operand}";
+            return $"* = ${Services.Output.LogicalPC:x4}  // section {line.Operands[0]}";
         }
 
         void InitMem(SourceLine line)
         {
-            if (!line.OperandHasToken)
+            if (line.Operands.Count == 0)
             {
-                Services.Log.LogEntry(line, line.Instruction, "Expected expression.");
-            }
-            else if (line.Operand.Children.Count > 1)
-            {
-                Services.Log.LogEntry(line, line.Operand.Children[1].Position, "Too many arguments for instruction.");
+                Services.Log.LogEntry(line.Instruction, "Expected expression.");
             }
             else
             {
-                var amount = Services.Evaluator.Evaluate(line.Operand.Children, sbyte.MinValue, byte.MaxValue);
-                Services.Output.InitMemory(Convert.ToByte((int)amount & 0xFF));
+                var iterator = line.Operands.GetIterator();
+                var amount = Services.Evaluator.Evaluate(iterator, sbyte.MinValue, byte.MaxValue);
+                if (iterator.Current != null || iterator.PeekNext() != null)
+                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                else
+                    Services.Output.InitMemory(Convert.ToByte((int)amount & 0xFF));
+
             }
         }
 
         void Output(SourceLine line, string output)
         {
-            var type = line.InstructionName.Substring(0, 5);
+            var type = line.Instruction.Name.Substring(0, 5).ToLower();
             var doEcho = type.Equals(".echo") && (Services.CurrentPass == 0 || Services.Options.EchoEachPass);
             if (doEcho)
                 Console.WriteLine(output);
             else if (Services.CurrentPass == 0)
-                Services.Log.LogEntry(line, line.Operand, output, type.Equals(".erro"));
-        }
-
-        void Output(SourceLine line, Token operand)
-        {
-            if (StringHelper.ExpressionIsAString(operand, Services.SymbolManager))
-                Output(line, StringHelper.GetString(operand, Services.SymbolManager, Services.Evaluator));
-            else
-                Output(line, Services.Evaluator.Evaluate(operand).ToString());
+                Services.Log.LogEntry(line.Operands[0], output, !type.Equals(".warn"));
         }
 
         void DoAssert(SourceLine line)
         {
-            if (line.Operand.Children.Count == 0)
+            if (line.Operands.Count == 0)
             {
-                Services.Log.LogEntry(line, line.Operand, "One or more arguments expected for assertion directive.");
+                Services.Log.LogEntry(line.Instruction, "Expected expression.");
             }
-            else if (line.Operand.Children.Count > 2)
+            else
             {
-                Services.Log.LogEntry(line, line.Operand.Children[2], "Unexpected expression found.");
-            }
-            else if (!Services.Evaluator.EvaluateCondition(line.Operand.Children[0]))
-            {
-                if (line.Operand.Children.Count > 1)
-                    Output(line, line.Operand.Children[1]);
-                else
-                    Output(line, "Assertion failed.");
+                var iterator = line.Operands.GetIterator();
+                if (!Services.Evaluator.EvaluateCondition(iterator))
+                {
+                    if (iterator.MoveNext())
+                    {
+                        if (!StringHelper.ExpressionIsAString(iterator, Services))
+                        {
+                            Services.Log.LogEntry(iterator.Current, "Expression must be a string");
+                        }
+                        else
+                        {
+                            var message = StringHelper.GetString(iterator, Services);
+                            if (iterator.Current != null || iterator.PeekNext() != null)
+                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                            else
+                                Output(line, message);
+                        }
+                    }
+                    else
+                    {
+                        Output(line, "Assertion failed.");
+                    }
+                }
             }
         }
-
         #endregion
     }
 }

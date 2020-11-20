@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Core6502DotNet.m680x
 {
-    public sealed partial class M6809Asm : MotorolaBase
+       public sealed partial class M6809Asm : MotorolaBase
     {
         // 6809 Post-Byte Bits for Indexed and Indirect Addressing:
         // +---------------------------------------------------------------+
@@ -73,55 +73,17 @@ namespace Core6502DotNet.m680x
             UReg     = 0b0100_0000,
             SReg     = 0b0110_0000,
             ExtInd   = 0b1001_1111,
+            OffsMask = 0b1000_1111,
             Mask     = 0b1111_1111
         };
 
-        static readonly Dictionary<string, IndexModes> s_ixRegisterModes 
-            = new Dictionary<string, IndexModes>
-        {
-            { "x", IndexModes.XReg },
-            { "y", IndexModes.YReg },
-            { "u", IndexModes.UReg },
-            { "s", IndexModes.SReg }
-        };
+        readonly Dictionary<StringView, IndexModes> _ixRegisterModes;
 
-        static readonly Dictionary<string, IndexModes> s_offsRegisterModes
-            = new Dictionary<string, IndexModes>
-        {
-            { "a", IndexModes.AccA },
-            { "b", IndexModes.AccB },
-            { "d", IndexModes.AccD }
-        };
+        readonly Dictionary<StringView, IndexModes> _offsRegisterModes;
 
-        static readonly Dictionary<string, byte> s_exchangeModes
-            = new Dictionary<string, byte>
-        {
-            { "d",   0b0000 },
-            { "x",   0b0001 },
-            { "y",   0b0010 },
-            { "u",   0b0011 },
-            { "s",   0b0100 },
-            { "pc",  0b0101 },
-            { "a",   0b1000 },
-            { "b",   0b1001 },
-            { "cc",  0b1010 },
-            { "dp",  0b1011 }
-        };
+        readonly Dictionary<StringView, byte> _exchangeModes;
 
-        static readonly Dictionary<string, byte> s_pushPullModes
-            = new Dictionary<string, byte>
-        {
-            { "pc", 0b1000_0000 },
-            { "s",  0b0100_0000 },
-            { "u",  0b0100_0000 },
-            { "y",  0b0010_0000 },
-            { "x",  0b0001_0000 },
-            { "dp", 0b0000_1000 },
-            { "d",  0b0000_0110 },
-            { "b",  0b0000_0100 },
-            { "a",  0b0000_0010 },
-            { "cc", 0b0000_0001 }
-        };
+        readonly Dictionary<StringView, byte> _pushPullModes;
 
         static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes6800 =
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()

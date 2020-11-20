@@ -20,13 +20,14 @@ namespace Core6502DotNet
         /// Constructs a new instance of the <see cref="BlockAssemblerException"/>.
         /// </summary>
         /// <param name="line">The <see cref="SourceLine"/> that is the source of the exception.</param>
-        public BlockAssemblerException(SourceLine line) : base($"Illegal use of {line.InstructionName}.") { }
+        public BlockAssemblerException(SourceLine line) : base($"Illegal use of {line.Instruction.Name}.") { }
 
         /// <summary>
         /// The <see cref="SourceLine"/> that is the source of the exception.
         /// </summary>
-        public SourceLine Line { get; }   
+        public SourceLine Line { get; }
     }
+
 
     /// <summary>
     /// Handles errors when function calls expect return values but
@@ -47,58 +48,47 @@ namespace Core6502DotNet
     /// Responsible for handling directives that handle assembly over multiple lines, such as
     /// repetition and conditional directives.
     /// </summary>
-    public sealed class BlockAssembler : AssemblerBase, IFunctionEvaluator
+    public class BlockAssembler : AssemblerBase, IFunctionEvaluator
     {
-        #region Data
-
-        static readonly Dictionary<string, BlockType> s_blockOpenTypes
-            = new Dictionary<string, BlockType>
-        {
-            { ".block",     BlockType.Scope           },
-            { ".if",        BlockType.Conditional     },
-            { ".ifdef",     BlockType.ConditionalDef  },
-            { ".ifndef",    BlockType.ConditionalNdef },
-            { ".for",       BlockType.ForNext         },
-            { ".function",  BlockType.Functional      },
-            { ".namespace", BlockType.Namespace       },
-            { ".page",      BlockType.Page            },
-            { ".repeat",    BlockType.Repeat          },
-            { ".switch",    BlockType.Switch          },
-            { ".while",     BlockType.While           },
-            { ".goto",      BlockType.Goto            },
-        };
-
-        #endregion
-
         #region Members
 
         readonly Stack<BlockProcessorBase> _blocks;
-        readonly RandomAccessIterator<SourceLine> _lineIterator;
+        readonly Dictionary<StringView, StringView> _openClosures;
         BlockProcessorBase _currentBlock;
-        readonly Dictionary<string, Function> _functionDefs;
+        readonly Dictionary<StringView, Function> _functionDefs;
 
         #endregion
 
         #region Constructors
 
         /// <summary>
-        /// Constructs a new instance of the multiline assembler class.
+        /// Constructs a new instance of a block assembler.
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="lineIterator">The line iterator.</param>
-        public BlockAssembler(AssemblyServices services, 
-                              RandomAccessIterator<SourceLine> lineIterator)
-            :base(services)
+        public BlockAssembler(AssemblyServices services)
+            : base(services)
         {
             _blocks = new Stack<BlockProcessorBase>();
-
-            _lineIterator = lineIterator;
-
-            _functionDefs = new Dictionary<string, Function>();
+            _functionDefs = new Dictionary<StringView, Function>(services.StringViewComparer);
 
             _currentBlock = null;
 
-            Reserved.DefineType("Scope", 
+            _openClosures = new Dictionary<StringView, StringView>(services.StringViewComparer)
+            {
+                { ".block",     ".endblock"     },
+                { ".for",       ".next"         },
+                { ".function",  ".endfunction"  },
+                { ".if",        ".endif"        },
+                { ".ifdef",     ".endif"        },
+                { ".ifndef",    ".endif"        },
+                { ".namespace", ".endnamespace" },
+                { ".page",      ".endpage"      },
+                { ".repeat",    ".endrepeat"    },
+                { ".switch",    ".endswitch"    },
+                { ".while",     ".endwhile"     }
+            };
+
+            Reserved.DefineType("Scope",
                 ".block", ".endblock", ".namespace", ".endnamespace");
 
             Reserved.DefineType("Conditional",
@@ -134,245 +124,175 @@ namespace Core6502DotNet
 
         #region Methods
 
-        void DefineFunction(SourceLine line)
+        BlockProcessorBase GetProcessor(SourceLine line, int iterationIndex)
         {
-            if (Services.CurrentPass == 0)
-            {
-                if (_currentBlock != null)
-                {
-                    Services.Log.LogEntry(_currentBlock.Line,
-                        _currentBlock.Line.Instruction.Position,
-                        $"Function cannot be defined inside a \"{_currentBlock.Line.InstructionName}\" block.");
-                }
-                else
-                {
-                    var fcnName = line.LabelName;
-                    if (string.IsNullOrEmpty(fcnName))
-                    {
-                        Services.Log.LogEntry(line, line.Instruction, "Function name not specified.");
-                    }
-                    else if (!Services.SymbolManager.SymbolIsValid(fcnName))
-                    {
-                        if (_functionDefs.ContainsKey(fcnName))
-                            Services.Log.LogEntry(line, line.Label.Position,
-                                $"Function name \"{fcnName}\" was previously declared.");
-                        else
-                            Services.Log.LogEntry(line, line.Label.Position, $"Invalid function name \"{fcnName}\".");
-                    }
-                    else
-                        _functionDefs.Add(fcnName, new Function(Services, line.Operand, _lineIterator));
-                }
-            }
-            else
-            {
-                new FunctionBlock(Services, _lineIterator, BlockType.Functional).SeekBlockEnd();
-            }
-        }
-
-        BlockProcessorBase GetProcessor(BlockType type)
-        {
+            var name = line.Instruction.Name;
+            var type = Services.Options.CaseSensitive ? name.ToString() : name.ToLower();
             switch (type)
             {
-                case BlockType.ForNext:
-                    return new ForNextBlock(Services, _lineIterator, type);
-                case BlockType.Repeat:
-                    return new RepeatBlock(Services, _lineIterator, type);
-                case BlockType.Conditional:
-                case BlockType.ConditionalDef:
-                case BlockType.ConditionalNdef:
-                    return new ConditionalBlock(Services, _lineIterator, type);
-                case BlockType.Namespace:
-                case BlockType.Scope:
-                    return new ScopeBlock(Services, _lineIterator, type);
-                case BlockType.Page:
-                    return new PageBlockProcessor(Services, _lineIterator, type);
-                case BlockType.Switch:
-                    return new SwitchBlock(Services, _lineIterator, type);
+                case ".block":
+                    return new ScopeBlock(Services, iterationIndex);
+                case ".for":
+                    return new ForNextBlock(Services, iterationIndex);
+                case ".if":
+                case ".ifdef":
+                case ".ifndef":
+                    return new ConditionalBlock(Services, iterationIndex);
+                case ".namespace":
+                    return new NamespaceBlock(Services, iterationIndex);
+                case ".repeat":
+                    return new RepeatBlock(Services, iterationIndex);
+                case ".switch":
+                    return new SwitchBlock(Services, iterationIndex);
+                case ".while":
+                    return new WhileBlock(Services, iterationIndex);
                 default:
-                    return new WhileBlock(Services, _lineIterator, type);
+                    return null;
             }
         }
 
-        void ScanBlock(BlockType type)
+        void ScanBlock(RandomAccessIterator<SourceLine> lines)
         {
-            var index = _lineIterator.Index;
-            SourceLine line = _lineIterator.Current;
-            var blocks = new Stack<(SourceLine l, BlockDirective d)>();
-            blocks.Push((line, BlockDirective.Directives[type]));
-            while (((line = _lineIterator.FirstOrDefault(l =>
-                BlockDirective.Directives.Values.Any(v => v.Open.Equals(l.InstructionName) || v.Closure.Equals(l.InstructionName)))) 
-                != null) && blocks.Count > 0)
+            var ix = lines.Index;
+            var open = lines.Current.Instruction.Name;
+            var closure = _openClosures[open];
+            var opens = 1;
+            while (lines.MoveNext() && opens > 0)
             {
-                if (s_blockOpenTypes.TryGetValue(line.InstructionName, out type))
+                if (lines.Current.Instruction != null)
                 {
-                    blocks.Push((line, BlockDirective.Directives[type]));
+                    if (lines.Current.Instruction.Name.Equals(closure, Services.StringViewComparer))
+                        opens--;
+                    else if (lines.Current.Instruction.Name.Equals(open, Services.StringViewComparer))
+                        opens++;
                 }
-                else if (blocks.Peek().d.Closure.Equals(line.InstructionName))
+            }
+            if (opens != 0)
+            {
+                if (lines.Current == null)
                 {
-                    blocks.Pop();
+                    lines.Reset();
+                    lines.MoveNext();
                 }
                 else
                 {
-                    var blocksAsList = new List<(SourceLine l, BlockDirective d)>(blocks);
-                    blocksAsList.RemoveAt(blocksAsList.FindIndex(blc => blc.d.Closure.Equals(line.InstructionName)));
-                    blocksAsList.Reverse();
-                    blocks = new Stack<(SourceLine l, BlockDirective d)>(blocksAsList);
-                    Services.Log.LogEntry(line, line.Instruction,
-                            $"Closure \"{line.Instruction}\" does not close block \"{blocks.Peek().d.Open}\".");
+                    lines.Rewind(ix);
                 }
+                throw new SyntaxException(lines.Current.Instruction.Position,
+                    $"Missing closure \"{closure}\" for block \"{open}\".");
             }
-            _lineIterator.SetIndex(index);
-            if (blocks.Count > 0)
-            {
-                var rev = new Stack<(SourceLine l, BlockDirective d)>();
-                while (blocks.Count > 0)
-                    rev.Push(blocks.Pop());
-                while (rev.Count > 0)
-                {
-                    var (l, d) = rev.Pop();
-                    Services.Log.LogEntry(l, l.Instruction,
-                        $"Missing closure \"{d.Closure}\" for block \"{d.Open}\".");
-                }
-            }
+            lines.SetIndex(ix);
         }
 
-        protected override string OnAssembleLine(SourceLine line)
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
         {
-            if (Reserved.IsOneOf("Functional", line.InstructionName))
+            var line = lines.Current;
+            if (Reserved.IsOneOf("Goto", line.Instruction.Name))
+                return DoGoto(lines);
+
+            if (Reserved.IsOneOf("Functional", line.Instruction.Name))
             {
-                if (line.InstructionName.Equals(".function"))
-                {
-                    DefineFunction(line);
-                }
+                if (line.Instruction.Name.Equals(".function", Services.StringComparison))
+                    DefineFunction(lines);
                 else if (_currentBlock != null)
-                {
                     throw new SyntaxException(line.Instruction.Position,
-                        $"Directive \"{line.InstructionName}\" can only be made inside function block.");
-                }
+                        "Directive \".endfunction\" can only be made inside function block.");
                 return string.Empty;
             }
-            if (s_blockOpenTypes.TryGetValue(line.InstructionName, out BlockType type))
+            if (_openClosures.ContainsKey(line.Instruction.Name))
             {
-                if (type == BlockType.Goto)
-                    return DoGoto(line);
-
-                var block = GetProcessor(type);
+                var block = GetProcessor(line, lines.Index);
                 if (_blocks.Count == 0)
-                    ScanBlock(type);
+                    ScanBlock(lines);
                 _blocks.Push(block);
                 _currentBlock = block;
             }
             if (_currentBlock == null)
                 throw new SyntaxException(line.Instruction.Position,
-                    $"\"{line.InstructionName}\" directive must come inside a block.");
-            var isBreakCont = _lineIterator.Current.InstructionName.Equals(".break") ||
-                              _lineIterator.Current.InstructionName.Equals(".continue");
+                    $"\"{line.Instruction.Name}\" directive must come inside a block.");
+            var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
             if (isBreakCont)
             {
-                var contBreakLine = _lineIterator.Current;
-                if (!_currentBlock.AllowContinue &&
-                    contBreakLine.InstructionName.Equals(".continue"))
+                var isBreak = line.Instruction.Name.Equals(".break", Services.StringComparison);
+                if ((!_currentBlock.AllowContinue && line.Instruction.Name.Equals(".continue", Services.StringComparison)) ||
+                    (!_currentBlock.AllowBreak && isBreak))
                 {
                     while (_currentBlock != null)
                     {
-                        _currentBlock.SeekBlockEnd();
-                        if (_currentBlock.AllowContinue)
+                        var allowBreak = false;
+                        _currentBlock.SeekBlockEnd(lines);
+                        if (isBreak)
+                            allowBreak = _currentBlock.AllowBreak;
+                        else if (!isBreak && _currentBlock.AllowContinue)
                             break;
-                        else
-                            CheckClosureThenPop();
-                    }
-                    if (_currentBlock == null)
-                        throw new SyntaxException(contBreakLine.Instruction.Position,
-                           "No enclosing loop out of which to continue.");
-                }
-                else if (!_currentBlock.AllowBreak &&
-                    contBreakLine.InstructionName.Equals(".break"))
-                {
-                    while (_currentBlock != null)
-                    {
-                        _currentBlock.SeekBlockEnd();
-                        var allowBreak = _currentBlock.AllowBreak;
-                        CheckClosureThenPop();
-                        if (allowBreak)
+                        DoPop(lines);
+                        if (isBreak && allowBreak)
                             return string.Empty;
                     }
                     if (_currentBlock == null)
-                        throw new SyntaxException(contBreakLine.Instruction.Position,
-                           "No enclosing loop out of which to break.");
+                        throw new SyntaxException(line.Instruction.Position,
+                           "No enclosing loop out of which to continue.");
+                }
+                else if (isBreak)
+                {
+                    DoPop(lines);
+                    return string.Empty;
                 }
                 else
                 {
-                    if (contBreakLine.InstructionName.Equals(".break"))
-                    {
-                        DoPop();
-                        return string.Empty;
-                    }
-                    else
-                    {
-                        _currentBlock.SeekBlockEnd();
-                    }
+                    _currentBlock.SeekBlockEnd(lines);
                 }
             }
-            var executeSuccess = _currentBlock.ExecuteDirective();
-            if (!executeSuccess && !isBreakCont)
-                throw new BlockAssemblerException(line);
-
-            if (_lineIterator.Current == null ||
-                _lineIterator.Current.InstructionName.Equals(BlockDirective.Directives[_currentBlock.Type].Closure))
-            {
-
-                if (_lineIterator.Current == null)
-                {
-                    line = SourceLineHelper.GetLastInstructionLine(_lineIterator);
-                    Services.Log.LogEntry(line,
-                        $"Missing closure for \"{BlockDirective.Directives[_currentBlock.Type].Open}\" directive.", true);
-                }
-                DoPop();
-            }
+            _currentBlock.ExecuteDirective(lines);
+            if (lines.Current.Instruction != null && lines.Current.Instruction.Name.Equals(_currentBlock.BlockClosure, Services.StringComparison))
+                DoPop(lines);
             if (line.Label != null)
-                return $".{Services.Output.LogicalPC,-42:x4}{line.UnparsedSource.Substring(line.Label.Position - 1, line.Label.Name.Length)}";
+                return $".{Services.Output.LogicalPC,-42:x4}{line.Source.Substring(line.Label.Position - 1, line.Label.Name.Length)}";
             return string.Empty;
         }
 
-        string DoGoto(SourceLine line)
+        string DoGoto(RandomAccessIterator<SourceLine> lines)
         {
-            if (!line.OperandHasToken)
-                throw new SyntaxException(line.Instruction.Position, 
+            var line = lines.Current;
+            if (line.Operands.Count == 0)
+                throw new SyntaxException(line.Instruction.Position,
                     "Destination not specified for \".goto\" directive.");
 
-            var gotoExp = line.OperandExpression;
-            if (!char.IsLetter(gotoExp[0]) && gotoExp[0] != '_')
+            var gotoExp = line.Operands[0].Name;
+            if ((!char.IsLetter(gotoExp[0]) && gotoExp[0] != '_') || line.Operands.Count > 1)
             {
-                Services.Log.LogEntry(line, line.Operand, "\".goto\" operand must be a label.");
+                Services.Log.LogEntry(line.Operands[0],
+                    "\".goto\" operand must be a label.");
             }
-            else if (gotoExp.Equals(line.LabelName))
+            else if (line.Label != null && gotoExp.Equals(line.Label.Name, Services.StringViewComparer))
             {
-                Services.Log.LogEntry(line, line.Instruction, "Destination cannot be the same line as \".goto\" directive.");
+                Services.Log.LogEntry(line.Instruction,
+                    "Destination cannot be the same line as \".goto\" directive.");
             }
             else
             {
-                var iterCopy = new RandomAccessIterator<SourceLine>(_lineIterator, true);
+                var iterCopy = new RandomAccessIterator<SourceLine>(lines, true);
                 SourceLine currLine;
                 if ((currLine = iterCopy.FirstOrDefault(l =>
                 {
-                    if (s_blockOpenTypes.TryGetValue(l.InstructionName, out BlockType type))
+                    if (l.Instruction != null && _openClosures.ContainsKey(l.Instruction.Name))
                     {
-                        // skip over other blocks we are not calling .goto 
-                        // from within (we can know this by checking if the block in the stack
-                        // has an index matching the iterator's current index.
-                        if (BlockDirective.Directives.ContainsKey(type) &&
-                           !_blocks.Any(b => b.Index == iterCopy.Index))
-                            GetProcessor(type).SeekBlockEnd(iterCopy);
+                        if (!_blocks.Any(b => b.Index == iterCopy.Index))
+                            GetProcessor(l, iterCopy.Index).SeekBlockEnd(iterCopy);
                         return false;
                     }
-                    return l.LabelName.Equals(gotoExp);
+                    return l.Label != null && l.Label.Name.Equals(gotoExp, Services.StringViewComparer);
                 })) != null)
                 {
-                    if (currLine.InstructionName.Contains("=") ||
-                        currLine.InstructionName.Equals(".equ") ||
-                        currLine.InstructionName.Equals(".global"))
+                    if (currLine.Instruction != null &&
+                        (currLine.Instruction.Name.Contains('=') ||
+                         currLine.Instruction.Name.Equals(".equ", Services.StringComparison) ||
+                         currLine.Instruction.Name.Equals(".global", Services.StringComparison)
+                        )
+                       )
                     {
-                        Services.Log.LogEntry(line, line.Instruction, $"\"{gotoExp}\" is not a valid destination.");
+                        Services.Log.LogEntry(line.Instruction,
+                            $"\"{gotoExp}\" is not a valid destination.");
                     }
                     else
                     {
@@ -380,13 +300,13 @@ namespace Core6502DotNet
                         {
                             // if where we landed lies outside of the current block scope
                             // we need to pop out of that scope.
-                            _currentBlock.SeekBlockEnd();
+                            _currentBlock.SeekBlockEnd(lines);
                             if (iterCopy.Index > _currentBlock.Index)
                             {
                                 // did we land in a place still within the block scope?
-                                if (iterCopy.Index > _lineIterator.Index)
+                                if (iterCopy.Index > lines.Index)
                                     // no, pop out
-                                    DoPop();
+                                    DoPop(lines);
                                 else
                                     // we're still within the current block, don't pop it
                                     break;
@@ -394,27 +314,29 @@ namespace Core6502DotNet
                             else
                             {
                                 // we went backwards, pop out of current scope
-                                DoPop();
+                                DoPop(lines);
                             }
                         }
-                        if (iterCopy.Index >= _lineIterator.Index)
-                            _lineIterator.FastForward(iterCopy.Index);
+                        if (iterCopy.Index >= lines.Index)
+                            lines.FastForward(iterCopy.Index);
+                        else if (iterCopy.Index == 0)
+                            lines.Reset();
                         else
-                            _lineIterator.Rewind(iterCopy.Index - 1);
+                            lines.Rewind(iterCopy.Index - 1);
                     }
                 }
                 else
                 {
-                    Services.Log.LogEntry(line, line.Instruction,
+                    Services.Log.LogEntry(line.Instruction,
                         $"Could not find destination \"{gotoExp}\".");
                 }
             }
             return string.Empty;
         }
 
-        void DoPop()
+        void DoPop(RandomAccessIterator<SourceLine> lines)
         {
-            _currentBlock.PopScope();
+            _currentBlock.PopScope(lines);
             _blocks.Pop();
             if (_blocks.Count > 0)
                 _currentBlock = _blocks.Peek();
@@ -422,70 +344,63 @@ namespace Core6502DotNet
                 _currentBlock = null;
         }
 
-        void CheckClosureThenPop()
+        double CallFunction(RandomAccessIterator<Token> tokens, bool returnValueExpected)
         {
-            if (!_lineIterator.Current.InstructionName.Equals(_currentBlock.Directive.Closure))
+            var functionToken = tokens.Current;
+            var functionName = functionToken.Name;
+            tokens.MoveNext();
+            var evalParms = new List<object>();
+            Token token = tokens.GetNext();
+
+            while (!token.Name.Equals(")"))
             {
-                _currentBlock = null;
-                throw new SyntaxException(_lineIterator.Current.Instruction.Position,
-                    $"Missing closure for \"{_currentBlock.Directive.Open}\" directive.");
+                if (token.IsSeparator())
+                    token = tokens.GetNext();
+                if (StringHelper.ExpressionIsAString(tokens, Services))
+                    evalParms.Add(StringHelper.GetString(tokens, Services));
+                else
+                    evalParms.Add(Services.Evaluator.Evaluate(tokens, false));
+                token = tokens.Current;
             }
-            DoPop();
-        }
-
-        double CallFunction(Token function, Token parameters, bool returnValueExpected)
-        {
-            if (!_functionDefs.ContainsKey(function.Name))
-                throw new SyntaxException(function.Position, 
-                    $"Unknown function name \"{function.Name}\".");
-
-            var evalParms = parameters.Children.Where(p => p.Children.Count != 0)
-                                               .Select(p => 
-                                                    p.ToString().Trim().EnclosedInDoubleQuotes() ? 
-                                                    p.ToString().Trim() : (object)Services.Evaluator.Evaluate(p))
-                                               .ToList();
-            // invoke the function, get the return
             Services.SymbolManager.PushScopeEphemeral();
-            var value = _functionDefs[function.Name].Invoke(evalParms);
+            var value = _functionDefs[functionName].Invoke(evalParms);
             Services.SymbolManager.PopScopeEphemeral();
             if (double.IsNaN(value) && returnValueExpected)
-                throw new ReturnException(function.Position,
-                    $"Function \"{function.Name}\" did not return a value.");
+                throw new ReturnException(functionToken.Position,
+                    $"Function name \"{functionName}\" did not return a value.");
             return value;
+        }
+
+        void DefineFunction(RandomAccessIterator<SourceLine> lines)
+        {
+            if (Services.CurrentPass == 0)
+            {
+                if (_currentBlock != null)
+                    throw new ExpressionException(1, "Function block cannot be inside another block.");
+
+                var line = lines.Current;
+                if (line.Label == null)
+                    throw new ExpressionException(1, "Function name not specified");
+                var functionName = line.Label.Name;
+                if (_functionDefs.ContainsKey(functionName))
+                    throw new ExpressionException(line.Label.Position, $"Function name \"{functionName}\" was previous declared.");
+                if (!Services.SymbolManager.SymbolIsValid(functionName))
+                    throw new ExpressionException(line.Label.Position, $"Invalid function name \"{functionName}\".");
+                _functionDefs.Add(functionName, new Function(line.Operands, lines, Services, Services.Options.CaseSensitive));
+            }
+            else
+            {
+                new FunctionBlock(Services, 1).SeekBlockEnd(lines);
+            }
         }
 
         public bool EvaluatesFunction(Token function) => _functionDefs.ContainsKey(function.Name);
 
-        public double EvaluateFunction(Token function, Token parameters)
-            => CallFunction(function, parameters, true);
+        public double EvaluateFunction(RandomAccessIterator<Token> tokens) => CallFunction(tokens, true);
 
-        public void InvokeFunction(Token function, Token parameters)
-            => CallFunction(function, parameters, false);
+        public void InvokeFunction(RandomAccessIterator<Token> tokens) => CallFunction(tokens, false);
 
-        public bool IsFunctionName(string symbol) => _functionDefs.ContainsKey(symbol);
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>
-        /// Gets the flag that determines if the multiline assembler is actively evaluating a directive.
-        /// This indicates that a corresponding closure to a block opening has not been encountered.
-        /// </summary>
-        public bool InAnActiveBlock => _currentBlock != null;
-
-        /// <summary>
-        /// The active block line.
-        /// </summary>
-        public SourceLine ActiveBlockLine
-        {
-            get
-            {
-                if (_currentBlock != null)
-                    return _currentBlock.Line;
-                return null;
-            }
-        }
+        public bool IsFunctionName(StringView symbol) => _functionDefs.ContainsKey(symbol);
 
         #endregion
     }

@@ -34,7 +34,7 @@ namespace Core6502DotNet
         /// <param name="collection">The source collection for the iterator.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public RandomAccessIterator(IEnumerable<T> collection)
-           : this(collection, 0) { }
+           : this(collection, -1) { }
 
         /// <summary>
         /// Constructs a new instance of a <see cref="RandomAccessIterator{T}"/> class.
@@ -49,10 +49,10 @@ namespace Core6502DotNet
                 throw new ArgumentNullException();
             _list = collection.ToArray();
             _length = _list.Length;
-            if (_length > 0 && (firstIndex < 0 || firstIndex >= _length))
+            if (_length > 0 && (firstIndex < -1 || firstIndex >= _length))
                 throw new ArgumentOutOfRangeException();
             _firstIndex = firstIndex;
-            Index = firstIndex - 1;
+            Index = firstIndex;
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace Core6502DotNet
             _firstIndex = iterator._firstIndex;
             _list = iterator._list;
             _length = iterator._length;
-            Index = reset ? _firstIndex - 1 : iterator.Index;
+            Index = reset ? _firstIndex : iterator.Index;
         }
 
         #endregion
@@ -120,9 +120,9 @@ namespace Core6502DotNet
 
         public bool MoveNext()
         {
-            if (++Index == _length)
+            if (Index == _length || ++Index == _length)
             {
-                Index = -1;
+                Index = _firstIndex;
                 return false;
             }
             return true;
@@ -134,7 +134,7 @@ namespace Core6502DotNet
         /// <returns>The next element, or the default value if the iteration is completing.</returns>
         public T PeekNext()
         {
-            if (Index < _length - 1)
+            if (Index > _firstIndex && Index < _length - 1)
                 return _list[Index + 1];
             return default;
         }
@@ -152,7 +152,7 @@ namespace Core6502DotNet
             return i < _length ? _list[i] : default;
         }
 
-        public void Reset() => Index = _firstIndex - 1;
+        public void Reset() => Index = _firstIndex;
 
         /// <summary>
         /// Rewinds the iterator back to the specified index.
@@ -165,6 +165,14 @@ namespace Core6502DotNet
                 throw new ArgumentOutOfRangeException();
             Index = index;
         }
+
+        /// <summary>
+        /// Searches for the specified object and returns the zero-based index of the first within the entire iterator.
+        /// </summary>
+        /// <param name="item">The object to locate.</param>
+        /// <returns>The zero-based index of the first occurrence of item within the iterator from its current iteration point, 
+        /// if found; otherwise, -1.</returns>
+        public int IndexOf(T item) => Index >= 0 ? _list.ToList().IndexOf(item, Index) : -1;
 
         /// <summary>
         /// Sets the iterator to the specified index.
@@ -197,7 +205,7 @@ namespace Core6502DotNet
         {
             get
             {
-                if (Index < _firstIndex || Index >= _length)
+                if (Index <= _firstIndex || Index >= _length)
                     return default;
                 return _list[Index];
             }

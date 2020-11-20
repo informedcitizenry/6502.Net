@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Core6502DotNet.m65xx
 {
-    /// <summary>
+        /// <summary>
     /// A class responsible for assembly of 65xx source.
     /// </summary>
     public sealed partial class Asm6502 : MotorolaBase
@@ -24,8 +24,14 @@ namespace Core6502DotNet.m65xx
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         public Asm6502(AssemblyServices services)
-            :base(services)
+            : base(services)
         {
+            Reserved.DefineType("IndIndeces",
+                "s", "sp", "x");
+
+            Reserved.DefineType("IndicesInd",
+                "y", "z");
+
             Reserved.DefineType("Indeces",
                 "s", "sp", "x", "y", "z");
 
@@ -53,12 +59,12 @@ namespace Core6502DotNet.m65xx
                     "brl", "per", "blt", "bge"
                 );
 
-           
+
             Reserved.AddWord("RelativeSecond", "bbr");
             Reserved.AddWord("RelativeSecond", "bbs");
             Reserved.AddWord("RelativeSecond", "rmb");
             Reserved.AddWord("RelativeSecond", "smb");
-            
+
             Reserved.DefineType("MoveMemory16",
                     "tai", "tdd", "tia", "tii", "tin"
                 );
@@ -97,7 +103,7 @@ namespace Core6502DotNet.m65xx
                 );
 
             // set architecture specific encodings
-            Services.Encoding.SelectEncoding("petscii");
+            Services.Encoding.SelectEncoding("\"petscii\"");
             Services.Encoding.Map("az", 'A');
             Services.Encoding.Map("AZ", 0xc1);
             Services.Encoding.Map('£', '\\');
@@ -143,7 +149,7 @@ namespace Core6502DotNet.m65xx
             Services.Encoding.Map('π', 0xde);
             Services.Encoding.Map('◥', 0xdf);
 
-            Services.Encoding.SelectEncoding("cbmscreen");
+            Services.Encoding.SelectEncoding("\"cbmscreen\"");
             Services.Encoding.Map("@Z", '\0');
             Services.Encoding.Map("az", 'A');
             Services.Encoding.Map('£', '\\');
@@ -189,7 +195,7 @@ namespace Core6502DotNet.m65xx
             Services.Encoding.Map('┼', '[');
             Services.Encoding.Map('◥', '_');
 
-            Services.Encoding.SelectEncoding("atascreen");
+            Services.Encoding.SelectEncoding("\"atascreen\"");
             Services.Encoding.Map(" _", '\0');
 
             Services.Encoding.SelectDefaultEncoding();
@@ -301,29 +307,14 @@ namespace Core6502DotNet.m65xx
         protected override Modes ParseOperand(SourceLine line)
         {
             var mode = Modes.Implied;
-            var instruction = line.InstructionName;
+            var instruction = line.Instruction.Name;
 
-            if (line.OperandHasToken)
+            if (line.Operands.Count > 0)
             {
-                // we are setting these variables because they can change
-                var operand = line.Operand;
-                var operandChildren = operand.Children;
-                var firstDelim = operandChildren[0];
-                if (firstDelim.Children.Count == 0)
-                    throw new SyntaxException(firstDelim.Position, "Expression expected.");
-
-                var first = firstDelim.Children[0];
-                var firstDelimChildren = firstDelim.Children;
-
-                // test if we are setting the operand size or direct page
-                var forcedMode = GetForcedModifier(first, firstDelimChildren.Count);
-                if (forcedMode != Modes.Implied)
-                {
-                    mode = forcedMode;
-                    first = firstDelim.Children[1];
-                    firstDelimChildren = firstDelimChildren.Skip(1).ToList();
-                }
-                if (first.Name.Equals("a"))
+                var operand = line.Operands.GetIterator();
+                mode = GetForcedModifier(operand);
+                var first = operand.GetNext();
+                if (first.Name.Equals("a", Services.StringComparison) && operand.PeekNext() == null)
                 {
                     // e.g., lsr a
                     if (mode != Modes.Implied)
@@ -332,159 +323,126 @@ namespace Core6502DotNet.m65xx
                     return mode;
                 }
                 mode |= Modes.ZeroPage;
-                if (first.Name.Equals("#"))
+                var falseIndirect = !first.Name.Equals("(");
+                if (!falseIndirect)
                 {
-                    if (firstDelimChildren.Count < 2)
-                        throw new SyntaxException(first.Position, "Missing operand.");
-
-                    mode |= Modes.Immediate;
-
-                    var size = Evaluate(firstDelimChildren.Skip(1), 0);
-
+                    var ix = operand.Index;
+                    _ = Token.GetGroup(operand);
+                    falseIndirect = !Token.IsEnd(operand.Current);
+                    operand.SetIndex(ix);
+                }
+                if (first.Name.Equals("[") || (first.Name.Equals("(") && !falseIndirect))
+                {
+                    if (first.Name.Equals("["))
+                        mode |= Modes.DirectPage;
+                    else
+                        mode |= Modes.Indirect;
+                    var size = Evaluate(operand, 0);
                     if (!mode.HasFlag(Modes.ForceWidth))
                         mode |= size;
-                }
-                else if (first.Name.Equals("[") || first.Name.Equals("("))
-                {
-                    if (first.Children.Count == 0)
-                        throw new SyntaxException(first.Position, "Missing one or more operands.");
 
-                    if (first.Name.Equals("["))
+                    if (operand.Current.IsSeparator())
                     {
-                        mode |= Modes.DirectPage;
-                    }
-                    else if (firstDelimChildren.Count == 1) // test in fact if we are indirect or dealing with a math expression in parantheses
-                    {
-                        mode |= Modes.Indirect;
-
-                        // check if there is a ",<register>" at the end of the indirect expression (
-                        if (first.Children.Count > 1 && first.Children[1].OperatorType == OperatorType.Separator)
+                        operand.MoveNext();
+                        if (!Reserved.IsOneOf("IndIndeces", operand.Current.Name))
+                            throw new ExpressionException(operand.Current.Position, "Unexpected argument found.");
+                        var index = operand.Current.Name.ToLower();
+                        mode |= index switch
                         {
-                            if (first.Children.Count > 2)
-                                throw new ExpressionException(first.LastChild.Position, "Unexpected argument found.");
-
-                            if (first.Children[1].Children.Count == 1)
-                            {
-                                var firstAfterComma = first.Children[1].Children[0];
-                                if (Reserved.IsOneOf("Indeces", firstAfterComma.Name))
-                                {
-                                    if (first.Children[1].Children.Count > 2)
-                                        throw new ExpressionException(first.Children[1].LastChild.Position, "Unexpected argument found.");
-                                    if (firstAfterComma.Name.Equals("x"))
-                                        mode |= Modes.InnerX;
-                                    else if (firstAfterComma.Name.Equals("s"))
-                                        mode |= Modes.IndexedS;
-                                    else if (firstAfterComma.Name.Equals("sp"))
-                                        mode |= Modes.IndexedSp;
-                                    else
-                                        throw new ExpressionException(firstAfterComma.Position, $"Illegal index \"{firstAfterComma.Name}\" specified.");
-                                }
-                                else
-                                {
-                                    throw new ExpressionException(firstAfterComma.Position, $"Unexpected expression \"{firstAfterComma.Name}\" encountered.");
-                                }
-                            }
-                            else
-                            {
-                                throw new ExpressionException(first.LastChild.Position, $"Unexpected expression \"{first.LastChild.Name}\" encountered.");
-                            }
-                        }
+                            "s"  => Modes.IndexedS,
+                            "sp" => Modes.IndexedSp,
+                            _    => Modes.InnerX,
+                        };
+                        operand.MoveNext();
                     }
-                }
-                IEnumerable<Token> firstOperandExpression = null;
-                var memoryMode = mode & Modes.MemModMask;
-                if ((memoryMode & Modes.DirIndMask) != 0)
-                {
-                    if (first.Children.Count == 0 || first.Children[0].Children.Count == 0)
-                        throw new ExpressionException(first.Position, "Expression expected.");
-
-                    var firstInnerSep = first.Children[0];
-                    firstOperandExpression = firstInnerSep.Children;
-                }
-                else if (!mode.HasFlag(Modes.Immediate))
-                {
-                    firstOperandExpression = firstDelimChildren;
-                }
-                if (firstOperandExpression != null)
-                {
-                    var resultmode = Evaluate(firstOperandExpression, 0);
-                    if (!mode.HasFlag(Modes.ForceWidth))
-                        mode |= resultmode;
-                    else if ((int)forcedMode < (int)resultmode)
-                        throw new ExpressionException(line.Operand.LastChild.Position, "Width specifier does not match expression.");
-                }
-
-                // capture the outer ",<register>" if any
-                if (operandChildren.Count > 1)
-                {
-                    var lastCommaDelim = operandChildren[^1];
-                    if (operandChildren.Count > 3 || lastCommaDelim.Children.Count == 0)
-                        throw new ExpressionException(line.Operand.LastChild.Position, "Bad expression.");
-
-                    var indexerIndex = -1;
-                    if (Reserved.IsOneOf("Indeces", lastCommaDelim.Children[0].Name))
+                    if (operand.MoveNext())
                     {
-                        if (lastCommaDelim.Children.Count != 1)
-                            throw new ExpressionException(lastCommaDelim.Position, "Bad expression.");
-
-                        var firstAfterComma = lastCommaDelim.Children[0];
-                        if (firstAfterComma.Name.Equals("x"))
-                            mode |= Modes.IndexedX;
-                        else if (firstAfterComma.Name.Equals("y"))
-                            mode |= Modes.IndexedY;
-                        else if (firstAfterComma.Name.Equals("z"))
-                            mode |= Modes.IndexedZ;
-                        else
-                            throw new ExpressionException(firstAfterComma.Position, $"Illegal index \"{firstAfterComma.Name}\" specified.");
-
-                        indexerIndex = operandChildren.Count - 1;
-                    }
-
-                    if (operandChildren.Count == 2 && indexerIndex != 1)
-                    {
-                        mode |= Modes.TwoOperand;
-                        mode |= Evaluate(lastCommaDelim.Children, 1);
-
-                    }
-                    else if (operandChildren.Count == 3)
-                    {
-                        mode |= Evaluate(operandChildren[1].Children, 1);
-                        if (indexerIndex == 2)
+                        if (!operand.Current.IsSeparator())
+                            throw new SyntaxException(operand.Current, "Unexpected expression.");
+                        if (!operand.MoveNext() || !Reserved.IsOneOf("IndicesInd", operand.Current.Name))
+                            throw new SyntaxException(line.Operands[^1], "Invalid index.");
+                        var index = operand.Current.Name.ToString();
+                        mode |= index switch
                         {
-                            mode |= Modes.TwoOperand;
-                        }
-                        else
-                        {
-                            mode |= Modes.ThreeOperand;
-                            mode |= Evaluate(operandChildren[2].Children, 2);
-                        }
+                            "y" => Modes.IndexedY,
+                            "Y" => Modes.IndexedY,
+                            _   => Modes.IndexedZ,
+                        };
+                        operand.MoveNext();
                     }
                 }
-                if (Reserved.IsOneOf("RelativeSecond", instruction))
+                else
                 {
-                    if (double.IsNaN(Evaluations[0]) ||
+                    if (first.Name.Equals("#"))
+                    {
+                        mode |= Modes.Immediate;
+                        if (!operand.MoveNext())
+                            throw new SyntaxException(first.Position, "Missing operand.");
+                    }
+                    var size = Evaluate(operand, false, 0);
+                    if (Reserved.IsOneOf("RelativeSecond", line.Instruction.Name))
+                    {
+                        if (double.IsNaN(Evaluations[0]) ||
                         Evaluations[0] < 0 || Evaluations[0] > 7)
-                        throw new ExpressionException(line.Operand.Position, $"First operand for \"{instruction}\" must be 0 to 7.");
-
-                    mode |= (Modes)((int)Evaluations[0] << 14) | Modes.Bit0;
-                    if (double.IsNaN(Evaluations[1]))
-                        throw new ExpressionException(line.Operand.Position, "Missing direct page operand.");
-
-                    Evaluations[0] = Evaluations[1];
-
-                    if (Reserved.IsOneOf("Branches", instruction))
-                    {
-                        if (double.IsNaN(Evaluations[2]))
-                            throw new ExpressionException(line.Operand.Position, "Missing branch address.");
-                        Evaluations[1] = Evaluations[2];
+                            throw new ExpressionException(line.Operands[0], $"Expression must be 0 to 7.");
+                        mode |= (Modes)((int)Evaluations[0] << 14) | Modes.Bit0;
+                        size = Evaluate(operand, 0);
+                        if (operand.Current != null)
+                        {
+                            size = Evaluate(operand, 1);
+                            mode |= Modes.ThreeOpRel;
+                        }
                     }
                     else
                     {
-                        Evaluations[1] = double.NaN;
+                        var op = operand.GetNext();
+                        if (op != null)
+                        {
+                            string indexName = null;
+                            if (Reserved.IsOneOf("Indeces", op.Name))
+                            {
+                                indexName = op.Name.ToLower();
+                            }
+                            else
+                            {
+                                size = Evaluate(operand, false, 1);
+                                if ((op = operand.GetNext())!= null)
+                                {
+                                    if (Reserved.IsOneOf("Indeces", op.Name))
+                                    {
+                                        indexName = op.Name.ToLower();
+                                        mode |= Modes.TwoOperand;
+                                    }
+                                    else
+                                    {
+                                        size = Evaluate(operand, false, 2);
+                                        mode |= Modes.ThreeOperand;
+                                    }
+                                }
+                                else
+                                {
+                                    mode |= Modes.TwoOperand;
+                                }
+                            }
+                            if (!string.IsNullOrEmpty(indexName))
+                            {
+                                mode |= indexName switch
+                                {
+                                    "s" => Modes.IndexedS,
+                                    "x" => Modes.IndexedX,
+                                    "y" => Modes.IndexedY,
+                                    "z" => Modes.IndexedZ,
+                                    _   => throw new SyntaxException(operand.Current, "Invalid operand."),
+                                };
+                                operand.MoveNext();
+                            }
+                        }
                     }
-                    Evaluations[2] = double.NaN;
-
+                    if (!mode.HasFlag(Modes.ForceWidth))
+                        mode |= size;
                 }
+                if (operand.Current != null)
+                    throw new SyntaxException(operand.Current, "Unexpected expression.");
                 if (Reserved.IsOneOf("Branches", instruction))
                 {
                     mode = (mode & ~Modes.Absolute) | Modes.Relative;
@@ -499,16 +457,16 @@ namespace Core6502DotNet.m65xx
         {
             if (!CPU.Equals("65816"))
             {
-                Services.Log.LogEntry(line, line.Instruction, $"Directive \"{line.InstructionName}\" is ignored for CPU \"{CPU}\"", false);
+                Services.Log.LogEntry(line.Instruction,  $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
                 return;
             }
-            var size = line.InstructionName.Contains("16") ? 3 : 2;
-            if (line.InstructionName[1] == 'm')
+            var size = line.Instruction.Name.ToString().Contains("16") ? 3 : 2;
+            if (line.Instruction.Name[1] == 'm')
             {
                 _m16 = size == 3;
                 SetImmediate(size, 'a');
             }
-            if (line.InstructionName[1] == 'x')
+            if (line.Instruction.Name[1] == 'x')
             {
                 _x16 = size == 3;
                 SetImmediate(size, 'x');
@@ -518,12 +476,15 @@ namespace Core6502DotNet.m65xx
 
         string AssemblePseudoBranch(SourceLine line)
         {
-            if (!line.OperandHasToken)
+            if (line.Operands.Count == 0)
             {
-                Services.Log.LogEntry(line, line.Instruction, "Missing branch location.");
+                Services.Log.LogEntry(line.Instruction, "Missing branch location.");
                 return string.Empty;
             }
-            var offset = Services.Evaluator.Evaluate(line.Operand, short.MinValue, ushort.MaxValue);
+            var iterator = line.Operands.GetIterator();
+            var offset = Services.Evaluator.Evaluate(iterator, short.MinValue, ushort.MaxValue);
+            if (iterator.Current != null)
+                throw new SyntaxException(iterator.Current, "Unexpected expression.");
             int addrOffs;
             int minValue, maxValue;
             double relative;
@@ -543,7 +504,7 @@ namespace Core6502DotNet.m65xx
                 mode |= Modes.ZeroPage;
             }
             relative = Services.Output.GetRelativeOffset((int)offset, addrOffs);
-            var mnemonic = line.InstructionName;
+            var mnemonic = line.Instruction.Name.ToLower();
             if (relative < minValue || relative > maxValue)
             {
                 mnemonic = s_pseudoBranchTranslations[mnemonic];
@@ -551,7 +512,7 @@ namespace Core6502DotNet.m65xx
             }
             else
             {
-                mnemonic = "b" + mnemonic.Substring(1);
+                mnemonic = "b" + mnemonic[1..];
                 offset = double.NaN;
             }
             var mnmemmode = (mnemonic, mode);
@@ -582,13 +543,13 @@ namespace Core6502DotNet.m65xx
                 {
                     sb.Append($"${Services.Output.LogicalPC + (int)relative:x4}");
                     if (!Services.Options.NoSource)
-                        sb.Append($"         {line.UnparsedSource}");
+                        sb.Append($"         {line.Source}");
                 }
                 else
                 {
                     sb.Append($"${Services.Output.LogicalPC:x4}");
                     if (!Services.Options.NoSource)
-                        sb.Append($"         {line.UnparsedSource}");
+                        sb.Append($"         {line.Source}");
                     sb.AppendLine();
                     if (!Services.Options.NoAssembly)
                         sb.Append(Services.Output.GetBytesFrom(PCOnAssemble + 2).ToString(PCOnAssemble + addrOffs, '.').PadRight(Padding));
@@ -601,14 +562,24 @@ namespace Core6502DotNet.m65xx
             }
             else if (!Services.Options.NoSource)
             {
-                sb.Append($"                 {line.UnparsedSource}");
+                sb.Append($"                 {line.Source}");
             }
             return sb.ToString();
         }
 
-        protected override string OnAssembleLine(SourceLine line)
+        internal override int GetInstructionSize(SourceLine line)
         {
-            var instruction = line.InstructionName;
+            if (Reserved.IsOneOf("LongShort", line.Instruction.Name))
+                return 0;
+            if (Reserved.IsOneOf("PseudoBranches", line.Instruction.Name))
+                return 2;
+            return base.GetInstructionSize(line);
+        }
+
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        {
+            var line = lines.Current;
+            var instruction = line.Instruction.Name;
             if (Reserved.IsOneOf("LongShort", instruction))
             {
                 AssembleLongShort(line);
@@ -618,12 +589,12 @@ namespace Core6502DotNet.m65xx
             {
                 return AssemblePseudoBranch(line);
             }
-            return base.OnAssembleLine(line);
+            return base.OnAssemble(lines);
         }
 
         protected override bool IsCpuValid(string cpu) => SupportedCPUs.Contains(cpu);
 
-        public override bool Assembles(string s) => IsReserved(s) && !Reserved.IsOneOf("Registers", s);
+        public override bool Assembles(StringView s) => IsReserved(s) && !Reserved.IsOneOf("Registers", s);
 
         #endregion
 

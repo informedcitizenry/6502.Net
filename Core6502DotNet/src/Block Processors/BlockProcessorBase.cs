@@ -24,80 +24,14 @@ namespace Core6502DotNet
             : base($"Missing closure for \"{blockType}\" directive.")
         {
 
-        }  
-    }
-
-    /// <summary>
-    /// An enumeration of a block type.
-    /// </summary>
-    public enum BlockType
-    {
-        Scope,
-        Namespace,
-        Conditional,
-        ConditionalDef,
-        ConditionalNdef,
-        ForNext,
-        Functional,
-        Page,
-        Repeat,
-        Switch,
-        While,
-        Goto
-    };
-
-    /// <summary>
-    /// A class that defines a block opening and closure.
-    /// </summary>
-    public readonly struct BlockDirective
-    {
-        /// <summary>
-        /// Gets the defined list of block directives by block type.
-        /// </summary>
-        public static readonly Dictionary<BlockType, BlockDirective> Directives = new Dictionary<BlockType, BlockDirective>
-            {
-                { BlockType.Scope,           new BlockDirective(".block",     ".endblock"     ) },
-                { BlockType.Namespace,       new BlockDirective(".namespace", ".endnamespace" ) },
-                { BlockType.Conditional,     new BlockDirective(".if",        ".endif"        ) },
-                { BlockType.ConditionalDef,  new BlockDirective(".ifdef",     ".endif"        ) },
-                { BlockType.ConditionalNdef, new BlockDirective(".ifndef",    ".endif"        ) },
-                { BlockType.ForNext,         new BlockDirective(".for",       ".next"         ) },
-                { BlockType.Functional,      new BlockDirective(".function",  ".endfunction"  ) },
-                { BlockType.Page,            new BlockDirective(".page",      ".endpage"      ) },
-                { BlockType.Repeat,          new BlockDirective(".repeat",    ".endrepeat"    ) },
-                { BlockType.Switch,          new BlockDirective(".switch",    ".endswitch"    ) },
-                { BlockType.While,           new BlockDirective(".while",     ".endwhile"     ) }
-
-            };
-
-        /// <summary>
-        /// Creates a new instance of the block closure definition.
-        /// </summary>
-        /// <param name="open"></param>
-        /// <param name="closure"></param>
-        public BlockDirective(string open, string closure) 
-        {
-
-            Open = open;
-            Closure = closure;
         }
-
-        /// <summary>
-        /// Gets the block's open directive.
-        /// </summary>
-        public string Open { get; }
-
-        /// <summary>
-        /// Gets the block's closure directive.
-        /// </summary>
-        public string Closure { get; }
-    };
+    }
 
     /// <summary>
     /// A class responsible for the processing of source code blocks for a 
     /// <see cref="BlockAssembler"/>. This class must be inherited.
     /// </summary>
-    public abstract class BlockProcessorBase : Core6502Base
+    public abstract class BlockProcessorBase : AssemblerBase
     {
         #region Constructors
 
@@ -105,33 +39,25 @@ namespace Core6502DotNet
         /// Creates a new instance of a block processor. 
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
-        public BlockProcessorBase(AssemblyServices services,
-                                  RandomAccessIterator<SourceLine> iterator, 
-                                  BlockType type)
-            : this(services, iterator, type, true) { }
+        /// <param name="index">The index at which the block is defined.</param>
+        public BlockProcessorBase(AssemblyServices services, int index)
+            : this(services, index, true)
+        {
+
+        }
 
         /// <summary>
-        /// Creates a new instance of a block processor.
+        /// Creates a new instance of a block processor. 
         /// </summary>
-        /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse when
-        /// processing the block.</param>
-        /// <param name="type">The <see cref="BlockType"/>.</param>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="index">The index at which the block is defined.</param>
         /// <param name="createScope">Automatically create a scope when initialized.</param>
-        protected BlockProcessorBase(AssemblyServices services,
-                                     RandomAccessIterator<SourceLine> iterator, 
-                                     BlockType type, 
-                                     bool createScope)
-            :base(services)
+        protected BlockProcessorBase(AssemblyServices services, int index, bool createScope)
+            : base(services)
         {
-            LineIterator = iterator;
-            Line = iterator.Current;
-            Index = iterator.Index;
-            Type = type;
+            Index = index;
             if (createScope)
-                Services.SymbolManager.PushScope(Index.ToString());
+                services.SymbolManager.PushScope(Index.ToString());
         }
 
         #endregion
@@ -141,17 +67,18 @@ namespace Core6502DotNet
         /// <summary>
         /// Executes the block directive. This method must be inherited.
         /// </summary>
-        /// <returns><c>true</c> if the block processor successfully executed the
-        /// directive, <c>false</c> otherwise.</returns>
-        public abstract bool ExecuteDirective();
+        /// <param name="iterator">The source line iterator.</param>
+        public abstract void ExecuteDirective(RandomAccessIterator<SourceLine> iterator);
 
-        public virtual void PopScope()
+        /// <summary>
+        /// Cleanup the current block's scope.
+        /// </summary>
+        /// <param name="iterator">The source line iterator.</param>
+        public virtual void PopScope(RandomAccessIterator<SourceLine> iterator)
         {
-            SeekBlockEnd();
+            SeekBlockEnd(iterator);
             Services.SymbolManager.PopScope();
         }
-
-        //public abstract bool ExecuteDirective();
 
         /// <summary>
         /// Seeks the <see cref="SourceLine"/> containing the 
@@ -159,83 +86,61 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="iterator">The source line iterator.</param>
         /// <param name="directives">An array of directives, one of which to seek in the block.</param>
-        protected void SeekBlockDirectives(RandomAccessIterator<SourceLine> iterator, string[] directives)
+        protected void SeekBlockDirectives(RandomAccessIterator<SourceLine> iterator, StringView[] directives)
         {
             var line = iterator.Current;
-            var instruction = line.InstructionName;
-            if (!directives.Contains(instruction))
+            if (!directives.Contains(line.Instruction.Name, Services.StringViewComparer))
             {
-                var blockOpen = BlockDirective.Directives[Type].Open;
-                var blockClose = BlockDirective.Directives[Type].Closure;
+                var blockClose = BlockClosure;
 
-                var keywordsNotToSkip = new HashSet<string>(directives)
+                var keywordsNotToSkip = new List<StringView>(directives)
                 {
-                    blockOpen,
                     blockClose
                 };
+                keywordsNotToSkip.AddRange(BlockOpens.Select(bo => new StringView(bo)));
+
                 var opens = 1;
                 while (opens != 0)
                 {
-                    line = iterator.FirstOrDefault(l => keywordsNotToSkip.Contains(l.InstructionName));
+                    line = iterator.FirstOrDefault(l => l.Instruction != null && keywordsNotToSkip.Contains(l.Instruction.Name, Services.StringViewComparer));
                     if (line == null)
-                        throw new BlockClosureException(blockOpen);
+                        throw new BlockClosureException(BlockOpens.First());
 
-                    if (line.InstructionName.Equals(blockOpen))
+                    if (BlockOpens.Contains(line.Instruction.Name.ToString(), Services.StringComparer))
                         opens++;
 
-                    if (opens < 2 && directives.Contains(line.InstructionName))
+                    if (opens < 2 && directives.Contains(line.Instruction.Name, Services.StringViewComparer))
                         break;
 
-                    if (line.InstructionName.Equals(blockClose))
+                    if (line.Instruction.Name.Equals(blockClose, Services.StringComparison))
                         opens--;
                 }
             }
         }
 
         /// <summary>
-        /// Seeks the <see cref="SourceLine"/> containing the 
-        /// first instance one of the directives in the block.
-        /// </summary>
-        /// <param name="directives">An array of directives, one of which to seek in the block.</param>
-        protected void SeekBlockDirectives(string[] directives)
-            => SeekBlockDirectives(LineIterator, directives);
-
-        /// <summary>
         /// Seeks the <see cref="SourceLine"/> containing the directive that completes the block.
         /// </summary>
         /// <param name="iterator">The iterator through which to seek the line.</param>
         public void SeekBlockEnd(RandomAccessIterator<SourceLine> iterator)
-            => SeekBlockDirectives(iterator, new string[] { Directive.Closure });
+            => SeekBlockDirectives(iterator, new StringView[] { BlockClosure });
 
-        /// <summary>
-        /// Seeks the <see cref="SourceLine"/> containing the directive that completes the block.
-        /// </summary>
-        public void SeekBlockEnd()
-            => SeekBlockDirectives(LineIterator, new string[] { Directive.Closure });
+        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+            => throw new NotImplementedException();
 
         #endregion
 
         #region Properties
 
         /// <summary>
-        /// Gets the block's directive.
+        /// The keyword or keywords that mark the block opening.
         /// </summary>
-        public BlockDirective Directive => BlockDirective.Directives[Type];
+        public abstract IEnumerable<string> BlockOpens { get; }
 
         /// <summary>
-        /// Gets the index in the source listing where the block is defined.
+        /// The keyword that marks the block closure.
         /// </summary>
-        public int Index { get; }
-
-        /// <summary>
-        /// Gets the <see cref="SourceLine"/> that defined the blcok.
-        /// </summary>
-        public SourceLine Line { get; }
-
-        /// <summary>
-        /// Gets the block's <see cref="BlockType"/>.
-        /// </summary>
-        public BlockType Type { get; }
+        public abstract string BlockClosure { get; }
 
         /// <summary>
         /// Gets the flag indicating whether a .break directive is allowed
@@ -256,9 +161,9 @@ namespace Core6502DotNet
         public virtual bool WrapInScope => false;
 
         /// <summary>
-        /// Gets this block processor's line iterator.
+        /// The index at which the block was defined.
         /// </summary>
-        protected RandomAccessIterator<SourceLine> LineIterator { get; }
+        public int Index { get; }
 
         #endregion
     }

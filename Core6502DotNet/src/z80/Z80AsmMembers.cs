@@ -77,38 +77,7 @@ namespace Core6502DotNet.z80
             BitOp7      = Bit7      | BitOp
         }
 
-		static readonly Dictionary<string, Z80Mode> s_namedModes = 
-			new Dictionary<string, Z80Mode>
-		{
-			{ "a",   Z80Mode.A         },
-			{ "af",  Z80Mode.AF        },
-			{ "af'", Z80Mode.ShadowAF  },
-			{ "b",   Z80Mode.B         },
-			{ "bc",  Z80Mode.BC        },
-			{ "c",   Z80Mode.C         },
-			{ "d",   Z80Mode.D         },
-			{ "de",  Z80Mode.DE        },
-			{ "e",   Z80Mode.E         },
-			{ "h",   Z80Mode.H         },
-			{ "hl",  Z80Mode.HL        },
-			{ "i",   Z80Mode.I         },
-			{ "ix",  Z80Mode.IX        },
-			{ "ixh", Z80Mode.XH        },
-			{ "ixl", Z80Mode.XL        },
-			{ "iy",  Z80Mode.IY        },
-			{ "iyh", Z80Mode.YH        },
-			{ "iyl", Z80Mode.YL        },
-			{ "l",   Z80Mode.L         },
-			{ "m",   Z80Mode.M         },
-			{ "nc",  Z80Mode.NC        },
-			{ "nz",  Z80Mode.NZ        },
-			{ "p",   Z80Mode.P         },
-			{ "pe",  Z80Mode.PE        },
-			{ "po",  Z80Mode.PO        },
-			{ "r",   Z80Mode.R         },
-			{ "sp",  Z80Mode.SP        },
-			{ "z",   Z80Mode.Z			}	
-		};
+		readonly Dictionary<StringView, Z80Mode> _namedModes;
 
 		static readonly Dictionary<Z80Mode, string> s_disassemblyFormats = 
 			new Dictionary<Z80Mode, string>
