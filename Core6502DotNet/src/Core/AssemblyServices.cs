@@ -57,6 +57,7 @@ namespace Core6502DotNet
             var token = tokens.Current;
             var subscript = -1;
             var converted = double.NaN;
+            var isString = false;
             if (char.IsLetter(token.Name[0]) || token.Name[0] == '_')
             {
                 var next = tokens.GetNext();
@@ -82,6 +83,7 @@ namespace Core6502DotNet
                     if (symbol.IsNumeric)
                         return symbol.NumericVector[subscript];
                     token = new Token(symbol.StringVector[subscript], TokenType.Operand);
+                    isString = true;
                 }
                 else if (symbol.IsNumeric)
                 {
@@ -92,16 +94,17 @@ namespace Core6502DotNet
                 else
                 {
                     token = new Token(symbol.StringValue, TokenType.Operand);
+                    isString = true;
                 }
             }
-            if (token.IsQuote())
+            if (isString || token.IsQuote())
             {
                 // is it a string literal?
-                var literal = token.Name.TrimOnce(token.Name[0]).ToString();
+                var literal = token.IsQuote() ? token.Name.TrimOnce(token.Name[0]).ToString() : token.Name.ToString();
                 if (string.IsNullOrEmpty(literal))
                     throw new SyntaxException(token.Position, "Cannot evaluate empty string.");
                 literal = Regex.Unescape(literal);
-                if (!token.IsDoubleQuote())
+                if (!isString)
                 {
                     var charsize = 1;
                     if (char.IsSurrogate(literal[0]))

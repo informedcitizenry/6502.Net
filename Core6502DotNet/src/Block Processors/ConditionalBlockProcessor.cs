@@ -17,7 +17,6 @@ namespace Core6502DotNet
     {
         #region Members
 
-        bool _ifEvaluated;
         bool _elseEvaluated;
         bool _ifTrue;
 

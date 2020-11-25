@@ -110,7 +110,7 @@ namespace Core6502DotNet
                 {
                     if ((!iterator.MoveNext() || Token.IsEnd(iterator.Current)) && sym.StorageType == StorageType.Scalar)
                     {
-                        return sym.StringValue.ToString();
+                        return sym.StringValue.TrimOnce('"').ToString();
                     }
                     else if (sym.StorageType == StorageType.Vector && iterator.Current.Name.Equals("["))
                     {

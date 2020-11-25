@@ -706,7 +706,7 @@ namespace Core6502DotNet
                             if (subscript < 0 || subscript >= sym.StringVector.Count)
                                 throw new ExpressionException(lhs.Position, "Index out of range.");
                             if (rhs.IsDoubleQuote())
-                                sym.StringVector[subscript] = rhs.Name.TrimOnce('"');
+                                sym.StringVector[subscript] = rhs.Name;
                             else
                                 throw new SyntaxException(rhs.Position, "Type mismatch.");
                         }

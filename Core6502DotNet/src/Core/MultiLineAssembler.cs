@@ -170,8 +170,7 @@ namespace Core6502DotNet
                                 break;
                             }
                         }
-                        asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
-                        if (asm != null)
+                        if ((asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line))) != null)
                         {
                             var disasm = asm.Assemble(iterator);
                             if (!_options.StopDisassembly())
@@ -185,7 +184,7 @@ namespace Core6502DotNet
                                     disasmBuilder.AppendLine();
                             }
                         }
-                        else if (line.Instruction == null && !_options.ErrorHandler(null, line, AssemblyErrorReason.NotFound, null))
+                        else if (line.Instruction != null && !_options.ErrorHandler(null, line, AssemblyErrorReason.NotFound, null))
                         {
                             break;
                         }

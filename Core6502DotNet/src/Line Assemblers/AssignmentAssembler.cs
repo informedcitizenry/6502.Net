@@ -171,7 +171,7 @@ namespace Core6502DotNet
                             ((int)symbol.NumericValue).ToString("x").PadRight(41),
                             unparsedSource);
                     }
-                    var elliptical = $"\"{symbol.StringValue}\"".Elliptical(38);
+                    var elliptical = $"\"{symbol.StringValue.ToString().Elliptical(38)}\"";
                     return string.Format("={0}{1}", elliptical.PadRight(42), unparsedSource);
                 }
             }

@@ -229,12 +229,14 @@ namespace Core6502DotNet
                 else if (StringHelper.ExpressionIsAString(iterator, Services))
                 {
                     stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(iterator, Services)));
-                    if (!iterator.MoveNext())
+                    if (iterator.Current == null)
                         break;
                 }
                 else 
                 { 
                     stringBytes.AddRange(Services.Output.ConvertToBytes(Services.Evaluator.Evaluate(iterator, false)));
+                    if (iterator.Current == null)
+                        break;
                 }
             }
             var instructionName = line.Instruction.Name.ToLower();
