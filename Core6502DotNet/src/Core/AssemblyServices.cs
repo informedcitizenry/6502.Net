@@ -57,7 +57,7 @@ namespace Core6502DotNet
             var token = tokens.Current;
             var subscript = -1;
             var converted = double.NaN;
-            var isString = false;
+            var isString = token.IsDoubleQuote();
             if (char.IsLetter(token.Name[0]) || token.Name[0] == '_')
             {
                 var next = tokens.GetNext();
