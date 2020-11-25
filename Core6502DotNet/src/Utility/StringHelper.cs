@@ -33,12 +33,12 @@ namespace Core6502DotNet
         public static bool ExpressionIsAString(RandomAccessIterator<Token> iterator, AssemblyServices services)
         {
             var token = iterator.Current;
-
             if (token.IsDoubleQuote())
                 return Token.IsEnd(iterator.PeekNext());
+            var ix = iterator.Index;
+            var result = false;
             if (token.Type == TokenType.Function && token.Name.Equals("format", services.StringComparison))
             {
-                var ix = iterator.Index;
                 iterator.MoveNext();
                 var open = 1;
                 while (open > 0)
@@ -48,13 +48,33 @@ namespace Core6502DotNet
                         open++;
                     else if (token.Name.Equals(")"))
                         open--;
-
                 }
                 var last = iterator.PeekNext();
-                iterator.SetIndex(ix);
-                return Token.IsEnd(last);
+                result = Token.IsEnd(last);
             }
-            return false;
+            else if (token.Type == TokenType.Operand && 
+                    (char.IsLetter(token.Name[0]) || token.Name[0] == '_') &&
+                    !services.Evaluator.IsReserved(token.Name))
+            {
+                var sym = services.SymbolManager.GetSymbol(token, false);
+                if (sym != null)
+                {
+                    if (iterator.MoveNext() && iterator.Current.Name.Equals("["))
+                    {
+                        var subscript = (int)services.Evaluator.Evaluate(iterator);
+                        result = Token.IsEnd(iterator.Current) &&
+                                 subscript >= 0 && subscript < sym.StringVector.Count;
+                    }
+                    else
+                    {
+                        result = Token.IsEnd(iterator.Current) &&
+                                 sym.StorageType == StorageType.Scalar &&
+                                 sym.DataType == DataType.String;
+                    }
+                }
+            }
+            iterator.SetIndex(ix);
+            return result;
         }
 
         /// <summary>
@@ -79,23 +99,29 @@ namespace Core6502DotNet
                 if (!string.IsNullOrEmpty(str) && Token.IsEnd(iterator.Current))
                     return str;
             }
-            else if (token.Type == TokenType.Operand && (char.IsLetter(token.Name[0]) || token.Name[0] == '_'))
+            else if (token.Type == TokenType.Operand && 
+                    (char.IsLetter(token.Name[0]) || token.Name[0] == '_') &&
+                    !services.Evaluator.IsReserved(token.Name))
             {
-                var sym = services.SymbolManager.GetSymbol(token, true);
+                var sym = services.SymbolManager.GetSymbol(token, services.CurrentPass > 0);
+                if (sym == null)
+                    return string.Empty;
                 if (sym.DataType == DataType.String)
                 {
-                    if (Token.IsEnd(iterator.Current))
+                    if ((!iterator.MoveNext() || Token.IsEnd(iterator.Current)) && sym.StorageType == StorageType.Scalar)
                     {
-                        if (sym.StorageType == StorageType.Scalar)
-                            return sym.StringValue.ToString();
+                        return sym.StringValue.ToString();
                     }
                     else if (sym.StorageType == StorageType.Vector && iterator.Current.Name.Equals("["))
                     {
                         var current = iterator.Current;
                         var subscript = (int)services.Evaluator.Evaluate(iterator);
-                        if (subscript >= 0 && subscript < sym.StringVector.Count)
-                            return sym.StringVector[subscript].ToString();
-                        throw new SyntaxException(current, "Index out of range.");
+                        if (Token.IsEnd(iterator.Current))
+                        {
+                            if (subscript >= 0 && subscript < sym.StringVector.Count)
+                                return sym.StringVector[subscript].ToString();
+                            throw new SyntaxException(current, "Index out of range.");
+                        }
                     }
                 }
             }

@@ -22,10 +22,7 @@ namespace Core6502DotNet
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="index">The index at which the block is defined.</param>
         public ScopeBlock(AssemblyServices services, int index)
-            : base(services, index, false)
-        {
-        }
-
+            : base(services, index, false) => Reserved.DefineType("Directives", ".block", ".endblock");
         #endregion
 
         #region Methods
@@ -74,10 +71,7 @@ namespace Core6502DotNet
     public sealed class NamespaceBlock : BlockProcessorBase
     {
         public NamespaceBlock(AssemblyServices services, int index)
-            : base(services, index, false)
-        {
-
-        }
+            : base(services, index, false) => Reserved.DefineType("Directives", ".namespace", ".endnamespace");
 
         public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {

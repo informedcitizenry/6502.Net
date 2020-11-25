@@ -169,6 +169,7 @@ namespace Core6502DotNet
         {
             Reserved.DefineType("CPU", ".cpu");
             Reserved.DefineType("RelativeSecond");
+            Reserved.DefineType("SwapOperands");
             
             Evaluations = new double[]
             {
@@ -179,6 +180,10 @@ namespace Core6502DotNet
                 CPU = Services.CPU;
                 if (!IsCpuValid(CPU))
                     throw new Exception($"Invalid CPU \"{CPU}\" specified.");
+            }
+            else
+            {
+                CPU = string.Empty;
             }
             OnSetCpu();
             Services.PassChanged += OnPassChanged;
@@ -484,6 +489,11 @@ namespace Core6502DotNet
                             if (!double.IsNaN(Evaluations[2]))
                                 eval3 = (int)Evaluations[2] & 0xFFFF;
                         }
+                    }
+                    else if (Reserved.IsOneOf("SwapOperands", line.Instruction.Name))
+                    {
+                        eval1 = (int)Evaluations[1] & 0xFF;
+                        eval2 = (int)Evaluations[0] & 0xFF;
                     }
                     else
                     {

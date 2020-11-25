@@ -220,7 +220,7 @@ namespace Core6502DotNet
                     {
                         if (!StringHelper.IsStringLiteral(tokens))
                             throw new SyntaxException(token.Position, "Type mismatch.");
-                        StringVector.Add(index++, token.Name);
+                        StringVector.Add(index++, token.Name.TrimOnce('"'));
                         token = tokens.GetNext();
                         if (token.Name.Equals("]"))
                             opens--;
@@ -681,32 +681,18 @@ namespace Core6502DotNet
         public void DefineGlobal(StringView name, double value)
             => DefineSymbol(name, new Symbol(value), true);
 
-        /// <summary>
-        /// Define a globally scoped symbol.
-        /// </summary>
-        /// <param name="name">The symbol name.</param>
-        /// <param name="value">The symbol value.</param>
-        public void DefineGlobal(StringView name, StringView value)
-            => DefineSymbol(name, new Symbol(value), true);
-
-        /// <summary>
-        /// Define a globally scoped symbol.
-        /// </summary>
-        /// <param name="tokens">The tokens that contain the definition expression.</param>
-        public void DefineGlobal(RandomAccessIterator<Token> tokens)
-            => DefineFromExpression(tokens, true, false);
-
         void DefineFromExpression(RandomAccessIterator<Token> tokens, bool isGlobal, bool isMutable)
         {
             var lhs = tokens.Current;
             if (lhs == null)
                 throw new ExpressionException(1, "Expression expected.");
+
             var equ = tokens.GetNext();
             if (equ == null || !equ.Name.Equals("="))
             {
                 if (equ != null && equ.Name.Equals("["))
                 {
-                    var sym = GetSymbol(lhs, false);
+                    var sym = GetSymbol(lhs, true);
                     if (sym.StorageType != StorageType.Vector)
                         throw new SymbolException(lhs, SymbolException.ExceptionReason.Scalar);
                     var subscript = (int)_evaluator.Evaluate(tokens);
@@ -750,7 +736,7 @@ namespace Core6502DotNet
                     {
                         if (tokens.PeekNext() == null || TokenType.End.HasFlag(tokens.PeekNext().Type))
                         {
-                            DefineSymbol(lhs.Name, new Symbol(rhs.Name, isMutable), isGlobal);
+                            DefineSymbol(lhs.Name, new Symbol(rhs.Name.TrimOnce('"'), isMutable), isGlobal);
                             return;
                         }
                         tokens.SetIndex(tokens.Index - 1);
@@ -767,14 +753,6 @@ namespace Core6502DotNet
         /// <param name="tokens">The tokenized symbol assignment expression (lhs and rhs).</param>
         public void DefineSymbol(RandomAccessIterator<Token> tokens)
             => DefineFromExpression(tokens, false, true);
-
-        /// <summary>
-        /// Define a scoped symbol.
-        /// </summary>
-        /// <param name="tokens">The tokenized symbol assignment expression (lhs and rhs).</param>
-        /// <param name="isMutable">The symbol's mutability flag.</param>
-        public void DefineSymbol(RandomAccessIterator<Token> tokens, bool isMutable)
-            => DefineFromExpression(tokens, false, isMutable);
 
         /// <summary>
         /// Define a scoped symbol.
@@ -800,6 +778,15 @@ namespace Core6502DotNet
         /// <param name="value">The symbol's value.</param>
         public void DefineSymbol(StringView name, StringView value)
             => DefineSymbol(name, new Symbol(value), false);
+
+        /// <summary>
+        /// Define a scoped symbol.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
+        /// <param name="value">The symbol's value.</param>
+        /// <param name="isMutable">Whether the symbol is mutable.</param>
+        public void DefineSymbol(StringView name, StringView value, bool isMutable)
+            => DefineSymbol(name, new Symbol(value, isMutable), false);
 
         /// <summary>
         /// Define a scoped symbol.

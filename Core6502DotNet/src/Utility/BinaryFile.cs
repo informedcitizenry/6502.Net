@@ -14,6 +14,12 @@ namespace Core6502DotNet
     /// </summary>
     public sealed class BinaryFile
     {
+        #region Members
+
+        readonly string _includePath;
+
+        #endregion
+
         #region Constructor
 
         /// <summary>
@@ -21,6 +27,14 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="filename">The filename of the binary file.</param>
         public BinaryFile(string filename) => Filename = filename;
+
+        /// <summary>
+        /// Constructs a new instance of a binary file load.
+        /// </summary>
+        /// <param name="filename">The filename of the binary file.</param>
+        /// <param name="includePath">The path to include.</param>
+        public BinaryFile(string filename, string includePath)
+            => (Filename, _includePath) = (filename, includePath);
 
         #endregion
 
@@ -35,6 +49,8 @@ namespace Core6502DotNet
             try
             {
                 var filename = Filename.TrimOnce('"');
+                if (!File.Exists(filename) && !string.IsNullOrEmpty(_includePath))
+                    filename = Path.Combine(_includePath, filename);
                 Data = File.ReadAllBytes(filename);
                 Filename = filename;
                 return true;

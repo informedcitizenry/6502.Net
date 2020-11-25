@@ -78,21 +78,29 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        if (line.Operands.Count == 0)
+                        var iterator = line.Operands.GetIterator();
+                        if (!iterator.MoveNext())
                             throw new ExpressionException(line.Label.Position, "Expected expression.");
-                        if (line.Operands[0].Name.Equals("["))
+                        
+                        if (iterator.Current.Name.Equals("["))
                         {
-                            var iterator = line.Operands.GetIterator();
-                            if (Token.IsEnd(iterator.GetNext()))
+                            if (Token.IsEnd(iterator.PeekNext()))
                                 throw new SyntaxException(line.Operands[0].Position,
                                     "List cannot be empty.");
                             Services.SymbolManager.DefineSymbol(line.Label.Name, iterator);
                         }
+                        else if (StringHelper.ExpressionIsAString(iterator, Services))
+                        {
+                            Services.SymbolManager.DefineSymbol(line.Label.Name, 
+                                                                StringHelper.GetString(iterator, Services));
+                        }
                         else
                         {
                             Services.SymbolManager.DefineSymbol(line.Label.Name,
-                                Services.Evaluator.Evaluate(line.Operands.GetIterator()));
+                                Services.Evaluator.Evaluate(iterator, false));
                         }
+                        if (iterator.Current != null)
+                            throw new SyntaxException(iterator.Current, "Unexpected expression.");
                     }
                 }
             }
@@ -106,6 +114,7 @@ namespace Core6502DotNet
                         if (!iterator.MoveNext())
                             throw new ExpressionException(line.Instruction.Position, "Expected expression.");
                         Services.SymbolManager.DefineSymbol(iterator);
+                        iterator.MoveNext();
                         break;
                     case ".org":
                         if (line.Label != null && line.Label.Name.Equals("*"))
@@ -121,6 +130,7 @@ namespace Core6502DotNet
                         break;
                     case ".endrelocate":
                     case ".realpc":
+                        iterator.MoveNext();
                         Services.Output.SynchPC();
                         break;
                 }
@@ -161,7 +171,7 @@ namespace Core6502DotNet
                             ((int)symbol.NumericValue).ToString("x").PadRight(41),
                             unparsedSource);
                     }
-                    var elliptical = $"\"{symbol.StringValue.ToString().Elliptical(38)}\"";
+                    var elliptical = $"\"{symbol.StringValue}\"".Elliptical(38);
                     return string.Format("={0}{1}", elliptical.PadRight(42), unparsedSource);
                 }
             }

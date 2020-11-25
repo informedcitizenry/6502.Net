@@ -59,7 +59,6 @@ namespace Core6502DotNet.m65xx
                     "brl", "per", "blt", "bge"
                 );
 
-
             Reserved.AddWord("RelativeSecond", "bbr");
             Reserved.AddWord("RelativeSecond", "bbs");
             Reserved.AddWord("RelativeSecond", "rmb");
@@ -69,7 +68,6 @@ namespace Core6502DotNet.m65xx
                     "tai", "tdd", "tia", "tii", "tin"
                 );
 
-
             Reserved.DefineType("Jumps",
                     "jmp", "jsr"
                 );
@@ -78,9 +76,8 @@ namespace Core6502DotNet.m65xx
                     "jml", "jsl"
                 );
 
-            Reserved.DefineType("MoveMemory",
-                    "mvn", "mvp"
-                );
+            Reserved.AddWord("SwapOperands", "mvn");
+            Reserved.AddWord("SwapOperands", "mvp");
 
             Reserved.DefineType("LongShort",
                     ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
@@ -422,6 +419,12 @@ namespace Core6502DotNet.m65xx
                                 else
                                 {
                                     mode |= Modes.TwoOperand;
+                                    if (Reserved.IsOneOf("SwapOperands", line.Instruction.Name))
+                                    {
+                                        var ev1 = Evaluations[1];
+                                        Evaluations[1] = Evaluations[0];
+                                        Evaluations[0] = ev1;
+                                    }
                                 }
                             }
                             if (!string.IsNullOrEmpty(indexName))
@@ -530,7 +533,6 @@ namespace Core6502DotNet.m65xx
             if (Services.PassNeeded || string.IsNullOrEmpty(Services.Options.ListingFile))
                 return string.Empty;
             var sb = new StringBuilder();
-
             if (!Services.Options.NoAssembly)
                 sb.Append(Services.Output.GetBytesFrom(PCOnAssemble).Take(2).ToString(PCOnAssemble, '.', true).PadRight(Padding));
             else

@@ -1,0 +1,63 @@
+{
+	"name": "core-6502-net",
+	"displayName": "Core 6502.Net",
+	"description": "Extension for highlighting 65xx/68xx/z80 assembly",
+	"version": "1.0.0",
+	"engines": {
+		"vscode": "^1.51.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "core6502_net_65xx",
+				"aliases": [ "Core 6502.Net (65xx)", "core6502_net_65xx" ],
+				"extensions": [ ".asm", ".a65", ".s" ],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "core6502_net_m680x",
+				"aliases": [ "Core 6502.Net (m680x)", "core6502_net_m680x" ],
+				"extensions": [ ".asm", ".m68", ".s" ],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "core6502_net_z80",
+				"aliases": [ "Core 6502.Net (Z80)", "core6502_net_z80" ],
+				"extensions": [ "asm", ".z80", ".s" ],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "core6502_net_65xx",
+				"scopeName": "source.core6502_net_65xx",
+				"path": "./syntaxes/core-6502-dot-net_65xx.tmLanguage.json"
+			},
+			{
+				"language": "core6502_net_m680x",
+				"scopeName": "source.core6502_net_m680x",
+				"path": "./syntaxes/core-6502-dot-net_m680x.tmLanguage.json"
+			},
+			{
+				"language": "core6502_net_z80",
+				"scopeName": "source.core6502_net_z80",
+				"path": "./syntaxes/core-6502-dot-net_z80.tmLanguage.json"
+			}
+		],
+		"themes": [
+			{
+				"label": "Core 6502.Net Light",
+				"uiTheme": "vs",
+				"path": "./themes/light-color-theme.json"
+			},
+			{
+				"label": "Core 6502.Net Dark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/dark-color-theme.json"
+			}
+		]
+	}
+}

@@ -143,6 +143,8 @@ namespace Core6502DotNet
                            int index)
             : base(services, index)
         {
+            Reserved.DefineType("Directives", ".switch", ".case", ".default", ".endswitch");
+
             Reserved.DefineType("BreakContReturn", ".break", ".continue", ".return");
         }
 

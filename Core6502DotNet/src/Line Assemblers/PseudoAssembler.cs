@@ -93,7 +93,7 @@ namespace Core6502DotNet
             var fileName = filename.Name;
             if (!_includedBinaries.TryGetValue(fileName, out var file))
             {
-                file = new BinaryFile(fileName.ToString().TrimOnce('"'));
+                file = new BinaryFile(fileName.ToString().TrimOnce('"'), Services.Options.IncludePath);
                 if (!file.Open())
                     throw new ExpressionException(line.Operands[0], $"Unable to open file {fileName}.");
                 _includedBinaries[fileName] = file;
@@ -229,9 +229,11 @@ namespace Core6502DotNet
                 else if (StringHelper.ExpressionIsAString(iterator, Services))
                 {
                     stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(iterator, Services)));
+                    if (!iterator.MoveNext())
+                        break;
                 }
-                else
-                {
+                else 
+                { 
                     stringBytes.AddRange(Services.Output.ConvertToBytes(Services.Evaluator.Evaluate(iterator, false)));
                 }
             }

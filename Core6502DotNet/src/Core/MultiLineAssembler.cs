@@ -171,30 +171,36 @@ namespace Core6502DotNet
                             }
                         }
                         asm = _assemblers.FirstOrDefault(a => a.AssemblesLine(line));
-                        if (asm == null && line.Instruction != null && !_options.ErrorHandler(null, line, AssemblyErrorReason.NotFound, null))
-                            break;
                         if (asm != null)
                         {
                             var disasm = asm.Assemble(iterator);
                             if (!_options.StopDisassembly())
                             {
-                                if (_options.DisassembleAll)
+                                if (_options.DisassembleAll && !string.IsNullOrEmpty(line.Filename))
                                     disasmBuilder.Append($"\"{line.Filename}\"(")
-                                                 .AppendLine($"{line.LineNumber}): ".PadLeft(8));
+                                                 .Append($"{line.LineNumber}): ".PadLeft(8));
                                 if (!string.IsNullOrEmpty(disasm))
                                     disasmBuilder.AppendLine(disasm);
+                                else if (_options.DisassembleAll)
+                                    disasmBuilder.AppendLine();
                             }
                         }
-                        else if (_options.DisassembleAll && !_options.StopDisassembly())
+                        else if (line.Instruction == null && !_options.ErrorHandler(null, line, AssemblyErrorReason.NotFound, null))
                         {
-                            disasmBuilder.Append($"\"{line.Filename}\"(")
-                                         .Append($"{line.LineNumber}): ".PadLeft(8))
-                                         .AppendLine(line.Source.PadLeft(50, ' '));
+                            break;
                         }
+                    }
+                    else if (_options.DisassembleAll && !_options.StopDisassembly())
+                    {
+                        disasmBuilder.Append($"\"{line.Filename}\"(")
+                                     .Append($"{line.LineNumber}): ".PadLeft(8))
+                                     .Append(" ".PadLeft(43))
+                                     .AppendLine(line.Source);
                     }
                 }
                 catch (Exception ex)
                 {
+                    line = iterator.Current;
                     if (!_options.ErrorHandler(asm, line, AssemblyErrorReason.ExceptionRaised, ex))
                         break;
                 }

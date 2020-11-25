@@ -77,6 +77,7 @@ namespace Core6502DotNet
             {
                 { ".block",     ".endblock"     },
                 { ".for",       ".next"         },
+                { ".foreach",   ".next"         }, 
                 { ".function",  ".endfunction"  },
                 { ".if",        ".endif"        },
                 { ".ifdef",     ".endif"        },
@@ -88,28 +89,15 @@ namespace Core6502DotNet
                 { ".while",     ".endwhile"     }
             };
 
-            Reserved.DefineType("Scope",
-                ".block", ".endblock", ".namespace", ".endnamespace");
-
-            Reserved.DefineType("Conditional",
-                ".if", ".ifdef", ".ifndef", ".else", ".elseif",
-                ".elseifdef", ".elseifndef", ".endif");
-
-            Reserved.DefineType("SwitchCase",
-                ".switch", ".case", ".default", ".endswitch");
-
             Reserved.DefineType("Functional",
                 ".function", ".endfunction");
 
-            Reserved.DefineType("ForNext", ".for", ".next");
-
-            Reserved.DefineType("While", ".while", ".endwhile");
-
-            Reserved.DefineType("Repeat", ".repeat", ".endrepeat");
+            Reserved.DefineType("NonOpens",
+                ".break", ".case", ".continue", ".default", ".endblock", ".endif",
+                ".endfunction", ".endpage", ".endnamespace", ".endrepeat", ".endswitch",
+                ".endwhile", ".else", ".elseif", ".elseifdef", ".elseifdef", ".elseifndef", ".next");
 
             Reserved.DefineType("BreakContinue", ".break", ".continue");
-
-            Reserved.DefineType("Page", ".page", ".endpage");
 
             Reserved.DefineType("Goto", ".goto");
 
@@ -134,6 +122,8 @@ namespace Core6502DotNet
                     return new ScopeBlock(Services, iterationIndex);
                 case ".for":
                     return new ForNextBlock(Services, iterationIndex);
+                case ".foreach":
+                    return new ForEachBlock(Services, iterationIndex);
                 case ".if":
                 case ".ifdef":
                 case ".ifndef":
@@ -156,31 +146,21 @@ namespace Core6502DotNet
             var ix = lines.Index;
             var open = lines.Current.Instruction.Name;
             var closure = _openClosures[open];
-            var opens = 1;
-            while (lines.MoveNext() && opens > 0)
+            var closures = new Stack<StringView>();
+            closures.Push(closure);
+            while (lines.MoveNext() && closures.Count > 0)
             {
                 if (lines.Current.Instruction != null)
                 {
-                    if (lines.Current.Instruction.Name.Equals(closure, Services.StringViewComparer))
-                        opens--;
-                    else if (lines.Current.Instruction.Name.Equals(open, Services.StringViewComparer))
-                        opens++;
+                    if (lines.Current.Instruction.Name.Equals(closures.Peek(), Services.StringViewComparer))
+                        closures.Pop();
+                    else if (_openClosures.ContainsKey(lines.Current.Instruction.Name))
+                        closures.Push(_openClosures[lines.Current.Instruction.Name]);
                 }
             }
-            if (opens != 0)
-            {
-                if (lines.Current == null)
-                {
-                    lines.Reset();
-                    lines.MoveNext();
-                }
-                else
-                {
-                    lines.Rewind(ix);
-                }
+            if (closures.Count > 0)
                 throw new SyntaxException(lines.Current.Instruction.Position,
                     $"Missing closure \"{closure}\" for block \"{open}\".");
-            }
             lines.SetIndex(ix);
         }
 
@@ -207,10 +187,11 @@ namespace Core6502DotNet
                 _blocks.Push(block);
                 _currentBlock = block;
             }
-            if (_currentBlock == null)
+            var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
+            if (_currentBlock == null || (!isBreakCont && !_currentBlock.IsReserved(line.Instruction.Name)))
                 throw new SyntaxException(line.Instruction.Position,
                     $"\"{line.Instruction.Name}\" directive must come inside a block.");
-            var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
+            
             if (isBreakCont)
             {
                 var isBreak = line.Instruction.Name.Equals(".break", Services.StringComparison);
@@ -393,6 +374,12 @@ namespace Core6502DotNet
                 new FunctionBlock(Services, 1).SeekBlockEnd(lines);
             }
         }
+
+        public override bool Assembles(StringView s) =>
+            _openClosures.ContainsKey(s) || Reserved.IsReserved(s);
+
+        public override bool IsReserved(StringView symbol) 
+            => base.IsReserved(symbol) || _openClosures.ContainsKey(symbol) || _functionDefs.ContainsKey(symbol);
 
         public bool EvaluatesFunction(Token function) => _functionDefs.ContainsKey(function.Name);
 

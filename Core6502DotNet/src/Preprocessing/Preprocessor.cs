@@ -97,6 +97,11 @@ namespace Core6502DotNet
         /// </summary>
         public Action<string> CPUAssemblerSelector { get; set; }
 
+        /// <summary>
+        /// Include path when resolving source file.
+        /// </summary>
+        public string IncludePath { get; set; }
+
     }
 
     /// <summary>
@@ -134,6 +139,7 @@ namespace Core6502DotNet
         readonly Dictionary<string, Macro> _macros;
         readonly ReservedWords _preprocessors;
         readonly HashSet<string> _includedFiles;
+        bool _lineHasErrors;
         int _index;
 
         #endregion
@@ -193,6 +199,7 @@ namespace Core6502DotNet
 
         void LogError(string fileName, int lineNumber, int position, string message)
         {
+            _lineHasErrors = true;
             if (_options.Log != null)
                 _options.Log.LogEntry(fileName, ++lineNumber, position, message);
             else
@@ -254,7 +261,7 @@ namespace Core6502DotNet
                 char c;
                 var previous = EOS;
                 var isWidth = false;
-                while ((c = it.GetNext()) != EOS)
+                while (!_lineHasErrors && (c = it.GetNext()) != EOS)
                 {
                     if (char.IsWhiteSpace(c))
                     {
@@ -297,7 +304,7 @@ namespace Core6502DotNet
                     }
                     if (c == ':')
                     {
-                        if (expected != TokenType.Instruction && expected != TokenType.EndOrBinary)
+                        if ((expected != TokenType.Instruction && expected != TokenType.EndOrBinary) || !LineTerminates())
                         {
                             LogError(fileName, lineNumber, it.Index + 1, "Unexpected expression.");
                             break;
@@ -305,7 +312,7 @@ namespace Core6502DotNet
                         lineSources[^1] = lineSources[^1].Substring(0, it.Index);
                         if (!it.MoveNext())
                             break;
-                        ProcessLine();
+                        ProcessLine(true);
                         nextLine = nextLine.Substring(it.Index);
                         StartNewLine();
                         it = nextLine.GetIterator();
@@ -409,14 +416,14 @@ namespace Core6502DotNet
                                         if (!it.MoveNext())
                                         {
                                             LogError(fileName, lineNumber, it.Index + 1, "String not enclosed.");
-                                            continue;
+                                            break;
                                         }
                                     }
                                 }
                                 if (c == EOS)
                                 {
                                     LogError(fileName, lineNumber, it.Index + 1, "String not enclosed.");
-                                    continue;
+                                    break;
                                 }
                             }
                             else
@@ -429,6 +436,11 @@ namespace Core6502DotNet
                                     previous = c;
                                     c = it.GetNext();
                                     peek = it.PeekNext();
+                                }
+                                if (c == '\'')
+                                {
+                                    previous = c;
+                                    c = peek;
                                 }
                             }
                             size = it.Index - position;
@@ -492,13 +504,9 @@ namespace Core6502DotNet
                                             _options.Log?.LogEntry(fileName, lineNumber, position + 1, "Label is not at the beginning of the line.", false);
                                     }
                                 }
-                                else if (!c.IsSpecialOperator() || (c.IsSpecialOperator() && !char.IsWhiteSpace(peek)))
+                                else if ((!c.IsSpecialOperator() || (c.IsSpecialOperator() && !char.IsWhiteSpace(peek))) && !char.IsWhiteSpace(c))
                                 {
-                                    if (!char.IsWhiteSpace(c))
-                                    {
-                                        LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
-                                        continue;
-                                    }
+                                    LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
                                 }
                                 else
                                 {
@@ -521,7 +529,6 @@ namespace Core6502DotNet
                                 else
                                 {
                                     LogError(fileName, lineNumber, it.Index + 1, "Unknown instruction.");
-                                    continue;
                                 }
                                 break;
                             case TokenType.StartOrOperand:
@@ -587,7 +594,6 @@ namespace Core6502DotNet
                                             if ((c == '$' && !peek.IsHex() ||
                                                 (c == '%' && !char.IsDigit(peek) && peek != '.' && peek != '#')))
                                                 LogError(fileName, lineNumber, it.Index + 1, "Unexpected operator.");
-                                            break;
                                         }
                                         else
                                         {
@@ -617,11 +623,9 @@ namespace Core6502DotNet
                                 {
                                     previousWasPlus = type == TokenType.Binary && c == '+';
                                     if (type == TokenType.Open && c != '[')
-                                    {
                                         LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
-                                        continue;
-                                    }
-                                    expected = TokenType.StartOrOperand;
+                                    else
+                                        expected = TokenType.StartOrOperand;
                                 }
                                 else if (c != EOS)
                                 {
@@ -646,7 +650,7 @@ namespace Core6502DotNet
                 }
                 else if (LineTerminates())
                 {
-                    ProcessLine();
+                    ProcessLine(false);
                 }
             }
             if (!stopAtFirstInstruction)
@@ -656,7 +660,7 @@ namespace Core6502DotNet
                 else if (definingMacro != null)
                     LogError(fileName, lineNumber, 1,
                         $"End of source reached without defining macro \"{_macros.FirstOrDefault(kvp => ReferenceEquals(kvp.Value, definingMacro)).Key}\".");
-                else if (!stopAtFirstInstruction && !LineTerminates())
+                else if (!LineTerminates())
                     LogError(fileName, lineNumber, 1, "Unexpected end of source reached.");
             }
             return sourceLines;
@@ -668,7 +672,7 @@ namespace Core6502DotNet
                         (!TokenType.MoreTokens.HasFlag(previousType) && opens.Count == 0);
             }
 
-            void ProcessLine()
+            void ProcessLine(bool atColonBreak)
             {
                 var line = new SourceLine(fileName, lineNumber + 1, lineSources, tokens, _index++);
                 if (line.Instruction != null)
@@ -756,11 +760,13 @@ namespace Core6502DotNet
                     sourceLines.Add(line);
                 }
                 readyForNewLine = true;
-                lineNumber = linesProcessed;
+                if (!atColonBreak)
+                    lineNumber = linesProcessed;
             }
 
             void StartNewLine()
             {
+                _lineHasErrors = false;
                 lineSources = new List<string> { nextLine };
                 tokens = new List<Token>();
                 previousType = TokenType.None;
@@ -832,6 +838,7 @@ namespace Core6502DotNet
         /// <returns>A list of parsed <see cref="SourceLine"/> records.</returns>
         public List<SourceLine> Process(string fileName)
         {
+            fileName = GetFullPath(fileName);
             IncludeFile(fileName);
             if (_options.InstructionLookup == null)
                 throw new Exception("Instruction lookup option not configured.");
@@ -844,7 +851,7 @@ namespace Core6502DotNet
 
         public SourceLine ProcessToFirstDirective(string fileName)
         {
-            using FileStream fs = File.OpenRead(fileName);
+            using FileStream fs = File.OpenRead(GetFullPath(fileName));
             using BufferedStream bs = new BufferedStream(fs);
             using StreamReader sr = new StreamReader(bs);
             var sources = ProcessFromStream(fileName, 0, sr, true);
@@ -859,6 +866,26 @@ namespace Core6502DotNet
         /// <returns>A collection of input files.</returns>
         public ReadOnlyCollection<string> GetInputFiles()
             => new ReadOnlyCollection<string>(_includedFiles.ToList());
+
+        string GetFullPath(string fileName)
+        {
+            string fullPath = fileName;
+            var fileInfo = new FileInfo(fileName);
+            if (!fileInfo.Exists)
+            {
+                if (!string.IsNullOrEmpty(_options.IncludePath))
+                {
+                    fullPath = Path.Combine(_options.IncludePath, fileName);
+                    if (!File.Exists(fullPath))
+                        throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
+                }
+                else
+                {
+                    throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
+                }
+            }
+            return fullPath;
+        }
 
         #endregion
     }

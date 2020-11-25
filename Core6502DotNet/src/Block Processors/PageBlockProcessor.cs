@@ -23,7 +23,11 @@ namespace Core6502DotNet
         /// <param name="index">The index at which the block is defined.</param>
         public PageBlockProcessor(AssemblyServices services,
                                   int index)
-            : base(services, index, false) => _page = GetPage();
+            : base(services, index, false)
+        {
+            Reserved.DefineType("Directives", ".page", ".endpage");
+            _page = GetPage();
+        }
 
         int GetPage() => Services.Output.LogicalPC & 0xF00;
 

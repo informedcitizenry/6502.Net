@@ -28,10 +28,7 @@ namespace Core6502DotNet
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="index">The index at which the block is defined.</param>
         public RepeatBlock(AssemblyServices services, int index)
-            : base(services, index)
-        {
-
-        }
+            : base(services, index) => Reserved.DefineType("Directives", ".repeat", ".endrepeat");
 
         #endregion
 

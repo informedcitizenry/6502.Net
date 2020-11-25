@@ -50,7 +50,7 @@ namespace Core6502DotNet
 
             _ifDefEvaluations = new Dictionary<(string, int), bool>();
             _ifTrue =
-            _ifEvaluated = _elseEvaluated = false;
+            _elseEvaluated = false;
         }
 
         #endregion
@@ -92,18 +92,14 @@ namespace Core6502DotNet
                 {
                     if (iterator.Current.Instruction == null)
                         continue;
-                    var instruction = Services.Options.CaseSensitive ? iterator.Current.Instruction.Name.ToString() :
-                                                                       iterator.Current.Instruction.Name.ToLower();
+                    var instruction = Services.Options.CaseSensitive ? line.Instruction.Name.ToString() :
+                                                                       line.Instruction.Name.ToLower();
                     if (instruction.StartsWith(".if"))
                     {
-                        _ifEvaluated = true;
                         EvaluateCondition(line);
                     }
                     else
                     {
-                        if (!_ifEvaluated)
-                            throw new SyntaxException(iterator.Current.Instruction, $"Missing \".if\" directive.");
-
                         if (!instruction.Equals(".endif"))
                         {
                             if (_elseEvaluated)
@@ -113,8 +109,11 @@ namespace Core6502DotNet
                             _elseEvaluated = instruction.Equals(".else");
 
                             if (_elseEvaluated)
+                            {
+                                if (line.Operands.Count > 0)
+                                    throw new SyntaxException(line.Operands[0], "Unexpected expression.");
                                 break;
-
+                            }
                             EvaluateCondition(line);
                         }
                     }

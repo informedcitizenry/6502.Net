@@ -43,18 +43,18 @@ namespace Core6502DotNet
         {
             if (args == null || cpuSetHandler == null || formatSelector == null)
                 throw new ArgumentNullException();
-
             _services = new AssemblyServices(Options.FromArgs(args));
             _services.PassChanged += (s, a) => _services.Output.Reset();
             _services.PassChanged += (s, a) => _services.SymbolManager.Reset();
             _services.FormatSelector = formatSelector;
             _processorOptions = new ProcessorOptions
             {
-                CaseSensitive = _services.Options.CaseSensitive,
-                Log = _services.Log,
+                CaseSensitive       = _services.Options.CaseSensitive,
+                Log                 = _services.Log,
+                IncludePath         = _services.Options.IncludePath,
                 IgnoreCommentColons = _services.Options.IgnoreColons,
-                WarnOnLabelLeft = _services.Options.WarnLeft,
-                InstructionLookup = symbol => _services.InstructionLookupRules.Any(ilr => ilr(symbol))
+                WarnOnLabelLeft     = _services.Options.WarnLeft,
+                InstructionLookup   = symbol => _services.InstructionLookupRules.Any(ilr => ilr(symbol))
             };
             var cpu = _services.Options.CPU;
             if (_services.Options.InputFiles.Count > 0)
@@ -86,26 +86,6 @@ namespace Core6502DotNet
 
         #region Methods
 
-        string GetFullPath(string fileName)
-        {
-            string fullPath = fileName;
-            var fileInfo = new FileInfo(fileName);
-            if (!fileInfo.Exists)
-            {
-                if (!string.IsNullOrEmpty(_services.Options.IncludePath))
-                {
-                    fullPath = Path.Combine(_services.Options.IncludePath, fileName);
-                    if (!File.Exists(fullPath))
-                        throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
-                }
-                else
-                {
-                    throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
-                }
-            }
-            return fullPath;
-        }
-
         /// <summary>
         /// Begin the assembly process.
         /// </summary>
@@ -130,7 +110,6 @@ namespace Core6502DotNet
 
             var preprocessor = new Preprocessor(_processorOptions);
             var processed = new List<SourceLine>();
-
             try
             {
                 // preprocess all passed option defines and sections
@@ -140,12 +119,8 @@ namespace Core6502DotNet
                     processed.AddRange(preprocessor.Process(string.Empty, processed.Count, $".dsection {section}"));
 
                 // preprocess all input files 
-                foreach (var path in _services.Options.InputFiles)
-                    processed.AddRange(preprocessor.Process(GetFullPath(path)));
-
-                var anyonelikethis = processed.Any(l => (l.Label != null && l.Label.Line == null) ||
-                                                        (l.Instruction != null && l.Instruction.Line == null) ||
-                                                         l.Operands.Any(o => o.Line == null));
+                foreach (var inputFile in _services.Options.InputFiles)
+                    processed.AddRange(preprocessor.Process(inputFile));
 
                 Console.WriteLine($"{Assembler.AssemblerName}");
                 Console.WriteLine($"{Assembler.AssemblerVersion}");
@@ -239,11 +214,11 @@ namespace Core6502DotNet
             switch (reason)
             {
                 case AssemblyErrorReason.NotFound:
-                    _services.Log.LogEntry(line, line.Instruction.Position,
+                    _services.Log.LogEntry(line.Instruction,
                                            $"Unknown instruction \"{line.Instruction.Name}\".");
                     return true;
                 case AssemblyErrorReason.ReturnNotAllowed:
-                    _services.Log.LogEntry(line, line.Instruction.Position,
+                    _services.Log.LogEntry(line.Instruction,
                                            "Directive \".return\" not valid outside of function block.");
                     return true;
                 case AssemblyErrorReason.ExceptionRaised:
