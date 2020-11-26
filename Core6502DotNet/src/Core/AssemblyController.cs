@@ -145,6 +145,8 @@ namespace Core6502DotNet
                     if (_services.DoNewPass() == 4)
                         throw new Exception("Too many passes attempted.");
                     _ = multiLineAssembler.AssembleLines(processed.GetIterator(), out disassembly);
+                    if (!_services.PassNeeded && _services.CurrentPass == 0)
+                        _services.PassNeeded = _services.SymbolManager.SearchedNotFound;
                 }
                 if (!_services.Options.WarnNotUnusedSections && !_services.Log.HasErrors)
                 {

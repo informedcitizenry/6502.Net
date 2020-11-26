@@ -549,7 +549,7 @@ namespace Core6502DotNet
             };
             _referenceTableCounter = 0;
             var comparer = caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
-
+            
             _criteria = new List<Func<StringView, bool>>
             {
                 s =>
@@ -559,6 +559,7 @@ namespace Core6502DotNet
                             (char.IsLetterOrDigit(s[^1]) || s[^1] == '_' ) && !s.Contains('.'));
                 }
             };
+            SearchedNotFound = false;
         }
 
         #endregion
@@ -584,6 +585,7 @@ namespace Core6502DotNet
         string GetFullyQualifiedName(StringView name)
         {
             var scopedName = GetScopedName(name);
+            var original = scopedName;
             var i = 0;
             while (!_symbolTable.ContainsKey(scopedName))
             {
@@ -591,6 +593,8 @@ namespace Core6502DotNet
                 if (i > _scope.Count)
                     break;
             }
+            if (!SearchedNotFound)
+                SearchedNotFound = !original.Equals(scopedName);
             return scopedName;
         }
 
@@ -871,6 +875,7 @@ namespace Core6502DotNet
                 _symbolTable.Remove(symbol.Key);
             _localScope = string.Empty;
             _referenceTableCounter = 0;
+            SearchedNotFound = false;
         }
 
         /// <summary>
@@ -957,6 +962,11 @@ namespace Core6502DotNet
                     _localScope = value;
             }
         }
+
+        /// <summary>
+        /// Gets whether any symbols were searched but not found.
+        /// </summary>
+        public bool SearchedNotFound { get; private set; }
 
         #endregion
     }

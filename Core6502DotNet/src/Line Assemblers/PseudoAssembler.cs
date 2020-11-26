@@ -432,7 +432,12 @@ namespace Core6502DotNet
                 else
                     sb.Append(assembly.Take(8).ToString(PCOnAssemble).PadRight(43, ' '));
                 if (!Services.Options.NoSource)
-                    sb.Append(line.Source);
+                {
+                    if (Services.Options.VerboseList)
+                        sb.Append($"{line.FullSource,43}");
+                    else
+                        sb.Append($"{line.Source,43}");
+                }
                 if (assembly.Count > 8 && !Services.Options.TruncateAssembly)
                 {
                     sb.AppendLine();
@@ -443,7 +448,12 @@ namespace Core6502DotNet
             {
                 sb.Append($">{PCOnAssemble:x4}");
                 if (!Services.Options.NoSource)
-                    sb.Append($"{line.Source,43}");
+                {
+                    if (Services.Options.VerboseList)
+                        sb.Append($"{line.FullSource,43}");
+                    else
+                        sb.Append($"{line.Source,43}");
+                }
             }
             return sb.ToString();
         }
