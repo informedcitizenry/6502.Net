@@ -86,9 +86,6 @@ namespace Core6502DotNet.m680x
                 "lbmi", "lbne", "lbpl", "lbra", "lbrn", "lbsr",
                 "lbvc", "lbvs");
 
-            Reserved.DefineType("DirectPage",
-                ".dp");
-
             _ixRegisterModes = new Dictionary<StringView, IndexModes>(Services.StringViewComparer)
             {
                 { "x", IndexModes.XReg },
@@ -138,7 +135,6 @@ namespace Core6502DotNet.m680x
                 Services.LineTerminates = TerminatesLine;
 
             Services.Output.IsLittleEndian = false;
-            _dp = 0;
         }
         #endregion
 
@@ -166,8 +162,6 @@ namespace Core6502DotNet.m680x
 
         protected override bool IsCpuValid(string cpu)
             => cpu.Equals("m6800") || cpu.Equals("m6809");
-
-        protected override void OnReset() { _dp = 0; }
 
         protected override void OnSetCpu()
         {
@@ -206,28 +200,12 @@ namespace Core6502DotNet.m680x
                     mode = (mode & ~Modes.Absolute) | Modes.Relative;
                 else if (Reserved.IsOneOf("LongBranches", line.Instruction.Name))
                     mode |= Modes.Relative;
-                if (_dp > 0 &&
-                    (mode == Modes.ZeroPage ||
-                    (mode == Modes.Absolute && (int)Evaluations[0] / 256 == _dp)))
-                {
-                    if (mode == Modes.Absolute)
-                    {
-                        Evaluations[0] = (int)Evaluations[0] & 0xFF;
-                        mode = Modes.ZeroPage;
-                    }
-                    else
-                    {
-                        mode = Modes.Absolute;
-                    }
-                }
             }
             return mode;
         }
 
         internal override int GetInstructionSize(SourceLine line)
         {
-            if (line.Instruction.Name.Equals(".dp", Services.StringComparison))
-                return 0;
             if (Reserved.IsOneOf("PushPullsExchanges", line.Instruction.Name) || 
                 (CPU.Equals("m6809") && line.Operands.Count > 1 &&
                 (line.Operands[^1].Name.Equals("]") ||
@@ -244,8 +222,6 @@ namespace Core6502DotNet.m680x
         {
             Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
             var line = lines.Current;
-            if (line.Instruction.Name.Equals(".dp", Services.StringComparison))
-                return AssembleDpDirective(line);
             if (Reserved.IsOneOf("PushPullsExchanges", line.Instruction.Name))
             {
                 try
@@ -267,29 +243,6 @@ namespace Core6502DotNet.m680x
                 return AssembleIndexed(line);
             }
             return base.OnAssemble(lines);
-        }
-
-        string AssembleDpDirective(SourceLine line)
-        {
-            var iterator = line.Operands.GetIterator();
-            if (!iterator.MoveNext())
-            {
-                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
-                   "Directive \".dp\" requires a page.");
-            }
-            else if (CPU.Equals("m6809"))
-            {
-                _dp = (int)Services.Evaluator.Evaluate(iterator, false, byte.MinValue, byte.MaxValue);
-                if (iterator.MoveNext())
-                    Services.Log.LogEntry(line.Filename, line.LineNumber, iterator.Current.Position,
-                        "Unexpected expresion.");
-            }
-            else
-            {
-                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
-                    "Directive \".dp\" ignored for selected CPU.", false);
-            }
-            return string.Empty;
         }
 
         string AssembleIndexed(SourceLine line)
@@ -432,7 +385,8 @@ namespace Core6502DotNet.m680x
                 if (modes.HasFlag(IndexModes.Indir) && indexMode == IndexModes.None && offsRegMode == IndexModes.None)
                 {
                     modes |= IndexModes.ExtInd;
-                    disSb.Append($"${(int)offsetValue:x4}");
+                    Evaluations[0] = offsetValue;
+                    disSb.Append($"${(int)Evaluations[0] & 0xFFFF:x4}");
                 }
                 else if (indexMode == IndexModes.PC8)
                 {
@@ -660,6 +614,8 @@ namespace Core6502DotNet.m680x
         #region Properties
 
         protected override bool PseudoBranchSupported => false;
+
+        protected override bool SupportsDirectPage => CPU.Equals("m6809");
 
         #endregion
     }

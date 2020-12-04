@@ -204,7 +204,12 @@ namespace Core6502DotNet
             {
                 var asString = new List<string>();
                 if (!string.IsNullOrEmpty(Name))
-                    asString.Add($"\"{Name}\"");
+                {
+                    if (Name.EnclosedInDoubleQuotes())
+                        asString.Add(Name);
+                    else
+                        asString.Add($"\"{Name}\"");
+                }
                 if (!string.IsNullOrEmpty(Starts))
                 {
                     asString.Add(Starts);
@@ -245,10 +250,12 @@ namespace Core6502DotNet
             /// </summary>
             /// <param name="binaryFormat">The format.</param>
             /// <param name="cpu">The CPU.</param>
-            public Target(string binaryFormat, string cpu)
+            /// <param name="autoSizeRegisters">Autosize registers for 65816 mode.</param>
+            public Target(string binaryFormat, string cpu, bool autoSizeRegisters)
             {
                 Format = binaryFormat ?? string.Empty;
                 Cpu = cpu ?? string.Empty;
+                Autosize = autoSizeRegisters;
             }
 
             /// <summary>
@@ -260,6 +267,11 @@ namespace Core6502DotNet
             /// Gets the CPU.
             /// </summary>
             public string Cpu { get; }
+
+            /// <summary>
+            /// Gets the autosize option.
+            /// </summary>
+            public bool Autosize { get; }
         }
 
         #endregion
@@ -296,6 +308,7 @@ namespace Core6502DotNet
         /// <param name="outputFile">The output filename.</param>
         /// <param name="outputSection">The section to output.</param>
         /// <param name="quiet">The quiet mode flag.</param>
+        /// <param name="autoSize">The register autosize flag.</param>
         /// <param name="noSource">The no-source flag.</param>
         /// <param name="truncateAssembly">The truncate assembly flag.</param>
         /// <param name="verboseList">The verbose listing flag.</param>
@@ -323,6 +336,7 @@ namespace Core6502DotNet
                        string outputFile,
                        string outputSection,
                        bool quiet,
+                       bool autoSize,
                        bool noSource,
                        bool truncateAssembly,
                        bool verboseList,
@@ -345,7 +359,7 @@ namespace Core6502DotNet
                                                          warnLeft,
                                                          warnNotUnusedSections),
                                              null,
-                                             new Target(format, cpu),
+                                             new Target(format, cpu, autoSize),
                                              labelDefines,
                                              echoEachPass,
                                              caseSensitive,
@@ -366,7 +380,15 @@ namespace Core6502DotNet
             if (createConfig != null)
                 CreateConfig = createConfig;
             if (sections != null)
-                Sections = new ReadOnlyCollection<string>(sections);
+                Sections = new ReadOnlyCollection<string>(sections.Select(s =>
+                {
+                    var parms = s.Split(',');
+                    if (parms.Length < 2 || parms.Length > 3)
+                        throw new Exception($"Invalid argument \"{s}\" for option '--dsection'.") ;
+                    if (parms.Length == 2)
+                        return new Section(parms[0], parms[1]).ToString();
+                    return new Section(parms[0], parms[1], parms[2]).ToString();
+                }).ToList());
         }
 
         /// <summary>
@@ -430,6 +452,7 @@ namespace Core6502DotNet
             EchoEachPass = echoEachPass;
             Format = target == null ? string.Empty : target.Format;
             CPU = target == null ? string.Empty : target.Cpu;
+            Autosize = target != null && target.Autosize;
             CaseSensitive = caseSensitive;
 
             OutputFile = outputFile ?? "a.out";
@@ -541,16 +564,17 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        throw new Exception("Invalid argument for option '.dsection'.");
+                        throw new Exception($"Invalid argument \"{s}\" for option '--dsection'.");
                     }
                 }
                 if (sections.Count > 0)
                     root.Add("sections", sections);
             }
-            if (!string.IsNullOrEmpty(CPU) || !string.IsNullOrEmpty(Format))
+            if (!string.IsNullOrEmpty(CPU) || !string.IsNullOrEmpty(Format) || Autosize)
             {
-                target.Add("binaryFormat", Format);
-                target.Add("cpu", CPU);
+                target.Add("binaryFormat", string.IsNullOrEmpty(Format) ? "cbm" : Format);
+                target.Add("cpu", string.IsNullOrEmpty(CPU) ? "6502" : CPU);
+                target.Add("autoSizeRegisters", Autosize);
                 root.Add("target", target);
             }
             return root.ToString();
@@ -652,7 +676,7 @@ namespace Core6502DotNet
                         var parseErrs = new HashSet<string>();
 
                         var confIx = args.ToList().FindIndex(s => s.StartsWith("--config", StringComparison.Ordinal));
-                        if (confIx != 1 || confIx != args.ToList().FindLastIndex(s => s.StartsWith('-')))
+                        if (confIx != 0 && confIx != args.ToList().FindLastIndex(s => s.StartsWith('-')))
                             Console.WriteLine("Option --config ignores all other options.");
 
                         var configJson = File.ReadAllText(o.ConfigFile);
@@ -673,7 +697,7 @@ namespace Core6502DotNet
                     }
                 })
                 .WithNotParsed(errs => DisplayHelp(result, errs));
-                if (options.CreateConfig != null)
+                if (!string.IsNullOrEmpty(options.CreateConfig) && string.IsNullOrEmpty(options.ConfigFile))
                     CreateConfigFile(options);
                 options._passedArgs = args;
                 return options;
@@ -682,8 +706,7 @@ namespace Core6502DotNet
             {
                 if (ex is JsonException)
                     throw new Exception($"Error parsing config file: {ex.Message}");
-                else
-                    throw ex;
+                throw ex;
             }
         }
 
@@ -815,8 +838,15 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
-        [Option('q', "Quiet", Required = false, HelpText = "Assemble in quiet mode (no console)")]
+        [Option('q', "quiet", Required = false, HelpText = "Assemble in quiet mode (no console)")]
         public bool Quiet { get; }
+
+        /// <summary>
+        /// Gets the flag that indicates whether to autosize the accumulator and index registers 
+        /// in 65816 mode for the <c>rep</c> and <c>sep</c> instructions.
+        /// </summary>
+        [Option('r', "autosize-registers", Required = false, HelpText = "Auto-size .A and .X/.Y registers in 65816 mode.")]
+        public bool Autosize { get; }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress original source.
@@ -871,7 +901,7 @@ namespace Core6502DotNet
             get
             {
                 yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, false));
-                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, null, null, false, false, false, false, false, false, false, false));
+                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, null, null, false, false, false, false, false, false, false, false, false));
             }
         }
 

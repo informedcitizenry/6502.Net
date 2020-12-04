@@ -71,7 +71,7 @@ namespace Core6502DotNet
                     if (it.Current == null)
                         throw new SyntaxException(line.Operands[^1], "Expression expected.");
                     _iterations = new List<Token>();
-                    while ((it.GetNext()) != null)
+                    while (it.GetNext() != null)
                         _iterations.Add(it.Current);
                     if (_iterations.Count == 0 || _iterations[^1].IsSeparator())
                         throw new SyntaxException(line.Operands[^1], "Expression expected.");

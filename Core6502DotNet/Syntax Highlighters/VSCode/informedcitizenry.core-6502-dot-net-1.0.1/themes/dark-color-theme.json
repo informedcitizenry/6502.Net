@@ -3,17 +3,17 @@
   "name": "Core 6502.Net Dark",
   "type": "dark",
   "colors": {
-    "editor.background": "#282828",
+    "editor.background": "#1E1E1E",
     "editor.foreground": "#d4d4d4",
-    "editor.selectionBackground": "#606060",
-    "editor.lineHighlightBackground": "#383838"
+    "editor.selectionBackground": "#7e7b7b",
+    "editor.lineHighlightBackground": "#505050"
   },
   "tokenColors": [
     {
       "name": "Block Comment",
       "scope": "comment.block",
       "settings": {
-        "foreground": "#6a9955",
+        "foreground": "#d1c6c6",
         "fontStyle": "italic"
       }
     },
@@ -21,34 +21,34 @@
       "name": "Line Comment",
       "scope": "comment.line",
       "settings": {
-        "foreground": "#199ba0",
+        "foreground": "#78a093",
         "fontStyle": "italic"
       }
     },
     {
       "scope": "string",
       "settings": {
-        "foreground": "#ce9178"
+        "foreground": "#ce9c89"
       }
     },
     {
       "scope": "keyword.control.directive",
       "settings": {
-        "foreground": "#b5cea8",
+        "foreground": "#91c1e9",
         "fontStyle": "bold"
       }
     },
     {
       "scope": "keyword.other.mnemonic",
       "settings": {
-        "foreground": "#569cd6",
+        "foreground": "#7e9fe9",
         "fontStyle": "bold"
       }
     },
     {
       "scope": "keyword.control.pseudoop",
       "settings": {
-        "foreground": "#b5cea8",
+        "foreground": "#ce9c89",
         "fontStyle": "bold"
       }
     },
@@ -61,33 +61,33 @@
     {
       "scope": "keyword.register",
       "settings": {
-        "foreground": "#1ecf44",
+        "foreground": "#9dcca7",
         "fontStyle": "italic"
       }
     },
     {
       "scope": "keyword.operator",
       "settings": {
-        "foreground": "#d4d4d4"
+        "foreground": "#aaa58d"
       }
     },
     {
       "scope": "keyword.function",
       "settings": {
-        "foreground": "#00a2ef"
+        "foreground": "#8bb8dd"
       }
     },
     {
       "scope": "keyword.other.macro",
       "settings": {
-        "foreground": "#0080c0",
+        "foreground": "#b5cea8",
         "fontStyle": "bold"
       }
     },
     {
       "scope": "constant.numeric",
       "settings": {
-        "foreground": "#adbbeb"
+        "foreground": "#e9a4a4"
       }
     }
   ]

@@ -83,20 +83,25 @@ namespace Core6502DotNet.m65xx
                     ".m16", ".m8", ".x16", ".x8", ".mx16", ".mx8"
                 );
 
+            Reserved.DefineType("Autos", ".auto", ".manual");
+
             Reserved.DefineType("PseudoBranches",
                     "jcc", "jcs", "jeq", "jmi", "jne", "jpl", "jvc",
                     "jvs");
+
+            Reserved.DefineType("RepSep", 
+                    "rep", "sep"
+                );
 
             Reserved.DefineType("Mnemonics",
                     "adc", "anc", "and", "ane", "arr", "asl", "asr", "asw",
                     "bit", "bsr", "cmp", "cop", "cpx", "cpy", "cpz", "dcp",
                     "dec", "dew", "dop", "eor", "inc", "inw", "isb", "jml",
                     "jmp", "jsl", "jsr", "las", "lax", "lda", "ldx", "ldy",
-                    "ldz", "lsr", "neg", "ora", "pea", "pei", "phw", "rep",
-                    "rla", "rol", "ror", "row", "rra", "sax", "sbc", "sep",
-                    "sha", "shx", "shy", "slo", "sre", "st1", "st2", "sta",
-                    "stx", "sty", "stz", "tam", "tas", "tma", "top", "trb",
-                    "tsb", "tst"
+                    "ldz", "lsr", "neg", "ora", "pea", "pei", "phw", "rla", 
+                    "rol", "ror", "row", "rra", "sax", "sbc", "sha", "shx", 
+                    "shy", "slo", "sre", "st1", "st2", "sta", "stx", "sty", 
+                    "stz", "tam", "tas", "tma", "top", "trb", "tsb", "tst"
                 );
 
             // set architecture specific encodings
@@ -196,6 +201,7 @@ namespace Core6502DotNet.m65xx
             Services.Encoding.Map(" _", '\0');
 
             Services.Encoding.SelectDefaultEncoding();
+            _autoOn = CPU.Equals("65816") && Services.Options.Autosize;
             _m16 = _x16 = false;
         }
 
@@ -205,6 +211,7 @@ namespace Core6502DotNet.m65xx
 
         protected override void OnReset()
         {
+            base.OnReset();
             if (_m16)
                 SetImmediate(2, 'a');
             if (_x16)
@@ -212,6 +219,7 @@ namespace Core6502DotNet.m65xx
                 SetImmediate(2, 'x');
                 SetImmediate(2, 'y');
             }
+            _autoOn = CPU.Equals("65816") && Services.Options.Autosize;
             _m16 = _x16 = false;
         }
 
@@ -456,25 +464,29 @@ namespace Core6502DotNet.m65xx
             return mode;
         }
 
-        void AssembleLongShort(SourceLine line)
+        string AssembleLongShort(SourceLine line)
         {
+            var instruction = line.Instruction.Name.ToLower();
             if (!CPU.Equals("65816"))
             {
                 Services.Log.LogEntry(line.Instruction,  $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
-                return;
             }
-            var size = line.Instruction.Name.ToString().Contains("16") ? 3 : 2;
-            if (line.Instruction.Name[1] == 'm')
+            else
             {
-                _m16 = size == 3;
-                SetImmediate(size, 'a');
+                var size = instruction.Contains("16") ? 3 : 2;
+                if (instruction[1] == 'm')
+                {
+                    _m16 = size == 3;
+                    SetImmediate(size, 'a');
+                }
+                if (instruction[1] == 'x')
+                {
+                    _x16 = size == 3;
+                    SetImmediate(size, 'x');
+                    SetImmediate(size, 'y');
+                }
             }
-            if (line.Instruction.Name[1] == 'x')
-            {
-                _x16 = size == 3;
-                SetImmediate(size, 'x');
-                SetImmediate(size, 'y');
-            }
+            return string.Empty;
         }
 
         string AssemblePseudoBranch(SourceLine line)
@@ -569,6 +581,15 @@ namespace Core6502DotNet.m65xx
             return sb.ToString();
         }
 
+        string AssembleAuto(SourceLine line)
+        {
+            if (!CPU.Equals("65816"))
+                Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
+            else
+                _autoOn = line.Instruction.Name.Equals(".auto", Services.StringComparison);
+            return string.Empty;
+        }
+
         internal override int GetInstructionSize(SourceLine line)
         {
             if (Reserved.IsOneOf("LongShort", line.Instruction.Name))
@@ -583,13 +604,22 @@ namespace Core6502DotNet.m65xx
             var line = lines.Current;
             var instruction = line.Instruction.Name;
             if (Reserved.IsOneOf("LongShort", instruction))
-            {
-                AssembleLongShort(line);
-                return string.Empty;
-            }
+                return AssembleLongShort(line);
+            if (Reserved.IsOneOf("Autos", instruction))
+                return AssembleAuto(line);
             if (Reserved.IsOneOf("PseudoBranches", instruction))
-            {
                 return AssemblePseudoBranch(line);
+            if (Reserved.IsOneOf("RepSep", instruction) && _autoOn && line.Operands.Count > 1)
+            {
+                var p = (int)Services.Evaluator.Evaluate(line.Operands.Skip(1).GetIterator());
+                var size = instruction[0] == 'r' || instruction[0] == 'R' ? 3 : 2;
+                if ((p & 0x20) != 0)
+                    SetImmediate(size, 'a');
+                if ((p & 0x10) != 0)
+                {
+                    SetImmediate(size, 'x');
+                    SetImmediate(size, 'y');
+                }
             }
             return base.OnAssemble(lines);
         }
@@ -603,6 +633,8 @@ namespace Core6502DotNet.m65xx
         #region Properties
 
         protected override bool PseudoBranchSupported => true;
+
+        protected override bool SupportsDirectPage => CPU.Equals("65816");
 
         #endregion
     }

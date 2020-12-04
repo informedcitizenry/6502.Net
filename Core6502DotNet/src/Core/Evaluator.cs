@@ -69,16 +69,8 @@ namespace Core6502DotNet
 
         static readonly IReadOnlyDictionary<StringView, ConversionDef> s_radixOperators = new Dictionary<StringView, ConversionDef>
         {
-            { "$", new ConversionDef(parm => Convert.ToInt64(parm.ToString(), 16)) },
-            { "%", new ConversionDef(parm =>
-                {
-                    if (parm[0] == '.' || parm[0] == '#')
-                        return Convert.ToInt64(parm.ToString()
-                                                   .Replace('.', '0')
-                                                   .Replace('#', '1'), 2);
-                    return Convert.ToInt64(parm.ToString(),  2);
-                })
-            }
+            { "$", new ConversionDef(parm => Convert.ToInt64(parm.ToString().Replace("_", string.Empty), 16)) },
+            { "%", new ConversionDef(parm => Convert.ToInt64(GetBinaryString(parm.ToString().Replace("_", string.Empty)),  2)) }
         };
 
         static readonly IReadOnlyDictionary<Token, OperationDef> s_operators = new Dictionary<Token, OperationDef>
@@ -117,13 +109,6 @@ namespace Core6502DotNet
             { new Token("+",  TokenType.Unary),     new OperationDef(parms => +parms[0],                                           13) },
             { new Token("$",  TokenType.Radix),     new OperationDef(parms =>  parms[0],                                           13) },
             { new Token("%",  TokenType.Radix),     new OperationDef(parms =>  parms[0],                                           13) }
-        };
-
-        static readonly Dictionary<char, char> s_openclose = new Dictionary<char, char>
-        {
-            { '(', ')' },
-            { '{', '}' },
-            { '[', ']' }
         };
 
         static readonly Random s_rng = new Random();
@@ -512,7 +497,7 @@ namespace Core6502DotNet
         /// <exception cref="SyntaxException"></exception>
         public double Evaluate(Token token, double minValue, double maxValue)
         {
-            if (!double.TryParse(token.Name.ToString(), out var converted))
+            if (!double.TryParse(token.Name.ToString().Replace("_", string.Empty), out var converted))
             {
                 if (token.Name[0] == '0' && token.Name.Length > 2)
                 {
@@ -520,11 +505,11 @@ namespace Core6502DotNet
                     try
                     {
                         if (token.Name[1] == 'b' || token.Name[1] == 'B')
-                            converted = Convert.ToInt64(token.Name.Substring(2), 2);
+                            converted = Convert.ToInt64(GetBinaryString(token.Name.Substring(2).Replace("_", string.Empty)), 2);
                         else if (token.Name[1] == 'o' || token.Name[1] == 'O')
-                            converted = Convert.ToInt64(token.Name.Substring(2), 8);
+                            converted = Convert.ToInt64(token.Name.Substring(2).Replace("_", string.Empty), 8);
                         else if (token.Name[1] == 'x' || token.Name[1] == 'X')
-                            converted = Convert.ToInt64(token.Name.Substring(2), 16);
+                            converted = Convert.ToInt64(token.Name.Substring(2).Replace("_", string.Empty), 16);
                         else
                             throw new ExpressionException(token, "Not a valid numeric constant.");
                     }
@@ -541,9 +526,9 @@ namespace Core6502DotNet
                     converted = SymbolEvaluator(it);
                 }
             }
-            else if (token.Name[0] == '0' &&
+            else if (token.Name[0] == '0'  &&
                      token.Name.Length > 1 &&
-                     token.Name[1] >= '0' &&
+                     token.Name[1] >= '0'  &&
                      token.Name[1] <= '7')
             {
                 // all leading zeros treated as octal
@@ -557,9 +542,7 @@ namespace Core6502DotNet
                 }
             }
             if (converted < minValue || converted > maxValue)
-            {
                 throw new ExpressionException(token, "Illegal quantity.");
-            }
             return converted;
         }
 
@@ -620,6 +603,20 @@ namespace Core6502DotNet
             if (fe == null)
                 throw new SyntaxException(function, $"Unknown function \"{function}\".");
             fe.InvokeFunction(functionCall);
+        }
+
+        /// <summary>
+        /// Get the binary string as a series of <c>1</c>s and <c>0</c>s, whether the input string is itself such a
+        /// string, or is a series of <c>#</c>s and <c>.</c>s.
+        /// </summary>
+        /// <param name="binary">The binary or alt-binary string.</param>
+        /// <returns>A binary string suitable for conversion.</returns>
+        public static string GetBinaryString(string binary)
+        {
+            if (binary[0] == '#' || binary[0] == '.')
+                return binary.Replace('#', '1')
+                             .Replace('.', '0');
+            return binary;
         }
 
         #endregion

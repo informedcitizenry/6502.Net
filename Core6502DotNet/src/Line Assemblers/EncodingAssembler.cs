@@ -65,10 +65,27 @@ namespace Core6502DotNet
                         else
                             translation = (int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff);
                         if (iterator.Current != null)
-                            Services.Log.LogEntry(iterator.Current,
-                                "Unexpected expression.");
-                        else
-                            Services.Encoding.Map(mapping, translation);
+                        {
+                            if (!iterator.MoveNext())
+                            {
+                                Services.Log.LogEntry(iterator.Current, "Expected expression.");
+                            }
+                            else
+                            {
+                                mapping += char.ConvertFromUtf32(translation);
+                                if (StringHelper.IsStringLiteral(iterator))
+                                    translation = Services.Encoding.GetEncodedValue(StringHelper.GetString(iterator, Services));
+                                else
+                                    translation = (int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff);
+                                if (iterator.Current != null)
+                                {
+                                    Services.Log.LogEntry(iterator.Current,
+                                    "Unexpected expression.");
+                                    return string.Empty;
+                                }
+                            }
+                        }
+                        Services.Encoding.Map(mapping, translation);
                     }
                 }
                 else

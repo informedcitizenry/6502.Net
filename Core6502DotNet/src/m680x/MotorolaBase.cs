@@ -170,7 +170,10 @@ namespace Core6502DotNet
             Reserved.DefineType("CPU", ".cpu");
             Reserved.DefineType("RelativeSecond");
             Reserved.DefineType("SwapOperands");
-            
+
+            Reserved.DefineType("DirectPage",
+                ".dp");
+
             Evaluations = new double[]
             {
                 double.NaN, double.NaN, double.NaN
@@ -187,6 +190,7 @@ namespace Core6502DotNet
             }
             OnSetCpu();
             Services.PassChanged += OnPassChanged;
+            Page = 0;
         }
 
         #endregion
@@ -196,7 +200,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Reset the state of the <see cref="MotorolaBase"/> assembler. This method must be inherited.
         /// </summary>
-        protected abstract void OnReset();
+        protected virtual void OnReset() => Page = 0;
 
         void OnPassChanged(object sender, EventArgs args)
             => OnReset();
@@ -286,7 +290,20 @@ namespace Core6502DotNet
             Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
             var instruction = line.Instruction.Name.ToLower();
             var mnemmode = (Mnem: instruction, Mode: ParseOperand(line));
-
+            if (SupportsDirectPage && Page > 0 &&
+                    (mnemmode.Mode == Modes.ZeroPage ||
+                    (mnemmode.Mode == Modes.Absolute && (int)Evaluations[0] / 256 == Page)))
+            {
+                if (mnemmode.Mode == Modes.Absolute)
+                {
+                    Evaluations[0] = (int)Evaluations[0] & 0xFF;
+                    mnemmode.Mode = Modes.ZeroPage;
+                }
+                else
+                {
+                    mnemmode.Mode = Modes.Absolute;
+                }
+            }
             // remember if force width bit was set
             var forceWidth = mnemmode.Mode.HasFlag(Modes.ForceWidth);
 
@@ -320,7 +337,8 @@ namespace Core6502DotNet
 
         internal override int GetInstructionSize(SourceLine line)
         {
-            if (Reserved.IsOneOf("CPU", line.Instruction.Name))
+            if (Reserved.IsOneOf("CPU", line.Instruction.Name) ||
+                Reserved.IsOneOf("DirectPage", line.Instruction.Name))
                 return 0;
             try
             {
@@ -339,7 +357,7 @@ namespace Core6502DotNet
             {
                 var iterator = line.Operands.GetIterator();
                 if (!iterator.MoveNext() || !iterator.Current.IsDoubleQuote() || iterator.PeekNext() != null)
-                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                    Services.Log.LogEntry(line.Instruction,
                         "String expression expected.");
                 else
                 {
@@ -348,20 +366,35 @@ namespace Core6502DotNet
                 }
                 return string.Empty;
             }
-            var modeInstruction = GetModeInstruction(line);
-            if (!string.IsNullOrEmpty(modeInstruction.instruction.CPU))
+            if (Reserved.IsOneOf("DirectPage", line.Instruction.Name))
             {
-                if (modeInstruction.mode.HasFlag(Modes.RelativeBit))
+                if (!SupportsDirectPage)
+                { 
+                    Services.Log.LogEntry(line.Instruction, "\".dp\" directive ignored.", false);
+                } 
+                else
+                {
+                    var iterator = line.Operands.GetIterator();
+                    Page = (int)Services.Evaluator.Evaluate(iterator, byte.MinValue, byte.MaxValue);
+                    if (iterator.Current != null)
+                        Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                }
+                return string.Empty;
+            }
+            var (mode, instruction) = GetModeInstruction(line);
+            if (!string.IsNullOrEmpty(instruction.CPU))
+            {
+                if (mode.HasFlag(Modes.RelativeBit))
                 {
                     int evalIx;
                     if (Reserved.IsOneOf("RelativeSecond", line.Instruction.Name))
                         evalIx = 1;
                     else
                         evalIx = 0;
-                    var offsIx = modeInstruction.instruction.Size;
+                    var offsIx = instruction.Size;
                     try
                     {
-                        Evaluations[evalIx] = modeInstruction.mode == Modes.RelativeAbs
+                        Evaluations[evalIx] = mode == Modes.RelativeAbs
                             ? Convert.ToInt16(Services.Output.GetRelativeOffset((int)Evaluations[evalIx], offsIx))
                             : Convert.ToSByte(Services.Output.GetRelativeOffset((int)Evaluations[evalIx], offsIx));
                     }
@@ -381,7 +414,7 @@ namespace Core6502DotNet
                         Evaluations[evalIx] = 0;
                     }
                 }
-                var operandSize = (modeInstruction.mode & Modes.SizeMask) switch
+                var operandSize = (mode & Modes.SizeMask) switch
                 {
                     Modes.Implied  => 0,
                     Modes.ZeroPage => 1,
@@ -389,7 +422,7 @@ namespace Core6502DotNet
                     _              => 3
                 };
                 // start adding to the output
-                var opcode = modeInstruction.instruction.Opcode;
+                var opcode = instruction.Opcode;
                 Services.Output.Add(opcode, opcode.Size());
 
                 if (operandSize > 0)
@@ -397,8 +430,8 @@ namespace Core6502DotNet
                     // add operand bytes
                     for (int i = 0; i < 3 && !double.IsNaN(Evaluations[i]); i++)
                     {
-                        if ((modeInstruction.mode & Modes.TestBitFlag) != 0 &&
-                             modeInstruction.mode.HasFlag(Modes.TwoOpBit) &&
+                        if ((mode & Modes.TestBitFlag) != 0 &&
+                             mode.HasFlag(Modes.TwoOpBit) &&
                                 i == 0)
                         { // The Hudson test bit instructions
                             if (Evaluations[i] >= sbyte.MinValue && Evaluations[i] <= byte.MaxValue)
@@ -414,7 +447,7 @@ namespace Core6502DotNet
                     }
                 }
                 var instructionSize = Services.Output.LogicalPC - PCOnAssemble;
-                if (!Services.PassNeeded && instructionSize != modeInstruction.instruction.Size)
+                if (!Services.PassNeeded && instructionSize != instruction.Size)
                     Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
                         "Mode not supported in selected CPU.");
             }
@@ -451,11 +484,11 @@ namespace Core6502DotNet
                 if (sb.Length > 29)
                     disSb.Append(' ');
                 disSb.Append(line.Instruction.Name.ToLower());
-                if (modeInstruction.mode != Modes.Implied)
+                if (mode != Modes.Implied)
                 {
                     disSb.Append(' ');
-                    var memoryMode = modeInstruction.mode & Modes.MemModMask;
-                    var size = modeInstruction.mode & Modes.SizeMask;
+                    var memoryMode = mode & Modes.MemModMask;
+                    var size = mode & Modes.SizeMask;
 
                     if (memoryMode.HasFlag(Modes.RelativeBit))
                         size |= Modes.Absolute;
@@ -503,7 +536,7 @@ namespace Core6502DotNet
                         if (!double.IsNaN(Evaluations[2]))
                             eval3 = (int)Evaluations[2] & 0xFF;
                     }
-                    disSb.AppendFormat(s_modeFormats[modeInstruction.mode], eval1, eval2, eval3);
+                    disSb.AppendFormat(s_modeFormats[mode], eval1, eval2, eval3);
                 }
                 sb.Append(disSb.ToString().PadRight(18));
             }
@@ -527,6 +560,12 @@ namespace Core6502DotNet
         protected abstract bool PseudoBranchSupported { get; }
 
         /// <summary>
+        /// Gets whether the assembler supports direct-page mode operations in its
+        /// current state.
+        /// </summary>
+        protected abstract bool SupportsDirectPage { get; }
+
+        /// <summary>
         /// Gets the CPU.
         /// </summary>
         protected string CPU { get; private set; }
@@ -535,6 +574,11 @@ namespace Core6502DotNet
         /// Gets the individual evaluations in the expression.
         /// </summary>
         protected double[] Evaluations { get; }
+
+        /// <summary>
+        /// Gets or sets the current page for direct page operations.
+        /// </summary>
+        protected int Page { get; set; }
 
         /// <summary>
         /// Gets or sets the active instruction set for the selected CPU.

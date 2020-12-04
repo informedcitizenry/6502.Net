@@ -6,7 +6,6 @@
 //-----------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
@@ -88,7 +87,7 @@ namespace Core6502DotNet
             if (iterator.Current == null && !iterator.MoveNext())
                 return string.Empty;
             var token = iterator.Current;
-            if (Token.IsEnd(iterator.PeekNext()) && token.IsDoubleQuote())
+            if (IsStringLiteral(iterator))
             {
                 iterator.MoveNext();
                 return Regex.Unescape(token.Name.ToString()).TrimOnce('"');
@@ -162,7 +161,7 @@ namespace Core6502DotNet
                         if (token.IsDoubleQuote())
                             parms.Add(token.Name.ToString().TrimOnce('"'));
                         else
-                            parms.Add(GetFormatted(iterator, services));
+                            parms.Add(GetString(iterator, services));
                     }
                     else
                     {

@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Core6502DotNet
 {
-      /// <summary>
+    /// <summary>
     /// A class responsible for multi-byte assembly, including string types.
     /// </summary>
     public class PseudoAssembler : AssemblerBase, IFunctionEvaluator
@@ -41,15 +41,16 @@ namespace Core6502DotNet
             : base(services)
         {
             Reserved.DefineType("Types",
-                    ".addr", ".align", ".binary", ".byte", ".sbyte",
-                    ".char", ".dint", ".dword", ".fill", ".lint",
+                    ".addr", ".align", ".binary", ".bstring", ".byte", ".sbyte",
+                    ".char", ".dint", ".dword", ".fill", ".hstring", ".lint",
                     ".long", ".rta", ".short", ".sint", ".word",
                     ".cstring", ".lstring", ".nstring", ".pstring",
                     ".string", ".cbmflt", ".cbmfltp"
                 );
 
             Reserved.DefineType("Functions",
-                "cbmflt", "cbmfltp", "format", "peek", "poke", "section");
+                    "cbmflt", "cbmfltp", "format", "peek", "poke", "section"
+                );
             services.Evaluator.AddFunctionEvaluator(this);
             _includedBinaries = new Dictionary<StringView, BinaryFile>(services.StringViewComparer);
         }
@@ -57,6 +58,49 @@ namespace Core6502DotNet
         #endregion
 
         #region Methods
+
+        void AssembleHexBinStrings(SourceLine line)
+        {
+            var radix = line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B' ? 2 : 16;
+            var size = radix == 16 ? 2 : 8;
+            var len = size - 1;
+            var iterator = line.Operands.GetIterator();
+            Token token;
+            while ((token = iterator.GetNext()) != null)
+            {
+                if (!token.IsDoubleQuote())
+                {
+                    if (!token.Name.Equals("?"))
+                        throw new SyntaxException(token.Position, "String literal expected.");
+                    Services.Output.AddUninitialized(1);
+                }
+                else
+                {
+                    var hexBinDigits = new List<string>();
+                    var hexBinString = Evaluator.GetBinaryString(token.Name.TrimOnce('"').ToString());
+                    var startIndex = 0;
+                    while (startIndex < hexBinString.Length)
+                    {
+                        if (startIndex + len >= hexBinString.Length)
+                            hexBinDigits.Add(hexBinString[startIndex..]);
+                        else
+                            hexBinDigits.Add(hexBinString.Substring(startIndex, size));
+                        startIndex += size;
+                    }
+                    try
+                    {
+                        foreach (var digit in hexBinDigits)
+                            Services.Output.Add(Convert.ToByte(digit, radix));
+                    }
+                    catch (FormatException)
+                    {
+                        Services.Log.LogEntry(token, "String is not in the correct format.");
+                    }
+                }
+                if (!Token.IsEnd(iterator.GetNext()))
+                    throw new SyntaxException(iterator.Current, "Unexpected expression.");
+            }
+        }
 
         void AssembleValues(SourceLine line, double minValue, double maxValue, int setSize, bool isRta = false)
         {
@@ -87,15 +131,15 @@ namespace Core6502DotNet
             var iterator = line.Operands.GetIterator();
             var filename = iterator.GetNext();
             if (Token.IsEnd(filename))
-                throw new ExpressionException(line.Instruction, "Filename not specified.");
+                throw new SyntaxException(line.Instruction, "Filename not specified.");
             if (!filename.IsDoubleQuote())
-                throw new ExpressionException(line.Instruction, "Specified filename not valid.");
+                throw new SyntaxException(line.Instruction, "Specified filename not valid.");
             var fileName = filename.Name;
             if (!_includedBinaries.TryGetValue(fileName, out var file))
             {
                 file = new BinaryFile(fileName.ToString().TrimOnce('"'), Services.Options.IncludePath);
                 if (!file.Open())
-                    throw new ExpressionException(line.Operands[0], $"Unable to open file {fileName}.");
+                    throw new SyntaxException(line.Operands[0], $"Unable to open file {fileName}.");
                 _includedBinaries[fileName] = file;
             }
             var offset = 0;
@@ -107,7 +151,7 @@ namespace Core6502DotNet
                 {
                     size = (int)Services.Evaluator.Evaluate(iterator, ushort.MinValue, ushort.MaxValue);
                     if (iterator.Current != null)
-                        throw new ExpressionException(iterator.Current, "Too many arguments specified for directive.");
+                        throw new SyntaxException(iterator.Current, "Too many arguments specified for directive.");
                 }
             }
             if (offset > size - 1)
@@ -116,7 +160,7 @@ namespace Core6502DotNet
                 size = file.Data.Length - offset;
 
             if (size > ushort.MaxValue)
-                throw new ExpressionException(line.Operands[0], $"Binary file data is too great.");
+                throw new SyntaxException(line.Operands[0], $"Binary file data is too great.");
             if (!Services.PassNeeded)
                 Services.Output.AddBytes(file.Data.Skip(offset), size);
             else
@@ -132,6 +176,9 @@ namespace Core6502DotNet
             {
                 if (iterator.Current.Name.Equals("?"))
                 {
+                    if (!Token.IsEnd(iterator.GetNext()))
+                        throw new SyntaxException(iterator.Current.Position,
+                            "Unexpected expression.");
                     Services.Output.AddUninitialized(packed ? 5 : 6);
                     continue;
                 }
@@ -212,7 +259,7 @@ namespace Core6502DotNet
                 {
                     if (token.IsDoubleQuote())
                     {
-                        stringBytes.AddRange(Services.Encoding.GetBytes(token.Name.ToString().TrimOnce('"')));
+                        stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(iterator, Services)));
                     }
                     else
                     {
@@ -220,24 +267,21 @@ namespace Core6502DotNet
                             Services.Output.AddUninitialized(1);
                         else
                             stringBytes.Add(0);
+                        iterator.MoveNext();
                     }
-                    if (!iterator.MoveNext())
-                        break;
                     if (!Token.IsEnd(iterator.Current))
                         throw new SyntaxException(iterator.Current, "Unexpected expression.");
                 }
                 else if (StringHelper.ExpressionIsAString(iterator, Services))
                 {
                     stringBytes.AddRange(Services.Encoding.GetBytes(StringHelper.GetString(iterator, Services)));
-                    if (iterator.Current == null)
-                        break;
                 }
                 else 
                 { 
                     stringBytes.AddRange(Services.Output.ConvertToBytes(Services.Evaluator.Evaluate(iterator, false)));
-                    if (iterator.Current == null)
-                        break;
                 }
+                if (iterator.Current == null)
+                    break;
             }
             var instructionName = line.Instruction.Name.ToLower();
             switch (instructionName)
@@ -340,8 +384,10 @@ namespace Core6502DotNet
                 }
                 switch (instruction)
                 {
+                    case ".bstring":
                     case ".byte":
                     case ".char":
+                    case ".hstring":
                     case ".sbyte":
                         return operandCount;
                     case ".addr":
@@ -393,6 +439,10 @@ namespace Core6502DotNet
                 case ".sint":
                     AssembleValues(line, short.MinValue, short.MaxValue, 2);
                     break;
+                case ".bstring":
+                case ".hstring":
+                    AssembleHexBinStrings(line);
+                    break;
                 case ".long":
                     AssembleValues(line, UInt24.MinValue, UInt24.MaxValue, 3);
                     break;
@@ -434,9 +484,9 @@ namespace Core6502DotNet
                 if (!Services.Options.NoSource)
                 {
                     if (Services.Options.VerboseList)
-                        sb.Append($"{line.FullSource,43}");
+                        sb.Append($"{line.FullSource}");
                     else
-                        sb.Append($"{line.Source,43}");
+                        sb.Append($"{line.Source}");
                 }
                 if (assembly.Count > 8 && !Services.Options.TruncateAssembly)
                 {
@@ -450,9 +500,9 @@ namespace Core6502DotNet
                 if (!Services.Options.NoSource)
                 {
                     if (Services.Options.VerboseList)
-                        sb.Append($"{line.FullSource,43}");
+                        sb.Append($"{line.FullSource}");
                     else
-                        sb.Append($"{line.Source,43}");
+                        sb.Append($"{line.Source}");
                 }
             }
             return sb.ToString();

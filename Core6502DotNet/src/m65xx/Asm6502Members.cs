@@ -18,6 +18,7 @@ namespace Core6502DotNet.m65xx
         #region Members
     
         bool _m16, _x16;
+        bool _autoOn;
         static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes6502 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
@@ -284,8 +285,8 @@ namespace Core6502DotNet.m65xx
         static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes65CE02 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
         {
-            { ("cle", Modes.Implied     ), new CpuInstruction( "65CE02",  0x03) },
-            { ("see", Modes.Implied     ), new CpuInstruction( "65CE02",  0x04) },
+            { ("cle", Modes.Implied     ), new CpuInstruction( "65CE02",  0x02) },
+            { ("see", Modes.Implied     ), new CpuInstruction( "65CE02",  0x03) },
             { ("tsy", Modes.Implied     ), new CpuInstruction( "65CE02",  0x0b) },
             { ("ora", Modes.IndZ        ), new CpuInstruction( "65CE02",  0x12, 2) },
             { ("bpl", Modes.RelativeAbs ), new CpuInstruction( "65CE02",  0x13, 3) },
@@ -296,8 +297,8 @@ namespace Core6502DotNet.m65xx
             { ("and", Modes.IndZ        ), new CpuInstruction( "65CE02",  0x32, 2) },
             { ("bmi", Modes.RelativeAbs ), new CpuInstruction( "65CE02",  0x33, 3) },
             { ("dez", Modes.Implied     ), new CpuInstruction( "65CE02",  0x3b) },
-            { ("neg", Modes.Implied     ), new CpuInstruction( "65CE02",  0x43) },
-            { ("asr", Modes.Implied     ), new CpuInstruction( "65CE02",  0x44) },
+            { ("neg", Modes.Implied     ), new CpuInstruction( "65Ce02",  0x42) },
+            { ("asr", Modes.Implied     ), new CpuInstruction( "65CE02",  0x43) },
             { ("asr", Modes.ZeroPage    ), new CpuInstruction( "65CE02",  0x44, 2) },
             { ("taz", Modes.Implied     ), new CpuInstruction( "65CE02",  0x4b) },
             { ("eor", Modes.IndZ        ), new CpuInstruction( "65CE02",  0x52, 2) },
@@ -305,6 +306,7 @@ namespace Core6502DotNet.m65xx
             { ("asr", Modes.ZeroPageX   ), new CpuInstruction( "65CE02",  0x54, 2) },
             { ("tab", Modes.Implied     ), new CpuInstruction( "65CE02",  0x5b) },
             { ("map", Modes.Implied     ), new CpuInstruction( "65CE02",  0x5c) },
+            { ("rts", Modes.Immediate   ), new CpuInstruction( "65Ce02",  0x62, 2) },
             { ("rtn", Modes.Implied     ), new CpuInstruction( "65CE02",  0x63) },
             { ("bsr", Modes.Absolute    ), new CpuInstruction( "65CE02",  0x63, 3) },
             { ("tza", Modes.Implied     ), new CpuInstruction( "65CE02",  0x6b) },
@@ -333,13 +335,13 @@ namespace Core6502DotNet.m65xx
             { ("phz", Modes.Implied     ), new CpuInstruction( "65CE02",  0xdb) },
             { ("cpz", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xdc, 3) },
             { ("lda", Modes.IndSp       ), new CpuInstruction( "65CE02",  0xe2, 2) },
-            { ("inw", Modes.ZeroPage    ), new CpuInstruction( "65CE02",  0xe3, 2) },
+            { ("inw", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xe3, 3) },
             { ("row", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xeb, 3) },
             { ("sbc", Modes.IndZ        ), new CpuInstruction( "65CE02",  0xf2, 2) },
             { ("beq", Modes.RelativeAbs ), new CpuInstruction( "65CE02",  0xf3, 3) },
             { ("phw", Modes.ImmAbs      ), new CpuInstruction( "65CE02",  0xf4, 3) },
             { ("plz", Modes.Implied     ), new CpuInstruction( "65CE02",  0xfb) },
-            { ("phw", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xfc, 2) }
+            { ("phw", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xfc, 3) }
         };
         static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes65816 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()

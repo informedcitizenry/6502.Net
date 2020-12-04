@@ -569,7 +569,5 @@ namespace Core6502DotNet.m680x
             { ("cmpu",  Modes.Absolute    ), new CpuInstruction( "m6809",  0x11b3, 4) },
             { ("cmps",  Modes.Absolute    ), new CpuInstruction( "m6809",  0x11bc, 4) }
         };
-
-        int _dp;
     }
 }

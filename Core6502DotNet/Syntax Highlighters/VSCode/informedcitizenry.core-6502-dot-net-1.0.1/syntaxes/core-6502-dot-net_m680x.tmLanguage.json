@@ -29,11 +29,11 @@
       "patterns": [
         {
           "name": "keyword.control.pseudoop.core6502_net_m680x",
-          "match": "(?i)(\\.(addr|align|binary|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|lint|long|lstring|nstring|pstring|rta|sbyte|sint|string|word))\\b"
+          "match": "(?i)(^|\\s)(\\.(addr|align|binary|bstring|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|hstring|lint|long|lstring|nstring|pstring|rta|sbyte|short|sint|string|word))\\b"
         },
         {
           "name": "keyword.control.directive.core6502_net_m680x",
-          "match": "(?i)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|dp|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|foreach|function|global|goto|if|include|initmem|invoke|let|macro|map|next|page|pseudopc|realpc|relocate|repeat|return|switch|target|unmap|warn|warnif|while))\\b"
+          "match": "(?i)(^|\\s)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|macro|map|next|org|page|pseudopc|proff|pron|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while))\\b"
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_m680x",
@@ -41,7 +41,7 @@
         },
         {
           "name": "keyword.other.macro.core6502_net_m680x",
-          "match": "(?i)\\.[a-zA-Z]\\w*\\b"
+          "match": "(^|\\s)\\.[a-zA-Z]\\w*\\b"
         },
         {
           "name": "keyword.function.core6502_net_m680x",
@@ -98,7 +98,7 @@
       "patterns": [
         {
           "name": "constant.numeric.binary.core6502_net_m680x",
-          "match": "(?i)(\\%|0b)[0-1_]+\\b"
+          "match": "(?i)(((^|[^)a-zA-Z0-9_])\\%)|0b)[0-1_]+\\b"
         },
         {
           "name": "constant.numeric.altbinary.core6502_net_m680x",
@@ -110,15 +110,11 @@
         },
         {
           "name": "constant.numeric.octal.core6502_net_m680x",
-          "match": "(?i)(0[0-7_]+)|((0o)[0-7_]+)\\b"
+          "match": "(?i)\\b(0[0-7_]+)|((0o)[0-7_]+)\\b"
         },
         {
-          "name": "constant.numeric.scientific.core6502_net_m680x",
-          "match": "(?i)\\b[0-9_](?:\\.\\d+)?[Ee][-+]\\[0-9_]+\\b"
-        },
-        {
-          "name": "constant.numeric.decimal.core6502_net_m680x",
-          "match": "(?i)\\b[0-9_]+(\\.[0-9_]+)?\\b"
+          "name": "constant.numeric.scientific.core6502_net_65xx",
+          "match": "(?i)\\b[0-9_]+((\\.\\d+)|(?:\\.\\d+)?e[\\-\\+]?[0-9_]+)?\\b"
         }
       ]
     },
@@ -126,7 +122,7 @@
       "patterns": [
         {
           "name": "keyword.operator.core6502_net_m680x",
-          "match": "\\+|\\-|\\=|\\*|\\/|\\!|\\<|\\>|\\&|\\||\\^|\\(|\\)|\\[|\\]\\,"
+          "match": "\\#|\\+|\\-|\\=|\\*|\\/|\\!|\\<|\\>|\\&|\\||\\^|\\(|\\)|\\[|\\]|\\,"
         }
       ]
     },

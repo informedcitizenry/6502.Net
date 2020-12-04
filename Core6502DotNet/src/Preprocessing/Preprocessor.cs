@@ -337,7 +337,7 @@ namespace Core6502DotNet
                                 if (previous != '$')
                                     previous = it.GetNext();
 
-                                while ((c = it.GetNext()).IsHex() || (c == '_' && previous.IsHex() && peek.IsHex()))
+                                while ((c = it.GetNext()).IsHex() || (c == '_' && previous.IsHex() && it.PeekNext().IsHex()))
                                 {
                                     previous = c;
                                     peek = it.PeekNext();
@@ -346,7 +346,7 @@ namespace Core6502DotNet
                             else if (c == '0' && (peek == 'o' || peek == 'O'))
                             {
                                 it.MoveNext();
-                                while (char.IsDigit(c = it.GetNext()))
+                                while (char.IsDigit(c = it.GetNext()) || (c == '_' && char.IsDigit(previous) && char.IsDigit(it.PeekNext())))
                                 {
                                     previous = c;
                                     peek = it.PeekNext();
@@ -369,7 +369,7 @@ namespace Core6502DotNet
                                 char one = alt ? '#' : '1';
 
                                 while ((c = it.GetNext()) == zero || c == one ||
-                                    (c == '_' && (previous == zero || previous == one) && (peek == zero || peek == one)))
+                                    (c == '_' && (previous == zero || previous == one) && (it.PeekNext() == zero || it.PeekNext() == one)))
                                 {
                                     previous = c;
                                     peek = it.PeekNext();
