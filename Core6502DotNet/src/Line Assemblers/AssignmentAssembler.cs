@@ -71,16 +71,23 @@ namespace Core6502DotNet
                         if (line.Label.Name[0] == '_')
                             throw new SymbolException(line.Label, SymbolException.ExceptionReason.NotValid);
                         if (line.Operands.Count > 0)
+                        {
+                            var iterator = line.Operands.GetIterator();
                             Services.SymbolManager.DefineGlobal(line.Label.Name,
-                                Services.Evaluator.Evaluate(line.Operands.GetIterator()));
+                                Services.Evaluator.Evaluate(iterator));
+                            if (iterator.Current != null)
+                                throw new SyntaxException(iterator.Current, "Unexpected expression.");
+                        }
                         else
+                        {
                             Services.SymbolManager.DefineGlobal(line.Label.Name, Services.Output.LogicalPC);
+                        }
                     }
                     else
                     {
                         var iterator = line.Operands.GetIterator();
                         if (!iterator.MoveNext())
-                            throw new ExpressionException(line.Label.Position, "Expected expression.");
+                            throw new SyntaxException(line.Label.Position, "Expected expression.");
                         
                         if (iterator.Current.Name.Equals("["))
                         {

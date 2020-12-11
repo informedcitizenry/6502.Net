@@ -151,7 +151,7 @@ namespace Core6502DotNet
                 {
                     size = (int)Services.Evaluator.Evaluate(iterator, ushort.MinValue, ushort.MaxValue);
                     if (iterator.Current != null)
-                        throw new SyntaxException(iterator.Current, "Too many arguments specified for directive.");
+                        throw new SyntaxException(iterator.Current, "Unexpected expression.");
                 }
             }
             if (offset > size - 1)

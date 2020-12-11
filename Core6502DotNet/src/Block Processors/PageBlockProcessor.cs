@@ -36,6 +36,8 @@ namespace Core6502DotNet
         public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
             var line = lines.Current;
+            if (line.Operands.Count > 0)
+                throw new SyntaxException(line.Operands[0], "Unexpected expression.");
             if (line.Instruction.Name.Equals(".endpage", Services.StringComparison))
             {
                 if (!Services.PassNeeded && GetPage(Services.Output.LogicalPC - 1) != _page)

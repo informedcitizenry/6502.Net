@@ -118,6 +118,8 @@ namespace Core6502DotNet
             return align;
         }
 
+        #endregion
+
         /// <summary>
         /// Returns byte string of the
         /// numeric value, excluding all bytes containing only leading sign bits, 
@@ -140,8 +142,6 @@ namespace Core6502DotNet
                 bytesTaken = bytesTaken.Reverse();
             return bytesTaken;
         }
-
-        #endregion
 
         #region Methods
 
@@ -290,11 +290,7 @@ namespace Core6502DotNet
         /// Reserve uninitialized memory in the compilation by an unspecified amount.
         /// </summary>
         /// <param name="amount">The amount to reserve.</param>
-        public void Fill(int amount)
-        {
-            LogicalPC += amount;
-            ProgramCounter += amount;
-        }
+        public void Fill(int amount) => AddUninitialized(amount);
 
         /// <summary>
         /// Fill memory with the specified values by the specified amount.

@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>6502.Net</PackageId>
-    <Version>2.4.3.1</Version>
+    <Version>2.4.3.2</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
@@ -13,8 +13,8 @@
     <ReleaseVersion>2.4.1</ReleaseVersion>
     <StartupObject>Core6502DotNet.Program</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>2.4.3.1</AssemblyVersion>
-    <FileVersion>2.4.3.1</FileVersion>
+    <AssemblyVersion>2.4.3.2</AssemblyVersion>
+    <FileVersion>2.4.3.2</FileVersion>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 

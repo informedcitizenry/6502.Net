@@ -33,7 +33,7 @@
         },
         {
           "name": "keyword.control.directive.core6502_net_65xx",
-          "match": "(?i)(^|\\s)(\\.(assert|auto|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|m8|m16|macro|manual|map|mx8|mx16|next|org|page|proff|pron|pseudopc|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while|x8|x16))\\b"
+          "match": "(?i)(^|\\s)(\\.(assert|auto|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|m8|m16|macro|manual|map|mx8|mx16|next|org|page|proff|pron|pseudopc|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while|x8|x16))\\b"
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_65xx",

@@ -258,6 +258,7 @@ namespace Core6502DotNet
                 {
                     if (l.Instruction != null && _openClosures.ContainsKey(l.Instruction.Name))
                     {
+                        // leap over any blocks we find along the way we are not currently in.
                         if (!_blocks.Any(b => b.Index == iterCopy.Index))
                             GetProcessor(l, iterCopy.Index).SeekBlockEnd(iterCopy);
                         return false;

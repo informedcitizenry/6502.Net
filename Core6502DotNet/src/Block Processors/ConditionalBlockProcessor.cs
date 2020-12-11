@@ -74,7 +74,10 @@ namespace Core6502DotNet
             }
             else
             {
-                _ifTrue = Services.Evaluator.EvaluateCondition(line.Operands.GetIterator());
+                var iterator = line.Operands.GetIterator();
+                _ifTrue = Services.Evaluator.EvaluateCondition(iterator);
+                if (iterator.Current != null)
+                    throw new SyntaxException(iterator.Current, "Unexpected expression.");
             }
         }
 

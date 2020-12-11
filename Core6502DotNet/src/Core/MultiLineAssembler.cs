@@ -159,8 +159,15 @@ namespace Core6502DotNet
                         {
                             if (_options.AllowReturn)
                             {
+                                disassembly = disasmBuilder.ToString();
                                 if (line.Operands.Count > 0)
-                                    return _options.Evaluator.Evaluate(line.Operands.GetIterator());
+                                {
+                                    var it = line.Operands.GetIterator();
+                                    var result =  _options.Evaluator.Evaluate(it);
+                                    if (it.Current != null)
+                                        throw new SyntaxException(it.Current, "Unexpected expression.");
+                                    return result;
+                                }
                                 return double.NaN;
                             }
                             else

@@ -39,9 +39,12 @@ namespace Core6502DotNet
             SourceLine line = lines.Current;
             if (line.Instruction.Name.Equals(".repeat", Services.StringComparison))
             {
-                _repetition = Services.Evaluator.Evaluate(line.Operands.GetIterator(), 1, uint.MaxValue);
+                var iterator = line.Operands.GetIterator();
+                _repetition = Services.Evaluator.Evaluate(iterator, 1, uint.MaxValue);
                 if (!_repetition.IsInteger())
-                    throw new ExpressionException(line.Operands[0], $"Repetition must be an integer");
+                    throw new ExpressionException(line.Operands[0], "Repetition must be an integer");
+                if (iterator.Current != null)
+                    throw new SyntaxException(iterator.Current, "Unexpected expression.");
             }
             else if (--_repetition > 0)
             {

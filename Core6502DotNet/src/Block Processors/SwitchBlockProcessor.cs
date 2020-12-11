@@ -167,6 +167,8 @@ namespace Core6502DotNet
                     context = new SwitchContext(StringHelper.GetString(it, Services));
                 else
                     context = new SwitchContext(Services.Evaluator.Evaluate(it, false));
+                if (it.Current != null)
+                    throw new SyntaxException(it.Current, "Unexpected expression.");
             }
             if (context == null)
             {
@@ -207,18 +209,21 @@ namespace Core6502DotNet
                         }
                         else
                         {
+                            var iterator = line.Operands.GetIterator();
                             if (stringBlock != null)
                             {
-                                if (!StringHelper.ExpressionIsAString(line.Operands.GetIterator(), Services))
+                                if (!StringHelper.ExpressionIsAString(iterator, Services))
                                     Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position,
                                         "String expression expected.");
                                 else
-                                    stringBlock.Cases.Add(StringHelper.GetString(line.Operands.GetIterator(), Services));
+                                    stringBlock.Cases.Add(StringHelper.GetString(iterator, Services));
                             }
                             else
                             {
-                                numericBlock?.Cases.Add(Services.Evaluator.Evaluate(line.Operands.GetIterator()));
+                                numericBlock?.Cases.Add(Services.Evaluator.Evaluate(iterator));
                             }
+                            if (iterator.Current != null)
+                                throw new SyntaxException(iterator.Current, "Unexpected expression.");
                         }
                     }
                     else if (Reserved.IsOneOf("BreakContReturn", line.Instruction.Name))
@@ -237,6 +242,10 @@ namespace Core6502DotNet
                                 if (stringBlock != null) stringBlock.FallthroughIndex = lines.Index;
                                 if (numericBlock != null) numericBlock.FallthroughIndex = lines.Index;
                             }
+                            else if (!line.Instruction.Name.Equals(".return", Services.StringComparison) && line.Operands.Count > 0)
+                            {
+                                throw new SyntaxException(line.Operands[0], "Unexpected expression.");
+                            }
                             context.AddBlock(stringBlock);
                             context.AddBlock(numericBlock);
                             Services.SymbolManager.PopScope();
@@ -248,6 +257,8 @@ namespace Core6502DotNet
                     }
                     else if (line.Instruction.Name.Equals(".default", Services.StringComparison))
                     {
+                        if (line.Operands.Count > 0)
+                            throw new SyntaxException(line.Operands[0], "Unexpected expression.");
                         if (defaultIndex > -1)
                             Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
                                 "There can only be one \".default\" directive in a switch block.");

@@ -33,7 +33,7 @@
         },
         {
           "name": "keyword.control.directive.core6502_net_m680x",
-          "match": "(?i)(^|\\s)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|macro|map|next|org|page|pseudopc|proff|pron|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while))\\b"
+          "match": "(?i)(^|\\s)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|macro|map|next|org|page|pseudopc|proff|pron|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while))\\b"
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_m680x",

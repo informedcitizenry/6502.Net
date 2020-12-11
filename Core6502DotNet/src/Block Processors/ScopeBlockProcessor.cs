@@ -30,6 +30,8 @@ namespace Core6502DotNet
         public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
             var line = lines.Current;
+            if (line.Operands.Count > 0)
+                throw new SyntaxException(line.Operands[0], "Unexpected expression.");
             if (line.Instruction.Name.Equals(".block", Services.StringComparison))
             {
                 StringView scopeName;
@@ -90,13 +92,14 @@ namespace Core6502DotNet
                     scopeName = line.Operands[0].Name;
                 }
                 if (scopeName == null)
+                {
                     scopeName = lines.Index.ToString();
+                    Services.SymbolManager.PushScope(scopeName);
+                }
                 else if (Services.SymbolManager.SymbolExists(scopeName))
                 {
                     Services.Log.LogEntry(line.Operands[0], $"Namespace name \"{scopeName}\" clashes with existing symbol name.");
-                    return;
                 }
-                Services.SymbolManager.PushScope(scopeName);
             }
             else
             {

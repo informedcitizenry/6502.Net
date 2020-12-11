@@ -192,7 +192,7 @@ namespace Core6502DotNet.m680x
                     mode |= size;
                 if (operand.MoveNext())
                 {
-                    if (!operand.Current.Name.Equals("x", Services.StringComparison))
+                    if (!operand.Current.Name.Equals("x", Services.StringComparison) || operand.MoveNext())
                         throw new SyntaxException(operand.Current, "Unexpected expresion.");
                     mode |= Modes.IndexedX;
                 }

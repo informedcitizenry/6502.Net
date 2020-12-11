@@ -466,24 +466,31 @@ namespace Core6502DotNet.m65xx
 
         string AssembleLongShort(SourceLine line)
         {
-            var instruction = line.Instruction.Name.ToLower();
-            if (!CPU.Equals("65816"))
+            if (line.Operands.Count > 0)
             {
-                Services.Log.LogEntry(line.Instruction,  $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
+                Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
             }
             else
             {
-                var size = instruction.Contains("16") ? 3 : 2;
-                if (instruction[1] == 'm')
+                var instruction = line.Instruction.Name.ToLower();
+                if (!CPU.Equals("65816"))
                 {
-                    _m16 = size == 3;
-                    SetImmediate(size, 'a');
+                    Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
                 }
-                if (instruction[1] == 'x')
+                else
                 {
-                    _x16 = size == 3;
-                    SetImmediate(size, 'x');
-                    SetImmediate(size, 'y');
+                    var size = instruction.Contains("16") ? 3 : 2;
+                    if (instruction[1] == 'm')
+                    {
+                        _m16 = size == 3;
+                        SetImmediate(size, 'a');
+                    }
+                    if (instruction[1] == 'x')
+                    {
+                        _x16 = size == 3;
+                        SetImmediate(size, 'x');
+                        SetImmediate(size, 'y');
+                    }
                 }
             }
             return string.Empty;
@@ -583,7 +590,9 @@ namespace Core6502DotNet.m65xx
 
         string AssembleAuto(SourceLine line)
         {
-            if (!CPU.Equals("65816"))
+            if (line.Operands.Count > 0)
+                Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
+            else if (!CPU.Equals("65816"))
                 Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
             else
                 _autoOn = line.Instruction.Name.Equals(".auto", Services.StringComparison);
@@ -592,7 +601,7 @@ namespace Core6502DotNet.m65xx
 
         internal override int GetInstructionSize(SourceLine line)
         {
-            if (Reserved.IsOneOf("LongShort", line.Instruction.Name))
+            if (Reserved.IsOneOf("LongShort", line.Instruction.Name) || Reserved.IsOneOf("Autos", line.Instruction.Name))
                 return 0;
             if (Reserved.IsOneOf("PseudoBranches", line.Instruction.Name))
                 return 2;

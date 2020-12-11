@@ -78,22 +78,32 @@ namespace Core6502DotNet
             }
             else
             {
-                var eor = Services.Evaluator.Evaluate(line.Operands.GetIterator(), sbyte.MinValue, byte.MaxValue);
+                var iterator = line.Operands.GetIterator();
+                var eor = Services.Evaluator.Evaluate(iterator, sbyte.MinValue, byte.MaxValue);
                 var eor_b = Convert.ToByte(eor);
                 Services.Output.Transform = (delegate (byte b)
                 {
                     b ^= eor_b;
                     return b;
                 });
+                if (iterator.Current != null)
+                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
             }
         }
 
         void SetBank(SourceLine line)
         {
             if (line.Operands.Count == 0)
+            {
                 Services.Log.LogEntry(line.Instruction, "Expected expression.");
+            }
             else
-                Services.Output.SetBank((int)Services.Evaluator.Evaluate(line.Operands.GetIterator(), sbyte.MinValue, byte.MaxValue));
+            {
+                var iterator = line.Operands.GetIterator();
+                Services.Output.SetBank((int)Services.Evaluator.Evaluate(iterator, sbyte.MinValue, byte.MaxValue));
+                if (iterator.Current != null)
+                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+            }
         }
 
         protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
@@ -174,6 +184,8 @@ namespace Core6502DotNet
                                     "Output format was previously specified.");
                             else
                                 Services.SelectFormat(StringHelper.GetString(iterator, Services));
+                            if (iterator.Current != null)
+                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
                         }
                         if (instruction.Equals(".target"))
                             Services.Log.LogEntry(line.Instruction,

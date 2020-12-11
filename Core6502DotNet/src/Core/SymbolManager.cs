@@ -229,7 +229,21 @@ namespace Core6502DotNet
             return scopedName;
         }
 
-        void DefineSymbol(StringView name, Symbol symbol, bool isGlobal)
+        bool InSameFunctionScope(string symbol1, string symbol2)
+        {
+            var sym1Ix = symbol1.LastIndexOf('@');
+            var sym2Ix = symbol2.LastIndexOf('@');
+            if (sym1Ix > -1 && sym1Ix == sym2Ix)
+            {
+                var dot1Ix = symbol1.Substring(sym1Ix).IndexOf('.');
+                var dot2Ix = symbol2.Substring(sym2Ix).IndexOf('.');
+                return symbol1.Substring(0, sym1Ix + dot1Ix).Equals(symbol2.Substring(0, sym2Ix + dot2Ix));
+
+            }
+            return sym1Ix == -1 && sym2Ix == -1;
+        }
+
+        void DefineSymbol(StringView name, Symbol symbol, bool isGlobal, bool isWeak = false)
         {
             if (_criteria.Any(c => !c(name)))
                 throw new SymbolException(name, 1, SymbolException.ExceptionReason.NotValid);
@@ -240,24 +254,23 @@ namespace Core6502DotNet
                 LocalScope = child = name.ToString();
             string fqdn;
             if (isGlobal)
-                fqdn = child;
-            else
-                fqdn = GetScopedName(child);
-
-            if (!_symbolTable.TryGetValue(fqdn, out var existing) && symbol.IsMutable && !fqdn.Contains('@') && fqdn.Contains('.'))
             {
-                // gotta figure this out!
-                var scopes = fqdn.Split('.').ToList();
-                while (scopes.Count > 1 && existing == null)
+                fqdn = child;
+            }
+            else
+            {
+                // the fqdn is the fully scoped name by default
+                fqdn = GetScopedName(child);
+                if (isWeak && !_symbolTable.ContainsKey(fqdn) && fqdn.Contains('.'))
                 {
-                    scopes.RemoveAt(scopes.Count - 2);
-                    var oneHigher = string.Join('.', scopes);
-                    _symbolTable.TryGetValue(oneHigher, out existing);
-                    if (existing != null)
-                        fqdn = oneHigher;
+                    // but if it is weak (can be shadowed by same named symbol in outer scope
+                    // check if an outer scoped symbol exists
+                    var shadow = GetFullyQualifiedName(child);
+                    if (_symbolTable.ContainsKey(shadow) && InSameFunctionScope(shadow, fqdn))
+                        fqdn = shadow; // if so, do not create the same symbol name in an inner scope
                 }
             }
-            if (existing != null && !existing.IsEqualType(symbol))
+            if (_symbolTable.TryGetValue(fqdn, out var existing) && !existing.IsEqualType(symbol))
                 throw new Exception("Type mismatch.");
             _symbolTable[fqdn] = symbol;
         }
@@ -321,7 +334,7 @@ namespace Core6502DotNet
             var lhs = tokens.Current;
             if (lhs == null)
                 throw new ExpressionException(1, "Expression expected.");
-
+            var isWeak = !isGlobal && isMutable;
             var equ = tokens.GetNext();
             if (equ == null || !equ.Name.Equals("="))
             {
@@ -368,7 +381,7 @@ namespace Core6502DotNet
                     throw new SymbolException(lhs, SymbolException.ExceptionReason.Redefined);
                 if (rhs.Name.Equals("["))
                 {
-                    DefineSymbol(lhs.Name, new Symbol(tokens, _evaluator, isMutable), isGlobal);
+                    DefineSymbol(lhs.Name, new Symbol(tokens, _evaluator, isMutable), isGlobal, isWeak);
                 }
                 else
                 {
@@ -376,12 +389,12 @@ namespace Core6502DotNet
                     {
                         if (tokens.PeekNext() == null || TokenType.End.HasFlag(tokens.PeekNext().Type))
                         {
-                            DefineSymbol(lhs.Name, new Symbol(rhs.Name.TrimOnce('"'), isMutable), isGlobal);
+                            DefineSymbol(lhs.Name, new Symbol(rhs.Name.TrimOnce('"'), isMutable), isGlobal, isWeak);
                             return;
                         }
                         tokens.SetIndex(tokens.Index - 1);
                     }
-                    DefineSymbol(lhs.Name, new Symbol(_evaluator.Evaluate(tokens, false), isMutable), isGlobal);
+                    DefineSymbol(lhs.Name, new Symbol(_evaluator.Evaluate(tokens, false), isMutable), isGlobal, isWeak);
                 }
             }
 

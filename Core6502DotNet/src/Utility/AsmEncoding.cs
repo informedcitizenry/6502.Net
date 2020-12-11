@@ -172,12 +172,10 @@ namespace Core6502DotNet
                     throw new ArgumentException(mapping);
 
                 while (first <= last)
-                    _currentMap.Remove(first);
+                    _currentMap.Remove(first++);
             }
             else
             {
-                if (mapping.Length > 0)
-                    throw new ArgumentException(mapping);
                 _currentMap.Remove(char.ConvertToUtf32(mapping, 0));
             }
         }
