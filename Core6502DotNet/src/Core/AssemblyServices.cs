@@ -66,12 +66,8 @@ namespace Core6502DotNet
                 var symbol = SymbolManager.GetSymbol(token, CurrentPass > 0);
                 if (symbol == null)
                 {
-                    if (CurrentPass == 0)
-                    {
-                        PassNeeded = true; 
-                        return 0xffff;
-                    }
-                    throw new SymbolException(token, SymbolException.ExceptionReason.NotDefined);
+                    PassNeeded = true;
+                    return 0xffff;
                 }
                 if (subscript >= 0)
                 {

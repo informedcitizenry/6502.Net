@@ -485,7 +485,7 @@ namespace Core6502DotNet.m65xx
                         _m16 = size == 3;
                         SetImmediate(size, 'a');
                     }
-                    if (instruction[1] == 'x')
+                    if (instruction[1] == 'x' || instruction[2] == 'x')
                     {
                         _x16 = size == 3;
                         SetImmediate(size, 'x');

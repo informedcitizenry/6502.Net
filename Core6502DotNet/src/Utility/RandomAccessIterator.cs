@@ -59,22 +59,6 @@ namespace Core6502DotNet
         /// Constructs a new instance of a <see cref="RandomAccessIterator{T}"/> class.
         /// </summary>
         /// <param name="iterator">An iterator from which to copy.</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        public RandomAccessIterator(RandomAccessIterator<T> iterator)
-            : this(iterator, false)
-        {
-            if (iterator == null)
-                throw new ArgumentNullException();
-            _firstIndex = iterator._firstIndex;
-            Index = iterator.Index;
-            _list = iterator._list;
-            _length = iterator._length;
-        }
-
-        /// <summary>
-        /// Constructs a new instance of a <see cref="RandomAccessIterator{T}"/> class.
-        /// </summary>
-        /// <param name="iterator">An iterator from which to copy.</param>
         /// <param name="reset">Reset the copied indicator.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public RandomAccessIterator(RandomAccessIterator<T> iterator, bool reset)

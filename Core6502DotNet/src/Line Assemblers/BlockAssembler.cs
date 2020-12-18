@@ -144,7 +144,8 @@ namespace Core6502DotNet
         void ScanBlock(RandomAccessIterator<SourceLine> lines)
         {
             var ix = lines.Index;
-            var open = lines.Current.Instruction.Name;
+            var line = lines.Current;
+            var open = line.Instruction.Name;
             var closure = _openClosures[open];
             var closures = new Stack<StringView>();
             closures.Push(closure);
@@ -159,7 +160,7 @@ namespace Core6502DotNet
                 }
             }
             if (closures.Count > 0)
-                throw new SyntaxException(lines.Current.Instruction.Position,
+                throw new SyntaxException(line.Instruction,
                     $"Missing closure \"{closure}\" for block \"{open}\".");
             lines.SetIndex(ix);
         }
@@ -258,6 +259,8 @@ namespace Core6502DotNet
                 {
                     if (l.Instruction != null && _openClosures.ContainsKey(l.Instruction.Name))
                     {
+                        if (l.Instruction.Name.Equals(".function", Services.StringComparison))
+                            throw new SyntaxException(l.Instruction, "Function block cannot be inside another block.");
                         // leap over any blocks we find along the way we are not currently in.
                         if (!_blocks.Any(b => b.Index == iterCopy.Index))
                             GetProcessor(l, iterCopy.Index).SeekBlockEnd(iterCopy);
@@ -337,7 +340,7 @@ namespace Core6502DotNet
             while (!token.Name.Equals(")"))
             {
                 if (token.IsSeparator())
-                    token = tokens.GetNext();
+                    tokens.MoveNext();
                 if (StringHelper.ExpressionIsAString(tokens, Services))
                     evalParms.Add(StringHelper.GetString(tokens, Services));
                 else
@@ -357,18 +360,17 @@ namespace Core6502DotNet
         {
             if (Services.CurrentPass == 0)
             {
-                if (_currentBlock != null)
-                    throw new ExpressionException(1, "Function block cannot be inside another block.");
-
                 var line = lines.Current;
+                if (_currentBlock != null)
+                    throw new SyntaxException(line.Instruction, "Function block cannot be inside another block.");
                 if (line.Label == null)
-                    throw new ExpressionException(1, "Function name not specified");
+                    throw new SyntaxException(line.Instruction, "Function name not specified");
                 var functionName = line.Label.Name;
                 if (_functionDefs.ContainsKey(functionName))
-                    throw new ExpressionException(line.Label.Position, $"Function name \"{functionName}\" was previous declared.");
+                    throw new SyntaxException(line.Label, $"Function name \"{functionName}\" was previous declared.");
                 if (!Services.SymbolManager.SymbolIsValid(functionName))
-                    throw new ExpressionException(line.Label.Position, $"Invalid function name \"{functionName}\".");
-                _functionDefs.Add(functionName, new Function(line.Operands, lines, Services, Services.Options.CaseSensitive));
+                    throw new SyntaxException(line.Label, $"Invalid function name \"{functionName}\".");
+                _functionDefs.Add(functionName, new Function(line.Label.Name, line.Operands, lines, Services, Services.Options.CaseSensitive));
             }
             else
             {

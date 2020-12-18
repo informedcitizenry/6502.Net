@@ -27,19 +27,22 @@ namespace Core6502DotNet
         /// <summary>
         /// Creates a new instance of the Function class.
         /// </summary>
+        /// <param name="name">The function's name.</param>
         /// <param name="parameterList">The list of parameters for the function.</param>
         /// <param name="iterator">The <see cref="SourceLine"/> iterator to traverse to define the function block.</param>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="caseSensitive">Determines whether to compare the passed parameters
         /// to the source block's own defined parameters should be case-sensitive.</param>
         /// <exception cref="SyntaxException"></exception>
-        public Function(List<Token> parameterList,
+        public Function(StringView name,
+                        List<Token> parameterList,
                         RandomAccessIterator<SourceLine> iterator,
                         AssemblyServices services,
                         bool caseSensitive)
             : base(parameterList,
                   caseSensitive)
         {
+            Name = name;
             _services = services;
             _definedLines = new List<SourceLine>();
             SourceLine line;
@@ -83,13 +86,13 @@ namespace Core6502DotNet
         public double Invoke(List<object> parameterList)
         {
             if (parameterList.Count > Params.Count)
-                throw new SyntaxException(parameterList.Count, "Unexpected argument passed to function.");
+                throw new SyntaxException(parameterList.Count, $"Unexpected argument passed to function \"{Name}\".");
             for (var i = 0; i < Params.Count; i++)
             {
                 if (i >= parameterList.Count || parameterList[i] == null)
                 {
                     if (Params[i].DefaultValue.Count == 0)
-                        throw new SyntaxException(i + 1, $"Missing argument \"{Params[i].Name}\" for function.");
+                        throw new SyntaxException(i + 1, $"Missing argument \"{Params[i].Name}\" for function \"{Name}\".");
                     var it = Params[i].DefaultValue.GetIterator();
                     if (StringHelper.ExpressionIsAString(it, _services))
                         _services.SymbolManager.DefineSymbol(Params[i].Name, StringHelper.GetString(it, _services));
@@ -142,7 +145,13 @@ namespace Core6502DotNet
                         $"Directive \"{line.Instruction}\" not allowed inside a function block.");
             return false;
         }
-        #endregion        
+        #endregion
+
+        #region
+
+        public StringView Name { get; }
+
+        #endregion
     }
 
     /// <summary>

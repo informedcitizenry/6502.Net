@@ -24,7 +24,7 @@ namespace Core6502DotNet
         public ExpressionException(Token token, string message)
             : this(token.Position, message)
         {
-
+            Token = token;
         }
 
         /// <summary>

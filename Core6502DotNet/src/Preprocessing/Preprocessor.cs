@@ -62,6 +62,11 @@ namespace Core6502DotNet
         public Func<StringView, bool> InstructionLookup { get; set; }
 
         /// <summary>
+        /// Gets or sets the function that determines whether macro names are allowed.
+        /// </summary>
+        public Func<StringView, bool> IsMacroNameValid { get; set; }
+
+        /// <summary>
         /// Gets or sets the function that determines whether the processor is at a new line.
         /// </summary>
         public Func<List<Token>, bool> LineTerminates { get; set; }
@@ -101,7 +106,6 @@ namespace Core6502DotNet
         /// Include path when resolving source file.
         /// </summary>
         public string IncludePath { get; set; }
-
     }
 
     /// <summary>
@@ -337,18 +341,20 @@ namespace Core6502DotNet
                                 if (previous != '$')
                                     previous = it.GetNext();
 
-                                while ((c = it.GetNext()).IsHex() || (c == '_' && previous.IsHex() && it.PeekNext().IsHex()))
+                                while (c.IsHex() || (c == '_' && previous.IsHex() && it.PeekNext().IsHex()))
                                 {
                                     previous = c;
+                                    c = it.GetNext();
                                     peek = it.PeekNext();
                                 }
                             }
                             else if (c == '0' && (peek == 'o' || peek == 'O'))
                             {
                                 it.MoveNext();
-                                while (char.IsDigit(c = it.GetNext()) || (c == '_' && char.IsDigit(previous) && char.IsDigit(it.PeekNext())))
+                                while (char.IsDigit(c) || (c == '_' && char.IsDigit(previous) && char.IsDigit(it.PeekNext())))
                                 {
                                     previous = c;
+                                    c = it.GetNext();
                                     peek = it.PeekNext();
                                 }
                             }
@@ -368,10 +374,11 @@ namespace Core6502DotNet
                                 char zero = alt ? '.' : '0';
                                 char one = alt ? '#' : '1';
 
-                                while ((c = it.GetNext()) == zero || c == one ||
+                                while (c == zero || c == one ||
                                     (c == '_' && (previous == zero || previous == one) && (it.PeekNext() == zero || it.PeekNext() == one)))
                                 {
                                     previous = c;
+                                    c = it.GetNext();
                                     peek = it.PeekNext();
                                 }
                             }
@@ -651,6 +658,8 @@ namespace Core6502DotNet
                 else if (LineTerminates())
                 {
                     ProcessLine(false);
+                    if (_lineHasErrors)
+                        break;
                 }
             }
             if (!stopAtFirstInstruction)
@@ -723,7 +732,12 @@ namespace Core6502DotNet
                             var macroname = "." + line.Label.Name.ToString();
                             if (_macros.ContainsKey(macroname))
                             {
-                                LogError(fileName, lineNumber, 1, "Redefinition of macro.");
+                                LogError(fileName, lineNumber, line.Label.Position, "Redefinition of macro.");
+                                return;
+                            }
+                            if (_options.IsMacroNameValid != null && !_options.IsMacroNameValid(macroname))
+                            {
+                                LogError(fileName, lineNumber, line.Label.Position, $"Macro name \"{line.Label}\" not allowed.");
                                 return;
                             }
                             definingMacro = new Macro(line.Operands, _options.CaseSensitive, this);
@@ -754,6 +768,10 @@ namespace Core6502DotNet
                     {
                         sourceLines.Add(line);
                     }
+                }
+                else if (definingMacro != null)
+                {
+                    definingMacro.AddSource(line);
                 }
                 else
                 {

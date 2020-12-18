@@ -139,7 +139,6 @@ namespace Core6502DotNet
                 }
                 return lineReference.value;
             }
-
         }
 
         #endregion
@@ -186,7 +185,7 @@ namespace Core6502DotNet
                 s =>
                 {
                     return s.Equals("+") || s.Equals("-") ||
-                            ((s[0] == '_' || char.IsLetter(s[0])) &&
+                            (((s[0] == '_' && s.Length > 1 && char.IsLetterOrDigit(s[1])) || char.IsLetter(s[0])) &&
                             (char.IsLetterOrDigit(s[^1]) || s[^1] == '_' ) && !s.Contains('.'));
                 }
             };
@@ -266,7 +265,7 @@ namespace Core6502DotNet
                     // but if it is weak (can be shadowed by same named symbol in outer scope
                     // check if an outer scoped symbol exists
                     var shadow = GetFullyQualifiedName(child);
-                    if (_symbolTable.ContainsKey(shadow) && InSameFunctionScope(shadow, fqdn))
+                    if (_symbolTable.ContainsKey(shadow) && InSameFunctionScope(shadow, fqdn) && _symbolTable[shadow].IsMutable)
                         fqdn = shadow; // if so, do not create the same symbol name in an inner scope
                 }
             }
@@ -343,8 +342,8 @@ namespace Core6502DotNet
                     var sym = GetSymbol(lhs, true);
                     if (sym.StorageType != StorageType.Vector)
                         throw new SymbolException(lhs, SymbolException.ExceptionReason.Scalar);
-                    if (sym.IsMutable != isMutable)
-                        throw new SymbolException(lhs, SymbolException.ExceptionReason.Redefined);
+                    if (!sym.IsMutable)
+                        throw new SymbolException(lhs, SymbolException.ExceptionReason.MutabilityChanged);
                     var subscript = (int)_evaluator.Evaluate(tokens);
                     if ((equ = tokens.GetNext()) != null && equ.Name.Equals("="))
                     {
@@ -377,8 +376,8 @@ namespace Core6502DotNet
                 if (rhs == null)
                     throw new ExpressionException(equ.Position, "rhs expression missing from assignment.");
                 var sym = GetSymbol(lhs, false);
-                if (sym != null && sym.IsMutable != isMutable)
-                    throw new SymbolException(lhs, SymbolException.ExceptionReason.Redefined);
+                if (sym != null && !isMutable)
+                    throw new SymbolException(lhs, SymbolException.ExceptionReason.MutabilityChanged);
                 if (rhs.Name.Equals("["))
                 {
                     DefineSymbol(lhs.Name, new Symbol(tokens, _evaluator, isMutable), isGlobal, isWeak);

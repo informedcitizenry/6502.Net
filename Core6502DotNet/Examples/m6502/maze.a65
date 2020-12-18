@@ -1,0 +1,22 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+			// A machine language implementation of the classic BASIC program
+			// 10 ?CHR$(205.5+RND(1));:GOTO 10
+			.proff					// turn off listing
+			.include "c64lib.a65"	// include C64 routines and macros
+			.pron					// resume listing
+			.basicstub				// 10 SYS2061
+			.encoding "petscii"		// set char encoding to PETSCII
+loop		lda CBM.RASTER			// read raster line as a PRNG
+			clc
+			and #1					// only care about low bit		
+			adc #'╲'				// add 0 to 1 to maze char
+			jsr CBM.CHROUT			// print to screen
+			jsr CBM.STOP			// was RUN/STOP pressed?
+			bne loop				// no, loop back
+			rts						// else return

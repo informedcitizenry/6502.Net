@@ -79,6 +79,7 @@ namespace Core6502DotNet
                     new MiscAssembler(_services),
                     cpuSetHandler(cpu, _services)
                 };
+            _processorOptions.IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol));
             _processorOptions.LineTerminates = _services.LineTerminates;
         }
 
@@ -122,9 +123,11 @@ namespace Core6502DotNet
                 foreach (var inputFile in _services.Options.InputFiles)
                     processed.AddRange(preprocessor.Process(inputFile));
 
-                Console.WriteLine($"{Assembler.AssemblerName}");
-                Console.WriteLine($"{Assembler.AssemblerVersion}");
-
+                if (!_services.Options.NoStats)
+                {
+                    Console.WriteLine($"{Assembler.AssemblerName}");
+                    Console.WriteLine($"{Assembler.AssemblerVersion}");
+                }
                 var multiLineAssembler = new MultiLineAssembler()
                     .WithAssemblers(_assemblers)
                     .WithOptions(new MultiLineAssembler.Options
@@ -176,22 +179,31 @@ namespace Core6502DotNet
                                      $"// {inputFiles}\n\n" + disassembly;
                     byteCount = WriteOutput(fullDisasm);
                 }
-                Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
-                Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
-
+                if (!_services.Options.NoStats)
+                {
+                    Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
+                    Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
+                }
                 stopWatch.Stop();
                 var ts = stopWatch.Elapsed.TotalSeconds;
                 if (!_services.Log.HasErrors)
                 {
                     var section = _services.Options.OutputSection;
-                    if (!string.IsNullOrEmpty(section))
-                        Console.Write($"[{section}] ");
+                    if (!_services.Options.NoStats)
+                    {
+                        
+                        if (!string.IsNullOrEmpty(section))
+                            Console.Write($"[{section}] ");
 
-                    Console.WriteLine($"{byteCount} bytes, {ts} sec.");
+                        Console.WriteLine($"{byteCount} bytes, {ts} sec.");
+                    }
                     if (_services.Options.ShowChecksums)
                         Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
-                    Console.WriteLine("*********************************");
-                    Console.WriteLine("Assembly completed successfully.");
+                    if (!_services.Options.NoStats)
+                    {
+                        Console.WriteLine("*********************************");
+                        Console.WriteLine("Assembly completed successfully.");
+                    }
                 }
                 else
                 {
@@ -236,8 +248,10 @@ namespace Core6502DotNet
                         {
                             if (synEx.Token != null)
                                 _services.Log.LogEntry(synEx.Token, synEx.Message);
-                            else
+                            else if (line != null)
                                 _services.Log.LogEntry(line, synEx.Position, synEx.Message);
+                            else
+                                _services.Log.LogEntrySimple(synEx.Message);
                         }
                         else if (ex is FormatException ||
                                  ex is ReturnException ||
@@ -331,10 +345,13 @@ namespace Core6502DotNet
             if (!string.IsNullOrEmpty(_services.Options.LabelFile))
                 File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels());
 
-            Console.WriteLine("\n*********************************");
-            Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
-            Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
-            Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
+            if (!_services.Options.NoStats)
+            {
+                Console.WriteLine("\n*********************************");
+                Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
+                Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
+                Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
+            }
             return objectCode.Count;
         }
         #endregion

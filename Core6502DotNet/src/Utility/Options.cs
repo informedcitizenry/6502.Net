@@ -112,6 +112,7 @@ namespace Core6502DotNet
             /// </summary>
             /// <param name="errorPath">The error filename.</param>
             /// <param name="checksum">The checksum flag.</param>
+            /// <param name="noStats">The no-stats flag.</param>
             /// <param name="noWarnings">The no-warnings flag.</param>
             /// <param name="quietMode">The quiet flag.</param>
             /// <param name="warningsAsErrors">The warnings-as-errors flag.</param>
@@ -119,6 +120,7 @@ namespace Core6502DotNet
             /// <param name="suppressUnusedSectionWarning">The suppress warning about unused section flag.</param>
             public Logging(string errorPath,
                            bool checksum,
+                           bool noStats,
                            bool noWarnings,
                            bool quietMode,
                            bool warningsAsErrors,
@@ -127,6 +129,7 @@ namespace Core6502DotNet
             {
                 ErrorFile = errorPath ?? string.Empty;
                 Checksum = checksum;
+                NoStats = noStats;
                 NoWarnings = noWarnings;
                 Quiet = quietMode;
                 WarningsAsErrors = warningsAsErrors;
@@ -151,6 +154,11 @@ namespace Core6502DotNet
             /// Gets the no-warnings flag.
             /// </summary>
             public bool NoWarnings { get; }
+
+            /// <summary>
+            /// Gets the no-stats flag.
+            /// </summary>
+            public bool NoStats { get; }
 
             /// <summary>
             /// Gets the quiet flag.
@@ -305,6 +313,7 @@ namespace Core6502DotNet
         /// <param name="ignoreColons">The ignore-colons flag.</param>
         /// <param name="labelFile">The label filename.</param>
         /// <param name="listingFile">The listing filename.</param>
+        /// <param name="noStats">The no-stats flag.</param>
         /// <param name="outputFile">The output filename.</param>
         /// <param name="outputSection">The section to output.</param>
         /// <param name="quiet">The quiet mode flag.</param>
@@ -333,6 +342,7 @@ namespace Core6502DotNet
                        bool ignoreColons,
                        string labelFile,
                        string listingFile,
+                       bool noStats,
                        string outputFile,
                        string outputSection,
                        bool quiet,
@@ -353,6 +363,7 @@ namespace Core6502DotNet
                                                          verboseList),
                                              new Logging(errorFile,
                                                          showChecksums,
+                                                         noStats,
                                                          noWarnings,
                                                          quiet,
                                                          warningsAsErrors,
@@ -437,6 +448,7 @@ namespace Core6502DotNet
             }
             if (loggingOptions != null)
             {
+                NoStats = loggingOptions.NoStats;
                 ErrorFile = loggingOptions.ErrorFile;
                 NoWarnings = loggingOptions.NoWarnings;
                 WarnLeft = loggingOptions.WarnLeft;
@@ -520,6 +532,8 @@ namespace Core6502DotNet
 
             if (ShowChecksums)
                 logging.Add("checksum", true);
+            if (NoStats)
+                logging.Add("noStats", true);
             if (EchoEachPass)
                 logging.Add("echoEachPass", true);
             if (!string.IsNullOrEmpty(ErrorFile))
@@ -555,7 +569,7 @@ namespace Core6502DotNet
                     {
                         var section = new JObject
                         {
-                            { "name",   sParms[0] },
+                            { "name",   sParms[0].TrimOnce('"') },
                             { "starts", sParms[1] }
                         };
                         if (sParms.Length == 3)
@@ -627,9 +641,20 @@ namespace Core6502DotNet
 
         static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
-
             var heading = $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
-            if (errs.IsVersion())
+            bool isVersion = errs.IsVersion();
+            if (!isVersion)
+            {
+                foreach (var err in errs)
+                {
+                    if (err is UnknownOptionError optionError && optionError.Token.Equals("V"))
+                    {
+                        isVersion = true;
+                        break;
+                    }
+                }
+            }
+            if (isVersion)
                 throw new Exception(heading);
             if (errs.IsHelp())
             {
@@ -644,7 +669,7 @@ namespace Core6502DotNet
                 }, e => e);
                 var ht = helpText.ToString().Replace("(pos. 0)", "        ");
                 throw new Exception(ht);
-            }
+            } 
             throw new Exception("Invalid arguments. Try '--help' for usage.");
         }
 
@@ -653,7 +678,8 @@ namespace Core6502DotNet
         /// passed command-line arguments.
         /// </summary>
         /// <param name="args">A collection of arguments to parse as arguments.</param>
-        /// <returns>Returns an instance of the Options class.</returns>
+        /// <returns>Returns an instance of the Options class whose properties are from 
+        /// the passed arguments.</returns>
         /// <exception cref="ArgumentNullException"></exception>
         public static Options FromArgs(IEnumerable<string> args)
         {
@@ -710,6 +736,10 @@ namespace Core6502DotNet
             }
         }
 
+        /// <summary>
+        /// Gets the original arguments passed to the <see cref="Options"/> object.
+        /// </summary>
+        /// <returns>The passed command line arguments as a collection of <see cref="string"/> objects.</returns>
         public IEnumerable<string> GetPassedArgs() => _passedArgs;
 
         #endregion
@@ -818,10 +848,16 @@ namespace Core6502DotNet
         public string LabelFile { get; }
 
         /// <summary>
-        /// The assembly listing filename.
+        /// Gets the assembly listing filename.
         /// </summary>
         [Option('L', "list", Required = false, HelpText = "Output listing to <file>", MetaValue = "<file>")]
         public string ListingFile { get; }
+
+        /// <summary>
+        /// Gets the flag indicating whether to display statistics after assembly.
+        /// </summary>
+        [Option('n', "no-stats", Required = false, HelpText = "Supress display of statistics from the assembly.")]
+        public bool NoStats { get; }
 
         /// <summary>
         /// Gets the output filename.
@@ -901,7 +937,7 @@ namespace Core6502DotNet
             get
             {
                 yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, false));
-                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, null, null, false, false, false, false, false, false, false, false, false));
+                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, false, null, null, false, false, false, false, false, false, false, false, false));
             }
         }
 

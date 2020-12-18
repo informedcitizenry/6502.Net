@@ -250,7 +250,7 @@ namespace Core6502DotNet
                 var elem = textEnumerator.GetTextElement();
                 bytes.AddRange(GetCharBytes(elem));
             }
-            return bytes.ToArray();
+             return bytes.ToArray();
         }
 
         /// <summary>

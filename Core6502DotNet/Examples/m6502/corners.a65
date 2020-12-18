@@ -22,7 +22,7 @@ ptr_hi	= $1a
 			lda #<corners[i]
 			sta ptr_low+i*2
 			lda #>corners[i]
-			sta ptr_hi+1+i*2
+			sta ptr_hi+i*2
 		.next
 		.encoding "cbmscreen"
 		jsr $e544		// clear screen

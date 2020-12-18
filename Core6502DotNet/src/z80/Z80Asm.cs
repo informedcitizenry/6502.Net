@@ -136,6 +136,7 @@ namespace Core6502DotNet.z80
                     }
                     else
                     {
+                        var firstIndex = operands.Index;
                         if (operand.Name.Equals("("))
                         {
                             mode |= Z80Mode.Indirect;
@@ -150,8 +151,10 @@ namespace Core6502DotNet.z80
                                     throw new SyntaxException(operand, "Unexpected expression.");
                                 mode |= Z80Mode.Indexed;
                                 var sign = operand.Name.Equals("+") ? 1 : -1;
-                                mode |= GetValueMode(operands, true, 0, sbyte.MaxValue + 1, i);
+                                mode |= GetValueMode(operands, true, 0, byte.MaxValue, i);
                                 _evals[i] *= sign;
+                                if (_evals[i] < sbyte.MinValue)
+                                    throw new IllegalQuantityException(operand, _evals[i]);
                             }
                         }
                         else if (line.Instruction.Name.Equals("out", Services.StringComparison) && i == 1)
@@ -160,22 +163,29 @@ namespace Core6502DotNet.z80
                         }
                         else
                         {
-                            var ix = operands.Index;
-                            mode |= GetValueMode(operands, false, short.MinValue, ushort.MaxValue, i);
-                            if (mode.HasFlag(Z80Mode.Indirect) && !Token.IsEnd(operands.PeekNext()))
+                            if (mode.HasFlag(Z80Mode.Indirect))
                             {
-                                operands.SetIndex(ix);
-                                mode = GetValueMode(operands, false, short.MinValue, ushort.MaxValue, i);
+                                var isFalseIndirect = Reserved.IsOneOf("Relatives", line.Instruction.Name);
+                                if (!isFalseIndirect)
+                                {
+                                    operands.SetIndex(firstIndex);
+                                    _ = Token.GetGroup(operands);
+                                    isFalseIndirect = !Token.IsEnd(operands.Current);
+                                    operands.SetIndex(firstIndex);
+                                }
+                                if (isFalseIndirect)
+                                    mode &= ~Z80Mode.Indirect;
                             }
+                            mode |= GetValueMode(operands, false, short.MinValue, ushort.MaxValue, i);
                             if (Reserved.IsOneOf("Relatives", line.Instruction.Name))
                                 mode |= Z80Mode.Extended;
+                           
                         }
                         operand = operands.Current;
-                        if (mode.HasFlag(Z80Mode.Indirect) || (operand != null && operand.Name.Equals(")")))
+                        if (operand != null)
                         {
-                            if (!operand.Name.Equals(")"))
+                            if (!Token.IsEnd(operand) || (operand.Name.Equals(")") && !Token.IsEnd(operand = operands.GetNext())))
                                 throw new SyntaxException(operand, "Unexpected expression.");
-                            operand = operands.GetNext();
                         }
                     }
                 }
@@ -193,7 +203,8 @@ namespace Core6502DotNet.z80
             var mnemMode = (instruction, modes[0], modes[1], modes[2]);
             if (s_z80Instructions.ContainsKey(mnemMode))
                 return (modes, s_z80Instructions[mnemMode]);
-
+            var modesCopy = modes.ToArray();
+            // check first if we need to "extend" ZP expressions
             if (modes.Any(m => (m & Z80Mode.SizeMask) == Z80Mode.PageZero))
             {
                 modes = modes.Select(m =>
@@ -206,6 +217,21 @@ namespace Core6502DotNet.z80
                 if (s_z80Instructions.ContainsKey(mnemMode))
                     return (modes, s_z80Instructions[mnemMode]);
             }
+            modes = modesCopy.ToArray();
+            // check for any "false indirect" expressions e.g., ld (hl),($30)
+            if (modes.Any(m => (m & Z80Mode.Indirect) == Z80Mode.Indirect))
+            {
+                for (var i = 0; i < 3; i++)
+                {
+                    if (modes[i].HasFlag(Z80Mode.Indirect) && !double.IsNaN(_evals[i]) && modes[i] < Z80Mode.A)
+                        modes[i] &= ~Z80Mode.Indirect;
+
+                }
+                mnemMode = (instruction, modes[0], modes[1], modes[2]);
+                if (s_z80Instructions.ContainsKey(mnemMode))
+                    return (modes, s_z80Instructions[mnemMode]);
+            }
+           
             return (null, default);
         }
 

@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using ConversionDef = System.Func<Core6502DotNet.StringView, double>;
 using OperationDef  = System.Tuple<System.Func<System.Collections.Generic.List<double>, double>, int>;
@@ -57,6 +58,8 @@ namespace Core6502DotNet
 
         #region Members
 
+        static readonly Regex s_separators = new Regex(@"\d_\d", RegexOptions.Compiled);
+
         static readonly HashSet<StringView> s_conditionals = new HashSet<StringView>
         {
             "||", "&&", "<", "<=", ">", ">=", "==", "!="
@@ -70,7 +73,7 @@ namespace Core6502DotNet
         static readonly IReadOnlyDictionary<StringView, ConversionDef> s_radixOperators = new Dictionary<StringView, ConversionDef>
         {
             { "$", new ConversionDef(parm => Convert.ToInt64(parm.ToString().Replace("_", string.Empty), 16)) },
-            { "%", new ConversionDef(parm => Convert.ToInt64(GetBinaryString(parm.ToString().Replace("_", string.Empty)),  2)) }
+            { "%", new ConversionDef(parm => Convert.ToInt64(GetBinaryString(parm.ToString()),  2)) }
         };
 
         static readonly IReadOnlyDictionary<Token, OperationDef> s_operators = new Dictionary<Token, OperationDef>
@@ -206,66 +209,75 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
         /// <returns><c>true</c> if the expression is conditional, <c>false</c> otherwise.</returns>
-        public bool ExpressionIsCondition(IEnumerable<Token> tokens)
+        public bool ExpressionIsCondition(RandomAccessIterator<Token> tokens) 
         {
-            var lastComparerFound = -1;
-            var lastLogicalFound = -1;
-            var lastBinary = -1;
-            var lastWasCompound = false;
-
-            var tokenList = tokens.ToList();
-            if (tokenList.Count == 1 && (tokenList[0].Name.Equals("true") || tokenList[0].Name.Equals("false")))
-                return true;
-            if (tokenList.Count == 2 && tokenList[0].Name.Equals("!") && tokenList[0].Type == TokenType.Unary)
-                return ExpressionIsCondition(tokenList.Skip(1));
-            for (var i = 0; i < tokenList.Count; i++)
+            bool booleanNeeded = true;
+            bool comparerFound = false;
+            bool comparerNeeded = false;
+            Token token;
+            while (!Token.IsEnd(token = tokens.GetNext()))
             {
-                var token = tokenList[i];
-                if (token.Type == TokenType.Binary)
+                if (token.Type == TokenType.Operand && !comparerFound)
                 {
-                    if (s_conditionals.Contains(token.Name))
+                    var operands = new List<Token> { token };
+                    if (tokens.PeekNext() != null && tokens.PeekNext().Name.Equals("["))
                     {
-                        lastWasCompound = false;
-                        if (s_comparers.Contains(token.Name))
-                            lastComparerFound = i;
-                        else
-                            lastLogicalFound = i;
+                        var ix = tokens.Index;
+                        tokens.MoveNext();
+                        operands.AddRange(Token.GetGroup(tokens));
+                        tokens.SetIndex(ix + operands.Count - 1);
                     }
-                    else if (lastWasCompound)
-                    {
-                        return false;
-                    }
-                    lastBinary = i;
+                    var eval = Evaluate(operands.GetIterator());
+                    if (eval == 0 || eval == 1)
+                        booleanNeeded = comparerNeeded;
+                    else
+                        comparerNeeded = true;
                 }
-                else if (token.Type == TokenType.Open)
+                else if ((token.Type.HasFlag(TokenType.Unary) && token.Name.Equals("!")) || 
+                         token.Name.Equals("(") ||
+                         token.Name.Equals("||") || 
+                         token.Name.Equals("&&"))
                 {
-                    var opens = 1;
-                    var afterExpression = i;
-                    var isFunction = i > 0 && tokenList[i - 1].Type == TokenType.Function;
-                    while (opens != 0)
+                    booleanNeeded = !ExpressionIsCondition(tokens);
+                    if (token.Name.Equals("||") || token.Name.Equals("&&"))
+                        comparerFound = false;
+                    comparerNeeded = !comparerFound;
+                }
+                else if (token.Type == TokenType.Radix || token.Type == TokenType.Unary)
+                {
+                    if (token.Type == TokenType.Radix)
+                        tokens.MoveNext();
+                    booleanNeeded = comparerNeeded = !comparerFound;
+                }
+                else if (token.Type == TokenType.Binary)
+                {
+                    if(s_comparers.Contains(token.Name))
                     {
-                        if (tokenList[++afterExpression].Type == TokenType.Open)
+                        comparerFound = true;
+                        comparerNeeded = false;
+                        booleanNeeded = false;
+                    }
+                    else 
+                    {
+                        comparerNeeded = true;
+                    }
+                }
+                else if (token.Type == TokenType.Function)
+                {
+                    booleanNeeded = 
+                    comparerNeeded = !comparerFound;
+                    tokens.MoveNext();
+                    var opens = 1;
+                    while (opens > 0)
+                    {
+                        if ((token = tokens.GetNext()).Name.Equals("("))
                             opens++;
-                        else if (tokenList[afterExpression].Type == TokenType.Closed)
+                        else if (token.Name.Equals(")"))
                             opens--;
                     }
-                    if (!isFunction && ExpressionIsCondition(tokenList.GetRange(i + 1, afterExpression - i - 1)))
-                    {
-                        if (i > 0 &&
-                            tokenList[i - 1].Type == TokenType.Unary &&
-                            tokenList[i - 1].Name[0] != '!')
-                            return false;
-                        if (lastBinary > lastLogicalFound)
-                            return false;
-                        lastWasCompound = true;
-                        lastComparerFound = i;
-                    }
-                    i = afterExpression;
                 }
-                else if (token.Type == TokenType.Closed)
-                    break;
             }
-            return lastComparerFound > -1 && lastComparerFound > lastLogicalFound;
+            return !booleanNeeded || !comparerNeeded;
         }
 
         Stack<double> EvaluateInternal(RandomAccessIterator<Token> iterator, bool fromGroup = false)
@@ -422,7 +434,7 @@ namespace Core6502DotNet
                 var ienumtokens = new RandomAccessIterator<Token>(tokens, true)
                                         .Skip(ix + 1)
                                         .Take(tokens.Index - ix - 1);
-                if (!ExpressionIsCondition(ienumtokens))
+                if (!ExpressionIsCondition(ienumtokens.GetIterator()))
                     throw new SyntaxException(first, "Invalid conditional expression.");
             }
             return r;
@@ -497,7 +509,7 @@ namespace Core6502DotNet
         /// <exception cref="SyntaxException"></exception>
         public double Evaluate(Token token, double minValue, double maxValue)
         {
-            if (!double.TryParse(token.Name.ToString().Replace("_", string.Empty), out var converted))
+            if (!double.TryParse(RemoveSeparators(token.Name.ToString()), out var converted))
             {
                 if (token.Name[0] == '0' && token.Name.Length > 2)
                 {
@@ -505,17 +517,17 @@ namespace Core6502DotNet
                     try
                     {
                         if (token.Name[1] == 'b' || token.Name[1] == 'B')
-                            converted = Convert.ToInt64(GetBinaryString(token.Name.Substring(2).Replace("_", string.Empty)), 2);
+                            converted = Convert.ToInt64(GetBinaryString(token.Name.Substring(2)), 2);
                         else if (token.Name[1] == 'o' || token.Name[1] == 'O')
                             converted = Convert.ToInt64(token.Name.Substring(2).Replace("_", string.Empty), 8);
                         else if (token.Name[1] == 'x' || token.Name[1] == 'X')
-                            converted = Convert.ToInt64(token.Name.Substring(2).Replace("_", string.Empty), 16);
+                            converted = Convert.ToInt64(token.ToString().Replace("_", string.Empty), 16);
                         else
-                            throw new ExpressionException(token, "Not a valid numeric constant.");
+                            throw new SyntaxException(token, "Not a valid numeric constant.");
                     }
                     catch
                     {
-                        throw new ExpressionException(token, "Not a valid numeric constant.");
+                        throw new SyntaxException(token, "Not a valid numeric constant.");
                     }
                 }
                 else if (!_constants.TryGetValue(token.Name, out converted))
@@ -528,22 +540,29 @@ namespace Core6502DotNet
             }
             else if (token.Name[0] == '0'  &&
                      token.Name.Length > 1 &&
-                     token.Name[1] >= '0'  &&
-                     token.Name[1] <= '7')
+                     (token.Name[1] >= '0'  && token.Name[1] <= '7') || 
+                     (token.Name.Length > 3 && token.Name[1] == '_' && token.Name[2] >= '0' && token.Name[2] <= '7'))
             {
                 // all leading zeros treated as octal
                 try
                 {
-                    converted = Convert.ToInt64(token.ToString(), 8);
+                    converted = Convert.ToInt64(RemoveSeparators(token.ToString()), 8);
                 }
                 catch
                 {
-                    throw new ExpressionException(token, "Not a valid numeric constant.");
+                    throw new SyntaxException(token, "Not a valid numeric constant.");
                 }
             }
             if (converted < minValue || converted > maxValue)
-                throw new ExpressionException(token, "Illegal quantity.");
+                throw new IllegalQuantityException(token, converted);
             return converted;
+        }
+
+        static string RemoveSeparators(string number)
+        {
+            if (s_separators.IsMatch(number))
+                return number.Replace("_", string.Empty);
+            return number;
         }
 
         public bool EvaluateCondition(RandomAccessIterator<Token> tokens, bool advanceIterator)
@@ -615,8 +634,9 @@ namespace Core6502DotNet
         {
             if (binary[0] == '#' || binary[0] == '.')
                 return binary.Replace('#', '1')
-                             .Replace('.', '0');
-            return binary;
+                             .Replace('.', '0')
+                             .Replace("_", string.Empty);
+            return binary.Replace("_", string.Empty);
         }
 
         #endregion

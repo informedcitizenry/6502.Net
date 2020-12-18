@@ -174,9 +174,13 @@ namespace Core6502DotNet
                         if (condition)
                             return string.Format("={0}{1}",
                                 (symbol.NumericValue == 0 ? "false" : "true").PadRight(42), unparsedSource);
-                        return string.Format("=${0}{1}",
-                            ((int)symbol.NumericValue).ToString("x").PadRight(41),
-                            unparsedSource);
+                        if (symbol.NumericValue.IsInteger())
+                            return string.Format("=${0}{1}",
+                                ((int)symbol.NumericValue).ToString("x").PadRight(41),
+                                unparsedSource);
+                        return string.Format("={0}{1}",
+                                symbol.NumericValue.ToString().PadRight(41),
+                                unparsedSource);
                     }
                     var elliptical = $"\"{symbol.StringValue.ToString().Elliptical(38)}\"";
                     return string.Format("={0}{1}", elliptical.PadRight(42), unparsedSource);

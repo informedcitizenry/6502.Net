@@ -55,18 +55,24 @@ namespace Core6502DotNet
                 {
                     if (iterator.Current == null || iterator.PeekNext() == null)
                     {
-                        Output(line, $"Expression \"{Token.Join(line.Operands)}\" evaluated to true.");
+                        Output(line, $"Expression \"{Token.Join(line.Operands).Trim()}\" evaluated to true.");
                     }
                     else
                     {
                         iterator.MoveNext();
-                        Output(line, StringHelper.GetString(iterator, Services));
-                        if (iterator.Current != null)
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, iterator.Current.Position,
-                                "Unexpected expression.");
+                        if (!StringHelper.ExpressionIsAString(iterator, Services))
+                        {
+                            Services.Log.LogEntry(iterator.Current, "String expression expected.");
+                        }
+                        else
+                        {
+                            Output(line, StringHelper.GetString(iterator, Services));
+                            if (iterator.Current != null)
+                                Services.Log.LogEntry(line.Filename, line.LineNumber, iterator.Current.Position,
+                                    "Unexpected expression.");
+                        }
                     }
                 }
-
             }
         }
 

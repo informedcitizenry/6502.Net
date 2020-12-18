@@ -206,7 +206,7 @@ namespace Core6502DotNet
         /// <returns><c>true</c>, if the double is (almost) equal to its integral equivalent,
         /// <c>false</c> otherwise. </returns>
         public static bool IsInteger(this double d1) =>
-            d1.AlmostEquals((long)d1);
+            d1.AlmostEquals(Math.Truncate(d1));
     }
 
     public static class IEnumerableTExtension
