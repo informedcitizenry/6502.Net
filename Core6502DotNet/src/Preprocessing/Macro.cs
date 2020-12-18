@@ -74,7 +74,7 @@ namespace Core6502DotNet
                 if (token.IsSeparator())
                 {
                     if (index >= Params.Count || Params[index].DefaultValue.Count == 0)
-                        throw new ExpressionException(token.Position, "No default value ");
+                        throw new ExpressionException(token, "No default value.");
                     paramList.Add(Params[index].DefaultValue);
                 }
                 else
@@ -107,13 +107,13 @@ namespace Core6502DotNet
                 if (op.Name[0] == '\\')
                 {
                     if (i == line.Operands.Count - 1 || line.Operands[i + 1].Type != TokenType.Operand)
-                        throw new ExpressionException(op.Position, "Reference parameter not specified.");
+                        throw new ExpressionException(op, "Reference parameter not specified.");
                     op = line.Operands[++i];
                     if (!int.TryParse(op.Name.ToString(), out var paramRef))
                     {
                         paramRef = Params.FindIndex(p => p.Name.Equals(op.Name, comp));
                         if (paramRef < 0)
-                            throw new ExpressionException(op.Position, "Reference parameter not valid.");
+                            throw new ExpressionException(op, "Reference parameter not valid.");
                     }
                     else
                     {
@@ -133,9 +133,9 @@ namespace Core6502DotNet
                         {
                             paramRef = Params.FindIndex(p => p.Name.Equals(strRef, strcomp));
                             if (paramRef < 0)
-                                throw new ExpressionException(op.Position, "Reference parameter not valid.");
+                                throw new ExpressionException(op, "Reference parameter not valid.");
                             if (Params[paramRef].DefaultValue.Count > 0 && !Params[paramRef].DefaultValue[0].IsDoubleQuote())
-                                throw new ExpressionException(Params[paramRef].DefaultValue[0].Position,
+                                throw new ExpressionException(Params[paramRef].DefaultValue[0],
                                     "Default value for macro parameter must be a string.");
                         }
                         else

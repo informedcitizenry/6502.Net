@@ -17,6 +17,7 @@ chrin		= $ffcf
 load		= $ffd5
 
 load		.macro	filename,device,ml=0
+			.assert \ml == 0 || \ml == 1, format("Invalid device number {0}.", \ml)
 			lda #fname_end-fname
 			ldx #<fname
 			ldy #>fname
@@ -25,9 +26,7 @@ load		.macro	filename,device,ml=0
 			tay
 			ldx #\device
 			jsr setlfs
-			.let ml = \ml
-			.assert ml == 0 || ml == 1
-			.if ml == 0
+			.if \ml == 0
 pointer			= $fb
 				jsr open
 				jsr chkin

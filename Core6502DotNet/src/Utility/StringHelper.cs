@@ -39,16 +39,8 @@ namespace Core6502DotNet
             if (token.Type == TokenType.Function && token.Name.Equals("format", services.StringComparison))
             {
                 iterator.MoveNext();
-                var open = 1;
-                while (open > 0)
-                {
-                    token = iterator.GetNext();
-                    if (token.Name.Equals("("))
-                        open++;
-                    else if (token.Name.Equals(")"))
-                        open--;
-                }
-                var last = iterator.PeekNext();
+                Token.GetGroup(iterator);
+                var last = iterator.Current; 
                 result = Token.IsEnd(last);
             }
             else if (token.Type == TokenType.Operand && 
@@ -153,20 +145,12 @@ namespace Core6502DotNet
             var parms = new List<object>();
             if (iterator.MoveNext())
             {
-                Token token;
-                while (!Token.IsEnd(token = iterator.GetNext()))
+                while (!Token.IsEnd(iterator.GetNext()))
                 {
                     if (ExpressionIsAString(iterator, services))
-                    {
-                        if (token.IsDoubleQuote())
-                            parms.Add(token.Name.ToString().TrimOnce('"'));
-                        else
-                            parms.Add(GetString(iterator, services));
-                    }
+                        parms.Add(GetString(iterator, services));
                     else
-                    {
                         parms.Add((int)services.Evaluator.Evaluate(iterator, false));
-                    }
                 }
             }
             if (parms.Count == 0)
