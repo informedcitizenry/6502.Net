@@ -365,7 +365,7 @@ namespace Core6502DotNet.m65xx
                         if (!operand.Current.IsSeparator())
                             throw new SyntaxException(operand.Current, "Unexpected expression.");
                         if (!operand.MoveNext() || !Reserved.IsOneOf("IndicesInd", operand.Current.Name))
-                            throw new SyntaxException(line.Operands[^1], "Invalid index.");
+                            throw new SyntaxException(line.Operands[^1], "Invalid index register.");
                         var index = operand.Current.Name.ToString();
                         mode |= index switch
                         {

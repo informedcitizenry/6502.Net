@@ -132,21 +132,25 @@ namespace Core6502DotNet
                 case ".echo":
                 case ".error":
                 case ".warn":
-                    if (iterator.MoveNext() && StringHelper.ExpressionIsAString(iterator, Services))
-                    {
-                        Output(line, StringHelper.GetString(iterator, Services));
-                    }
-                    else if (instruction.Equals(".echo"))
+                    if (instruction.Equals(".echo"))
                     {
                         if (Services.Evaluator.ExpressionIsCondition(iterator))
                             Output(line, Services.Evaluator.EvaluateCondition(iterator).ToString());
+                        else if (iterator.MoveNext() && StringHelper.ExpressionIsAString(iterator, Services))
+                            Output(line, StringHelper.GetString(iterator, Services));
                         else
-                            Output(line, Services.Evaluator.Evaluate(iterator, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue).ToString());
+                            Output(line, Services.Evaluator.Evaluate(iterator, false, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue).ToString());
+                    }
+                    else if (iterator.MoveNext() && StringHelper.ExpressionIsAString(iterator, Services))
+                    {
+                        Output(line, StringHelper.GetString(iterator, Services));
                     }
                     else
                     {
                         Services.Log.LogEntry(line.Instruction, "String expression expected.");
                     }
+                    if (iterator.Current != null)
+                        throw new SyntaxException(iterator.Current, "Unexpected expression.");
                     break;
                 case ".eor":
                     SetEor(line);

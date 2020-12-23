@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -138,6 +139,8 @@ namespace Core6502DotNet
             { '=', new List<char>{ '=' } },
             { '!', new List<char>{ '=' } }
         };
+
+        static readonly Regex s_defineRegex = new Regex(@"^((_\w+)|([a-zA-Z]\w*))((=.+)|$)");
 
         readonly ProcessorOptions _options;
         readonly Dictionary<string, Macro> _macros;
@@ -301,8 +304,14 @@ namespace Core6502DotNet
                     if (c == ';')
                     {
                         if (!_options.IgnoreCommentColons)
+                        {
+                            expected = TokenType.Instruction;
                             c = it.FirstOrDefault(chr => chr == ':');
-                        else c = EOS;
+                        }
+                        else
+                        {
+                            c = EOS;
+                        }
                         if (c == EOS)
                             break;
                     }
@@ -326,7 +335,7 @@ namespace Core6502DotNet
                         var position = it.Index;
                         var type = TokenType.Misc;
                         var size = 1;
-                        bool isIdent = false, isInstruction = false;
+                        var isIdent = false;
                         if (char.IsLetterOrDigit(c) ||
                             (c == '.' && (previous == '%'  || char.IsLetterOrDigit(peek))) ||
                             (c == '#' &&  previous == '%') ||
@@ -436,10 +445,10 @@ namespace Core6502DotNet
                             else
                             {
                                 isIdent = true;
+                                
                                 while ((c == '.' && (char.IsLetter(peek) || peek == '_')) || 
                                         char.IsLetterOrDigit(c) || c == '_')
                                 {
-                                    isInstruction = c == '.';
                                     previous = c;
                                     c = it.GetNext();
                                     peek = it.PeekNext();
@@ -496,7 +505,7 @@ namespace Core6502DotNet
                             case TokenType.LabelInstr:
                                 if (isIdent || c == '=' || c == '*')
                                 {
-                                    if (c == '=' || isInstruction || _options.InstructionLookup(new StringView(nextLine, position, size)))
+                                    if (c == '=' || _options.InstructionLookup(new StringView(nextLine, position, size)))
                                     {
                                         type = TokenType.Instruction;
                                         expected = TokenType.StartOrOperand;
@@ -837,16 +846,19 @@ namespace Core6502DotNet
         /// <returns>The parsed <see cref="SourceLine"/>.</returns>
         public SourceLine ProcessDefine(string defineExpression)
         {
+            if (!s_defineRegex.IsMatch(defineExpression))
+                throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
             if (!defineExpression.Contains('='))
                 defineExpression += "=1";
-
-            var defines = Process(string.Empty, 1, defineExpression);
-            if (defines.Count() != 1)
+            try
+            {
+                var defines = Process(string.Empty, 1, defineExpression);
+                return defines.First();
+            }
+            catch
+            {
                 throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
-            var line = defines.First();
-            if (line.Label == null || line.Instruction == null || !line.Instruction.Name.Equals("=") || line.Operands.Count == 0)
-                throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
-            return line;
+            }
         }
 
         /// <summary>

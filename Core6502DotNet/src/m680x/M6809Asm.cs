@@ -86,6 +86,9 @@ namespace Core6502DotNet.m680x
                 "lbmi", "lbne", "lbpl", "lbra", "lbrn", "lbsr",
                 "lbvc", "lbvs");
 
+            Reserved.DefineType("TransferDirectives",
+                ".tfradp", ".tfrbdp");
+
             _ixRegisterModes = new Dictionary<StringView, IndexModes>(Services.StringViewComparer)
             {
                 { "x", IndexModes.XReg },
@@ -134,6 +137,7 @@ namespace Core6502DotNet.m680x
             if (CPU.Equals("m6809"))
                 Services.LineTerminates = TerminatesLine;
 
+            Services.SymbolManager.AddValidSymbolNameCriterion(s => !_pushPullModes.ContainsKey(s));
             Services.Output.IsLittleEndian = false;
         }
         #endregion
@@ -215,6 +219,8 @@ namespace Core6502DotNet.m680x
             {
                 return 2;
             }
+            if (Reserved.IsOneOf("TransferDirectives", line.Instruction.Name))
+                return 4;
             return base.GetInstructionSize(line);
         }
 
@@ -234,6 +240,8 @@ namespace Core6502DotNet.m680x
                     return string.Empty;
                 }
             }
+            if (Reserved.IsOneOf("TransferDirectives", line.Instruction.Name))
+                return AssembleTransferDirectives(line);
             if (CPU.Equals("m6809") && line.Operands.Count > 1 &&
                 (line.Operands[^1].Name.Equals("]") ||
                  line.Operands[^1].Name.Equals("+") ||
@@ -243,6 +251,43 @@ namespace Core6502DotNet.m680x
                 return AssembleIndexed(line);
             }
             return base.OnAssemble(lines);
+        }
+
+        string AssembleTransferDirectives(SourceLine line)
+        {
+            if (!CPU.Equals("m6809"))
+            {
+                Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction}\" not supported for CPU.");
+                return string.Empty;
+            }
+            if (line.Operands.Count == 0)
+                throw new SyntaxException(line.Instruction, "Expression expected.");
+
+            var iterator = line.Operands.GetIterator();
+            var page = Services.Evaluator.Evaluate(iterator, 0, byte.MaxValue);
+            if (iterator.Current != null)
+                throw new SyntaxException(iterator.Current, "Unexpected expression.");
+
+            var disSb = new StringBuilder("ld");
+            if (line.Instruction.Name[4] == 'a'|| line.Instruction.Name[4] == 'A')
+            {
+                Services.Output.Add(0x86, 1);
+                Services.Output.Add(page, 1);
+                Services.Output.Add(0x1f8b, 2);
+                disSb.AppendLine($"a #${(int)page:x2}");
+                disSb.AppendLine("                         tfr a,dp");
+            }
+            else
+            {
+                Services.Output.Add(0xc6, 1);
+                Services.Output.Add(page, 1);
+                Services.Output.Add(0x1f9b, 2);
+                disSb.AppendLine($"b #${(int)page:x2}");
+                disSb.AppendLine("                         tfr b,dp");
+            }
+            disSb.Append($"                         .dp ${(int)page:x2}          ");
+            Page = (int)page;
+            return Disassemble(line, disSb);
         }
 
         string AssembleIndexed(SourceLine line)
@@ -513,6 +558,11 @@ namespace Core6502DotNet.m680x
 
             foreach (var eval in Evaluations.Where(e => !double.IsNaN(e)))
                 Services.Output.Add(eval, 1);
+            return Disassemble(line, disSb);
+        }
+
+        string Disassemble(SourceLine line, StringBuilder disSb)
+        {
             if (!Services.PassNeeded)
             {
                 var sb = new StringBuilder();

@@ -65,11 +65,6 @@ namespace Core6502DotNet
             "||", "&&", "<", "<=", ">", ">=", "==", "!="
         };
 
-        static readonly HashSet<StringView> s_comparers = new HashSet<StringView>
-        {
-            "<", "<=", "!=", "==", ">=", ">"
-        };
-
         static readonly IReadOnlyDictionary<StringView, ConversionDef> s_radixOperators = new Dictionary<StringView, ConversionDef>
         {
             { "$", new ConversionDef(parm => Convert.ToInt64(parm.ToString().Replace("_", string.Empty), 16)) },
@@ -209,75 +204,90 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
         /// <returns><c>true</c> if the expression is conditional, <c>false</c> otherwise.</returns>
-        public bool ExpressionIsCondition(RandomAccessIterator<Token> tokens) 
+        public bool ExpressionIsCondition(RandomAccessIterator<Token> tokens)
+            => ExpressionIsCondition(tokens, true);
+
+        /// <summary>
+        /// Determines whether the collection of parsed tokens comprise a conditional
+        /// expression that evaluates to <c>true</c> or <c>false</c>.
+        /// </summary>
+        /// <param name="tokens">The collection of parsed tokens representing the expression.</param>
+        /// <param name="restoreIterator">Restore the iterator to its position before testing condition.</param>
+        /// <returns><c>true</c> if the expression is conditional, <c>false</c> otherwise.</returns>
+        public bool ExpressionIsCondition(RandomAccessIterator<Token> tokens, bool restoreIterator) 
         {
             bool booleanNeeded = true;
-            bool comparerFound = false;
-            bool comparerNeeded = false;
+            bool comparerFound = false, comparerNeeded = false;
             Token token;
+            var firstIndex = tokens.Index;
             while (!Token.IsEnd(token = tokens.GetNext()))
             {
-                if (token.Type == TokenType.Operand && !comparerFound)
+                if (token.Type == TokenType.Operand && booleanNeeded && !comparerNeeded)
                 {
-                    var operands = new List<Token> { token };
-                    if (tokens.PeekNext() != null && tokens.PeekNext().Name.Equals("["))
+                    if (_constants.ContainsKey(token.Name) && (token.Name.ToLower().Equals("t") || token.Name.ToLower().Equals("f")))
                     {
-                        var ix = tokens.Index;
-                        tokens.MoveNext();
-                        operands.AddRange(Token.GetGroup(tokens));
-                        tokens.SetIndex(ix + operands.Count - 1);
+                        booleanNeeded = false;
                     }
-                    var eval = Evaluate(operands.GetIterator());
-                    if (eval == 0 || eval == 1)
-                        booleanNeeded = comparerNeeded;
+                    else if (token.Name[0] == '_' || char.IsLetter(token.Name[0]))
+                    {
+                        var operands = new List<Token> { token };
+                        if (tokens.PeekNext() != null && tokens.PeekNext().Name.Equals("["))
+                        {
+                            var ix = tokens.Index;
+                            tokens.MoveNext();
+                            operands.AddRange(Token.GetGroup(tokens));
+                            tokens.SetIndex(ix + operands.Count - 1);
+                        }
+                        var eval = Evaluate(operands.GetIterator());
+                        if (eval == 0 || eval == 1)
+                            booleanNeeded = false;
+                        else
+                            comparerNeeded = true;
+                    }
+                    else
+                    {
+                        comparerNeeded = true;
+                    }
+                }
+                else if ((token.Type.HasFlag(TokenType.Unary) && token.Name.Equals("!")) ||
+                         token.Name.Equals("("))
+                {
+                    var isSubCondition = ExpressionIsCondition(tokens, false);
+                    if (booleanNeeded && !comparerNeeded && isSubCondition)
+                        booleanNeeded = false;
                     else
                         comparerNeeded = true;
                 }
-                else if ((token.Type.HasFlag(TokenType.Unary) && token.Name.Equals("!")) || 
-                         token.Name.Equals("(") ||
-                         token.Name.Equals("||") || 
-                         token.Name.Equals("&&"))
+                else if (token.Type == TokenType.Radix || token.Type == TokenType.Unary || token.Type == TokenType.Function)
                 {
-                    booleanNeeded = !ExpressionIsCondition(tokens);
-                    if (token.Name.Equals("||") || token.Name.Equals("&&"))
-                        comparerFound = false;
-                    comparerNeeded = !comparerFound;
-                }
-                else if (token.Type == TokenType.Radix || token.Type == TokenType.Unary)
-                {
-                    if (token.Type == TokenType.Radix)
+                    comparerNeeded = true;
+                    if (token.Type == TokenType.Radix || token.Type == TokenType.Function)
+                    {
                         tokens.MoveNext();
-                    booleanNeeded = comparerNeeded = !comparerFound;
+                        if (token.Type == TokenType.Function)
+                        {
+                            var opens = 1;
+                            while (opens > 0)
+                            {
+                                if ((token = tokens.GetNext()).Name.Equals("("))
+                                    opens++;
+                                else if (token.Name.Equals(")"))
+                                    opens--;
+                            }
+                        }
+                    }
                 }
                 else if (token.Type == TokenType.Binary)
                 {
-                    if(s_comparers.Contains(token.Name))
-                    {
+                    if (s_conditionals.Contains(token.Name))
                         comparerFound = true;
-                        comparerNeeded = false;
-                        booleanNeeded = false;
-                    }
-                    else 
-                    {
+                    else
                         comparerNeeded = true;
-                    }
-                }
-                else if (token.Type == TokenType.Function)
-                {
-                    booleanNeeded = 
-                    comparerNeeded = !comparerFound;
-                    tokens.MoveNext();
-                    var opens = 1;
-                    while (opens > 0)
-                    {
-                        if ((token = tokens.GetNext()).Name.Equals("("))
-                            opens++;
-                        else if (token.Name.Equals(")"))
-                            opens--;
-                    }
                 }
             }
-            return !booleanNeeded || !comparerNeeded;
+            if (restoreIterator)
+                tokens.SetIndex(firstIndex);
+            return !booleanNeeded || comparerFound;
         }
 
         Stack<double> EvaluateInternal(RandomAccessIterator<Token> iterator, bool fromGroup = false)
@@ -341,6 +351,8 @@ namespace Core6502DotNet
                         if (operators.Count > 0)
                         {
                             var top = operators.Peek();
+                            if (top.Name.Equals("!") && !token.Name.Equals("||") && !token.Name.Equals("&&"))
+                                throw new SyntaxException(token, "Unexpected expression.");
                             var opOrder = token.Type == TokenType.Function ? int.MaxValue : s_operators[token].Item2;
                             while ((top.Type == TokenType.Function || s_operators[top].Item2 >= opOrder) && operators.Count > 0)
                             {
@@ -400,6 +412,8 @@ namespace Core6502DotNet
                     }
                     parms.Add(output.Pop());
                 }
+                if ((op.Name.Equals("||") || op.Name.Equals("&&") || op.Name.Equals("!")) && parms.Any(p => p != 1 && p != 0))
+                    throw new ExpressionException(op, "Type mismatch.");
                 output.Push(operation.Item1(parms));
             }
         }
@@ -565,6 +579,17 @@ namespace Core6502DotNet
             return number;
         }
 
+        /// <summary>
+        /// Evaluates a collection of parsed tokens as a conditional expression.
+        /// </summary>
+        /// <param name="tokens">An iterator to the collection of parsed tokens representing the expression.</param>
+        /// <returns><c>true</c> if the condition evaluated to true, <c>false</c> otherwise.</returns>
+        /// <param name="advanceIterator">Advances the iterator before beginning evaluation.</param>
+        /// <returns><c>true</c> if the condition evaluated to true, <c>false</c> otherwise.</returns>
+        /// <exception cref="DivideByZeroException"></exception>
+        /// <exception cref="ExpressionException"></exception>
+        /// <exception cref="IllegalQuantityException>"></exception>
+        /// <exception cref="SyntaxException"></exception>
         public bool EvaluateCondition(RandomAccessIterator<Token> tokens, bool advanceIterator)
             => DoEvaluation(tokens, advanceIterator, 0, 1, false) == 1;
 

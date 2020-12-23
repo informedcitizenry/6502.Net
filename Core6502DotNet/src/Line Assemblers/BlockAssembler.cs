@@ -195,6 +195,8 @@ namespace Core6502DotNet
             
             if (isBreakCont)
             {
+                if (line.Operands.Count > 0)
+                    throw new SyntaxException(line.Operands[0], "Unexpected expression.");
                 var isBreak = line.Instruction.Name.Equals(".break", Services.StringComparison);
                 if ((!_currentBlock.AllowContinue && line.Instruction.Name.Equals(".continue", Services.StringComparison)) ||
                     (!_currentBlock.AllowBreak && isBreak))
