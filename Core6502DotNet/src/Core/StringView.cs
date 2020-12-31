@@ -71,7 +71,7 @@ namespace Core6502DotNet
         /// otherwise, <c>false</c>.</returns>
         public bool Contains(char value)
         {
-            for (int i = Position; i < Length; i++)
+            for (int i = Position; i < _endIndex; i++)
                 if (String[i] == value)
                     return true;
             return false;

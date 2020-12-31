@@ -146,14 +146,13 @@ namespace Core6502DotNet
         #region Members
 
         readonly Dictionary<string, Symbol> _symbolTable;
-        readonly Stack<string> _scope;
+        readonly Stack<string> _scope, _localScopes;
         readonly Stack<int> _referenceTableIndexStack;
         readonly List<LineReferenceTable> _lineReferenceTables;
         readonly List<Func<StringView, bool>> _criteria;
         int _referenceTableCounter, _ephemeralCounter;
         readonly bool _caseSensitive;
         readonly Evaluator _evaluator;
-        string _localScope;
 
         #endregion
 
@@ -170,7 +169,8 @@ namespace Core6502DotNet
             _caseSensitive = caseSensitive;
             _symbolTable = new Dictionary<string, Symbol>(caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
             _scope = new Stack<string>();
-            _localScope = string.Empty;
+            _localScopes = new Stack<string>();
+            _localScopes.Push(string.Empty);
             _referenceTableIndexStack = new Stack<int>();
             _referenceTableIndexStack.Push(0);
             _lineReferenceTables = new List<LineReferenceTable>
@@ -185,7 +185,7 @@ namespace Core6502DotNet
                 s =>
                 {
                     return s.Equals("+") || s.Equals("-") ||
-                            (((s[0] == '_' && s.Length > 1 && char.IsLetterOrDigit(s[1])) || char.IsLetter(s[0])) &&
+                            (((s[0] == '_' && s.Length > 1 && s.ToString().Any(c => char.IsLetterOrDigit(c))) || char.IsLetter(s[0])) &&
                             (char.IsLetterOrDigit(s[^1]) || s[^1] == '_' ) && !s.Contains('.'));
                 }
             };
@@ -201,7 +201,11 @@ namespace Core6502DotNet
         string GetAncestor(StringView name, int back)
         {
             var symbolPath = new List<string>();
-            var child = name[0] == '_' ? _localScope + "." + name.ToString() : name.ToString();
+            string child;
+            if (name[0] == '_' && !string.IsNullOrEmpty(_localScopes.Peek()))
+                child = _localScopes.Peek() + "." + name.ToString();
+            else
+                child = name.ToString();
             if (_scope.Count > 0)
             {
                 if (back > _scope.Count)
@@ -246,27 +250,23 @@ namespace Core6502DotNet
         {
             if (_criteria.Any(c => !c(name)))
                 throw new SymbolException(name, 1, SymbolException.ExceptionReason.NotValid);
-            string child;
-            if (name[0] == '_')
-                child = _localScope + "." + name.ToString();
-            else
-                LocalScope = child = name.ToString();
+            string nameStr = name.ToString();
             string fqdn;
             if (isGlobal)
             {
-                fqdn = child;
+                fqdn = nameStr;
             }
             else
             {
                 // the fqdn is the fully scoped name by default
-                fqdn = GetScopedName(child);
+                fqdn = GetScopedName(nameStr);
                 if (isWeak && !_symbolTable.ContainsKey(fqdn) && fqdn.Contains('.'))
                 {
-                    // but if it is weak (can be shadowed by same named symbol in outer scope
+                    // but if it is weak (can be shadowed by same named symbol in outer scope)
                     // check if an outer scoped symbol exists
-                    var shadow = GetFullyQualifiedName(child);
-                    if (_symbolTable.ContainsKey(shadow) && InSameFunctionScope(shadow, fqdn) && _symbolTable[shadow].IsMutable)
-                        fqdn = shadow; // if so, do not create the same symbol name in an inner scope
+                    var weak = GetFullyQualifiedName(nameStr);
+                    if (_symbolTable.ContainsKey(weak) && InSameFunctionScope(weak, fqdn) && _symbolTable[weak].IsMutable)
+                        fqdn = weak; // if so, do not create the same symbol name in an inner scope
                 }
             }
             if (_symbolTable.TryGetValue(fqdn, out var existing) && !existing.IsEqualType(symbol))
@@ -376,7 +376,7 @@ namespace Core6502DotNet
                 if (rhs == null)
                     throw new ExpressionException(equ.Position, "rhs expression missing from assignment.");
                 var sym = GetSymbol(lhs, false);
-                if (sym != null && !isMutable)
+                if (sym != null && isMutable != sym.IsMutable)
                     throw new SymbolException(lhs, SymbolException.ExceptionReason.MutabilityChanged);
                 if (rhs.Name.Equals("["))
                 {
@@ -485,6 +485,7 @@ namespace Core6502DotNet
         public void PushScope(StringView name)
         {
             _scope.Push(name.ToString());
+            _localScopes.Push(string.Empty);
             var parent = _lineReferenceTables[_referenceTableIndexStack.Peek()];
             _lineReferenceTables.Add(new LineReferenceTable(parent));
             _referenceTableIndexStack.Push(++_referenceTableCounter);
@@ -509,6 +510,7 @@ namespace Core6502DotNet
                 }
                 else
                 {
+                    _localScopes.Pop();
                     _referenceTableIndexStack.Pop();
                 }
             }
@@ -521,7 +523,9 @@ namespace Core6502DotNet
         {
             foreach (var symbol in _symbolTable.Where(s => s.Value.IsMutable))
                 _symbolTable.Remove(symbol.Key);
-            _localScope = string.Empty;
+
+            _localScopes.Clear();
+            _localScopes.Push(string.Empty);
             _referenceTableCounter = 0;
             SearchedNotFound = false;
         }
@@ -603,11 +607,14 @@ namespace Core6502DotNet
         /// </summary>
         public string LocalScope
         {
-            get => _localScope;
+            get => _localScopes.Peek();
             set
             {
                 if (value[0] != '_')
-                    _localScope = value;
+                {
+                    _localScopes.Pop();
+                    _localScopes.Push(value);
+                }
             }
         }
 

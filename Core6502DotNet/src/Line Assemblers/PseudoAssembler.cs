@@ -49,7 +49,7 @@ namespace Core6502DotNet
                 );
 
             Reserved.DefineType("Functions",
-                    "cbmflt", "cbmfltp", "format", "peek", "poke", "section"
+                    "cbmflt", "cbmfltp", "char", "format", "peek", "poke", "section"
                 );
             services.Evaluator.AddFunctionEvaluator(this);
             _includedBinaries = new Dictionary<StringView, BinaryFile>(services.StringViewComparer);
@@ -102,7 +102,7 @@ namespace Core6502DotNet
             }
         }
 
-        void AssembleValues(SourceLine line, double minValue, double maxValue, int setSize, bool isRta = false)
+        void AssembleValues(SourceLine line, double minValue, double maxValue, int setSize, bool isAddr = false, bool isRta = false)
         {
             Token token;
             var iterator = line.Operands.GetIterator();
@@ -119,6 +119,8 @@ namespace Core6502DotNet
                 else
                 {
                     var val = Services.Evaluator.Evaluate(iterator, false, minValue, maxValue);
+                    if (isAddr && !val.IsInteger())
+                        throw new ExpressionException(token, $"Value {val} is not an address.");
                     if (isRta)
                         val = ((int)(val - 1)) & 0xFFFF;
                     Services.Output.Add(val, setSize);
@@ -187,6 +189,9 @@ namespace Core6502DotNet
                 {
                     // Convert float to binary.
                     var ieee = BitConverter.GetBytes(val);
+
+                    if (!BitConverter.IsLittleEndian)
+                        ieee = ieee.Reverse().ToArray();
 
                     // Calculate exponent
                     var exp = (((ieee[7] << 4) + (ieee[6] >> 4)) & 0x7ff) - IeeeBias;
@@ -429,11 +434,13 @@ namespace Core6502DotNet
                     AssembleValues(line, sbyte.MinValue, sbyte.MaxValue, 1);
                     break;
                 case ".addr":
+                    AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2, true);
+                    break;
                 case ".word":
                     AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2);
                     break;
                 case ".rta":
-                    AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2, true);
+                    AssembleValues(line, ushort.MinValue, ushort.MaxValue, 2, true, true);
                     break;
                 case ".short":
                 case ".sint":
@@ -541,6 +548,10 @@ namespace Core6502DotNet
                 ieeebytes[6 - i] = (byte)(((bytes[i] & 0x7) << 5) | ((bytes[i + 1] & 0xf8) >> 3));
 
             ieeebytes[2] = (byte)((bytes[4] & 0x7) << 5);
+
+            if (!BitConverter.IsLittleEndian)
+                ieeebytes = ieeebytes.Reverse().ToArray();
+
             return BitConverter.ToDouble(ieeebytes);
         }
 
@@ -554,6 +565,13 @@ namespace Core6502DotNet
             {
                 var str = StringHelper.GetFormatted(tokens, Services);
                 return Services.Encoding.GetEncodedValue(str);
+            }
+            if (functionName.Equals("char"))
+            {
+                var cp = Services.Evaluator.Evaluate(tokens, 0, 0x10FFFF);
+                if (!cp.IsInteger())
+                    throw new ExpressionException(function, "Invalid expression.");
+                return Services.Encoding.GetCodePoint((int)cp);
             }
             tokens.MoveNext();
             if (Token.IsEnd(tokens.GetNext()))

@@ -102,6 +102,7 @@ namespace Core6502DotNet
             Reserved.DefineType("Goto", ".goto");
 
             ExcludedInstructionsForLabelDefines.Add(".function");
+            ExcludedInstructionsForLabelDefines.Add(".block");
 
             Services.Evaluator.AddFunctionEvaluator(this);
 
@@ -145,23 +146,21 @@ namespace Core6502DotNet
         {
             var ix = lines.Index;
             var line = lines.Current;
-            var open = line.Instruction.Name;
-            var closure = _openClosures[open];
-            var closures = new Stack<StringView>();
-            closures.Push(closure);
+            var closures = new Stack<Token>();
+            closures.Push(line.Instruction);
             while (lines.MoveNext() && closures.Count > 0)
             {
                 if (lines.Current.Instruction != null)
                 {
-                    if (lines.Current.Instruction.Name.Equals(closures.Peek(), Services.StringViewComparer))
+                    if (lines.Current.Instruction.Name.Equals(_openClosures[closures.Peek().Name], Services.StringViewComparer))
                         closures.Pop();
                     else if (_openClosures.ContainsKey(lines.Current.Instruction.Name))
-                        closures.Push(_openClosures[lines.Current.Instruction.Name]);
+                        closures.Push(lines.Current.Instruction);
                 }
             }
             if (closures.Count > 0)
-                throw new SyntaxException(line.Instruction,
-                    $"Missing closure \"{closure}\" for block \"{open}\".");
+                throw new SyntaxException(closures.Peek(),
+                    $"Missing closure \"{_openClosures[closures.Peek().Name]}\" for directive \"{closures.Peek().Name}\".");
             lines.SetIndex(ix);
         }
 
@@ -188,6 +187,9 @@ namespace Core6502DotNet
                 _blocks.Push(block);
                 _currentBlock = block;
             }
+            if (line.Instruction.Name.Equals(".block", Services.StringComparison) && line.Label != null)
+                DefineLabel(line.Label, PCOnAssemble, false);
+            
             var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
             if (_currentBlock == null || (!isBreakCont && !_currentBlock.IsReserved(line.Instruction.Name)))
                 throw new SyntaxException(line.Instruction.Position,
@@ -214,8 +216,11 @@ namespace Core6502DotNet
                             return string.Empty;
                     }
                     if (_currentBlock == null)
+                    {
+                        var err = isBreak ? "break" : "continue";
                         throw new SyntaxException(line.Instruction.Position,
-                           "No enclosing loop out of which to continue.");
+                        $"No enclosing loop out of which to {err}.");
+                    }
                 }
                 else if (isBreak)
                 {
@@ -364,7 +369,7 @@ namespace Core6502DotNet
             {
                 var line = lines.Current;
                 if (_currentBlock != null)
-                    throw new SyntaxException(line.Instruction, "Function block cannot be inside another block.");
+                    throw new SyntaxException(line.Instruction, "Function definition block cannot be inside another block.");
                 if (line.Label == null)
                     throw new SyntaxException(line.Instruction, "Function name not specified");
                 var functionName = line.Label.Name;

@@ -140,7 +140,7 @@ namespace Core6502DotNet
             { '!', new List<char>{ '=' } }
         };
 
-        static readonly Regex s_defineRegex = new Regex(@"^((_\w+)|([a-zA-Z]\w*))((=.+)|$)");
+        static readonly Regex s_defineRegex = new Regex(@"^((_+(\d|\p{L}))|\p{L})(\d|\p{L}|_)*((=.+)|$)");
 
         readonly ProcessorOptions _options;
         readonly Dictionary<string, Macro> _macros;
@@ -772,6 +772,19 @@ namespace Core6502DotNet
                     else if (!stopAtFirstInstruction && _macros.TryGetValue(line.Instruction.Name.ToString(), out var macro))
                     {
                         sourceLines.AddRange(ExpandMacros(line, macro));
+                    }
+                    else if (stopAtFirstInstruction && _preprocessors.IsOneOf("Includes", line.Instruction.Name) && line.Operands.Count == 1 && line.Operands[0].IsDoubleQuote())
+                    {
+                        var firstLincFileName = line.Operands[0].Name.TrimOnce('"').ToString();
+                        using FileStream fs = File.OpenRead(firstLincFileName);
+                        using BufferedStream bs = new BufferedStream(fs);
+                        using StreamReader sr = new StreamReader(bs);
+                        var firstLine = ProcessFromStream(firstLincFileName, lineNumber, sr, true).FirstOrDefault(l => l.Instruction != null);
+                        if (firstLine != null)
+                        {
+                            sourceLines = new List<SourceLine> { firstLine };
+                            stopProcessing = true;
+                        }
                     }
                     else
                     {

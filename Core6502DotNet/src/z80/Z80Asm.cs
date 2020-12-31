@@ -327,7 +327,8 @@ namespace Core6502DotNet.z80
                         var asmBuilder = new StringBuilder($"{line.Instruction.Name.ToLower()} ");
                         for (var i = 0; i < 3; i++)
                         {
-                            if (modes[i] == Z80Mode.Implied)
+                            if (modes[i] == Z80Mode.Implied || 
+                                (i == 1 && modes[0] == Z80Mode.A && modes[1] == Z80Mode.A))
                                 break;
                             if (i > 0)
                                 asmBuilder.Append(',');

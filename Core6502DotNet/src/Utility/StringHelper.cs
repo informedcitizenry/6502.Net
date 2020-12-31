@@ -36,12 +36,15 @@ namespace Core6502DotNet
                 return Token.IsEnd(iterator.PeekNext());
             var ix = iterator.Index;
             var result = false;
-            if (token.Type == TokenType.Function && token.Name.Equals("format", services.StringComparison))
+            if (token.Type == TokenType.Function && 
+                (token.Name.Equals("format", services.StringComparison) || token.Name.Equals("char", services.StringComparison)))
             {
                 iterator.MoveNext();
-                Token.GetGroup(iterator);
-                var last = iterator.Current; 
+                var parms = Token.GetGroup(iterator);
+                var last = iterator.Current;
                 result = Token.IsEnd(last);
+                if (token.Name.Equals("char", services.StringComparison))
+                    result &= services.Evaluator.Evaluate(parms.GetIterator(), 0, 0x10FFFF).IsInteger();
             }
             else if (token.Type == TokenType.Operand && 
                     (char.IsLetter(token.Name[0]) || token.Name[0] == '_') &&
@@ -89,6 +92,10 @@ namespace Core6502DotNet
                 var str = GetFormatted(iterator, services);
                 if (!string.IsNullOrEmpty(str) && Token.IsEnd(iterator.Current))
                     return str;
+            }
+            else if (token.Type == TokenType.Function && token.Name.Equals("char", services.StringComparison))
+            {
+                return char.ConvertFromUtf32((int)services.Evaluator.Evaluate(iterator, 0, 0x10FFFF));
             }
             else if (token.Type == TokenType.Operand && 
                     (char.IsLetter(token.Name[0]) || token.Name[0] == '_') &&
@@ -148,9 +155,17 @@ namespace Core6502DotNet
                 while (!Token.IsEnd(iterator.GetNext()))
                 {
                     if (ExpressionIsAString(iterator, services))
+                    {
                         parms.Add(GetString(iterator, services));
+                    }
                     else
-                        parms.Add((int)services.Evaluator.Evaluate(iterator, false));
+                    {
+                        var parmVal = services.Evaluator.Evaluate(iterator, false);
+                        if (Regex.IsMatch(fmt, $"\\{{{parms.Count}(,-?\\d+)?:(d|D|x|X)\\d*\\}}"))
+                            parms.Add((int)parmVal);
+                        else
+                            parms.Add(parmVal);
+                    }
                 }
             }
             if (parms.Count == 0)

@@ -134,10 +134,10 @@ namespace Core6502DotNet
                 case ".warn":
                     if (instruction.Equals(".echo"))
                     {
-                        if (Services.Evaluator.ExpressionIsCondition(iterator))
-                            Output(line, Services.Evaluator.EvaluateCondition(iterator).ToString());
-                        else if (iterator.MoveNext() && StringHelper.ExpressionIsAString(iterator, Services))
+                        if (iterator.MoveNext() && StringHelper.ExpressionIsAString(iterator, Services))
                             Output(line, StringHelper.GetString(iterator, Services));
+                        else if (Services.Evaluator.ExpressionIsCondition(line.Operands.GetIterator()))
+                            Output(line, Services.Evaluator.EvaluateCondition(iterator, false).ToString());
                         else
                             Output(line, Services.Evaluator.Evaluate(iterator, false, Evaluator.CbmFloatMinValue, Evaluator.CbmFloatMaxValue).ToString());
                     }
@@ -258,7 +258,7 @@ namespace Core6502DotNet
             if (!iterator.MoveNext() || !iterator.Current.IsDoubleQuote() || iterator.PeekNext() != null)
                 throw new SyntaxException(line.Instruction, "Directive expects a string expression.");
             if (!Services.Output.SetSection(iterator.Current.Name))
-                throw new SyntaxException(line.Operands[0], $"Section {line.Operands[0].Name} not defined or previously selected.");
+                throw new SyntaxException(line.Operands[0], $"Section {line.Operands[0].Name} not defined.");
             if (line.Label != null)
             {
                 if (line.Label.Name.Equals("*"))
@@ -266,7 +266,7 @@ namespace Core6502DotNet
                 else if (line.Label.Name[0].IsSpecialOperator())
                     Services.SymbolManager.DefineLineReference(line.Label, Services.Output.LogicalPC);
                 else
-                    Services.SymbolManager.DefineSymbolicAddress(line.Label.Name, Services.Output.LogicalPC, Services.Output.CurrentBank);
+                    DefineLabel(line.Label, Services.Output.LogicalPC, true);
                 return $"=${Services.Output.LogicalPC:x4}                  {line.Label}  // section {line.Operands[0]}";
             }
             return $"* = ${Services.Output.LogicalPC:x4}  // section {line.Operands[0]}";

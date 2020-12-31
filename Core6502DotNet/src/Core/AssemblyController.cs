@@ -258,9 +258,9 @@ namespace Core6502DotNet
                                  ex is BlockAssemblerException ||
                                  ex is SectionException)
                         {
-                            if (ex is FormatException fmtEx)
+                            if (ex is FormatException)
                                 _services.Log.LogEntry(line.Operands[0],
-                                                  $"There was a problem with the format string:\n{fmtEx.Message}.",
+                                                  $"There was a problem with the format string.",
                                                   true);
                             else if (ex is ReturnException retEx)
                                 _services.Log.LogEntry(line, retEx.Position, retEx.Message);
@@ -297,7 +297,11 @@ namespace Core6502DotNet
                                 }
                                 else if (ex is InvalidPCAssignmentException pcEx)
                                 {
-                                    _services.Log.LogEntry(line.Instruction,
+                                    if (pcEx.SectionNotUsedError)
+                                        _services.Log.LogEntry(line.Instruction,
+                                            pcEx.Message);
+                                    else
+                                        _services.Log.LogEntry(line.Instruction,
                                             $"Invalid Program Counter assignment {pcEx.Message} in expression.");
                                 }
                                 else

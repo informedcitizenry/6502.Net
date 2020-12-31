@@ -97,6 +97,18 @@ namespace Core6502DotNet
         }
 
         /// <summary>
+        /// Get the mapped representation of the Unicode codepoint in the selected encoding.
+        /// </summary>
+        /// <param name="code">The Unicode codepoint.</param>
+        /// <returns>The mapped value of the selected encoding.</returns>
+        public int GetCodePoint(int code)
+        {
+            if (_currentMap.Values.Contains(code))
+                return _currentMap.First(k => k.Value == code).Key;
+            return code;
+        }
+
+        /// <summary>
         /// Adds a character mapping to translate from source to object
         /// </summary>
         /// <param name="mapping">The text element, or range of text elements to map.</param>

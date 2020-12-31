@@ -196,7 +196,7 @@ namespace Core6502DotNet
                 if (line.Label.IsSpecialOperator())
                     Services.SymbolManager.DefineLineReference(line.Label, Services.Output.LogicalPC);
                 else
-                    Services.SymbolManager.DefineSymbolicAddress(line.Label.Name, Services.Output.LogicalPC, Services.Output.CurrentBank);
+                    DefineLabel(line.Label, Services.Output.LogicalPC, true);
             }
         }
 

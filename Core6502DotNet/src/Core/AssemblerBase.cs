@@ -89,28 +89,9 @@ namespace Core6502DotNet
             if (first.Label != null && !first.Label.Name.Equals("*"))
             {
                 if (isSpecial)
-                {
                     Services.SymbolManager.DefineLineReference(first.Label, PCOnAssemble);
-                }
                 else if (first.Instruction == null || !ExcludedInstructionsForLabelDefines.Contains(first.Instruction.Name))
-                {
-                    if (Services.SymbolManager.SymbolExists(first.Label.Name, false))
-                    {
-                        if (Services.CurrentPass == 0)
-                            throw new SymbolException(first.Label, SymbolException.ExceptionReason.Redefined);
-                        var existingLabel = Services.SymbolManager.GetSymbol(first.Label, false);
-                        if (existingLabel.NumericValue != PCOnAssemble)
-                        {
-                            Services.PassNeeded = true;
-                            existingLabel.NumericValue = PCOnAssemble;
-                        }
-                        Services.SymbolManager.LocalScope = first.Label.Name.ToString();
-                    }
-                    else
-                    {
-                        Services.SymbolManager.DefineSymbolicAddress(first.Label.Name, PCOnAssemble, Services.Output.CurrentBank);
-                    }
-                }
+                    DefineLabel(first.Label, PCOnAssemble, true);
             }
             if (first.Instruction != null)
                 return OnAssemble(lines);
@@ -123,6 +104,34 @@ namespace Core6502DotNet
                                         Services.Options.NoSource ? string.Empty : first.Source);
             }
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Define the label in the symbol table.
+        /// </summary>
+        /// <param name="label">The label <see cref="Token"/>.</param>
+        /// <param name="address">The address (value) of the label.</param>
+        /// <param name="setLocalScope">Set the label as local scope.</param>
+        /// <exception cref="SymbolException"></exception>
+        protected void DefineLabel(Token label, double address, bool setLocalScope)
+        {
+            if (Services.SymbolManager.SymbolExists(label.Name, false))
+            {
+                if (Services.CurrentPass == 0)
+                    throw new SymbolException(label, SymbolException.ExceptionReason.Redefined);
+                var existingLabel = Services.SymbolManager.GetSymbol(label, false);
+                if (existingLabel.NumericValue != address)
+                {
+                    Services.PassNeeded = true;
+                    existingLabel.NumericValue = address;
+                }
+            }
+            else
+            {
+                Services.SymbolManager.DefineSymbolicAddress(label.Name, address, Services.Output.CurrentBank);
+            }
+            if (setLocalScope)
+                Services.SymbolManager.LocalScope = label.Name.ToString();
         }
 
         /// <summary>

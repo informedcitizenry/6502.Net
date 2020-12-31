@@ -224,7 +224,7 @@ namespace Core6502DotNet
             {
                 if (token.Type == TokenType.Operand && booleanNeeded && !comparerNeeded)
                 {
-                    if (_constants.ContainsKey(token.Name) && (token.Name.ToLower().Equals("t") || token.Name.ToLower().Equals("f")))
+                    if (_constants.ContainsKey(token.Name) && (token.Name.ToLower()[0] == 't' || token.Name.ToLower()[0] =='f'))
                     {
                         booleanNeeded = false;
                     }

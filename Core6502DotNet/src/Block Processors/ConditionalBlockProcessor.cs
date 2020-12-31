@@ -121,10 +121,6 @@ namespace Core6502DotNet
                     }
                     if (_ifTrue)
                         break;
-                    if (!iterator.MoveNext())
-                        throw new SyntaxException(iterator.Current.Instruction, "Missing closure for \".if\" directive.");
-                    else if (Reserved.IsReserved(iterator.Current.Instruction.Name))
-                        throw new SyntaxException(iterator.Current.Instruction, "Empty sub-block under conditional directive.");
                     SeekBlockDirectives(iterator, Reserved.GetReserved("Keywords").ToArray());
                     line = iterator.Current;
                 }

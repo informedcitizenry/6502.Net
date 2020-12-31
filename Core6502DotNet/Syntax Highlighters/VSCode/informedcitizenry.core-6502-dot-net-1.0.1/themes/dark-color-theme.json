@@ -13,7 +13,7 @@
       "name": "Block Comment",
       "scope": "comment.block",
       "settings": {
-        "foreground": "#d1c6c6",
+        "foreground": "#e3bcbc",
         "fontStyle": "italic"
       }
     },

@@ -37,7 +37,7 @@ namespace Core6502DotNet
                 StringView scopeName;
                 if (line.Label != null && !line.Label.IsSpecialOperator())
                 {
-                    if (!char.IsLetter(line.Label.Name[0]) || (!char.IsLetterOrDigit(line.Label.Name[^1]) && line.Label.Name[^1] != '_'))
+                    if (!Services.SymbolManager.SymbolIsValid(line.Label.Name)) 
                         throw new SyntaxException(line.Label, $"Invalid name \"{line.Label.Name}\" for block.");
                     scopeName = line.Label.Name;
                 }
@@ -52,8 +52,6 @@ namespace Core6502DotNet
                 Services.SymbolManager.PopScope();
             }
         }
-
-        public override void PopScope(RandomAccessIterator<SourceLine> unused) { }
 
         #endregion
 
@@ -82,24 +80,25 @@ namespace Core6502DotNet
             if (line.Instruction.Name.Equals(".namespace", Services.StringComparison))
             {
                 // to avoid symbol clashes with later ".block" directives of the same name.
-                Services.PassNeeded = Services.CurrentPass == 0; 
-
+                Services.PassNeeded = Services.CurrentPass == 0;
                 if (line.Operands.Count > 0)
                 {
                     if (line.Operands.Count > 1 ||
-                        !char.IsLetter(line.Operands[0].Name[0]) || (!char.IsLetterOrDigit(line.Operands[0].Name[^1]) && line.Operands[0].Name[^1] != '_'))
-                        throw new SyntaxException(line.Operands[1], "Invalid namespace name.");
+                        !Services.SymbolManager.SymbolIsValid(line.Operands[0].Name) || 
+                        line.Operands[0].Name[0].IsSpecialOperator())
+                        throw new SyntaxException(line.Operands[^1], $"Invalid name \"{line.Operands[0].Name}\" for namespace.");
                     scopeName = line.Operands[0].Name;
                 }
                 if (scopeName == null)
                 {
                     scopeName = lines.Index.ToString();
-                    Services.SymbolManager.PushScope(scopeName);
                 }
                 else if (Services.SymbolManager.SymbolExists(scopeName))
                 {
                     Services.Log.LogEntry(line.Operands[0], $"Namespace name \"{scopeName}\" clashes with existing symbol name.");
+                    return;
                 }
+                Services.SymbolManager.PushScope(scopeName);
             }
             else
             {

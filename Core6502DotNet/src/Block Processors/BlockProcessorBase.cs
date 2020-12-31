@@ -33,6 +33,12 @@ namespace Core6502DotNet
     /// </summary>
     public abstract class BlockProcessorBase : AssemblerBase
     {
+        #region Members
+
+        bool _createScope;
+
+        #endregion
+
         #region Constructors
 
         /// <summary>
@@ -56,7 +62,8 @@ namespace Core6502DotNet
             : base(services)
         {
             Index = index;
-            if (createScope)
+            _createScope = createScope;
+            if (_createScope)
                 services.SymbolManager.PushScope(Index.ToString());
         }
 
@@ -68,16 +75,18 @@ namespace Core6502DotNet
         /// Executes the block directive. This method must be inherited.
         /// </summary>
         /// <param name="iterator">The source line iterator.</param>
+        /// <exception cref="SyntaxException"></exception>
         public abstract void ExecuteDirective(RandomAccessIterator<SourceLine> iterator);
 
         /// <summary>
         /// Cleanup the current block's scope.
         /// </summary>
         /// <param name="iterator">The source line iterator.</param>
-        public virtual void PopScope(RandomAccessIterator<SourceLine> iterator)
+        public void PopScope(RandomAccessIterator<SourceLine> iterator)
         {
             SeekBlockEnd(iterator);
-            Services.SymbolManager.PopScope();
+            if (_createScope)
+                Services.SymbolManager.PopScope();
         }
 
         /// <summary>
@@ -89,7 +98,7 @@ namespace Core6502DotNet
         protected void SeekBlockDirectives(RandomAccessIterator<SourceLine> iterator, StringView[] directives)
         {
             var line = iterator.Current;
-            if (!directives.Contains(line.Instruction.Name, Services.StringViewComparer))
+            if (!line.Instruction.Name.Equals(BlockClosure, Services.StringComparison))
             {
                 var blockClose = BlockClosure;
 

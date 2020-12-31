@@ -53,6 +53,5 @@ namespace Core6502DotNet
 
         public override string BlockClosure => ".endpage";
 
-        public override void PopScope(RandomAccessIterator<SourceLine> unused) { }
     }
 }

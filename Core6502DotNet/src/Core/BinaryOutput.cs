@@ -29,7 +29,29 @@ namespace Core6502DotNet
         /// <param name="value">The Program Counter value.</param>
         public InvalidPCAssignmentException(int value) => _pc = value;
 
-        public override string Message => _pc.ToString();
+        /// <summary>
+        /// Creates a new instance of an invalid PC assignment exception.
+        /// </summary>
+        /// <param name="value">The Program Counter value.</param>
+        /// <param name="sectionNotUsedError">The error was due to a section not being set.</param>
+        public InvalidPCAssignmentException(int value, bool sectionNotUsedError)
+            => (_pc, SectionNotUsedError) = (value, sectionNotUsedError);
+
+        public override string Message
+        {
+            get
+            {
+                if (SectionNotUsedError)
+                    return "A section was defined but not set.";
+                return _pc.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Gets a flag that determines the cause of the error was due to one or more sections
+        /// being defined but never set.
+        /// </summary>
+        public bool SectionNotUsedError { get; }
     }
 
     /// <summary>
@@ -154,12 +176,10 @@ namespace Core6502DotNet
         {
             Array.Clear(_bytes, 0, BufferSize);
             Transform = null;
-            _compilingStarted = _started = false;
+            PCOverflow = _compilingStarted = _started = false;
             _sectionCollection.Reset();
-            CurrentBank = 0;
-            ProgramEnd = PreviousPC =
-            _pc = _logicalPc = 0;
-            PCOverflow = false;
+            CurrentBank = ProgramEnd = PreviousPC = _pc = _logicalPc = 0;
+           
         }
 
         /// <summary>
@@ -184,7 +204,9 @@ namespace Core6502DotNet
         public void SetPC(int value)
         {
             if (!AddressIsValid(value))
-                throw new InvalidPCAssignmentException(value);
+                throw new InvalidPCAssignmentException(value, 
+                    !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
+            
             LogicalPC = value;
             ProgramCounter = value;
         }
@@ -347,6 +369,8 @@ namespace Core6502DotNet
         {
             if (!_compilingStarted)
             {
+                if (!_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected)
+                    throw new InvalidPCAssignmentException(_pc, true);
                 _started =
                 _compilingStarted = true;
                 ProgramStart = ProgramCounter;
@@ -369,7 +393,7 @@ namespace Core6502DotNet
                 if (_pc > MaxAddress)
                     throw new ProgramOverflowException($"Program overflow.");
                 if (_sectionCollection.SectionSelected && !_sectionCollection.AddressInBounds(_pc))
-                    throw new ProgramOverflowException($"{ProgramCounter:x4} exceeds bounds of current section.");
+                    throw new ProgramOverflowException($"${ProgramCounter:x4} exceeds bounds of current section.");
                 _bytes[_pc++] = b;
             }
             if (ProgramEnd < ProgramCounter)
@@ -588,7 +612,7 @@ namespace Core6502DotNet
         /// <exception cref="SectionException"/>
         public void DefineSection(StringView name, int starts, int ends)
         {
-            if (_started)
+            if (_started || _sectionCollection.SectionSelected)
                 throw new SectionException(1,
                     "Cannot define a section after assembly has started.");
             if (starts < 0)
@@ -683,7 +707,7 @@ namespace Core6502DotNet
             private set
             {
                 if (!AddressIsValid(value) || value < _pc)
-                    throw new InvalidPCAssignmentException(value);
+                    throw new InvalidPCAssignmentException(value, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
                 _pc = value;
             }
         }
@@ -720,7 +744,7 @@ namespace Core6502DotNet
             set
             {
                 if (!AddressIsValid(value) || value < _logicalPc)
-                    throw new InvalidPCAssignmentException(value);
+                    throw new InvalidPCAssignmentException(value, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
                 if (!PCOverflow)
                     PCOverflow = value > MaxAddress;
                 _started = true;
