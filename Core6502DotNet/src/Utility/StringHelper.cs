@@ -95,7 +95,8 @@ namespace Core6502DotNet
             }
             else if (token.Type == TokenType.Function && token.Name.Equals("char", services.StringComparison))
             {
-                return char.ConvertFromUtf32((int)services.Evaluator.Evaluate(iterator, 0, 0x10FFFF));
+                var code = (int)services.Evaluator.Evaluate(iterator, 0, 0x10FFFF);
+                return char.ConvertFromUtf32(services.Encoding.GetCodePoint(code));
             }
             else if (token.Type == TokenType.Operand && 
                     (char.IsLetter(token.Name[0]) || token.Name[0] == '_') &&
