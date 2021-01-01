@@ -270,6 +270,8 @@ namespace Core6502DotNet
                 throw new ProgramOverflowException($"Program overflowed {size} bytes.");
             ProgramCounter += size;
             LogicalPC += size;
+            if (_sectionCollection.SectionSelected)
+                _sectionCollection.SetOutputCount(_pc - _sectionCollection.SelectedStartAddress);
         }
 
         /// <summary>
@@ -354,8 +356,7 @@ namespace Core6502DotNet
         public void Align(int amount)
         {
             var align = GetAlignmentSize(LogicalPC, amount);
-            LogicalPC += align;
-            ProgramCounter += align;
+            AddUninitialized(align);
         }
 
         /// <summary>
