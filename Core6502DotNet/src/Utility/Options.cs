@@ -316,6 +316,7 @@ namespace Core6502DotNet
         /// <param name="noStats">The no-stats flag.</param>
         /// <param name="outputFile">The output filename.</param>
         /// <param name="outputSection">The section to output.</param>
+        /// <param name="patch">The patch offset.</param>
         /// <param name="quiet">The quiet mode flag.</param>
         /// <param name="autoSize">The register autosize flag.</param>
         /// <param name="noSource">The no-source flag.</param>
@@ -345,6 +346,7 @@ namespace Core6502DotNet
                        bool noStats,
                        string outputFile,
                        string outputSection,
+                       string patch,
                        bool quiet,
                        bool autoSize,
                        bool noSource,
@@ -376,6 +378,7 @@ namespace Core6502DotNet
                                              caseSensitive,
                                              outputFile,
                                              outputSection,
+                                             patch,
                                              includePath,
                                              ignoreColons)
         {
@@ -415,6 +418,7 @@ namespace Core6502DotNet
         /// <param name="caseSensitive">The case-sensitive flag.</param>
         /// <param name="outputFile">The output filename.</param>
         /// <param name="outputSection">The section to output.</param>
+        /// <param name="patchOffset">The patch offset.</param>
         /// <param name="includePath">The include path.</param>
         /// <param name="ignoreColons">The ignore-colons flag.</param>
         [JsonConstructor]
@@ -428,6 +432,7 @@ namespace Core6502DotNet
                        bool caseSensitive,
                        string outputFile,
                        string outputSection,
+                       string patchOffset,
                        string includePath,
                        bool ignoreColons)
         {
@@ -472,6 +477,7 @@ namespace Core6502DotNet
             IncludePath = includePath ?? string.Empty;
             IgnoreColons = ignoreColons;
             OutputSection = outputSection == null ?  string.Empty : $"\"{outputSection}\"";
+            Patch = patchOffset ?? string.Empty;
             LabelDefines = GetReadOnlyList(defines);
             InputFiles = GetReadOnlyList(sources);
             if (sections != null)
@@ -554,6 +560,8 @@ namespace Core6502DotNet
                 root.Add("outputFile", OutputFile);
             if (!string.IsNullOrEmpty(OutputSection))
                 root.Add("outputSection", OutputSection);
+            if (!string.IsNullOrEmpty(Patch))
+                root.Add("patchOffset", Patch);
             if (InputFiles.Count > 0)
             {
                 foreach (var i in InputFiles)
@@ -872,6 +880,12 @@ namespace Core6502DotNet
         public string OutputSection { get; }
 
         /// <summary>
+        /// Indicates the output is a patch to an existing object file.
+        /// </summary>
+        [Option('p', "patch", Required = false, HelpText = "Patch the output file at <offset>", MetaValue = "<offset>")]
+        public string Patch { get; }
+
+        /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
         [Option('q', "quiet", Required = false, HelpText = "Assemble in quiet mode (no console)")]
@@ -936,8 +950,8 @@ namespace Core6502DotNet
         {
             get
             {
-                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, false));
-                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, false, null, null, false, false, false, false, false, false, false, false, false));
+                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false));
+                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, false, null, null, null, false, false, false, false, false, false, false, false, false));
             }
         }
 

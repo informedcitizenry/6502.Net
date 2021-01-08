@@ -881,7 +881,7 @@ namespace Core6502DotNet
         /// <returns>A list of parsed <see cref="SourceLine"/> records.</returns>
         public List<SourceLine> Process(string fileName)
         {
-            fileName = GetFullPath(fileName);
+            fileName = GetFullPath(fileName, _options.IncludePath);
             IncludeFile(fileName);
             if (_options.InstructionLookup == null)
                 throw new Exception("Instruction lookup option not configured.");
@@ -894,7 +894,7 @@ namespace Core6502DotNet
 
         public SourceLine ProcessToFirstDirective(string fileName)
         {
-            using FileStream fs = File.OpenRead(GetFullPath(fileName));
+            using FileStream fs = File.OpenRead(GetFullPath(fileName, _options.IncludePath));
             using BufferedStream bs = new BufferedStream(fs);
             using StreamReader sr = new StreamReader(bs);
             var sources = ProcessFromStream(fileName, 0, sr, true);
@@ -910,21 +910,30 @@ namespace Core6502DotNet
         public ReadOnlyCollection<string> GetInputFiles()
             => new ReadOnlyCollection<string>(_includedFiles.ToList());
 
-        string GetFullPath(string fileName)
+        /// <summary>
+        /// Get the full file path of an existing file, first from the file name itself in case the file
+        /// exists in the same path as the running process, then from the include path.
+        /// </summary>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="includePath">The include path.</param>
+        /// <returns>The full path of the file, or the file name itself if the path is the same as that of
+        /// the running process.</returns>
+        /// <exception cref="FileNotFoundException"></exception>
+        public static string GetFullPath(string fileName, string includePath)
         {
             string fullPath = fileName;
             var fileInfo = new FileInfo(fileName);
             if (!fileInfo.Exists)
             {
-                if (!string.IsNullOrEmpty(_options.IncludePath))
+                if (!string.IsNullOrEmpty(includePath))
                 {
-                    fullPath = Path.Combine(_options.IncludePath, fileName);
+                    fullPath = Path.Combine(includePath, fileName);
                     if (!File.Exists(fullPath))
-                        throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
+                        throw new FileNotFoundException($"\"{fileInfo.FullName}\" not found.");
                 }
                 else
                 {
-                    throw new FileNotFoundException($"Source \"{fileInfo.FullName}\" not found.");
+                    throw new FileNotFoundException($"\"{fileInfo.FullName}\" not found.");
                 }
             }
             return fullPath;

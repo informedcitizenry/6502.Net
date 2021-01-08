@@ -29,11 +29,11 @@
       "patterns": [
         {
           "name": "keyword.control.pseudoop.core6502_net_m680x",
-          "match": "(?i)(^|\\s)(\\.(addr|align|binary|bstring|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|hstring|lint|long|lstring|nstring|pstring|rta|sbyte|short|sint|string|word))\\b"
+          "match": "(?i)(?<=^|\\:|\\s)(\\.(addr|align|binary|bstring|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|hstring|lint|long|lstring|nstring|pstring|rta|sbyte|short|sint|string|word))\\b"
         },
         {
           "name": "keyword.control.directive.core6502_net_m680x",
-          "match": "(?i)(^|\\s)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endnamespace|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|macro|map|namespace|next|org|page|pseudopc|proff|pron|realpc|relocate|repeat|return|section|switch|target|tfradp|tfrbdp|unmap|warn|warnif|while))\\b"
+          "match": "(?i)(?<=^|\\:|\\s)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endnamespace|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|macro|map|namespace|next|org|page|pseudopc|proff|pron|realpc|relocate|repeat|return|section|switch|target|tfradp|tfrbdp|unmap|warn|warnif|while))\\b"
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_m680x",
@@ -41,7 +41,7 @@
         },
         {
           "name": "keyword.other.macro.core6502_net_m680x",
-          "match": "(^|\\s)\\.[a-zA-Z]\\w*\\b"
+          "match": "(?<=^|\\:|\\s)\\.[a-zA-Z]\\w*\\b"
         },
         {
           "name": "keyword.function.core6502_net_m680x",

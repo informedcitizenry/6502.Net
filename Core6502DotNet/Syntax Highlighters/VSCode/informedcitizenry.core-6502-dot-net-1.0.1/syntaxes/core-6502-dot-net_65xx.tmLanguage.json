@@ -29,11 +29,11 @@
       "patterns": [
         {
           "name": "keyword.control.pseudoop.core6502_net_65xx",
-          "match": "(?i)(^|\\s)(\\.(addr|align|binary|bstring|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|hstring|lint|long|lstring|nstring|pstring|rta|sbyte|short|sint|string|word))\\b"
+          "match": "(?i)(?<=^|\\:|\\s)(\\.(addr|align|binary|bstring|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|hstring|lint|long|lstring|nstring|pstring|rta|sbyte|short|sint|string|word))\\b"
         },
         {
           "name": "keyword.control.directive.core6502_net_65xx",
-          "match": "(?i)(^|\\s)(\\.(assert|auto|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endnamespace|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|m8|m16|macro|manual|map|mx8|mx16|namespace|next|org|page|proff|pron|pseudopc|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while|x8|x16))\\b"
+          "match": "(?i)(?<=^|\\:|\\s)(\\.(assert|auto|bank|binclude|block|break|case|continue|comment|cpu|default|dp|dsection|echo|elseifndef|elseifdef|else|elseif|encoding|end|endblock|endfunction|endif|endmacro|endnamespace|endpage|endrepeat|endrelocate|endswitch|endwhile|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifdef|ifndef|include|initmem|invoke|let|m8|m16|macro|manual|map|mx8|mx16|namespace|next|org|page|proff|pron|pseudopc|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while|x8|x16))\\b"
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_65xx",
@@ -41,7 +41,7 @@
         },
         {
           "name": "keyword.other.macro.core6502_net_65xx",
-          "match": "(^|\\s)\\.[a-zA-Z]\\w*\\b"
+          "match": "(?<=^|\\:|\\s)\\.[a-zA-Z]\\w*\\b"
         },
         {
           "name": "keyword.function.core6502_net_65xx",

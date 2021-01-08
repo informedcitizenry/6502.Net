@@ -67,7 +67,7 @@ namespace Core6502DotNet
                 if (symbol == null)
                 {
                     PassNeeded = true;
-                    return 0xffff;
+                    return 0x100;
                 }
                 if (subscript >= 0)
                 {

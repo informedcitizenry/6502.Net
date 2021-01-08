@@ -318,7 +318,7 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        results.Push(Evaluate(token));
+                        results.Push(Evaluate(token, double.MinValue, double.MaxValue));
                     }
                 }
                 else
@@ -373,7 +373,7 @@ namespace Core6502DotNet
             return results;
         }
 
-        private void DoOperation(Token op, ref StringView nonBase10, Stack<double> output)
+        void DoOperation(Token op, ref StringView nonBase10, Stack<double> output)
         {
             if (nonBase10.Length > 0)
             {

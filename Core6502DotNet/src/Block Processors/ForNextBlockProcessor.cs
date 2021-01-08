@@ -170,9 +170,7 @@ namespace Core6502DotNet
                 }
                 else if (_enumerable.StringValue != null && _enumerator < _enumerable.StringValue.Length)
                 {
-                    Services.SymbolManager.DefineSymbol(_enumeration,
-                        Convert.ToDouble(Services.Encoding.GetEncodedValue(_enumerable.StringValue.Substring(_enumerator++, 1))),
-                        true);
+                    Services.SymbolManager.DefineSymbol(_enumeration, _enumerable.StringValue.Substring(_enumerator++, 1), true);
                     doNext = true;
                 }
             }

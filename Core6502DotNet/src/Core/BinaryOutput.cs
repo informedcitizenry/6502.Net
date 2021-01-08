@@ -268,8 +268,10 @@ namespace Core6502DotNet
         {
             if (ProgramEnd > MaxAddress)
                 throw new ProgramOverflowException($"Program overflowed {size} bytes.");
-            ProgramCounter += size;
-            LogicalPC += size;
+            if (!AddressIsValid(ProgramCounter))
+                throw new InvalidPCAssignmentException(ProgramCounter, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
+            _pc += size;
+            _logicalPc += size;
             if (_sectionCollection.SectionSelected)
                 _sectionCollection.SetOutputCount(_pc - _sectionCollection.SelectedStartAddress);
         }
@@ -520,7 +522,7 @@ namespace Core6502DotNet
         /// <param name="value">The value to initialize memory.</param>
         public void InitMemory(byte value)
         {
-            var i = ProgramCounter;
+            var i = !_compilingStarted ? ProgramCounter : ProgramEnd;
             while (i < 0x10000)
                 _bytes[i++] = value;
         }

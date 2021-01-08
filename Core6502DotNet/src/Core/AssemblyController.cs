@@ -68,7 +68,7 @@ namespace Core6502DotNet
                     else
                         cpu = src.Operands[0].Name.ToString().TrimOnce('"');
                 }
-            }
+            } 
             _services.CPU = cpu;
             _assemblers = new List<AssemblerBase>
                 {
@@ -191,18 +191,17 @@ namespace Core6502DotNet
                     var section = _services.Options.OutputSection;
                     if (!_services.Options.NoStats)
                     {
-                        
                         if (!string.IsNullOrEmpty(section))
                             Console.Write($"[{section}] ");
 
-                        Console.WriteLine($"{byteCount} bytes, {ts} sec.");
-                    }
-                    if (_services.Options.ShowChecksums)
-                        Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
-                    if (!_services.Options.NoStats)
-                    {
+                        if (!string.IsNullOrEmpty(_services.Options.Patch))
+                            Console.WriteLine($"{byteCount} (Offs:{_services.Options.Patch}), {ts} sec.");
+                        else
+                            Console.WriteLine($"{byteCount} bytes, {ts} sec.");
+                        if (_services.Options.ShowChecksums)
+                            Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
                         Console.WriteLine("*********************************");
-                        Console.WriteLine("Assembly completed successfully.");
+                        Console.Write("Assembly completed successfully.");
                     }
                 }
                 else
@@ -324,23 +323,44 @@ namespace Core6502DotNet
             var section = _services.Options.OutputSection;
             var outputFile = _services.Options.OutputFile;
             var objectCode = _services.Output.GetCompilation(section);
-
-            var formatProvider = _services.FormatSelector?.Invoke(_services.CPU, _services.OutputFormat);
-            if (formatProvider != null)
+            if (!string.IsNullOrEmpty(_services.Options.Patch))
             {
-                var startAddress = _services.Output.ProgramStart;
-                if (!string.IsNullOrEmpty(section))
-                    startAddress = _services.Output.GetSectionStart(section);
-                var format = _services.Options.CaseSensitive ?
-                             _services.OutputFormat :
-                             _services.OutputFormat.ToLower();
-                var info = new FormatInfo(outputFile, format, startAddress, objectCode);
-                File.WriteAllBytes(outputFile, formatProvider.GetFormat(info).ToArray());
+                try
+                {
+                    var offsetLine = new Preprocessor(_processorOptions).ProcessDefine("patch=" + _services.Options.Patch);
+                    var patchExp = offsetLine.Operands.GetIterator();
+                    var offset = _services.Evaluator.Evaluate(patchExp, 0, ushort.MaxValue);
+                    if (patchExp.Current != null || _services.PassNeeded)
+                        throw new Exception();
+                    var filePath = Preprocessor.GetFullPath(outputFile, _services.Options.IncludePath);
+                    var fileBytes = File.ReadAllBytes(filePath);
+                    Array.Copy(objectCode.ToArray(), 0, fileBytes, (int)offset, objectCode.Count);
+                    File.WriteAllBytes(filePath, fileBytes);
+                }
+                catch
+                {
+                    throw new Exception($"Cannot patch file \"{outputFile}\". One or more arguments is not valid.");
+                }
             }
             else
             {
-                File.WriteAllBytes(outputFile, objectCode.ToArray());
-            }
+                var formatProvider = _services.FormatSelector?.Invoke(_services.CPU, _services.OutputFormat);
+                if (formatProvider != null)
+                {
+                    var startAddress = _services.Output.ProgramStart;
+                    if (!string.IsNullOrEmpty(section))
+                        startAddress = _services.Output.GetSectionStart(section);
+                    var format = _services.Options.CaseSensitive ?
+                                 _services.OutputFormat :
+                                 _services.OutputFormat.ToLower();
+                    var info = new FormatInfo(outputFile, format, startAddress, objectCode);
+                    File.WriteAllBytes(outputFile, formatProvider.GetFormat(info).ToArray());
+                }
+                else
+                {
+                    File.WriteAllBytes(outputFile, objectCode.ToArray());
+                }
+            }   
             // write disassembly
             if (!string.IsNullOrEmpty(disassembly) && !string.IsNullOrEmpty(_services.Options.ListingFile))
                 File.WriteAllText(_services.Options.ListingFile, disassembly);
