@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -164,7 +164,7 @@ namespace Core6502DotNet.m680x
             return false;
         }
 
-        protected override bool IsCpuValid(string cpu)
+        public override bool IsCpuValid(string cpu)
             => cpu.Equals("m6800") || cpu.Equals("m6809");
 
         protected override void OnSetCpu()
@@ -224,10 +224,8 @@ namespace Core6502DotNet.m680x
             return base.GetInstructionSize(line);
         }
 
-        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        protected override string AssembleCpuInstruction(SourceLine line)
         {
-            Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
-            var line = lines.Current;
             if (Reserved.IsOneOf("PushPullsExchanges", line.Instruction.Name))
             {
                 try
@@ -243,14 +241,14 @@ namespace Core6502DotNet.m680x
             if (Reserved.IsOneOf("TransferDirectives", line.Instruction.Name))
                 return AssembleTransferDirectives(line);
             if (CPU.Equals("m6809") && line.Operands.Count > 1 &&
-                (line.Operands[^1].Name.Equals("]") ||
+                (line.Operands[^1].Name.Equals("]") || // we don't check if first is "[" because of possible forced width modifier.
                  line.Operands[^1].Name.Equals("+") ||
                  line.Operands[^1].Name.Equals("pc", Services.StringComparison) ||
                  _ixRegisterModes.ContainsKey(line.Operands[^1].Name)))
             {
                 return AssembleIndexed(line);
             }
-            return base.OnAssemble(lines);
+            return base.AssembleCpuInstruction(line);
         }
 
         string AssembleTransferDirectives(SourceLine line)

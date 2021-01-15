@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -305,7 +305,6 @@ namespace Core6502DotNet.m65xx
             { ("bvc", Modes.RelativeAbs ), new CpuInstruction( "65CE02",  0x53, 3) },
             { ("asr", Modes.ZeroPageX   ), new CpuInstruction( "65CE02",  0x54, 2) },
             { ("tab", Modes.Implied     ), new CpuInstruction( "65CE02",  0x5b) },
-            { ("map", Modes.Implied     ), new CpuInstruction( "65CE02",  0x5c) },
             { ("rts", Modes.Immediate   ), new CpuInstruction( "65Ce02",  0x62, 2) },
             { ("rtn", Modes.Implied     ), new CpuInstruction( "65CE02",  0x63) },
             { ("bsr", Modes.Absolute    ), new CpuInstruction( "65CE02",  0x63, 3) },
@@ -342,6 +341,95 @@ namespace Core6502DotNet.m65xx
             { ("phw", Modes.ImmAbs      ), new CpuInstruction( "65CE02",  0xf4, 3) },
             { ("plz", Modes.Implied     ), new CpuInstruction( "65CE02",  0xfb) },
             { ("phw", Modes.Absolute    ), new CpuInstruction( "65CE02",  0xfc, 3) }
+        };
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes45GS02 =
+            new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
+        {
+            { ("map", Modes.Implied     ), new CpuInstruction( "45GS02",    0x5c) },
+            { ("eom", Modes.Implied     ), new CpuInstruction( "45GS02",    0xea) }
+        };
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodesm65 =
+            new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
+        {
+            { ("ora",  Modes.DirZ       ), new CpuInstruction( "m65",  0x12ea,     3) },
+            { ("and",  Modes.DirZ       ), new CpuInstruction( "m65",  0x32ea,     3) },
+            { ("eor",  Modes.DirZ       ), new CpuInstruction( "m65",  0x52ea,     3) },
+            { ("adc",  Modes.DirZ       ), new CpuInstruction( "m65",  0x72ea,     3) },
+            { ("sta",  Modes.DirZ       ), new CpuInstruction( "m65",  0x92ea,     3) },
+            { ("lda",  Modes.DirZ       ), new CpuInstruction( "m65",  0xb2ea,     3) },
+            { ("cmp",  Modes.DirZ       ), new CpuInstruction( "m65",  0xd2ea,     3) },
+            { ("sbc",  Modes.DirZ       ), new CpuInstruction( "m65",  0xf2ea,     3) },
+            { ("orq",  Modes.ZeroPage   ), new CpuInstruction( "m65",  0x054242,   4) },
+            { ("aslq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x064242,   4) },
+            { ("aslq", Modes.Implied    ), new CpuInstruction( "m65",  0x0a4242,   3) },
+            { ("orq",  Modes.Absolute   ), new CpuInstruction( "m65",  0x0d4242,   5) },
+            { ("aslq", Modes.Absolute   ), new CpuInstruction( "m65",  0x0f4242,   5) },
+            { ("orq",  Modes.IndZp      ), new CpuInstruction( "m65",  0x124242,   4) },
+            { ("aslq", Modes.ZeroPageX  ), new CpuInstruction( "m65",  0x164242,   4) },
+            { ("inq",  Modes.Implied    ), new CpuInstruction( "m65",  0x1a4242,   3) },
+            { ("aslq", Modes.AbsoluteX  ), new CpuInstruction( "m65",  0x1e4242,   5) },
+            { ("bitq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x244242,   4) },
+            { ("andq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x254242,   4) },
+            { ("rolq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x264242,   4) },
+            { ("rolq", Modes.Implied    ), new CpuInstruction( "m65",  0x2a4242,   3) },
+            { ("bitq", Modes.Absolute   ), new CpuInstruction( "m65",  0x2c4242,   5) },
+            { ("andq", Modes.Absolute   ), new CpuInstruction( "m65",  0x2d4242,   5) },
+            { ("rolq", Modes.Absolute   ), new CpuInstruction( "m65",  0x2e4242,   5) },
+            { ("andq", Modes.IndZp      ), new CpuInstruction( "m65",  0x324242,   4) },
+            { ("deq",  Modes.Implied    ), new CpuInstruction( "m65",  0x3a4242,   3) },
+            { ("rolq", Modes.AbsoluteX  ), new CpuInstruction( "m65",  0x3e4242,   5) },
+            { ("asrq", Modes.Implied    ), new CpuInstruction( "m65",  0x434242,   3) },
+            { ("asrq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x444242,   4) },
+            { ("eorq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x454242,   4) },
+            { ("lsrq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x464242,   4) },
+            { ("lsrq", Modes.Implied    ), new CpuInstruction( "m65",  0x4a4242,   3) },
+            { ("eorq", Modes.Absolute   ), new CpuInstruction( "m65",  0x4d4242,   5) },
+            { ("lsrq", Modes.Absolute   ), new CpuInstruction( "m65",  0x4e4242,   5) },
+            { ("eorq", Modes.IndZp      ), new CpuInstruction( "m65",  0x524242,   4) },
+            { ("asrq", Modes.ZeroPageX  ), new CpuInstruction( "m65",  0x544242,   4) },
+            { ("lsrq", Modes.ZeroPageX  ), new CpuInstruction( "m65",  0x564242,   4) },
+            { ("lsrq", Modes.AbsoluteX  ), new CpuInstruction( "m65",  0x5e4242,   5) },
+            { ("adcq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x654242,   4) },
+            { ("rorq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0x664242,   4) },
+            { ("rorq", Modes.Implied    ), new CpuInstruction( "m65",  0x6a4242,   3) },
+            { ("adcq", Modes.Absolute   ), new CpuInstruction( "m65",  0x6d4242,   5) },
+            { ("rorq", Modes.Absolute   ), new CpuInstruction( "m65",  0x6e4242,   5) },
+            { ("adcq", Modes.IndZp      ), new CpuInstruction( "m65",  0x724242,   4) },
+            { ("rorq", Modes.ZeroPageX  ), new CpuInstruction( "m65",  0x764242,   4) },
+            { ("rorq", Modes.AbsoluteX  ), new CpuInstruction( "m65",  0x7e4242,   5) },
+            { ("stq",  Modes.ZeroPage   ), new CpuInstruction( "m65",  0x854242,   4) },
+            { ("stq",  Modes.Absolute   ), new CpuInstruction( "m65",  0x8d4242,   5) },
+            { ("stq",  Modes.IndZp      ), new CpuInstruction( "m65",  0x924242,   4) },
+            { ("ldq",  Modes.ZeroPage   ), new CpuInstruction( "m65",  0xa54242,   4) },
+            { ("ldq",  Modes.Absolute   ), new CpuInstruction( "m65",  0xad4242,   5) },
+            { ("ldq",  Modes.IndY       ), new CpuInstruction( "m65",  0xb14242,   4) },
+            { ("ldq",  Modes.IndZp      ), new CpuInstruction( "m65",  0xb24242,   4) },
+            { ("ldq",  Modes.ZeroPageX  ), new CpuInstruction( "m65",  0xb54242,   4) },
+            { ("ldq",  Modes.AbsoluteY  ), new CpuInstruction( "m65",  0xb94242,   5) },
+            { ("ldq",  Modes.AbsoluteX  ), new CpuInstruction( "m65",  0xbd4242,   5) },
+            { ("cpq",  Modes.ZeroPage   ), new CpuInstruction( "m65",  0xc54242,   4) },
+            { ("deq",  Modes.ZeroPage   ), new CpuInstruction( "m65",  0xc64242,   4) },
+            { ("cpq",  Modes.Absolute   ), new CpuInstruction( "m65",  0xcd4242,   5) },
+            { ("deq",  Modes.Absolute   ), new CpuInstruction( "m65",  0xce4242,   5) },
+            { ("cpq",  Modes.IndZp      ), new CpuInstruction( "m65",  0xd24242,   4) },
+            { ("deq",  Modes.ZeroPageX  ), new CpuInstruction( "m65",  0xd64242,   4) },
+            { ("deq",  Modes.AbsoluteX  ), new CpuInstruction( "m65",  0xde4242,   5) },
+            { ("ldq",  Modes.IndS       ), new CpuInstruction( "m65",  0xe24242,   4) },
+            { ("sbcq", Modes.ZeroPage   ), new CpuInstruction( "m65",  0xe54242,   4) },
+            { ("inq",  Modes.ZeroPage   ), new CpuInstruction( "m65",  0xe64242,   4) },
+            { ("sbcq", Modes.Absolute   ), new CpuInstruction( "m65",  0xed4242,   5) },
+            { ("inq",  Modes.Absolute   ), new CpuInstruction( "m65",  0xee4242,   5) },
+            { ("sbcq", Modes.IndZp      ), new CpuInstruction( "m65",  0xf24242,   4) },
+            { ("inq",  Modes.ZeroPageX  ), new CpuInstruction( "m65",  0xf64242,   4) },
+            { ("inq",  Modes.AbsoluteX  ), new CpuInstruction( "m65",  0xfe4242,   5) },
+            { ("orq",  Modes.Dir        ), new CpuInstruction( "m65",  0x12ea4242, 5) },
+            { ("andq", Modes.Dir        ), new CpuInstruction( "m65",  0x32ea4242, 5) },
+            { ("eorq", Modes.Dir        ), new CpuInstruction( "m65",  0x52ea4242, 5) },
+            { ("adcq", Modes.Dir        ), new CpuInstruction( "m65",  0x72ea4242, 5) },
+            { ("stq",  Modes.Dir        ), new CpuInstruction( "m65",  0x92ea4242, 5) },
+            { ("ldq",  Modes.Dir        ), new CpuInstruction( "m65",  0xb2ea4242, 5) },
+            { ("cpq",  Modes.Dir        ), new CpuInstruction( "m65",  0xd2ea4242, 5) },
+            { ("sbcq", Modes.Dir        ), new CpuInstruction( "m65",  0xf2ea4242, 5) }
         };
         static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodes65816 = 
             new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
@@ -530,6 +618,8 @@ namespace Core6502DotNet.m65xx
             "HuC6280",
             "R65C02",
             "65CE02",
+            "45GS02",
+            "m65",
             "65816",
             "65CS02"
         };

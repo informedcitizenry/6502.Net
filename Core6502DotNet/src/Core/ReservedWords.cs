@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 

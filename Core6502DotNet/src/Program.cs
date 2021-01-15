@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -27,12 +27,13 @@ namespace Core6502DotNet
             }
         }
 
-        static AssemblerBase SetCpu(string cpu, AssemblyServices services)
+        static CpuAssembler SetCpu(string cpu, AssemblyServices services)
         {
             return cpu switch
             {
                 "m6800" => new M6809Asm(services),
                 "m6809" => new M6809Asm(services),
+                "i8080" => new Z80Asm(services),
                 "z80"   => new Z80Asm(services),
                 _       => new Asm6502(services)
             };
@@ -40,6 +41,9 @@ namespace Core6502DotNet
 
         static IBinaryFormatProvider SelectFormatProvider(string cpu, string format)
         {
+            if (format.Equals("flat"))
+                return null;
+
             if (format.Equals("srec") || format.Equals("srecmos"))
                 return new SRecordFormatProvider();
 
@@ -48,19 +52,19 @@ namespace Core6502DotNet
 
             if (format.Equals("bytesource"))
                 return new ByteSourceFormatProvider();
-            
-            if (cpu.Equals("z80"))
-                return new Z80FormatProvider();
 
-            if (cpu.StartsWith('m'))
-                return new MotorolaFormatProvider();
-
-            return format switch
+            return cpu switch
             {
-                "cart" => new C64CartFormatProvider(),
-                "d64"  => new D64FormatProvider(),
-                "t64"  => new T64FormatProvider(),
-                _      => new M6502FormatProvider(),
+                "i8080" => null,
+                "z80"   => new Z80FormatProvider(),
+                "m68"   => new MotorolaFormatProvider(),
+                _       => format switch
+                {
+                    "cart" => new C64CartFormatProvider(),
+                    "d64"  => new D64FormatProvider(),
+                    "t64"  => new T64FormatProvider(),
+                    _      => new M6502FormatProvider()
+                }
             };
         }
     }

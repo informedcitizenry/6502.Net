@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -892,6 +892,11 @@ namespace Core6502DotNet
             return ProcessFromStream(fileName, 0, sr);
         }
 
+        /// <summary>
+        /// Process a source up to the first recognized directive.
+        /// </summary>
+        /// <param name="fileName">The source file name.</param>
+        /// <returns>A parsed <see cref="SourceLine"/> record.</returns>
         public SourceLine ProcessToFirstDirective(string fileName)
         {
             using FileStream fs = File.OpenRead(GetFullPath(fileName, _options.IncludePath));

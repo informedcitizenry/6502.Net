@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -21,7 +21,7 @@ namespace Core6502DotNet
         /// <param name="iterator">The iterator to the tokenized expression.</param>
         /// <returns></returns>
         public static bool IsStringLiteral(RandomAccessIterator<Token> iterator)
-            => iterator.Current != null && iterator.Current.IsDoubleQuote() && Token.IsEnd(iterator.PeekNext());
+            => iterator.Current != null && iterator.Current.IsDoubleQuote() && iterator.Current.Name.Length > 2 && Token.IsEnd(iterator.PeekNext());
 
         /// <summary>
         /// Determines whether the tokenized expression is a string.
@@ -33,7 +33,7 @@ namespace Core6502DotNet
         {
             var token = iterator.Current;
             if (token.IsDoubleQuote())
-                return Token.IsEnd(iterator.PeekNext());
+                return token.Name.Length > 2 && Token.IsEnd(iterator.PeekNext());
             var ix = iterator.Index;
             var result = false;
             if (token.Type == TokenType.Function && 

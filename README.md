@@ -1,6 +1,8 @@
 ﻿6502.Net, A .Net-Based Cross-Assembler for Several 8-Bit Microprocessors.
 
-Version 2.4.3.6
+![example](https://github.com/informedcitizenry/6502.Net/blob/master/Core6502DotNet/docs/sample_code.png)
+
+Version 2.5.1
 
 ## Overview
 
@@ -15,7 +17,5 @@ label   mnemonic    operands
 ```
 
 Comments are either C/C++ style `/*`/`*/` for block comments, or `//` for line comments. For compatibillty purposes, semi-colons can also be used for line comments.
-
-![example](https://github.com/informedcitizenry/6502.Net/blob/master/Core6502DotNet/docs/sample_code.png)
 
 For full usage, please see the [wiki](https://github.com/informedcitizenry/6502.Net/wiki).

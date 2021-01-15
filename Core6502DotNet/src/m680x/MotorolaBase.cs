@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -15,7 +15,7 @@ namespace Core6502DotNet
      /// <summary>
     /// An assembler for Motorola m68xx and MOS 65xx-based CPUs. This class must be inherited.
     /// </summary>
-    public abstract class MotorolaBase : AssemblerBase
+    public abstract class MotorolaBase : CpuAssembler
     {
         #region Constants
 
@@ -77,6 +77,7 @@ namespace Core6502DotNet
             Dir          = ZeroPage     | DirectPage,
             DirAbs       = Absolute     | DirectPage,
             DirY         = Dir          | IndexedY,
+            DirZ         = Dir          | IndexedZ,
             DirIndMask   = Indirect     | DirectPage,
             RelativeAbs  = Relative     | Absolute,
             ThreeOpRel   = ThreeOperand | RelativeBit,
@@ -135,6 +136,7 @@ namespace Core6502DotNet
             { Modes.IndAbsX,        "(${0:x4},x)"               },
             { Modes.Dir,            "[${0:x2}]"                 },
             { Modes.DirY,           "[${0:x2}],y"               },
+            { Modes.DirZ,           "[${0:x2}],z"               },
             { Modes.DirAbs,         "[${0:x4}]"                 },
             { Modes.Zp0,            "0,${0:x2}"                 },
             { Modes.Zp1,            "1,${0:x2}"                 },
@@ -167,29 +169,12 @@ namespace Core6502DotNet
         public MotorolaBase(AssemblyServices services)
             :base(services)
         {
-            Reserved.DefineType("CPU", ".cpu");
             Reserved.DefineType("RelativeSecond");
             Reserved.DefineType("SwapOperands");
 
             Reserved.DefineType("DirectPage",
                 ".dp");
 
-            Evaluations = new double[]
-            {
-                double.NaN, double.NaN, double.NaN
-            };
-            if (!string.IsNullOrEmpty(Services.CPU))
-            {
-                CPU = Services.CPU;
-                if (!IsCpuValid(CPU))
-                    throw new Exception($"Invalid CPU \"{CPU}\" specified.");
-            }
-            else
-            {
-                CPU = string.Empty;
-            }
-            OnSetCpu();
-            Services.PassChanged += OnPassChanged;
             Page = 0;
         }
 
@@ -200,10 +185,11 @@ namespace Core6502DotNet
         /// <summary>
         /// Reset the state of the <see cref="MotorolaBase"/> assembler. This method must be inherited.
         /// </summary>
-        protected virtual void OnReset() => Page = 0;
-
-        void OnPassChanged(object sender, EventArgs args)
-            => OnReset();
+        protected override void OnReset()
+        {
+            base.OnReset();
+            Page = 0;
+        }
 
         /// <summary>
         /// Evaluate whether the given token with the total expression count
@@ -287,7 +273,6 @@ namespace Core6502DotNet
 
         (Modes mode, CpuInstruction instruction) GetModeInstruction(SourceLine line)
         {
-            Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
             var instruction = line.Instruction.Name.ToLower();
             var mnemmode = (Mnem: instruction, Mode: ParseOperand(line));
             if (SupportsDirectPage && Page > 0 &&
@@ -323,18 +308,6 @@ namespace Core6502DotNet
             return (mnemmode.Mode, foundInstruction);
         }
 
-        /// <summary>
-        /// Actions to perform when the CPU is set. This method must be inherited.
-        /// </summary>
-        protected abstract void OnSetCpu();
-
-        /// <summary>
-        /// Determines whether the CPU selected is valid. This method must be inherited.
-        /// </summary>
-        /// <param name="cpu">The CPU name.</param>
-        /// <returns><c>true</c> if the CPU is valid, <c>false</c> otherwise.</returns>
-        protected abstract bool IsCpuValid(string cpu);
-
         internal override int GetInstructionSize(SourceLine line)
         {
             if (Reserved.IsOneOf("CPU", line.Instruction.Name) ||
@@ -350,22 +323,8 @@ namespace Core6502DotNet
             }
         }
 
-        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        protected override string AssembleCpuInstruction(SourceLine line)
         {
-            var line = lines.Current;
-            if (Reserved.IsOneOf("CPU", line.Instruction.Name))
-            {
-                var iterator = line.Operands.GetIterator();
-                if (!iterator.MoveNext() || !iterator.Current.IsDoubleQuote() || iterator.PeekNext() != null)
-                    Services.Log.LogEntry(line.Instruction,
-                        "String expression expected.");
-                else
-                {
-                    CPU = iterator.Current.Name.ToString().TrimOnce('"');
-                    OnSetCpu();
-                }
-                return string.Empty;
-            }
             if (Reserved.IsOneOf("DirectPage", line.Instruction.Name))
             {
                 if (!SupportsDirectPage)
@@ -564,16 +523,6 @@ namespace Core6502DotNet
         /// current state.
         /// </summary>
         protected abstract bool SupportsDirectPage { get; }
-
-        /// <summary>
-        /// Gets the CPU.
-        /// </summary>
-        protected string CPU { get; private set; }
-
-        /// <summary>
-        /// Gets the individual evaluations in the expression.
-        /// </summary>
-        protected double[] Evaluations { get; }
 
         /// <summary>
         /// Gets or sets the current page for direct page operations.

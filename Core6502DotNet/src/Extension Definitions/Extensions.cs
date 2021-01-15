@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -150,6 +150,19 @@ namespace Core6502DotNet
             if (value > UInt24.MaxValue || value < Int24.MinValue) return 4;
             if (value > ushort.MaxValue || value < short.MinValue) return 3;
             if (value > byte.MaxValue   || value < sbyte.MinValue) return 2;
+            return 1;
+        }
+
+        /// <summary>
+        /// The minimum size required in bytes to store this value.
+        /// </summary>
+        /// <param name="value">The value to store.</param>
+        /// <returns>The size in bytes.</returns>
+        public static int Size(this uint value)
+        {
+            if (value > UInt24.MaxValue) return 4;
+            if (value > ushort.MaxValue) return 3;
+            if (value > byte.MaxValue)   return 2;
             return 1;
         }
     }

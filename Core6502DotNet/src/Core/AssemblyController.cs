@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -34,11 +34,11 @@ namespace Core6502DotNet
         /// the assembly process.
         /// </summary>
         /// <param name="args">The commandline arguments.</param>
-        /// <param name="cpuSetHandler">The CPU change handler.</param>
+        /// <param name="cpuSetHandler">The <see cref="CpuAssembler"/> selection handler.</param>
         /// <param name="formatSelector">The format selector.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public AssemblyController(IEnumerable<string> args,
-                                  Func<string, AssemblyServices, AssemblerBase> cpuSetHandler,
+                                  Func<string, AssemblyServices, CpuAssembler> cpuSetHandler,
                                   Func<string, string, IBinaryFormatProvider> formatSelector)
         {
             if (args == null || cpuSetHandler == null || formatSelector == null)
@@ -56,7 +56,10 @@ namespace Core6502DotNet
                 WarnOnLabelLeft     = _services.Options.WarnLeft,
                 InstructionLookup   = symbol => _services.InstructionLookupRules.Any(ilr => ilr(symbol))
             };
+            CpuAssembler cpuAssembler = null;
             var cpu = _services.Options.CPU;
+            if (!string.IsNullOrEmpty(cpu))
+                cpuAssembler = cpuSetHandler(cpu, _services);
             if (_services.Options.InputFiles.Count > 0)
             {
                 var src = new Preprocessor(_processorOptions).ProcessToFirstDirective(_services.Options.InputFiles[0]);
@@ -70,17 +73,26 @@ namespace Core6502DotNet
                 }
             } 
             _services.CPU = cpu;
-            _assemblers = new List<AssemblerBase>
+            if (!string.IsNullOrEmpty(cpu) && cpuAssembler != null && !cpuAssembler.IsCpuValid(cpu))
+            {
+                _services.Log.LogEntrySimple($"Invalid CPU \"{cpu}\" specified.");
+            }
+            else
+            {
+                if (cpuAssembler == null)
+                    cpuAssembler = cpuSetHandler(cpu, _services);
+                _assemblers = new List<AssemblerBase>
                 {
                     new AssignmentAssembler(_services),
                     new BlockAssembler(_services),
                     new EncodingAssembler(_services),
                     new PseudoAssembler(_services),
                     new MiscAssembler(_services),
-                    cpuSetHandler(cpu, _services)
+                    cpuAssembler
                 };
-            _processorOptions.IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol));
-            _processorOptions.LineTerminates = _services.LineTerminates;
+                _processorOptions.IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol));
+                _processorOptions.LineTerminates = _services.LineTerminates;
+            }
         }
 
         #endregion
@@ -251,6 +263,10 @@ namespace Core6502DotNet
                                 _services.Log.LogEntry(line, synEx.Position, synEx.Message);
                             else
                                 _services.Log.LogEntrySimple(synEx.Message);
+                        }
+                        else if (ex is InvalidCpuException cpuEx)
+                        {
+                            _services.Log.LogEntry(line, line.Instruction.Position, cpuEx.Message);
                         }
                         else if (ex is FormatException ||
                                  ex is ReturnException ||

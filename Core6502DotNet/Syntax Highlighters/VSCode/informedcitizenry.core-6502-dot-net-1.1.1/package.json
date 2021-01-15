@@ -24,6 +24,12 @@
 				"configuration": "./language-configuration.json"
 			},
 			{
+				"id": "core6502_net_i8080",
+				"aliases": [ "Core 6502.Net (i8080)", "core6502_net_i8080" ],
+				"extensions": [ "asm", ".i80", ".s" ],
+				"configuration": "./language-configuration.json"
+			},
+			{
 				"id": "core6502_net_z80",
 				"aliases": [ "Core 6502.Net (Z80)", "core6502_net_z80" ],
 				"extensions": [ "asm", ".z80", ".s" ],
@@ -40,6 +46,11 @@
 				"language": "core6502_net_m680x",
 				"scopeName": "source.core6502_net_m680x",
 				"path": "./syntaxes/core-6502-dot-net_m680x.tmLanguage.json"
+			},
+			{
+				"language": "core6502_net_i8080",
+				"scopeName": "source.core6502_net_i8080",
+				"path": "./syntaxes/core-6502-dot-net_i8080.tmLanguage.json"
 			},
 			{
 				"language": "core6502_net_z80",

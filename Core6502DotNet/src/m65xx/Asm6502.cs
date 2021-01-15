@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -101,7 +101,10 @@ namespace Core6502DotNet.m65xx
                     "ldz", "lsr", "neg", "ora", "pea", "pei", "phw", "rla", 
                     "rol", "ror", "row", "rra", "sax", "sbc", "sha", "shx", 
                     "shy", "slo", "sre", "st1", "st2", "sta", "stx", "sty", 
-                    "stz", "tam", "tas", "tma", "top", "trb", "tsb", "tst"
+                    "stz", "tam", "tas", "tma", "top", "trb", "tsb", "tst",
+                    "adcq", "aslq", "andq", "cpq", "deq", "eom", "eorq",
+                    "inq", "ldq", "lsrq", "orq", "rolq", "rorq", "sbcq",
+                    "stq"
                 );
 
             // set architecture specific encodings
@@ -240,12 +243,21 @@ namespace Core6502DotNet.m65xx
                                                 .Concat(s_opcodesHuC6280)
                                                 .ToDictionary(k => k.Key, k => k.Value);
                     break;
+                case "45GS02":
+                case "m65":
                 case "65CE02":
                     ActiveInstructions = s_opcodes6502.Where(o => (o.Value.Opcode & 0x1f) != 0x10) // exclude 6502 branch instructions
                                                     .Concat(s_opcodes65C02.Where(o => o.Value.Opcode != 0x80 && (o.Value.Opcode & 0x0f) != 0x02))
                                                     .Concat(s_opcodesR65C02)
                                                     .Concat(s_opcodes65CE02)
                                                     .ToDictionary(k => k.Key, k => k.Value);
+                    if (CPU[0] == '4')
+                        ActiveInstructions = ActiveInstructions.Concat(s_opcodes45GS02).ToDictionary(k => k.Key, k => k.Value);
+                    else if (CPU[0] != '6')
+                        ActiveInstructions = ActiveInstructions.Where(o => !o.Key.Mnem.Equals("nop"))
+                                                               .Concat(s_opcodes45GS02)
+                                                               .Concat(s_opcodesm65)
+                                                               .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "R65C02":
                     ActiveInstructions = s_opcodes6502.Concat(s_opcodes65C02)
@@ -608,9 +620,8 @@ namespace Core6502DotNet.m65xx
             return base.GetInstructionSize(line);
         }
 
-        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        protected override string AssembleCpuInstruction(SourceLine line)
         {
-            var line = lines.Current;
             var instruction = line.Instruction.Name;
             if (Reserved.IsOneOf("LongShort", instruction))
                 return AssembleLongShort(line);
@@ -630,10 +641,10 @@ namespace Core6502DotNet.m65xx
                     SetImmediate(size, 'y');
                 }
             }
-            return base.OnAssemble(lines);
+            return base.AssembleCpuInstruction(line);
         }
 
-        protected override bool IsCpuValid(string cpu) => SupportedCPUs.Contains(cpu);
+        public override bool IsCpuValid(string cpu) => SupportedCPUs.Contains(cpu);
 
         public override bool Assembles(StringView s) => IsReserved(s) && !Reserved.IsOneOf("Registers", s);
 

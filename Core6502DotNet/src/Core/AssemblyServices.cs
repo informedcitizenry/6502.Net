@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -66,6 +66,8 @@ namespace Core6502DotNet
                 var symbol = SymbolManager.GetSymbol(token, CurrentPass > 0);
                 if (symbol == null)
                 {
+                    if (token.Line.Label != null && token.Line.Label.Name.Equals(token.Name, StringViewComparer))
+                        throw new SymbolException(token, SymbolException.ExceptionReason.NotDefined);
                     PassNeeded = true;
                     return 0x100;
                 }

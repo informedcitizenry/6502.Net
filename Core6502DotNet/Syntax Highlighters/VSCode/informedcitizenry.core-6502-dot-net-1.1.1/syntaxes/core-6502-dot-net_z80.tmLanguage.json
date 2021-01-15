@@ -37,7 +37,7 @@
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_z80",
-          "match": "(?i)\\b(adc|add|and|bit|call|ccf|cp|cpd|cpdr|cpi|cpir|cpl|daa|dec|di|djnz|ei|ex|exx|halt|im|in|inc|ind|indr|ini|inir|jp|jr|ld|ldd|lddr|ldi|ldir|neg|nop|or|otdr|otir|out|outd|outi|pop|push|res|ret|reti|retn|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|rst|sbc|scf|set|sla|sra|srl|sub|xor)\\b"
+          "match": "(?i)\\b(adc|add|and|bit|call|ccf|cp|cpd|cpdr|cpi|cpir|cpl|daa|dec|di|djnz|ei|ex|exx|halt|im|in|inc|ind|indr|ini|inir|jp|jr|ld|ldd|lddr|ldi|ldir|neg|nop|or|otdr|otir|out|outd|outi|pop|push|res|ret|reti|retn|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|rst|sbc|scf|set|sla|sll|sra|srl|sub|xor)\\b"
         },
         {
           "name": "keyword.other.macro.core6502_net_z80",
@@ -130,7 +130,7 @@
       "patterns": [
         {
           "name": "keyword.register.core6502_net_z80",
-          "match": "(?i)\\b(a|af|b|bc|c|d|de|e|h|hl|i|ix|ixh|ixl|iy|iyh|iyl|r|sp)\\b"
+          "match": "(?i)\\b(a|af|b|bc|c|d|de|e|h|hl|i|ix|ixh|ixl|iy|iyh|iyl|l|m|nc|nz|p|pe|po|r|sp|z)\\b"
         }
       ]
     }

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -15,7 +15,7 @@ namespace Core6502DotNet.z80
     /// <summary>
     /// A class responsible for assembling Z80 source.
     /// </summary>
-    public sealed partial class Z80Asm : AssemblerBase
+    public sealed partial class Z80Asm : CpuAssembler
     {
         /// <summary>
         /// Creates a new instance of the Z80 assembler.
@@ -30,12 +30,22 @@ namespace Core6502DotNet.z80
                     "inc", "ind", "indr", "ini", "inir", "ld", "ldd", "lddr",
                     "ldi", "ldir", "neg", "nop", "otdr", "otir", "out", "outd",
                     "outi", "pop", "push", "reti", "retn", "rl", "rla", "rlc",
-                    "rlca", "rld", "rr", "rra", "rrc", "rrca", "rrd", "rst",
-                    "sbc", "scf", "sla", "sll", "slr", "sra", "srl", "xor"
+                    "rlca", "rld", "rr", "rra", "rrc", "rrca", "rrd", "sbc", 
+                    "scf", "sla", "sll", "slr", "sra", "srl", "xor"
                 );
 
+            Reserved.DefineType("i80Mnemonics",
+                     "aci", "adi", "ana", "ani", "cc", "cm", "cma", "cmc",
+                    "cmp", "cnc", "cnz", "cpe", "cpo", "cz", "dad", "dcr",
+                    "dcx", "hlt", "inr", "inx", "jc", "jm", "jmp", "jnc",
+                    "jnz", "jpe", "jpo", "jz", "lda", "ldax", "lhld", "lxi",
+                    "mov", "mvi", "ora", "ori", "pchl", "ral", "rar", "rc",
+                    "rm", "rnc", "rnz", "rp", "rpe", "rpo", "rz", "sbb",
+                    "sbi", "shld", "sphl", "sta", "stax", "stc", "sui", "xchg",
+                    "xra", "xri", "xthl");
+
             Reserved.DefineType("Bits",
-                    "bit", "res", "set"
+                   "im", "rst",  "bit", "res", "set"
                 );
 
             Reserved.DefineType("Shifts",
@@ -47,10 +57,6 @@ namespace Core6502DotNet.z80
                     "and", "cp", "or", "sub", "xor"
                 );
 
-            Reserved.DefineType("Interrupt",
-                    "im"
-                );
-
             Reserved.DefineType("Branches",
                     "call", "jp", "jr", "ret"
                 );
@@ -59,49 +65,62 @@ namespace Core6502DotNet.z80
                     "djnz", "jr"
                 );
 
-            Reserved.DefineType("Directives",
-                ".cpu");
-
-            _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
+            if (CPU.Equals("z80"))
             {
-                { "a",   Z80Mode.A         },
-                { "af",  Z80Mode.AF        },
-                { "af'", Z80Mode.ShadowAF  },
-                { "b",   Z80Mode.B         },
-                { "bc",  Z80Mode.BC        },
-                { "c",   Z80Mode.C         },
-                { "d",   Z80Mode.D         },
-                { "de",  Z80Mode.DE        },
-                { "e",   Z80Mode.E         },
-                { "h",   Z80Mode.H         },
-                { "hl",  Z80Mode.HL        },
-                { "i",   Z80Mode.I         },
-                { "ix",  Z80Mode.IX        },
-                { "ixh", Z80Mode.XH        },
-                { "ixl", Z80Mode.XL        },
-                { "iy",  Z80Mode.IY        },
-                { "iyh", Z80Mode.YH        },
-                { "iyl", Z80Mode.YL        },
-                { "l",   Z80Mode.L         },
-                { "m",   Z80Mode.M         },
-                { "nc",  Z80Mode.NC        },
-                { "nz",  Z80Mode.NZ        },
-                { "p",   Z80Mode.P         },
-                { "pe",  Z80Mode.PE        },
-                { "po",  Z80Mode.PO        },
-                { "r",   Z80Mode.R         },
-                { "sp",  Z80Mode.SP        },
-                { "z",   Z80Mode.Z         }
-            };
-
+                _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
+                {
+                    { "a",   Z80Mode.A         },
+                    { "af",  Z80Mode.AF        },
+                    { "af'", Z80Mode.ShadowAF  },
+                    { "b",   Z80Mode.B         },
+                    { "bc",  Z80Mode.BC        },
+                    { "c",   Z80Mode.C         },
+                    { "d",   Z80Mode.D         },
+                    { "de",  Z80Mode.DE        },
+                    { "e",   Z80Mode.E         },
+                    { "h",   Z80Mode.H         },
+                    { "hl",  Z80Mode.HL        },
+                    { "i",   Z80Mode.I         },
+                    { "ix",  Z80Mode.IX        },
+                    { "ixh", Z80Mode.XH        },
+                    { "ixl", Z80Mode.XL        },
+                    { "iy",  Z80Mode.IY        },
+                    { "iyh", Z80Mode.YH        },
+                    { "iyl", Z80Mode.YL        },
+                    { "l",   Z80Mode.L         },
+                    { "m",   Z80Mode.M         },
+                    { "nc",  Z80Mode.NC        },
+                    { "nz",  Z80Mode.NZ        },
+                    { "p",   Z80Mode.P         },
+                    { "pe",  Z80Mode.PE        },
+                    { "po",  Z80Mode.PO        },
+                    { "r",   Z80Mode.R         },
+                    { "sp",  Z80Mode.SP        },
+                    { "z",   Z80Mode.Z         }
+                };
+            }
+            else
+            {
+                _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
+                {
+                    { "a",   Z80Mode.A         },
+                    { "b",   Z80Mode.B         },
+                    { "c",   Z80Mode.C         },
+                    { "d",   Z80Mode.D         },
+                    { "e",   Z80Mode.E         },
+                    { "h",   Z80Mode.H         },
+                    { "l",   Z80Mode.L         },
+                    { "m",   Z80Mode.M         },
+                    { "psw", Z80Mode.PSW       }
+                };
+            }
             Services.SymbolManager.AddValidSymbolNameCriterion(s => !_namedModes.ContainsKey(s));
-            _evals = new double[3];
         }
 
         Z80Mode GetValueMode(RandomAccessIterator<Token> tokens, bool doNotAdavance, double minValue, double maxValue, int i)
         {
             var value = Services.Evaluator.Evaluate(tokens, doNotAdavance, minValue, maxValue);
-            _evals[i] = value;
+            Evaluations[i] = value;
             if (value < sbyte.MinValue || value > byte.MaxValue)
                 return Z80Mode.Extended;
             return Z80Mode.PageZero;
@@ -109,7 +128,6 @@ namespace Core6502DotNet.z80
 
         Z80Mode[] ParseExpressionToModes(SourceLine line)
         {
-            _evals[0] = _evals[1] = _evals[2] = double.NaN;
             var modes = new Z80Mode[3];
             var operands = line.Operands.GetIterator();
             Token operand;
@@ -121,15 +139,15 @@ namespace Core6502DotNet.z80
                     throw new SyntaxException(operand, "Expression expected.");
                 while (!Token.IsEnd(operand))
                 {
-                    if (line.Instruction.Name.Equals("rst", Services.StringComparison))
+                    if (line.Instruction.Name.Equals("rst", Services.StringComparison) && CPU.Equals("z80"))
                     {
                         var rst = Services.Evaluator.Evaluate(operands, false, 0, 0x38);
-                        if (!rst.IsInteger() && (rst != 0 || ((int)rst & 8) != 8))
+                        if (!rst.IsInteger() || (rst != 0 && (int)rst % 8 != 0))
                             throw new IllegalQuantityException(operand, rst);
                         mode |= (Z80Mode)(rst / 8) | Z80Mode.BitOp;
                         operand = operands.Current;
                     }
-                    else if ((Reserved.IsOneOf("Bits", line.Instruction.Name) && i == 0))
+                    else if (Reserved.IsOneOf("Bits", line.Instruction.Name) && i == 0)
                     {
                         mode = (Z80Mode)Services.Evaluator.Evaluate(operands, false, 0, 7) | Z80Mode.BitOp;
                         operand = operands.Current;
@@ -152,9 +170,9 @@ namespace Core6502DotNet.z80
                                 mode |= Z80Mode.Indexed;
                                 var sign = operand.Name.Equals("+") ? 1 : -1;
                                 mode |= GetValueMode(operands, true, 0, byte.MaxValue, i);
-                                _evals[i] *= sign;
-                                if (_evals[i] < sbyte.MinValue)
-                                    throw new IllegalQuantityException(operand, _evals[i]);
+                                Evaluations[i] *= sign;
+                                if (Evaluations[i] < sbyte.MinValue)
+                                    throw new IllegalQuantityException(operand, Evaluations[i]);
                             }
                         }
                         else if (line.Instruction.Name.Equals("out", Services.StringComparison) && i == 1)
@@ -201,8 +219,8 @@ namespace Core6502DotNet.z80
             var modes = ParseExpressionToModes(line);
             var instruction = Services.Options.CaseSensitive ? line.Instruction.Name.ToString() : line.Instruction.Name.ToLower();
             var mnemMode = (instruction, modes[0], modes[1], modes[2]);
-            if (s_z80Instructions.ContainsKey(mnemMode))
-                return (modes, s_z80Instructions[mnemMode]);
+            if (_instructionSet.ContainsKey(mnemMode))
+                return (modes, _instructionSet[mnemMode]);
             var modesCopy = modes.ToArray();
             // check first if we need to "extend" ZP expressions
             if (modes.Any(m => (m & Z80Mode.SizeMask) == Z80Mode.PageZero))
@@ -214,8 +232,8 @@ namespace Core6502DotNet.z80
                     return m;
                 }).ToArray();
                 mnemMode = (instruction, modes[0], modes[1], modes[2]);
-                if (s_z80Instructions.ContainsKey(mnemMode))
-                    return (modes, s_z80Instructions[mnemMode]);
+                if (_instructionSet.ContainsKey(mnemMode))
+                    return (modes, _instructionSet[mnemMode]);
             }
             modes = modesCopy.ToArray();
             // check for any "false indirect" expressions e.g., ld (hl),($30)
@@ -223,13 +241,13 @@ namespace Core6502DotNet.z80
             {
                 for (var i = 0; i < 3; i++)
                 {
-                    if (modes[i].HasFlag(Z80Mode.Indirect) && !double.IsNaN(_evals[i]) && modes[i] < Z80Mode.A)
+                    if (modes[i].HasFlag(Z80Mode.Indirect) && !double.IsNaN(Evaluations[i]) && modes[i] < Z80Mode.A)
                         modes[i] &= ~Z80Mode.Indirect;
 
                 }
                 mnemMode = (instruction, modes[0], modes[1], modes[2]);
-                if (s_z80Instructions.ContainsKey(mnemMode))
-                    return (modes, s_z80Instructions[mnemMode]);
+                if (_instructionSet.ContainsKey(mnemMode))
+                    return (modes, _instructionSet[mnemMode]);
             }
            
             return (null, default);
@@ -239,7 +257,7 @@ namespace Core6502DotNet.z80
         {
             try
             {
-                if (!Reserved.IsOneOf("Directives", line.Instruction.Name))
+                if (!Reserved.IsOneOf("CPU", line.Instruction.Name))
                     return GetModeAndInstruction(line).instruction.Size;
                 return 0;
             }
@@ -249,23 +267,27 @@ namespace Core6502DotNet.z80
             }
         }
 
-        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        protected override void OnSetCpu()
         {
-            var line = lines.Current;
-            if (Reserved.IsOneOf("Directives", line.Instruction.Name))
-            {
-                if (line.Operands.Count != 1 || (!line.Operands[0].Name.Equals("\"z80\"") && !line.Operands[0].Name.Equals("\"Z80\"")))
-                    Services.Log.LogEntry(line.Instruction,
-                        "Unsupported CPU.");
-                return string.Empty;
-            }
+            if (CPU.Equals("z80"))
+                _instructionSet = s_z80Instructions;
+            else
+                _instructionSet = s_i8080Instructions;
+        }
+
+        public override bool IsCpuValid(string cpu)
+            => cpu.Equals("z80") || cpu.Equals("i8080");
+
+        protected override string AssembleCpuInstruction(SourceLine line)
+        {
             var mnemMode = GetModeAndInstruction(line);
 
             if (!string.IsNullOrEmpty(mnemMode.instruction.CPU))
             {
                 var modes = mnemMode.modes;
                 var instruction = mnemMode.instruction;
-                var isCb00 = (instruction.Opcode & 0xFF00) == 0xCB00;
+                var isCb00 = (instruction.Opcode & 0xFF00) == 0xCB00 &&
+                    ((instruction.Opcode & 0xFF) == 0xDD || (instruction.Opcode & 0xFF) == 0xFD);
                 if ((instruction.Opcode & 0xFF) == 0xCB || isCb00)
                     Services.Output.Add(instruction.Opcode, 2);
                 else
@@ -274,19 +296,19 @@ namespace Core6502DotNet.z80
                 var displayEvals = new int[3];
                 for (var i = 0; i < 3; i++)
                 {
-                    if (!double.IsNaN(_evals[i]))
+                    if (!double.IsNaN(Evaluations[i]))
                     {
                         var modeSize = modes[i] & Z80Mode.SizeMask;
                         if (modeSize == Z80Mode.Extended)
-                            displayEvals[i] = (int)_evals[i] & 0xFFFF;
+                            displayEvals[i] = (int)Evaluations[i] & 0xFFFF;
                         else if (modeSize == Z80Mode.PageZero)
-                            displayEvals[i] = (int)_evals[i] & 0xFF;
+                            displayEvals[i] = (int)Evaluations[i] & 0xFF;
                         if (Reserved.IsOneOf("Relatives", line.Instruction.Name))
                         {
                             try
                             {
-                                _evals[i] = Convert.ToSByte(Services.Output.GetRelativeOffset((int)_evals[i], 1));
-                                Services.Output.Add(_evals[i], 1);
+                                Evaluations[i] = Convert.ToSByte(Services.Output.GetRelativeOffset((int)Evaluations[i], 1));
+                                Services.Output.Add(Evaluations[i], 1);
                             }
                             catch (OverflowException ex)
                             {
@@ -298,7 +320,7 @@ namespace Core6502DotNet.z80
                         }
                         else
                         {
-                            Services.Output.Add(_evals[i], modeSize == Z80Mode.PageZero ? 1 : 2);
+                            Services.Output.Add(Evaluations[i], modeSize == Z80Mode.PageZero ? 1 : 2);
                         }
                     }
                 }
@@ -327,14 +349,20 @@ namespace Core6502DotNet.z80
                         var asmBuilder = new StringBuilder($"{line.Instruction.Name.ToLower()} ");
                         for (var i = 0; i < 3; i++)
                         {
-                            if (modes[i] == Z80Mode.Implied || 
-                                (i == 1 && modes[0] == Z80Mode.A && modes[1] == Z80Mode.A))
+                            if (modes[i] == Z80Mode.Implied ||
+                                (CPU.Equals("z80") && i == 1 && 
+                                modes[0] == Z80Mode.A && 
+                                modes[1] == Z80Mode.A && 
+                                Reserved.IsOneOf("ImpliedA", line.Instruction.Name)))
                                 break;
                             if (i > 0)
                                 asmBuilder.Append(',');
                             if (line.Instruction.Name.Equals("rst", Services.StringComparison))
                             {
-                                asmBuilder.Append($"${(int)(modes[i] & Z80Mode.Bit7) * 8:x2}");
+                                if (CPU.Equals("z80"))
+                                    asmBuilder.Append($"${(int)(modes[i] & Z80Mode.Bit7) * 8:x2}");
+                                else
+                                    asmBuilder.Append((int)(modes[i] & ~Z80Mode.BitOp));
                             }
                             else
                             {

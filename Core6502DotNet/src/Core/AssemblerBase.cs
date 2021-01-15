@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -145,7 +145,21 @@ namespace Core6502DotNet
         /// Assemble the collection of parsed <see cref="SourceLine"/> objects. This method must be inherited.
         /// </summary>
         /// <param name="lines">A <see cref="RandomAccessIterator{T}"/> of source lines.</param>
-        /// <returns></returns>
+        /// <returns>The disassembly output from the assembly operation.</returns>
+        /// <exception cref="BlockClosureException"/>
+        /// <exception cref="DirectoryNotFoundException"/>
+        /// <exception cref="DivideByZeroException"/>
+        /// <exception cref="ExpressionException"/>
+        /// <exception cref="FileNotFoundException"/>
+        /// <exception cref="FormatException"/>
+        /// <exception cref="InvalidPCAssignmentException"/>
+        /// <exception cref="BlockAssemblerException"/>
+        /// <exception cref="OverflowException"/>
+        /// <exception cref="ProgramOverflowException"/>
+        /// <exception cref="ReturnException"/>
+        /// <exception cref="SectionException"/>
+        /// <exception cref="SymbolException"/>
+        /// <exception cref="SyntaxException"/>
         protected abstract string OnAssemble(RandomAccessIterator<SourceLine> lines);
 
         #endregion

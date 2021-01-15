@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -48,7 +48,7 @@ namespace Core6502DotNet.m65xx
                 writer.Write(startL); writer.Write(startH);
                 writer.Write(sizeL); writer.Write(sizeH);
             }
-            else if (!fmt.Equals("flat"))
+            else
             {
                 throw new ArgumentException($"Format \"{fmt}\" not supported with targeted CPU.");
             }

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -20,7 +20,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="cpu">The CPU's name.</param>
         /// <param name="opcode">The instruction's opcode.</param>
-        public CpuInstruction(string cpu, int opcode)
+        public CpuInstruction(string cpu, uint opcode)
         {
             CPU = cpu;
             Opcode = opcode;
@@ -33,7 +33,7 @@ namespace Core6502DotNet
         /// <param name="cpu">The CPU's name.</param>
         /// <param name="opcode">The instruction's opcode.</param>
         /// <param name="size">The total size of the instruction, including operand data.</param>
-        public CpuInstruction(string cpu, int opcode, int size)
+        public CpuInstruction(string cpu, uint opcode, int size)
         {
             CPU = cpu;
             Opcode = opcode;
@@ -52,7 +52,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets or sets the opcode of the instruction.
         /// </summary>
-        public int Opcode { get; }
+        public uint Opcode { get; }
 
         /// <summary>
         /// Gets or sets the CPU of this instruction.

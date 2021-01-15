@@ -4,17 +4,17 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackageId>6502.Net</PackageId>
-    <Version>2.4.3.6</Version>
+    <Version>2.5.1</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
     <Description>6502.Net, A .Net Cross Assembler for Several 8-Bit Microprocessors.</Description>
-    <Copyright>(C) Copyright 2017-2020 informedcitizenry</Copyright>
+    <Copyright>(C) Copyright 2017-2021 informedcitizenry</Copyright>
     <ReleaseVersion>2.4.1</ReleaseVersion>
     <StartupObject>Core6502DotNet.Program</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>2.4.3.6</AssemblyVersion>
-    <FileVersion>2.4.3.6</FileVersion>
+    <AssemblyVersion>2.5.1.1</AssemblyVersion>
+    <FileVersion>2.5.1.1</FileVersion>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
@@ -42,10 +42,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ConfigConstants.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Syntax Highlighters\Notepad++\" />
   </ItemGroup>
 
 </Project>

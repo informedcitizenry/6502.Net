@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -50,5 +50,27 @@ namespace Core6502DotNet
         public int Position { get; set; }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Represents a syntax error.
+    /// </summary>
+    public class SyntaxException : ExpressionException
+    {
+        /// <summary>
+        /// Construct a new syntax exception.
+        /// </summary>
+        /// <param name="token">The token that caused the exception.</param>
+        /// <param name="message">The exception message.</param>
+        public SyntaxException(Token token, string message)
+            : base(token, message) { }
+
+        /// <summary>
+        /// Constructs a new expression exception.
+        /// </summary>
+        /// <param name="position">The token that caused the exception.</param>
+        /// <param name="message">The exception message.</param>
+        public SyntaxException(int position, string message)
+            : base(position, message) { }
     }
 }

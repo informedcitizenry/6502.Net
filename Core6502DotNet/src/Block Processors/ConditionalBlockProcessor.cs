@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2020 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2021 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -34,7 +34,7 @@ namespace Core6502DotNet
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="index">The index at which the block is defined.</param>
         public ConditionalBlock(AssemblyServices services, int index)
-            : base(services, index)
+            : base(services, index, false)
         {
             _opens = new HashSet<string>(services.StringComparer)
             {

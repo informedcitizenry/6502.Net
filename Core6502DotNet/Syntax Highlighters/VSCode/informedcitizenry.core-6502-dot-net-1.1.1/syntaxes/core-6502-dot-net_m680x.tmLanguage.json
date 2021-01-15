@@ -113,7 +113,7 @@
           "match": "(?i)\\b(0[0-7_]+)|((0o)[0-7_]+)\\b"
         },
         {
-          "name": "constant.numeric.scientific.core6502_net_65xx",
+          "name": "constant.numeric.scientific.core6502_net_m680x",
           "match": "(?i)\\b[0-9_]+((\\.\\d+)|(?:\\.\\d+)?e[\\-\\+]?[0-9_]+)?\\b"
         }
       ]
