@@ -413,7 +413,7 @@ namespace Core6502DotNet
                     parms.Add(output.Pop());
                 }
                 if ((op.Name.Equals("||") || op.Name.Equals("&&") || op.Name.Equals("!")) && parms.Any(p => p != 1 && p != 0))
-                    throw new ExpressionException(op, "Type mismatch.");
+                    throw new ExpressionException(op, "Invalid conditional expression.");
                 output.Push(operation.Item1(parms));
             }
         }

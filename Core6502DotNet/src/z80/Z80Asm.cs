@@ -65,55 +65,38 @@ namespace Core6502DotNet.z80
                     "djnz", "jr"
                 );
 
-            if (CPU.Equals("z80"))
+            _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
             {
-                _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
-                {
-                    { "a",   Z80Mode.A         },
-                    { "af",  Z80Mode.AF        },
-                    { "af'", Z80Mode.ShadowAF  },
-                    { "b",   Z80Mode.B         },
-                    { "bc",  Z80Mode.BC        },
-                    { "c",   Z80Mode.C         },
-                    { "d",   Z80Mode.D         },
-                    { "de",  Z80Mode.DE        },
-                    { "e",   Z80Mode.E         },
-                    { "h",   Z80Mode.H         },
-                    { "hl",  Z80Mode.HL        },
-                    { "i",   Z80Mode.I         },
-                    { "ix",  Z80Mode.IX        },
-                    { "ixh", Z80Mode.XH        },
-                    { "ixl", Z80Mode.XL        },
-                    { "iy",  Z80Mode.IY        },
-                    { "iyh", Z80Mode.YH        },
-                    { "iyl", Z80Mode.YL        },
-                    { "l",   Z80Mode.L         },
-                    { "m",   Z80Mode.M         },
-                    { "nc",  Z80Mode.NC        },
-                    { "nz",  Z80Mode.NZ        },
-                    { "p",   Z80Mode.P         },
-                    { "pe",  Z80Mode.PE        },
-                    { "po",  Z80Mode.PO        },
-                    { "r",   Z80Mode.R         },
-                    { "sp",  Z80Mode.SP        },
-                    { "z",   Z80Mode.Z         }
-                };
-            }
-            else
-            {
-                _namedModes = new Dictionary<StringView, Z80Mode>(Services.StringViewComparer)
-                {
-                    { "a",   Z80Mode.A         },
-                    { "b",   Z80Mode.B         },
-                    { "c",   Z80Mode.C         },
-                    { "d",   Z80Mode.D         },
-                    { "e",   Z80Mode.E         },
-                    { "h",   Z80Mode.H         },
-                    { "l",   Z80Mode.L         },
-                    { "m",   Z80Mode.M         },
-                    { "psw", Z80Mode.PSW       }
-                };
-            }
+                { "a",   Z80Mode.A         },
+                { "af",  Z80Mode.AF        },
+                { "af'", Z80Mode.ShadowAF  },
+                { "b",   Z80Mode.B         },
+                { "bc",  Z80Mode.BC        },
+                { "c",   Z80Mode.C         },
+                { "d",   Z80Mode.D         },
+                { "de",  Z80Mode.DE        },
+                { "e",   Z80Mode.E         },
+                { "h",   Z80Mode.H         },
+                { "hl",  Z80Mode.HL        },
+                { "i",   Z80Mode.I         },
+                { "ix",  Z80Mode.IX        },
+                { "ixh", Z80Mode.XH        },
+                { "ixl", Z80Mode.XL        },
+                { "iy",  Z80Mode.IY        },
+                { "iyh", Z80Mode.YH        },
+                { "iyl", Z80Mode.YL        },
+                { "l",   Z80Mode.L         },
+                { "m",   Z80Mode.M         },
+                { "nc",  Z80Mode.NC        },
+                { "nz",  Z80Mode.NZ        },
+                { "p",   Z80Mode.P         },
+                { "pe",  Z80Mode.PE        },
+                { "po",  Z80Mode.PO        },
+                { "psw", Z80Mode.PSW       },
+                { "r",   Z80Mode.R         },
+                { "sp",  Z80Mode.SP        },
+                { "z",   Z80Mode.Z         }
+            };
             Services.SymbolManager.AddValidSymbolNameCriterion(s => !_namedModes.ContainsKey(s));
         }
 

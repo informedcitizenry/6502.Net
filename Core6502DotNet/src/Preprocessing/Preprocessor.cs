@@ -317,7 +317,8 @@ namespace Core6502DotNet
                     }
                     if (c == ':')
                     {
-                        if ((expected != TokenType.Instruction && expected != TokenType.EndOrBinary) || !LineTerminates())
+                        if ((expected != TokenType.Instruction && expected != TokenType.EndOrBinary && 
+                            (tokens.Count == 0 || tokens[^1].Type != TokenType.Instruction)) || !LineTerminates())
                         {
                             LogError(fileName, lineNumber, it.Index + 1, "Unexpected expression.");
                             break;

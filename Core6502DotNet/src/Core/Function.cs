@@ -104,9 +104,9 @@ namespace Core6502DotNet
                 {
                     var parm = parameterList[i];
                     if (parm is string)
-                        _services.SymbolManager.DefineSymbol(Params[i].Name, parm.ToString().TrimOnce('"'));
+                        _services.SymbolManager.DefineSymbol(Params[i].Name, parm.ToString().TrimOnce('"'), true);
                     else
-                        _services.SymbolManager.DefineSymbol(Params[i].Name, (double)parm);
+                        _services.SymbolManager.DefineSymbol(Params[i].Name, (double)parm, true);
                 }
             }
             var iterator = _definedLines.GetIterator();
