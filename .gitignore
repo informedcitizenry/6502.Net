@@ -253,3 +253,6 @@ paket-files/
 .idea/
 *.sln.iml
 /Core6502DotNet/wiki.txt
+
+# Visual Studio Code
+.vscode/
