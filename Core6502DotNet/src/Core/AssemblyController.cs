@@ -254,6 +254,7 @@ namespace Core6502DotNet
                                 _services.Log.LogEntry(symbEx.SymbolToken, symbEx.Message);
                             else
                                 _services.Log.LogEntry(line, symbEx.Position, symbEx.Message);
+                            return true;
                         }
                         else if (ex is SyntaxException synEx)
                         {
