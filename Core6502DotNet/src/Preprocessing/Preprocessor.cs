@@ -204,11 +204,11 @@ namespace Core6502DotNet
             return this;
         }
 
-        void LogError(string fileName, int lineNumber, int position, string message)
+        void LogError(string fileName, int lineNumber, int position, string message, string source)
         {
             _lineHasErrors = true;
             if (_options.Log != null)
-                _options.Log.LogEntry(fileName, ++lineNumber, position, message);
+                _options.Log.LogEntry(fileName, ++lineNumber, position, message, source);
             else
                 throw new ProcessorException(fileName, ++lineNumber, position, message);
         }
@@ -251,18 +251,19 @@ namespace Core6502DotNet
             var previousType = TokenType.None;
             var opens = new Stack<char>();
             Macro definingMacro = null;
-            string nextLine;
+            string nextLine, lineSource;
             var stopProcessing = false;
             var previousWasPlus = false;
             List<Token> tokens = null;
             var linesProcessed = lineNumber;
             while ((nextLine = sr.ReadLine()) != null && !stopProcessing)
             {
+                var lineSourceIndex = 0;
                 if (readyForNewLine)
                     StartNewLine();
                 else
                     lineSources.Add(nextLine);
-
+                lineSource = nextLine;
                 linesProcessed++;
                 var it = nextLine.GetIterator();
                 char c;
@@ -270,12 +271,14 @@ namespace Core6502DotNet
                 var isWidth = false;
                 while (!_lineHasErrors && (c = it.GetNext()) != EOS)
                 {
+                    lineSourceIndex++;
                     if (char.IsWhiteSpace(c))
                     {
                         while (c == ' ' || c == '\t')
                         {
                             previous = c;
                             c = it.GetNext();
+                            lineSourceIndex++;
                         }
                         if (c == EOS)
                             break;
@@ -292,7 +295,7 @@ namespace Core6502DotNet
                         break;
                     if (c == '*' && peek == '/')
                     {
-                        LogError(fileName, lineNumber, it.Index + 1, "\"*/\" does not close a block comment.");
+                        LogError(fileName, lineNumber, lineSourceIndex, "\"*/\" does not close a block comment.", lineSource);
                         break;
                     }
                     if (c == '/' && peek == '*')
@@ -307,6 +310,7 @@ namespace Core6502DotNet
                         {
                             expected = TokenType.Instruction;
                             c = it.FirstOrDefault(chr => chr == ':');
+                            lineSourceIndex = it.Index + 1;
                         }
                         else
                         {
@@ -320,14 +324,14 @@ namespace Core6502DotNet
                         if ((expected != TokenType.Instruction && expected != TokenType.EndOrBinary && 
                             (tokens.Count == 0 || tokens[^1].Type != TokenType.Instruction)) || !LineTerminates())
                         {
-                            LogError(fileName, lineNumber, it.Index + 1, "Unexpected expression.");
+                            LogError(fileName, lineNumber, lineSourceIndex, "Unexpected expression.", lineSource);
                             break;
                         }
                         lineSources[^1] = lineSources[^1].Substring(0, it.Index);
                         if (!it.MoveNext())
                             break;
                         ProcessLine(true);
-                        nextLine = nextLine.Substring(it.Index);
+                        nextLine = nextLine[it.Index..];
                         StartNewLine();
                         it = nextLine.GetIterator();
                     }
@@ -432,14 +436,14 @@ namespace Core6502DotNet
                                     {
                                         if (!it.MoveNext())
                                         {
-                                            LogError(fileName, lineNumber, it.Index + 1, "String not enclosed.");
+                                            LogError(fileName, lineNumber, lineSourceIndex, "String not enclosed.", lineSource);
                                             break;
                                         }
                                     }
                                 }
                                 if (c == EOS)
                                 {
-                                    LogError(fileName, lineNumber, it.Index + 1, "String not enclosed.");
+                                    LogError(fileName, lineNumber, lineSourceIndex, "String not enclosed.", lineSource);
                                     break;
                                 }
                             }
@@ -483,7 +487,7 @@ namespace Core6502DotNet
                             type = TokenType.Closed;
                             if (opens.Count == 0 || s_openclose[opens.Peek()] != c)
                             {
-                                LogError(fileName, lineNumber, it.Index + 1, "Invalid closure.");
+                                LogError(fileName, lineNumber, lineSourceIndex, "Invalid closure.", lineSource);
                                 break;
                             }
                             opens.Pop();
@@ -518,12 +522,12 @@ namespace Core6502DotNet
                                         type = TokenType.Label;
                                         expected = TokenType.Instruction;
                                         if (c != '*' && position > 0 && _options.WarnOnLabelLeft)
-                                            _options.Log?.LogEntry(fileName, lineNumber, position + 1, "Label is not at the beginning of the line.", false);
+                                            _options.Log?.LogEntry(fileName, lineNumber, position + 1, "Label is not at the beginning of the line.",  string.Empty, false);
                                     }
                                 }
                                 else if ((!c.IsSpecialOperator() || (c.IsSpecialOperator() && !char.IsWhiteSpace(peek))) && !char.IsWhiteSpace(c))
                                 {
-                                    LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                    LogError(fileName, lineNumber, lineSourceIndex, "Unexpected token.", lineSource);
                                 }
                                 else
                                 {
@@ -545,7 +549,7 @@ namespace Core6502DotNet
                                 }
                                 else
                                 {
-                                    LogError(fileName, lineNumber, it.Index + 1, "Unknown instruction.");
+                                    LogError(fileName, lineNumber, lineSourceIndex, "Unknown instruction.", lineSource);
                                 }
                                 break;
                             case TokenType.StartOrOperand:
@@ -610,7 +614,7 @@ namespace Core6502DotNet
                                             type = TokenType.Radix;
                                             if ((c == '$' && !peek.IsHex() ||
                                                 (c == '%' && !char.IsDigit(peek) && peek != '.' && peek != '#')))
-                                                LogError(fileName, lineNumber, it.Index + 1, "Unexpected operator.");
+                                                LogError(fileName, lineNumber, lineSourceIndex, "Unexpected operator.", lineSource);
                                         }
                                         else
                                         {
@@ -624,7 +628,7 @@ namespace Core6502DotNet
                                         !(c == ')' && previousType == TokenType.Open) &&
                                          type != TokenType.Misc)
                                 {
-                                    LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                    LogError(fileName, lineNumber, lineSourceIndex, "Unexpected token.", lineSource);
                                 }
                                 break;
                             case TokenType.EndOrBinary:
@@ -640,13 +644,13 @@ namespace Core6502DotNet
                                 {
                                     previousWasPlus = type == TokenType.Binary && c == '+';
                                     if (type == TokenType.Open && c != '[')
-                                        LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                        LogError(fileName, lineNumber, lineSourceIndex, "Unexpected token.", lineSource);
                                     else
                                         expected = TokenType.StartOrOperand;
                                 }
                                 else if (c != EOS)
                                 {
-                                    LogError(fileName, lineNumber, it.Index + 1, "Unexpected token.");
+                                    LogError(fileName, lineNumber, lineSourceIndex, "Unexpected token.", lineSource);
                                 }
                                 break;
                             case TokenType.Open:
@@ -675,12 +679,13 @@ namespace Core6502DotNet
             if (!stopAtFirstInstruction)
             {
                 if (blockComment && !_options.IgnoreUnclosedBlockComment)
-                    LogError(fileName, lineNumber, 1, "End of source reached without finding \"*/\".");
+                    LogError(fileName, lineNumber, 1, "End of source reached without finding \"*/\".", string.Empty);
                 else if (definingMacro != null)
                     LogError(fileName, lineNumber, 1,
-                        $"End of source reached without defining macro \"{_macros.FirstOrDefault(kvp => ReferenceEquals(kvp.Value, definingMacro)).Key}\".");
+                        $"End of source reached without defining macro \"{_macros.FirstOrDefault(kvp => ReferenceEquals(kvp.Value, definingMacro)).Key}\".",
+                        string.Empty);
                 else if (!LineTerminates())
-                    LogError(fileName, lineNumber, 1, "Unexpected end of source reached.");
+                    LogError(fileName, lineNumber, 1, "Unexpected end of source reached.", string.Empty);
             }
             return sourceLines;
 
@@ -708,12 +713,12 @@ namespace Core6502DotNet
                         {
                             if (line.Instruction.Name.Equals(".macro", stringComparison))
                             {
-                                LogError(fileName, lineNumber, line.Instruction.Position, "Recursive macro definition not allowed.");
+                                LogError(fileName, lineNumber, line.Instruction.Position, "Recursive macro definition not allowed.", lineSource);
                                 return;
                             }
                             if (line.Operands.Count > 0)
                             {
-                                LogError(fileName, lineNumber, line.Operands[0].Position, "Unexpected expression.");
+                                LogError(fileName, lineNumber, line.Operands[0].Position, "Unexpected expression.", lineSource);
                                 return;
                             }
                             if (line.Label != null)
@@ -731,23 +736,23 @@ namespace Core6502DotNet
                         {
                             if (line.Instruction.Name.Equals(".endmacro", stringComparison))
                             {
-                                LogError(fileName, lineNumber, line.Instruction.Position, "Directive does not close a macro definition.");
+                                LogError(fileName, lineNumber, line.Instruction.Position, "Directive does not close a macro definition.", lineSource);
                                 return;
                             }
                             if (line.Label == null)
                             {
-                                LogError(fileName, lineNumber, 1, "Macro name not specified.");
+                                LogError(fileName, lineNumber, 1, "Macro name not specified.", lineSource);
                                 return;
                             }
                             var macroname = "." + line.Label.Name.ToString();
                             if (_macros.ContainsKey(macroname))
                             {
-                                LogError(fileName, lineNumber, line.Label.Position, "Redefinition of macro.");
+                                LogError(fileName, lineNumber, line.Label.Position, "Redefinition of macro.", lineSource);
                                 return;
                             }
                             if (_options.IsMacroNameValid != null && !_options.IsMacroNameValid(macroname))
                             {
-                                LogError(fileName, lineNumber, line.Label.Position, $"Macro name \"{line.Label}\" not allowed.");
+                                LogError(fileName, lineNumber, line.Label.Position, $"Macro name \"{line.Label}\" not allowed.", lineSource);
                                 return;
                             }
                             definingMacro = new Macro(line.Operands, _options.CaseSensitive, this);
@@ -757,7 +762,7 @@ namespace Core6502DotNet
                         {
                             if (line.Operands.Count != 1 || !line.Operands[0].IsDoubleQuote())
                             {
-                                LogError(fileName, lineNumber, line.Instruction.Position + line.Instruction.Name.Length, "Invalid filename.");
+                                LogError(fileName, lineNumber, line.Instruction.Position + line.Instruction.Name.Length, "Invalid filename.", lineSource);
                             }
                             else
                             {
@@ -818,10 +823,10 @@ namespace Core6502DotNet
 
         IEnumerable<SourceLine> ExpandMacros(SourceLine line, Macro macro)
         {
-            var expandedSources = new List<SourceLine>();
-            if (line.Label != null)
-                expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, string.Empty, line.Label));
-            expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, ".block", null));
+            var expandedSources = new List<SourceLine>
+            {
+                GetBlockDirective(line.Filename, line.LineNumber, ".block", line.Label)
+            };
             var sources = macro.Expand(line.Operands);
             foreach(var source in sources)
             {
@@ -831,7 +836,7 @@ namespace Core6502DotNet
                 else
                     expandedSources.Add(source);
             }
-            expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, ".endblock", null));
+            expandedSources.Add(GetBlockDirective(line.Filename, line.LineNumber, ".endblock", null)); 
             return expandedSources;
         }
 

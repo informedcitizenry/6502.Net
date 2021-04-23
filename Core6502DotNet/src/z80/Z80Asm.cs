@@ -293,10 +293,10 @@ namespace Core6502DotNet.z80
                                 Evaluations[i] = Convert.ToSByte(Services.Output.GetRelativeOffset((int)Evaluations[i], 1));
                                 Services.Output.Add(Evaluations[i], 1);
                             }
-                            catch (OverflowException ex)
+                            catch 
                             {
                                 if (Services.CurrentPass > 0)
-                                    throw ex;
+                                    throw new ExpressionException(line.Operands[0].Position, "Relative offset for branch was too far.");
                                 Services.PassNeeded = true;
                                 Services.Output.AddUninitialized(1);
                             }
@@ -309,7 +309,7 @@ namespace Core6502DotNet.z80
                 }
                 if (isCb00)
                     Services.Output.Add(instruction.Opcode >> 16, 1);
-                if (Services.Output.LogicalPC - PCOnAssemble != instruction.Size && !Services.PassNeeded)
+                if (Services.Output.LongProgramCounter - LongPCOnAssemble != instruction.Size && !Services.PassNeeded)
                 {
                     Services.Log.LogEntry(line.Instruction, $"Mode not supported for instruction \"{line.Instruction}\".");
                 }
@@ -320,12 +320,12 @@ namespace Core6502DotNet.z80
                     var disasmBuilder = new StringBuilder();
                     if (!Services.Options.NoAssembly)
                     {
-                        var byteString = Services.Output.GetBytesFrom(PCOnAssemble).ToString(PCOnAssemble, '.', true);
+                        var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.', true);
                         disasmBuilder.Append(byteString.PadRight(25));
                     }
                     else
                     {
-                        disasmBuilder.Append($".{PCOnAssemble:x4}                        ");
+                        disasmBuilder.Append($".{LogicalPCOnAssemble:x4}                        ");
                     }
                     if (!Services.Options.NoDisassembly)
                     {

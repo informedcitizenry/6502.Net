@@ -27,6 +27,7 @@ namespace Core6502DotNet
         /// <summary>
         /// An enumeration of all possible addressing modes for m68xx and m65xx-based CPUs.
         /// </summary>
+        [Flags]
         protected enum Modes 
         {
             Implied      = 0b000000000000000000000,
@@ -364,10 +365,10 @@ namespace Core6502DotNet
                         {
                             var errorMsg = "Relative offset for branch was too far.";
                             if (PseudoBranchSupported)
-                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position,
+                                Services.Log.LogEntry(line.Operands[0],
                                     $"{errorMsg}. Consider using a pseudo branch directive.");
                             else
-                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position, errorMsg);
+                                Services.Log.LogEntry(line.Operands[0], errorMsg);
                             return string.Empty;
                         }
                         Evaluations[evalIx] = 0;
@@ -405,22 +406,21 @@ namespace Core6502DotNet
                         }
                     }
                 }
-                var instructionSize = Services.Output.LogicalPC - PCOnAssemble;
+                var instructionSize = Services.Output.LongProgramCounter - LongPCOnAssemble;
                 if (!Services.PassNeeded && instructionSize != instruction.Size)
-                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
-                        "Mode not supported in selected CPU.");
+                    Services.Log.LogEntry(line.Instruction, "Mode not supported in selected CPU.");
             }
             else
             {
                 if (ActiveInstructions.Keys.Any(k => k.Mnem.Equals(line.Instruction.Name, Services.StringComparison)))
                 {
                     if (!Services.PassNeeded)
-                        Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        Services.Log.LogEntry(line.Instruction,
                             "Mode not supported in selected CPU.");
                 }
                 else
                 {
-                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                    Services.Log.LogEntry(line.Instruction,
                         "Mnemonic not supported for selected CPU.");
                 }
                 return string.Empty;
@@ -430,12 +430,12 @@ namespace Core6502DotNet
             var sb = new StringBuilder();
             if (!Services.Options.NoAssembly)
             {
-                var byteString = Services.Output.GetBytesFrom(PCOnAssemble).ToString(PCOnAssemble, '.');
+                var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.');
                 sb.Append(byteString.PadRight(Padding));
             }
             else
             {
-                sb.Append($".{PCOnAssemble:x4}                        ");
+                sb.Append($".{LogicalPCOnAssemble:x4}                        ");
             }
             if (!Services.Options.NoDisassembly)
             {

@@ -42,13 +42,15 @@ namespace Core6502DotNet
             /// <param name="noSource">The no-source flag.</param>
             /// <param name="truncateAssembly">Truncate assembled bytes in listing flag.</param>
             /// <param name="verbose">The verbose listing flag.</param>
+            /// <param name="labelsAddressesOnly">The labels addresses only flag.</param>
             public Listing(string labelPath,
                            string listPath,
                            bool noAssembly,
                            bool noDisassembly,
                            bool noSource,
                            bool truncateAssembly,
-                           bool verbose)
+                           bool verbose,
+                           bool labelsAddressesOnly)
             {
                 LabelFile = labelPath ?? string.Empty;
                 ListingFile = listPath ?? string.Empty;
@@ -57,6 +59,7 @@ namespace Core6502DotNet
                 NoSource = noSource;
                 TruncateAssembly = truncateAssembly;
                 VerboseList = verbose;
+                LabelsAddressesOnly = labelsAddressesOnly;
             }
             #endregion
 
@@ -66,6 +69,8 @@ namespace Core6502DotNet
             /// Gets the label filename.
             /// </summary>
             public string LabelFile { get; }
+
+            public bool LabelsAddressesOnly { get; }
 
             /// <summary>
             /// Gets the list filename.
@@ -259,11 +264,13 @@ namespace Core6502DotNet
             /// <param name="binaryFormat">The format.</param>
             /// <param name="cpu">The CPU.</param>
             /// <param name="autoSizeRegisters">Autosize registers for 65816 mode.</param>
-            public Target(string binaryFormat, string cpu, bool autoSizeRegisters)
+            /// <param name="longAddressing">Long addressing supported.</param>
+            public Target(string binaryFormat, string cpu, bool autoSizeRegisters, bool longAddressing)
             {
                 Format = binaryFormat ?? string.Empty;
                 Cpu = cpu ?? string.Empty;
                 Autosize = autoSizeRegisters;
+                LongAddressing = longAddressing;
             }
 
             /// <summary>
@@ -280,6 +287,11 @@ namespace Core6502DotNet
             /// Gets the autosize option.
             /// </summary>
             public bool Autosize { get; }
+
+            /// <summary>
+            /// Gets the long addressing option.
+            /// </summary>
+            public bool LongAddressing { get; }
         }
 
         #endregion
@@ -304,6 +316,7 @@ namespace Core6502DotNet
         /// <param name="showChecksums">The show checksums flag.</param>
         /// <param name="configFile">The config filename.</param>
         /// <param name="labelDefines">The label defines.</param>
+        /// <param name="labelsAddressesOnly">The label addresses only flag.</param>
         /// <param name="noDisassembly">The no-disassembly flag.</param>
         /// <param name="sections">The defined sections.</param>
         /// <param name="echoEachPass">The echo-each-pass flag.</param>
@@ -313,6 +326,7 @@ namespace Core6502DotNet
         /// <param name="ignoreColons">The ignore-colons flag.</param>
         /// <param name="labelFile">The label filename.</param>
         /// <param name="listingFile">The listing filename.</param>
+        /// <param name="longAddressing">The long addressing flag.</param>
         /// <param name="noStats">The no-stats flag.</param>
         /// <param name="outputFile">The output filename.</param>
         /// <param name="outputSection">The section to output.</param>
@@ -320,6 +334,7 @@ namespace Core6502DotNet
         /// <param name="quiet">The quiet mode flag.</param>
         /// <param name="autoSize">The register autosize flag.</param>
         /// <param name="noSource">The no-source flag.</param>
+        /// <param name="resetPcOnBank">The reset PC on bank flag.</param>
         /// <param name="truncateAssembly">The truncate assembly flag.</param>
         /// <param name="verboseList">The verbose listing flag.</param>
         /// <param name="noWarnings">The no warnings flag.</param>
@@ -342,7 +357,9 @@ namespace Core6502DotNet
                        string includePath,
                        bool ignoreColons,
                        string labelFile,
+                       bool labelsAddressesOnly,
                        string listingFile,
+                       bool longAddressing,
                        bool noStats,
                        string outputFile,
                        string outputSection,
@@ -350,6 +367,7 @@ namespace Core6502DotNet
                        bool quiet,
                        bool autoSize,
                        bool noSource,
+                       bool resetPcOnBank,
                        bool truncateAssembly,
                        bool verboseList,
                        bool noWarnings,
@@ -362,7 +380,8 @@ namespace Core6502DotNet
                                                          noDisassembly,
                                                          noSource,
                                                          truncateAssembly,
-                                                         verboseList),
+                                                         verboseList,
+                                                         labelsAddressesOnly),
                                              new Logging(errorFile,
                                                          showChecksums,
                                                          noStats,
@@ -372,7 +391,7 @@ namespace Core6502DotNet
                                                          warnLeft,
                                                          warnNotUnusedSections),
                                              null,
-                                             new Target(format, cpu, autoSize),
+                                             new Target(format, cpu, autoSize, longAddressing),
                                              labelDefines,
                                              echoEachPass,
                                              caseSensitive,
@@ -380,7 +399,8 @@ namespace Core6502DotNet
                                              outputSection,
                                              patch,
                                              includePath,
-                                             ignoreColons)
+                                             ignoreColons,
+                                             resetPcOnBank)
         {
             if (!string.IsNullOrEmpty(configFile))
             {
@@ -421,6 +441,7 @@ namespace Core6502DotNet
         /// <param name="patchOffset">The patch offset.</param>
         /// <param name="includePath">The include path.</param>
         /// <param name="ignoreColons">The ignore-colons flag.</param>
+        /// <param name="resetPcOnBank">The reset PC on bank flag.</param>
         [JsonConstructor]
         public Options(IList<string> sources,
                        Listing listingOptions,
@@ -434,7 +455,8 @@ namespace Core6502DotNet
                        string outputSection,
                        string patchOffset,
                        string includePath,
-                       bool ignoreColons)
+                       bool ignoreColons,
+                       bool resetPcOnBank)
         {
             if (listingOptions != null)
             {
@@ -445,6 +467,7 @@ namespace Core6502DotNet
                 NoSource = listingOptions.NoSource;
                 TruncateAssembly = listingOptions.TruncateAssembly;
                 VerboseList = listingOptions.VerboseList;
+                LabelsAddressesOnly = listingOptions.LabelsAddressesOnly;
             }
             else
             {
@@ -466,16 +489,26 @@ namespace Core6502DotNet
             {
                 ErrorFile = string.Empty;
             }
+            if (target != null)
+            {
+                Format = target.Format;
+                CPU = target.Cpu;
+                Autosize = target.Autosize;
+                LongAddressing = target.LongAddressing;
+            }
+            else
+            {
+                Format = CPU = string.Empty;
+                Autosize = LongAddressing = false;
+            }
             EchoEachPass = echoEachPass;
-            Format = target == null ? string.Empty : target.Format;
-            CPU = target == null ? string.Empty : target.Cpu;
-            Autosize = target != null && target.Autosize;
             CaseSensitive = caseSensitive;
 
             OutputFile = outputFile ?? "a.out";
             ConfigFile = string.Empty;
             IncludePath = includePath ?? string.Empty;
             IgnoreColons = ignoreColons;
+            ResetPCOnBank = resetPcOnBank;
             OutputSection = outputSection == null ?  string.Empty : $"\"{outputSection}\"";
             Patch = patchOffset ?? string.Empty;
             LabelDefines = GetReadOnlyList(defines);
@@ -518,6 +551,9 @@ namespace Core6502DotNet
             if (!string.IsNullOrEmpty(IncludePath))
                 root.Add("includePath", IncludePath);
 
+            if (ResetPCOnBank)
+                root.Add("resetPCOnBank", true);
+
             if (!string.IsNullOrEmpty(LabelFile))
                 listing.Add("labelPath", LabelFile);
             if (!string.IsNullOrEmpty(ListingFile))
@@ -532,6 +568,8 @@ namespace Core6502DotNet
                 listing.Add("truncateAssembly", true);
             if (VerboseList)
                 listing.Add("verbose", true);
+            if (LabelsAddressesOnly)
+                listing.Add("labelsAddressesOnly", true);
 
             if (listing.Count > 0)
                 root.Add("listingOptions", listing);
@@ -597,6 +635,7 @@ namespace Core6502DotNet
                 target.Add("binaryFormat", string.IsNullOrEmpty(Format) ? "cbm" : Format);
                 target.Add("cpu", string.IsNullOrEmpty(CPU) ? "6502" : CPU);
                 target.Add("autoSizeRegisters", Autosize);
+                target.Add("longAddressing", LongAddressing);
                 root.Add("target", target);
             }
             return root.ToString();
@@ -664,7 +703,23 @@ namespace Core6502DotNet
             }
             if (isVersion)
                 throw new Exception(heading);
-            if (errs.IsHelp())
+            var isHelp = errs.IsHelp();
+            if (!isHelp)
+            {
+                foreach(var err in errs)
+                {
+                    if (err is UnknownOptionError optionError && (optionError.Token.Equals("?") || optionError.Token.Equals("h")))
+                    {
+                        isHelp = true;
+                    }
+                    else if (isHelp)
+                    {
+                        isHelp = false;
+                        break;
+                    }
+                }
+            }
+            if (isHelp)
             {
                 var helpText = HelpText.AutoBuild(result, h =>
                 {
@@ -740,7 +795,7 @@ namespace Core6502DotNet
             {
                 if (ex is JsonException)
                     throw new Exception($"Error parsing config file: {ex.Message}");
-                throw ex;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -856,10 +911,22 @@ namespace Core6502DotNet
         public string LabelFile { get; }
 
         /// <summary>
+        /// Gets the label listing addresses only flag.
+        /// </summary>
+        [Option("labels-addresses-only", Required = false, HelpText = "Only include addresses in label definitions")]
+        public bool LabelsAddressesOnly { get; }
+
+        /// <summary>
         /// Gets the assembly listing filename.
         /// </summary>
         [Option('L', "list", Required = false, HelpText = "Output listing to <file>", MetaValue = "<file>")]
         public string ListingFile { get; }
+
+        /// <summary>
+        /// Gets the long addressing flag.
+        /// </summary>
+        [Option("long-addressing", Required = false, HelpText = "Support 24-bit (long) addressing mode.")]
+        public bool LongAddressing { get; }
 
         /// <summary>
         /// Gets the flag indicating whether to display statistics after assembly.
@@ -903,6 +970,13 @@ namespace Core6502DotNet
         /// </summary>
         [Option('s', "no-source", Required = false, HelpText = "Suppress original source from listing")]
         public bool NoSource { get; }
+
+
+        /// <summary>
+        /// Gets a flag indicating if the Program Counter should reset on bank switching.
+        /// </summary>
+        [Option("reset-pc-on-bank", Required = false, HelpText = "Reset the PC on '.bank' directive")]
+        public bool ResetPCOnBank { get; }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should truncate
@@ -950,8 +1024,8 @@ namespace Core6502DotNet
         {
             get
             {
-                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false));
-                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, null, false, null, null, null, false, false, false, false, false, false, false, false, false));
+                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false, false));
+                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, false, null, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false));
             }
         }
 

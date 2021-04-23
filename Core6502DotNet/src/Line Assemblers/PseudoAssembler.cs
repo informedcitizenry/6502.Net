@@ -480,14 +480,14 @@ namespace Core6502DotNet
             if (Services.PassNeeded || string.IsNullOrEmpty(Services.Options.ListingFile))
                 return string.Empty;
             var sb = new StringBuilder();
-            var assembly = Services.Output.GetBytesFrom(PCOnAssemble);
+            var assembly = Services.Output.GetBytesFrom(LogicalPCOnAssemble);
             if (!Services.Options.NoAssembly)
             {
-                var firstBytes = assembly.Take(8).ToString(PCOnAssemble);
+                var firstBytes = assembly.Take(8).ToString(LogicalPCOnAssemble);
                 if (assembly.Count > 8 && Services.Options.TruncateAssembly)
                     sb.Append(firstBytes).Append(" ...".PadRight(10, ' '));
                 else
-                    sb.Append(assembly.Take(8).ToString(PCOnAssemble).PadRight(43, ' '));
+                    sb.Append(assembly.Take(8).ToString(LogicalPCOnAssemble).PadRight(43, ' '));
                 if (!Services.Options.NoSource)
                 {
                     if (Services.Options.VerboseList)
@@ -498,12 +498,12 @@ namespace Core6502DotNet
                 if (assembly.Count > 8 && !Services.Options.TruncateAssembly)
                 {
                     sb.AppendLine();
-                    sb.Append(assembly.Skip(8).ToString(PCOnAssemble + 8));
+                    sb.Append(assembly.Skip(8).ToString(LogicalPCOnAssemble + 8));
                 }
             }
             else
             {
-                sb.Append($">{PCOnAssemble:x4}");
+                sb.Append($">{LogicalPCOnAssemble:x4}");
                 if (!Services.Options.NoSource)
                 {
                     if (Services.Options.VerboseList)

@@ -533,11 +533,12 @@ namespace Core6502DotNet
         /// <summary>
         /// Get a string listing of all defined label symbols.
         /// </summary>
+        /// <param name="listAll">List all labels, including non-addresses.</param>
         /// <returns>The string listing.</returns>
-        public string ListLabels()
+        public string ListLabels(bool listAll)
         {
             var listBuilder = new StringBuilder();
-            var labels = _symbolTable.Where(s => !s.Key.Equals("CURRENT_PASS") && s.Value.DataType == DataType.Address)
+            var labels = _symbolTable.Where(s => !s.Key.Equals("CURRENT_PASS") && (listAll || s.Value.DataType == DataType.Address))
                                      .OrderBy(s => s.Key);
             foreach (var label in labels)
             {

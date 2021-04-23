@@ -177,7 +177,7 @@ namespace Core6502DotNet
                     error = "Expression must follow \".switch\" directive.";
                 else
                     error = "Expression must be a valid symbol or an expression.";
-                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position, error);
+                Services.Log.LogEntry(line.Instruction, error);
                 return;
             }
             var defaultIndex = -1;
@@ -194,17 +194,17 @@ namespace Core6502DotNet
                     {
                         if (defaultIndex > -1)
                         {
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                            Services.Log.LogEntry(line.Instruction,
                                 "\".case\" directive cannot follow a \".default\" directive.");
                         }
                         else if (stringBlock?.FallthroughIndex > -1 || numericBlock?.FallthroughIndex > -1)
                         {
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                            Services.Log.LogEntry(line.Instruction,
                                 "\".case\" does not fall through.");
                         }
                         else if (line.Operands.Count == 0)
                         {
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                            Services.Log.LogEntry(line.Instruction,
                                 "Expression expected.");
                         }
                         else
@@ -213,7 +213,7 @@ namespace Core6502DotNet
                             if (stringBlock != null)
                             {
                                 if (!StringHelper.ExpressionIsAString(iterator, Services))
-                                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position,
+                                    Services.Log.LogEntry(line.Operands[0],
                                         "String expression expected.");
                                 else
                                     stringBlock.Cases.Add(StringHelper.GetString(iterator, Services));
@@ -231,7 +231,7 @@ namespace Core6502DotNet
                         if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0)
                             && defaultIndex < 0)
                         {
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                            Services.Log.LogEntry(line.Instruction,
                                 $"\"{line.Instruction}\" directive must follow a \".case\" or \".default\" directive.");
                         }
                         else
@@ -260,21 +260,21 @@ namespace Core6502DotNet
                         if (line.Operands.Count > 0)
                             throw new SyntaxException(line.Operands[0], "Unexpected expression.");
                         if (defaultIndex > -1)
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                            Services.Log.LogEntry(line.Instruction,
                                 "There can only be one \".default\" directive in a switch block.");
                         else
                             defaultIndex = lines.Index + 1;
                     }
                     else if (line.Label != null)
                     {
-                        Services.Log.LogEntry(line.Filename, line.LineNumber, line.Label.Position,
+                        Services.Log.LogEntry(line.Label,
                             "Label cannot be defined inside a switch block.");
                     }
                     else
                     {
                         if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0) && defaultIndex < 0)
                         {
-                            Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position, "\".case\" or \".default\" directive expected");
+                            Services.Log.LogEntry(line.Instruction, "\".case\" or \".default\" directive expected");
                         }
                         else if (stringBlock?.FallthroughIndex < 0 || numericBlock?.FallthroughIndex < 0)
                         {
@@ -290,18 +290,18 @@ namespace Core6502DotNet
                 {
                     if (defaultIndex >= 0)
                     {
-                        Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        Services.Log.LogEntry(line.Instruction,
                             "Only a default case was specified.", false);
                     }
                     else if (!context.AnyCaseDefined())
                     {
-                        Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        Services.Log.LogEntry(line.Instruction,
                             "Switch statement did not encounter any cases to evaluate.");
                         return;
                     }
                     else
                     {
-                        Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
+                        Services.Log.LogEntry(line.Instruction,
                             "Switch statement does not have a default case.", false);
                     }
                 }

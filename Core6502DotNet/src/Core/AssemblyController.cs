@@ -66,8 +66,10 @@ namespace Core6502DotNet
                 if (src != null && src.Instruction != null && src.Instruction.Name.Equals(".cpu", _services.StringViewComparer))
                 {
                     if (src.Operands.Count != 1 || !src.Operands[0].IsDoubleQuote())
-                        _services.Log.LogEntry(src.Filename, src.LineNumber, src.Instruction.Position,
+                    {
+                        _services.Log.LogEntry(src.Instruction,
                             "Invalid expression for directive \".cpu\".");
+                    }
                     else
                         cpu = src.Operands[0].Name.ToString().TrimOnce('"');
                 }
@@ -166,16 +168,17 @@ namespace Core6502DotNet
                 if (!_services.Options.WarnNotUnusedSections && !_services.Log.HasErrors)
                 {
                     var unused = _services.Output.UnusedSections;
-                    if (unused.Count() > 0)
+                    if (unused.Any())
                     {
                         foreach (var section in unused)
-                            _services.Log.LogEntry(null, 1, 1,
-                                $"Section {section} was defined but never used.", false);
+                        {
+                            _services.Log.LogEntrySimple($"Section {section} was defined but never used.", false);
+                        }
                     }
                 }
                 if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
                     _services.Log.DumpWarnings();
-                int byteCount = 0;
+                var byteCount = 0;
                 if (_services.Log.HasErrors)
                 {
                     _services.Log.DumpErrors();
@@ -267,7 +270,7 @@ namespace Core6502DotNet
                         }
                         else if (ex is InvalidCpuException cpuEx)
                         {
-                            _services.Log.LogEntry(line, line.Instruction.Position, cpuEx.Message);
+                            _services.Log.LogEntry(line.Instruction, cpuEx.Message);
                         }
                         else if (ex is FormatException ||
                                  ex is ReturnException ||
@@ -275,9 +278,11 @@ namespace Core6502DotNet
                                  ex is SectionException)
                         {
                             if (ex is FormatException)
+                            {
                                 _services.Log.LogEntry(line.Operands[0],
                                                   $"There was a problem with the format string.",
                                                   true);
+                            }
                             else if (ex is ReturnException retEx)
                                 _services.Log.LogEntry(line, retEx.Position, retEx.Message);
                             else
@@ -287,7 +292,7 @@ namespace Core6502DotNet
                         {
                             if (_services.CurrentPass <= 0 || _services.PassNeeded)
                             {
-                                if (assembler != null)
+                                if (assembler != null && !(ex is ProgramOverflowException))
                                 {
                                     var instructionSize = assembler.GetInstructionSize(line);
                                     if (_services.Output.AddressIsValid(instructionSize + _services.Output.LogicalPC))
@@ -302,10 +307,12 @@ namespace Core6502DotNet
                                 if (ex is ExpressionException expEx)
                                 {
                                     if (ex is IllegalQuantityException illegalExp)
+                                    {
                                         _services.Log.LogEntry(line, illegalExp.Position,
                                             $"Illegal quantity for \"{line.Instruction.Name}\" ({illegalExp.Quantity}).");
+                                    }
                                     else
-                                        _services.Log.LogEntry(line.Filename, line.LineNumber, expEx.Position, ex.Message);
+                                        _services.Log.LogEntry(line, expEx.Position, ex.Message);
                                 }
                                 else if (ex is ProgramOverflowException)
                                 {
@@ -317,7 +324,7 @@ namespace Core6502DotNet
                                         _services.Log.LogEntry(line.Instruction,
                                             pcEx.Message);
                                     else
-                                        _services.Log.LogEntry(line.Instruction,
+                                        _services.Log.LogEntry(line.Operands[0],
                                             $"Invalid Program Counter assignment {pcEx.Message} in expression.");
                                 }
                                 else
@@ -342,6 +349,12 @@ namespace Core6502DotNet
             var objectCode = _services.Output.GetCompilation(section);
             if (!string.IsNullOrEmpty(_services.Options.Patch))
             {
+                if (!string.IsNullOrEmpty(_services.Options.OutputFile) ||
+                    !string.IsNullOrEmpty(_services.Options.Format))
+                    _services.Log.LogEntrySimple("Output options ignored for patch mode.", false);
+                if (_services.Options.LabelsAddressesOnly && string.IsNullOrEmpty(_services.Options.LabelFile))
+                    _services.Log.LogEntrySimple("Label listing not specified; option '-labels-addresses-only' ignored.",
+                        false);
                 try
                 {
                     var offsetLine = new Preprocessor(_processorOptions).ProcessDefine("patch=" + _services.Options.Patch);
@@ -384,13 +397,18 @@ namespace Core6502DotNet
 
             // write labels
             if (!string.IsNullOrEmpty(_services.Options.LabelFile))
-                File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels());
-
+                File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels(!_services.Options.LabelsAddressesOnly));
+            
+            if (_services.Log.HasWarnings)
+                _services.Log.DumpWarnings();
             if (!_services.Options.NoStats)
             {
                 Console.WriteLine("\n*********************************");
                 Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
-                Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
+                if (_services.Output.ProgramEnd > BinaryOutput.MaxAddress && _services.Options.LongAddressing)
+                    Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd:X6}");
+                else
+                    Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
                 Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
             }
             return objectCode.Count;

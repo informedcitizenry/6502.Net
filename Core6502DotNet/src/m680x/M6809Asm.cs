@@ -318,10 +318,10 @@ namespace Core6502DotNet.m680x
                     {
                         offsetValue = Services.Evaluator.Evaluate(operand, false, short.MinValue, ushort.MaxValue);
                     }
-                    catch (IllegalQuantityException ex)
+                    catch (IllegalQuantityException)
                     {
                         if (!Services.PassNeeded)
-                            throw ex;
+                            throw;
                         offsetValue = 0;
                     }
                 }
@@ -477,8 +477,9 @@ namespace Core6502DotNet.m680x
             else
             {
                 if (forcedMod != Modes.Implied)
-                    Services.Log.LogEntry(line.Filename, line.LineNumber, line.Operands[0].Position,
-                        "Width specifier does not affect operand size.", false);
+                    Services.Log.LogEntry(line.Operands[0],
+                        "Width specifier does not affect operand size.",
+                        false);
                 if (offsRegMode != IndexModes.None)
                 {
                     var ix = offsRegMode switch
@@ -566,12 +567,12 @@ namespace Core6502DotNet.m680x
                 var sb = new StringBuilder();
                 if (!Services.Options.NoAssembly)
                 {
-                    var byteString = Services.Output.GetBytesFrom(PCOnAssemble).ToString(PCOnAssemble, '.');
+                    var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.');
                     sb.Append(byteString.PadRight(Padding));
                 }
                 else
                 {
-                    sb.Append($".{PCOnAssemble:x4}                        ");
+                    sb.Append($".{LogicalPCOnAssemble:x4}                        ");
                 }
                 if (!Services.Options.NoDisassembly)
                     sb.Append(disSb.ToString().PadRight(18));
@@ -636,12 +637,12 @@ namespace Core6502DotNet.m680x
                 var sb = new StringBuilder();
                 if (!Services.Options.NoAssembly)
                 {
-                    var byteString = Services.Output.GetBytesFrom(PCOnAssemble).ToString(PCOnAssemble, '.');
+                    var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.');
                     sb.Append(byteString.PadRight(Padding));
                 }
                 else
                 {
-                    sb.Append($".{PCOnAssemble:x4}                        ");
+                    sb.Append($".{LogicalPCOnAssemble:x4}                        ");
                 }
                 if (!Services.Options.NoDisassembly)
                     sb.Append($"{instruction} {string.Join(',', registersEvaled)}".PadRight(18));

@@ -46,8 +46,7 @@ namespace Core6502DotNet
             var iterator = line.Operands.GetIterator();
             if (!iterator.MoveNext())
             {
-                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
-                    "Expected expression.");
+                Services.Log.LogEntry(line.Instruction, "Expected expression.");
             }
             else
             {
@@ -68,8 +67,7 @@ namespace Core6502DotNet
                         {
                             Output(line, StringHelper.GetString(iterator, Services));
                             if (iterator.Current != null)
-                                Services.Log.LogEntry(line.Filename, line.LineNumber, iterator.Current.Position,
-                                    "Unexpected expression.");
+                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
                         }
                     }
                 }
@@ -106,7 +104,8 @@ namespace Core6502DotNet
             else
             {
                 var iterator = line.Operands.GetIterator();
-                Services.Output.SetBank((int)Services.Evaluator.Evaluate(iterator, sbyte.MinValue, byte.MaxValue));
+                Services.Output.SetBank((int)Services.Evaluator.Evaluate(iterator, byte.MinValue, byte.MaxValue),
+                                        Services.Options.ResetPCOnBank);
                 if (iterator.Current != null)
                     Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
             }
@@ -187,11 +186,9 @@ namespace Core6502DotNet
                         else
                         {
                             if (!iterator.MoveNext() || !StringHelper.ExpressionIsAString(iterator, Services))
-                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
-                                    "Expression must be a string.");
+                                Services.Log.LogEntry(line.Instruction, "Expression must be a string.");
                             else if (!string.IsNullOrEmpty(Services.OutputFormat))
-                                Services.Log.LogEntry(line.Filename, line.LineNumber, line.Instruction.Position,
-                                    "Output format was previously specified.");
+                                Services.Log.LogEntry(line.Instruction, "Output format was previously specified.");
                             else
                                 Services.SelectFormat(StringHelper.GetString(iterator, Services));
                             if (iterator.Current != null)
@@ -227,10 +224,10 @@ namespace Core6502DotNet
                     throw new SyntaxException(parms.Current,
                         "Unexpected expression.");
 
-                var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms, ushort.MinValue, ushort.MaxValue));
+                var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms, UInt24.MinValue, UInt24.MaxValue));
                 var ends = BinaryOutput.MaxAddress + 1;
                 if (!Token.IsEnd(parms.PeekNext()))
-                    ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms, ushort.MinValue, ushort.MaxValue));
+                    ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms, UInt24.MinValue, UInt24.MaxValue));
                 if (parms.MoveNext())
                     throw new SyntaxException(parms.Current, "Unexpected expression.");
                 Services.Output.DefineSection(name, starts, ends);
@@ -262,7 +259,8 @@ namespace Core6502DotNet
             if (line.Label != null)
             {
                 if (line.Label.Name.Equals("*"))
-                    Services.Log.LogEntry(line.Label, "Redundant assignment of program counter for directive \".section\".", false);
+                    Services.Log.LogEntry(line.Label, 
+                        "Redundant assignment of program counter for directive \".section\".", false);
                 else if (line.Label.Name[0].IsSpecialOperator())
                     Services.SymbolManager.DefineLineReference(line.Label, Services.Output.LogicalPC);
                 else

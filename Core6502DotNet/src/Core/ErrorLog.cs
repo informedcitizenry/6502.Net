@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -43,7 +44,7 @@ namespace Core6502DotNet
 
         #region Methods
 
-        void DumpEntries(IEnumerable<(string message, bool isError)> entries,
+        static void DumpEntries(IEnumerable<(string message, bool isError)> entries,
                          ConsoleColor textColor,
                          TextWriter writer)
         {
@@ -121,13 +122,21 @@ namespace Core6502DotNet
         /// <summary>
         /// Log a message.
         /// </summary>
+        /// <param name="message">The custom string message.</param>
+        /// <param name="isError">Indicate if the message is an error.</param>
+        public void LogEntrySimple(string message, bool isError)
+            => _errors.Add((message, isError || _warningsAsErrors));
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
         /// <param name="filename">The source file.</param>
         /// <param name="linenumber">The source line number.</param>
         /// <param name="position">The position in the source that raised the message.</param>
         /// <param name="message">The custom string message.</param>
+        /// <param name="source">The source text of the source that raised the message.</param>
         /// <param name="isError">Indicate if the message is an error.</param>
-        /// <param name="source">The message source.</param>
-        public void LogEntry(string filename, int linenumber, int position, string message, bool isError)
+        public void LogEntry(string filename, int linenumber, int position, string message, string source, bool isError)
         {
             var errorBuilder = new StringBuilder();
             var type = isError ? "Error" : "Warning";
@@ -145,9 +154,20 @@ namespace Core6502DotNet
                 errorBuilder.Append($"{type.ToLower()}");
             }
             if (!string.IsNullOrEmpty(message))
+            {
                 errorBuilder.Append($": {message}");
+            }
+            if (!string.IsNullOrEmpty(source))
+            {
+                var highlightWs = Regex.Replace(source, @"[^\t]", " ");
+                errorBuilder.AppendLine($"\n{source}")
+                            .Append(highlightWs.Substring(0, position - 1))
+                            .Append('^');
+            }
             isError = isError || _warningsAsErrors;
-            _errors.Add((errorBuilder.ToString(), isError));
+            var errorMessage = errorBuilder.ToString();
+            if (!_errors.Contains((errorMessage, isError)))
+                _errors.Add((errorMessage, isError));
             if (_errors.Count > 1000)
             {
                 DumpAll();
@@ -162,8 +182,19 @@ namespace Core6502DotNet
         /// <param name="linenumber">The source line number.</param>
         /// <param name="position">The position in the source that raised the message.</param>
         /// <param name="message">The custome string message.</param>
+        /// <param name="source">The source text of the source that raised the message.</param>
+        public void LogEntry(string filename, int linenumber, int position, string message, string source)
+            => LogEntry(filename, linenumber, position, message, source, true);
+
+        /// <summary>
+        /// Log a message.
+        /// </summary>
+        /// <param name="filename">The source file.</param>
+        /// <param name="linenumber">The source line number.</param>
+        /// <param name="position">The position in the source that raised the message.</param>
+        /// <param name="message">The custome string message.</param>
         public void LogEntry(string filename, int linenumber, int position, string message)
-            => LogEntry(filename, linenumber, position, message, true);
+            => LogEntry(filename, linenumber, position, message, string.Empty, true);
 
         /// <summary>
         /// Log a message.
@@ -172,7 +203,7 @@ namespace Core6502DotNet
         /// <param name="position">The position in the source that raised the message.</param>
         /// <param name="message">The custom string message.</param>
         public void LogEntry(SourceLine line, int position, string message)
-            => LogEntry(line.Filename, line.LineNumber, position, message, true);
+            => LogEntry(line.Filename, line.LineNumber, position, message, line.Source, true);
 
         /// <summary>
         /// Log a message.
@@ -181,14 +212,14 @@ namespace Core6502DotNet
         /// <param name="message">The custom string message.</param>
         /// <param name="isError">Indicate if the message is an error.</param>
         public void LogEntry(Token token, string message, bool isError) =>
-            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, isError);
+            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, token.Line.Source, isError);
 
         /// <summary>
         /// Log a message.
         /// </summary>
         /// <param name="token">The <see cref="Token"/>.</param>
         public void LogEntry(Token token, string message) =>
-            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, true);
+            LogEntry(token.Line.Filename, token.Line.LineNumber, token.Position, message, token.Line.Source, true);
 
         #endregion
 

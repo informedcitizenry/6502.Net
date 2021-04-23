@@ -45,7 +45,7 @@ namespace Core6502DotNet
             SymbolManager = new SymbolManager(options.CaseSensitive, Evaluator);
             SymbolManager.AddValidSymbolNameCriterion(s => !Evaluator.IsReserved(s));
             Log = new ErrorLog(Options.WarningsAsErrors);
-            Output = new BinaryOutput();
+            Output = new BinaryOutput(true, Options.CaseSensitive, Options.LongAddressing);
         }
 
         #endregion

@@ -487,7 +487,9 @@ namespace Core6502DotNet.m65xx
                 var instruction = line.Instruction.Name.ToLower();
                 if (!CPU.Equals("65816"))
                 {
-                    Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
+                    Services.Log.LogEntry(line.Instruction, 
+                        $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", 
+                        false);
                 }
                 else
                 {
@@ -565,9 +567,9 @@ namespace Core6502DotNet.m65xx
                 return string.Empty;
             var sb = new StringBuilder();
             if (!Services.Options.NoAssembly)
-                sb.Append(Services.Output.GetBytesFrom(PCOnAssemble).Take(2).ToString(PCOnAssemble, '.', true).PadRight(Padding));
+                sb.Append(Services.Output.GetBytesFrom(LogicalPCOnAssemble).Take(2).ToString(LogicalPCOnAssemble, '.', true).PadRight(Padding));
             else
-                sb.Append($".{PCOnAssemble:x4}                     ");
+                sb.Append($".{LogicalPCOnAssemble:x4}                     ");
 
             if (!Services.Options.NoDisassembly)
             {
@@ -585,9 +587,9 @@ namespace Core6502DotNet.m65xx
                         sb.Append($"         {line.Source}");
                     sb.AppendLine();
                     if (!Services.Options.NoAssembly)
-                        sb.Append(Services.Output.GetBytesFrom(PCOnAssemble + 2).ToString(PCOnAssemble + addrOffs, '.').PadRight(Padding));
+                        sb.Append(Services.Output.GetBytesFrom(LogicalPCOnAssemble + 2).ToString(LogicalPCOnAssemble + addrOffs, '.').PadRight(Padding));
                     else
-                        sb.Append($".{PCOnAssemble:x4}                     ");
+                        sb.Append($".{LogicalPCOnAssemble:x4}                     ");
 
                     sb.Append($"jmp ${(int)offset:x4}");
 
@@ -605,7 +607,8 @@ namespace Core6502DotNet.m65xx
             if (line.Operands.Count > 0)
                 Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
             else if (!CPU.Equals("65816"))
-                Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", false);
+                Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", 
+                    false);
             else
                 _autoOn = line.Instruction.Name.Equals(".auto", Services.StringComparison);
             return string.Empty;

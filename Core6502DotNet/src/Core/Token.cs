@@ -12,9 +12,10 @@ using System.Text;
 
 namespace Core6502DotNet
 {
-        /// <summary>
+    /// <summary>
     /// An enumeration of the token's type in an expression.
     /// </summary>
+    [Flags]
     public enum TokenType : uint
     {
         None = 0,

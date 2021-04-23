@@ -81,7 +81,7 @@ namespace Core6502DotNet
 
         /// <summary>
         /// Represents the maximum address the Program Counter can reach before
-        /// subsequent output is considered an overflow.
+        /// subsequent output is considered an overflow for 16-bit addressing.
         /// </summary>
         public const int MaxAddress = 0xFFFF;
 
@@ -90,7 +90,9 @@ namespace Core6502DotNet
         #region Members
 
         readonly SectionCollection _sectionCollection;
-        readonly byte[] _bytes;
+        List<byte[]> _output;
+        byte _initVal;
+        byte[] _bytes;
         bool _compilingStarted;
         int _logicalPc;
         int _pc;
@@ -103,13 +105,15 @@ namespace Core6502DotNet
         /// <summary>
         /// Initializes a new compilation
         /// </summary>
-        /// <param name="isLittleEndian">Determines whether to compile as little endian</param>
-        public BinaryOutput(bool isLittleEndian, bool caseSensitive)
+        /// <param name="isLittleEndian">Determines whether to compile as little endian.</param>
+        /// <param name="caseSensitive">Set case sensitivity for section names.</param>
+        /// <param name="allowLongOutput">Allow output to be greater than 64KiB.</param>
+        public BinaryOutput(bool isLittleEndian, bool caseSensitive, bool allowLongOutput)
         {
             _compilingStarted = false;
-            _bytes = new byte[BufferSize];
             _sectionCollection = new SectionCollection(caseSensitive);
             IsLittleEndian = isLittleEndian;
+            AllowLongOutput = allowLongOutput;
             Reset();
         }
 
@@ -118,7 +122,7 @@ namespace Core6502DotNet
         /// Initializes a new compilation.
         /// </summary>
         public BinaryOutput()
-            : this(true, false)
+            : this(true, false, false)
         {
 
         }
@@ -174,26 +178,30 @@ namespace Core6502DotNet
         /// </summary>
         public void Reset()
         {
-            Array.Clear(_bytes, 0, BufferSize);
+            _output = new List<byte[]>(1) { new byte[BufferSize] };
+            _bytes = _output[0];
             Transform = null;
             PCOverflow = _compilingStarted = _started = false;
             _sectionCollection.Reset();
-            CurrentBank = ProgramEnd = PreviousPC = _pc = _logicalPc = 0;
-           
+            CurrentBank = ProgramEnd = PreviousPC = _pc = _logicalPc = _initVal = 0;
         }
 
         /// <summary>
         /// Sets the current bank.
         /// </summary>
         /// <param name="bank"></param>
+        /// <param name="resetPC">Reset the Program Counter if bank has changed.</param>
         /// <exception cref="ArgumentOutOfRangeException"/>
-        public void SetBank(int bank)
+        public void SetBank(int bank, bool resetPC)
         {
-            if (bank < 0)
+            if (bank < 0 || bank > 255)
                 throw new ArgumentOutOfRangeException();
-            if (!AddressIsValid(0))
-                throw new InvalidPCAssignmentException(0);
-            _logicalPc = _pc = 0;
+            if (resetPC && CurrentBank != bank)
+            {
+                if (!AddressIsValid(0))
+                    throw new InvalidPCAssignmentException(0);
+                _logicalPc = _pc = 0;
+            }
             CurrentBank = bank;
         }
 
@@ -204,9 +212,9 @@ namespace Core6502DotNet
         public void SetPC(int value)
         {
             if (!AddressIsValid(value))
-                throw new InvalidPCAssignmentException(value, 
+                throw new InvalidPCAssignmentException(value,
                     !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
-            
+
             LogicalPC = value;
             ProgramCounter = value;
         }
@@ -220,7 +228,7 @@ namespace Core6502DotNet
             if (value < -(MaxAddress / 2) || value > MaxAddress)
                 throw new InvalidPCAssignmentException(value);
             _started = true;
-            _logicalPc = value & 0xFFFF;
+            _logicalPc = value & MaxAddress;
         }
 
         /// <summary>
@@ -266,12 +274,19 @@ namespace Core6502DotNet
         /// <param name="size">The number of bytes to add to the memory space.</param>
         public void AddUninitialized(int size)
         {
-            if (ProgramEnd > MaxAddress)
-                throw new ProgramOverflowException($"Program overflowed {size} bytes.");
-            if (!AddressIsValid(ProgramCounter))
-                throw new InvalidPCAssignmentException(ProgramCounter, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
-            _pc += size;
-            _logicalPc += size;
+            if (ProgramEnd > MaxAddress || !AddressIsValid(ProgramCounter))
+            {
+                var bank = (_pc + size) / BufferSize;
+                if (!AllowLongOutput || bank > 255 || _sectionCollection.SectionSelected)
+                {
+                    if (!AddressIsValid(ProgramCounter))
+                        throw new InvalidPCAssignmentException(ProgramCounter, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
+                    throw new ProgramOverflowException($"Program overflowed {size} bytes.");
+                }
+                CurrentBank = bank;
+            }
+            _pc = (_pc + size) % BufferSize;
+            _logicalPc = (_logicalPc + size) % BufferSize;
             if (_sectionCollection.SectionSelected)
                 _sectionCollection.SetOutputCount(_pc - _sectionCollection.SelectedStartAddress);
         }
@@ -378,12 +393,6 @@ namespace Core6502DotNet
                 _compilingStarted = true;
                 ProgramStart = ProgramCounter;
             }
-            else if (ProgramCounter < ProgramStart)
-            {
-                ProgramStart = ProgramCounter;
-            }
-            _logicalPc += size;
-
             if (Transform != null)
                 bytes = bytes.Select(b => Transform(b));
 
@@ -393,14 +402,23 @@ namespace Core6502DotNet
 
             foreach (var b in bytesAdded)
             {
-                if (_pc > MaxAddress)
-                    throw new ProgramOverflowException($"Program overflow.");
                 if (_sectionCollection.SectionSelected && !_sectionCollection.AddressInBounds(_pc))
                     throw new ProgramOverflowException($"${ProgramCounter:x4} exceeds bounds of current section.");
+                if (_pc > MaxAddress)
+                {
+                    if (!AllowLongOutput || _output.Count == 255)
+                        throw new ProgramOverflowException("Program overflow.");
+                    _output.Add(new byte[BufferSize]);
+                    _bytes = _output[^1];
+                    Array.Fill(_bytes, _initVal);
+                    _pc = 0;
+                }
                 _bytes[_pc++] = b;
             }
-            if (ProgramEnd < ProgramCounter)
-                ProgramEnd = ProgramCounter;
+            _logicalPc = (_logicalPc + size) % BufferSize;
+
+            if (ProgramEnd < (((_output.Count - 1) * BufferSize) | ProgramCounter))
+                ProgramEnd =  ((_output.Count - 1) * BufferSize) | ProgramCounter;
             if (_sectionCollection.SectionSelected)
                 _sectionCollection.SetOutputCount(_pc - _sectionCollection.SelectedStartAddress);
         }
@@ -430,7 +448,12 @@ namespace Core6502DotNet
         /// </summary>
         /// <returns>The object bytes.</returns>
         public ReadOnlyCollection<byte> GetCompilation()
-            => new ReadOnlyCollection<byte>(_bytes.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
+        {
+            if (_output.Count == 1)
+                return new ReadOnlyCollection<byte>(_bytes.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
+            var compilation = _output.SelectMany(b => b);
+            return new ReadOnlyCollection<byte>(compilation.Skip(ProgramStart).Take(ProgramEnd - ProgramStart).ToArray());
+        }
 
         /// <summary>
         /// Gets the compilation bytes.
@@ -483,7 +506,7 @@ namespace Core6502DotNet
         {
             if (!_compilingStarted || ProgramCounter < ProgramStart)
                 return new List<byte>().AsReadOnly();
-            if (ProgramCounter != _logicalPc)
+            if ((ProgramCounter & MaxAddress) != _logicalPc)
             {
                 var diff = _logicalPc - start;
                 start = ProgramCounter - diff;
@@ -522,9 +545,13 @@ namespace Core6502DotNet
         /// <param name="value">The value to initialize memory.</param>
         public void InitMemory(byte value)
         {
-            var i = !_compilingStarted ? ProgramCounter : ProgramEnd;
-            while (i < 0x10000)
-                _bytes[i++] = value;
+            _initVal = value;
+            if (ProgramStart > 0)
+                Array.Fill(_bytes, _initVal, 0, ProgramStart);
+            int start = !_compilingStarted ? ProgramCounter : ProgramEnd;
+            int count = BufferSize - start;
+            if (count > 0)
+                Array.Fill(_bytes, _initVal, start, count);
         }
 
         /// <summary>
@@ -655,9 +682,9 @@ namespace Core6502DotNet
             return true;
         }
 
-        public override string ToString() => $"{ProgramStart:X4}:{ProgramCounter:X4} [{LogicalPC:X4}]";
+        public override string ToString() => $"{ProgramStart:X4}:{ProgramEnd:X4} [{LogicalPC:X4}]";
 
-        IEnumerable<byte> BitConvertLittleEndian(long value)
+        static IEnumerable<byte> BitConvertLittleEndian(long value)
         {
             var bytes = BitConverter.GetBytes(value);
             if (!BitConverter.IsLittleEndian)
@@ -702,7 +729,7 @@ namespace Core6502DotNet
         public int PreviousPC { get; private set; }
 
         /// <summary>
-        /// Gets the real Program Counter
+        /// Gets the real Program Counter.
         /// </summary>
         public int ProgramCounter
         {
@@ -714,6 +741,11 @@ namespace Core6502DotNet
                 _pc = value;
             }
         }
+
+        /// <summary>
+        /// Gets the long real Program Counter.
+        /// </summary>
+        public int LongProgramCounter => ProgramCounter | ((_output.Count - 1) << 16);
 
         /// <summary>
         /// Gets the names of any defined sections not used during 
@@ -767,6 +799,11 @@ namespace Core6502DotNet
         /// Gets a flag that indicates that output exists.
         /// </summary>
         public bool HasOutput => _compilingStarted;
+
+        /// <summary>
+        /// Gets or sets the flag indicating the binary output can allow >64KiB output.
+        /// </summary>
+        public bool AllowLongOutput { get; }
 
         #endregion
     }

@@ -85,13 +85,15 @@ namespace Core6502DotNet
         {
             var first = lines.Current;
             bool isSpecial = first.Label != null && first.Label.IsSpecialOperator();
-            PCOnAssemble = Services.Output.LogicalPC;
+            LogicalPCOnAssemble = Services.Output.LogicalPC;
+            PCOnAssemble = Services.Output.ProgramCounter;
+            LongPCOnAssemble = Services.Output.LongProgramCounter;
             if (first.Label != null && !first.Label.Name.Equals("*"))
             {
                 if (isSpecial)
-                    Services.SymbolManager.DefineLineReference(first.Label, PCOnAssemble);
+                    Services.SymbolManager.DefineLineReference(first.Label, LogicalPCOnAssemble);
                 else if (first.Instruction == null || !ExcludedInstructionsForLabelDefines.Contains(first.Instruction.Name))
-                    DefineLabel(first.Label, PCOnAssemble, true);
+                    DefineLabel(first.Label, LogicalPCOnAssemble, true);
             }
             if (first.Instruction != null)
                 return OnAssemble(lines);
@@ -179,10 +181,28 @@ namespace Core6502DotNet
         protected ReservedWords Reserved { get; }
 
         /// <summary>
-        /// Gets the state of the Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
+        /// Gets the state of the Logical Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
+        /// object when OnAssemble was invoked.
+        /// </summary>
+        protected int LogicalPCOnAssemble { get; private set; }
+
+        /// <summary>
+        /// Gets the state of the long Logical Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
+        /// object when OnAssemble was invoked.
+        /// </summary>
+        protected int LongLogicalPCOnAssemble { get; private set; }
+
+        /// <summary>
+        /// Gets the state of the real Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
         /// object when OnAssemble was invoked.
         /// </summary>
         protected int PCOnAssemble { get; private set; }
+
+        /// <summary>
+        /// Gets the state of the long real Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
+        /// object when OnAssemble was invoked.
+        /// </summary>
+        protected int LongPCOnAssemble { get; private set; }
 
         /// <summary>
         /// The shared assembly services.

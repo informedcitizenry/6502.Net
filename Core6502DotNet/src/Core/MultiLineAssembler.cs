@@ -163,10 +163,15 @@ namespace Core6502DotNet
                                 if (line.Operands.Count > 0)
                                 {
                                     var it = line.Operands.GetIterator();
-                                    var result =  _options.Evaluator.Evaluate(it);
-                                    if (it.Current != null)
-                                        throw new SyntaxException(it.Current, "Unexpected expression.");
-                                    return result;
+                                    try
+                                    {
+                                        var result = _options.Evaluator.Evaluate(it);
+                                        return it.Current != null ? throw new SyntaxException(it.Current, "Unexpected expression.") : result;
+                                    }
+                                    catch (IllegalQuantityException ex)
+                                    {
+                                        return ex.Quantity;
+                                    }
                                 }
                                 return double.NaN;
                             }

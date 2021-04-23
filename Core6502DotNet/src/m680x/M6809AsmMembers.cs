@@ -5,11 +5,12 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 
 namespace Core6502DotNet.m680x
 {
-       public sealed partial class M6809Asm : MotorolaBase
+    public sealed partial class M6809Asm : MotorolaBase
     {
         // 6809 Post-Byte Bits for Indexed and Indirect Addressing:
         // +---------------------------------------------------------------+
@@ -50,6 +51,7 @@ namespace Core6502DotNet.m680x
         // leax $10,PC  => 30 8C 0D
         // leay [234,u] => 31 D9 EA
         // lda ,--x     => A6 83
+        [Flags]
         enum IndexModes
         {
             None     = 0,

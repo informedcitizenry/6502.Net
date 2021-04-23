@@ -188,7 +188,7 @@ namespace Core6502DotNet
                 _currentBlock = block;
             }
             if (line.Instruction.Name.Equals(".block", Services.StringComparison) && line.Label != null)
-                DefineLabel(line.Label, PCOnAssemble, false);
+                DefineLabel(line.Label, LogicalPCOnAssemble, false);
             
             var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
             if (_currentBlock == null || (!isBreakCont && !_currentBlock.IsReserved(line.Instruction.Name)))
