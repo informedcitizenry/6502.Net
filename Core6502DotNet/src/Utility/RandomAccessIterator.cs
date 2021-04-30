@@ -177,7 +177,6 @@ namespace Core6502DotNet
 
         #endregion
 
-
         #region Properties
 
         /// <summary>

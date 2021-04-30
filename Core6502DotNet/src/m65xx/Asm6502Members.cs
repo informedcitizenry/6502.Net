@@ -589,6 +589,14 @@ namespace Core6502DotNet.m65xx
             { ("isb", Modes.AbsoluteX   ), new CpuInstruction( "6502i",   0xff, 3) },
         };
 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_opcodesC64dtv2 =
+            new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
+        {
+            { ("bra", Modes.Relative    ), new CpuInstruction( "c64dtv2", 0x12, 2) },
+            { ("sac", Modes.Immediate   ), new CpuInstruction( "c64dtv2", 0x32, 2) },
+            { ("sir", Modes.Immediate   ), new CpuInstruction( "c64dtv2", 0x42, 2) }
+        };
+
         static readonly IReadOnlyDictionary<StringView, string> s_pseudoBranchTranslations =
             new Dictionary<StringView, string>
         {
@@ -614,6 +622,7 @@ namespace Core6502DotNet.m65xx
             "6502",
             "6502i",
             "65C02",
+            "c64dtv2",
             "HuC6280",
             "R65C02",
             "65CE02",

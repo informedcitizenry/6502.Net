@@ -99,12 +99,12 @@ namespace Core6502DotNet.m65xx
                     "dec", "dew", "dop", "eor", "inc", "inw", "isb", "jml",
                     "jmp", "jsl", "jsr", "las", "lax", "lda", "ldx", "ldy",
                     "ldz", "lsr", "neg", "ora", "pea", "pei", "phw", "rla", 
-                    "rol", "ror", "row", "rra", "sax", "sbc", "sha", "shx", 
-                    "shy", "slo", "sre", "st1", "st2", "sta", "stx", "sty", 
-                    "stz", "tam", "tas", "tma", "top", "trb", "tsb", "tst",
-                    "adcq", "aslq", "andq", "cpq", "deq", "eom", "eorq",
-                    "inq", "ldq", "lsrq", "orq", "rolq", "rorq", "sbcq",
-                    "stq"
+                    "rol", "ror", "row", "rra", "sac", "sax", "sbc", "sha",
+                    "shx", "shy", "sir", "slo", "sre", "st1", "st2", "sta",
+                    "stx", "sty", "stz", "tam", "tas", "tma", "top", "trb",
+                    "tsb", "tst", "adcq", "aslq", "andq", "cpq", "deq",
+                    "eom", "eorq", "inq", "ldq", "lsrq", "orq", "rolq",
+                    "rorq", "sbcq", "stq"
                 );
 
             // set architecture specific encodings
@@ -281,6 +281,10 @@ namespace Core6502DotNet.m65xx
                     break;
                 case "6502i":
                     ActiveInstructions = s_opcodes6502.Concat(s_opcodes6502i)
+                                                .ToDictionary(k => k.Key, k => k.Value);
+                    break;
+                case "c64dtv2":
+                    ActiveInstructions = s_opcodes6502.Concat(s_opcodesC64dtv2)
                                                 .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 default:

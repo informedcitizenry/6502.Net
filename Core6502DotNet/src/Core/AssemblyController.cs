@@ -171,16 +171,14 @@ namespace Core6502DotNet
                     if (unused.Any())
                     {
                         foreach (var section in unused)
-                        {
                             _services.Log.LogEntrySimple($"Section {section} was defined but never used.", false);
-                        }
                     }
                 }
-                if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
-                    _services.Log.DumpWarnings();
                 var byteCount = 0;
                 if (_services.Log.HasErrors)
                 {
+                    if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
+                        _services.Log.DumpWarnings();
                     _services.Log.DumpErrors();
                 }
                 else
@@ -193,36 +191,42 @@ namespace Core6502DotNet
                                      $"// {DateTime.Now:f}\n\n// Input files:\n\n" +
                                      $"// {inputFiles}\n\n" + disassembly;
                     byteCount = WriteOutput(fullDisasm);
+                    if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
+                        _services.Log.DumpWarnings();
+                    if (!_services.Options.NoStats)
+                    {
+                        Console.WriteLine("\n*********************************");
+                        Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
+                        if (_services.Output.ProgramEnd > BinaryOutput.MaxAddress && _services.Options.LongAddressing)
+                            Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd:X6}");
+                        else
+                            Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
+                        Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
+                    }
                 }
                 if (!_services.Options.NoStats)
-                {
+                {   
                     Console.WriteLine($"Number of errors: {_services.Log.ErrorCount}");
                     Console.WriteLine($"Number of warnings: {_services.Log.WarningCount}");
                 }
                 stopWatch.Stop();
                 var ts = stopWatch.Elapsed.TotalSeconds;
-                if (!_services.Log.HasErrors)
+                if (!_services.Log.HasErrors && !_services.Options.NoStats)
                 {
                     var section = _services.Options.OutputSection;
-                    if (!_services.Options.NoStats)
-                    {
-                        if (!string.IsNullOrEmpty(section))
-                            Console.Write($"[{section}] ");
+                    if (!string.IsNullOrEmpty(section))
+                        Console.Write($"[{section}] ");
 
-                        if (!string.IsNullOrEmpty(_services.Options.Patch))
-                            Console.WriteLine($"{byteCount} (Offs:{_services.Options.Patch}), {ts} sec.");
-                        else
-                            Console.WriteLine($"{byteCount} bytes, {ts} sec.");
-                        if (_services.Options.ShowChecksums)
-                            Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
-                        Console.WriteLine("*********************************");
-                        Console.Write("Assembly completed successfully.");
-                    }
+                    if (!string.IsNullOrEmpty(_services.Options.Patch))
+                        Console.WriteLine($"{byteCount} (Offs:{_services.Options.Patch}), {ts} sec.");
+                    else
+                        Console.WriteLine($"{byteCount} bytes, {ts} sec.");
+                    if (_services.Options.ShowChecksums)
+                        Console.WriteLine($"Checksum: {_services.Output.GetOutputHash(section)}");
+                    Console.WriteLine("*********************************");
+                    Console.Write("Assembly completed successfully.");
                 }
-                else
-                {
-                    _services.Log.ClearAll();
-                }
+                _services.Log.ClearAll();
                 return ts;
             }
             catch (Exception ex)
@@ -251,7 +255,11 @@ namespace Core6502DotNet
                     return true;
                 case AssemblyErrorReason.ExceptionRaised:
                     {
-                        if (ex is SymbolException symbEx)
+                        if (ex is ErrorLogFullException logExc)
+                        {
+                            logExc.Log.LogEntrySimple(logExc.Message);
+                        }
+                        else if (ex is SymbolException symbEx)
                         {
                             if (symbEx.SymbolToken != null)
                                 _services.Log.LogEntry(symbEx.SymbolToken, symbEx.Message);
@@ -398,19 +406,6 @@ namespace Core6502DotNet
             // write labels
             if (!string.IsNullOrEmpty(_services.Options.LabelFile))
                 File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels(!_services.Options.LabelsAddressesOnly));
-            
-            if (_services.Log.HasWarnings)
-                _services.Log.DumpWarnings();
-            if (!_services.Options.NoStats)
-            {
-                Console.WriteLine("\n*********************************");
-                Console.WriteLine($"Assembly start: ${_services.Output.ProgramStart:X4}");
-                if (_services.Output.ProgramEnd > BinaryOutput.MaxAddress && _services.Options.LongAddressing)
-                    Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd:X6}");
-                else
-                    Console.WriteLine($"Assembly end:   ${_services.Output.ProgramEnd & BinaryOutput.MaxAddress:X4}");
-                Console.WriteLine($"Passes: {_services.CurrentPass + 1}");
-            }
             return objectCode.Count;
         }
         #endregion

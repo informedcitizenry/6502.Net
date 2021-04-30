@@ -37,7 +37,7 @@
         },
         {
           "name": "keyword.other.mnemonic.core6502_net_65xx",
-          "match": "(?i)\\b(adc|anc|and|ane|arr|asl|asr|asw|bbr|bbs|bcc|bcs|beq|bge|bit|blt|bmi|bne|bpl|bra|brk|brl|bsr|bvc|bvs|cla|clc|cld|cle|cli|clv|clx|cly|cmp|cop|cpx|cpy|cpz|csh|dcp|dec|dew|dex|dey|dez|dop|eor|inc|inw|inx|iny|inz|isb|jam|jcc|jcs|jeq|jmi|jml|jmp|jne|jpl|jsl|jsr|jvc|jvs|las|lax|lda|ldx|ldy|ldz|lsr|map|mvn|mvp|neg|nop|ora|pea|pei|per|pha|phb|phd|phk|php|phw|phx|phy|phz|pla|plb|pld|plp|plx|ply|plz|rep|rla|rmb|rol|ror|row|rra|rti|rtl|rtn|rts|s|sax|say|sbc|sec|sed|see|sei|sep|set|sha|shx|shy|slo|smb|sp|sre|st1|st2|sta|stp|stx|sty|stz|tai|tam|tas|tax|tay|taz|tcd|tcs|tdc|tdd|tia|tii|tin|tma|top|trb|tsb|tsc|tst|tsx|tsy|txa|txs|txy|tya|tys|tyx|tza|wai|wdm|xba|xce|adcq|aslq|andq|cpq|deq|eom|eorq|inq|ldq|lsrq|orq|rolq|rorq|sbcq|stq)\\b"
+          "match": "(?i)\\b(adc|anc|and|ane|arr|asl|asr|asw|bbr|bbs|bcc|bcs|beq|bge|bit|blt|bmi|bne|bpl|bra|brk|brl|bsr|bvc|bvs|cla|clc|cld|cle|cli|clv|clx|cly|cmp|cop|cpx|cpy|cpz|csh|dcp|dec|dew|dex|dey|dez|dop|eor|inc|inw|inx|iny|inz|isb|jam|jcc|jcs|jeq|jmi|jml|jmp|jne|jpl|jsl|jsr|jvc|jvs|las|lax|lda|ldx|ldy|ldz|lsr|map|mvn|mvp|neg|nop|ora|pea|pei|per|pha|phb|phd|phk|php|phw|phx|phy|phz|pla|plb|pld|plp|plx|ply|plz|rep|rla|rmb|rol|ror|row|rra|rti|rtl|rtn|rts|s|sac|sax|say|sbc|sec|sed|see|sei|sep|set|sha|shx|shy|sir|slo|smb|sp|sre|st1|st2|sta|stp|stx|sty|stz|tai|tam|tas|tax|tay|taz|tcd|tcs|tdc|tdd|tia|tii|tin|tma|top|trb|tsb|tsc|tst|tsx|tsy|txa|txs|txy|tya|tys|tyx|tza|wai|wdm|xba|xce|adcq|aslq|andq|cpq|deq|eom|eorq|inq|ldq|lsrq|orq|rolq|rorq|sbcq|stq)\\b"
         },
         {
           "name": "keyword.other.macro.core6502_net_65xx",

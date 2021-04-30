@@ -18,7 +18,7 @@ namespace Core6502DotNet
     {
         #region Members
 
-        readonly List<string> m_sources;
+        readonly List<string> _sources;
 
         #endregion
 
@@ -36,7 +36,7 @@ namespace Core6502DotNet
         {
             Filename = fileName;
             LineNumber = lineNumber;
-            m_sources = sources;
+            _sources = sources;
             IndexInSources = indexInSource;
             Operands = new List<Token>();
             foreach (var token in tokens)
@@ -74,7 +74,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the first line of the <see cref="SourceLine"/>'s original source.
         /// </summary>
-        public string Source => m_sources.Count > 0 ? m_sources[0] : string.Empty;
+        public string Source => _sources.Count > 0 ? _sources[0] : string.Empty;
 
         /// <summary>
         /// Gets the line's full sources.
@@ -83,11 +83,11 @@ namespace Core6502DotNet
         {
             get
             {
-                if (m_sources.Count > 0)
+                if (_sources.Count > 0)
                 {
-                    if (m_sources.Count > 1)
-                        return string.Join('\n', m_sources);
-                    return m_sources[0];
+                    if (_sources.Count > 1)
+                        return string.Join('\n', _sources);
+                    return _sources[0];
                 }
                 return string.Empty;
             }

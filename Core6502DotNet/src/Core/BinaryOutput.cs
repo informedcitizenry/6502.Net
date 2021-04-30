@@ -274,17 +274,18 @@ namespace Core6502DotNet
         /// <param name="size">The number of bytes to add to the memory space.</param>
         public void AddUninitialized(int size)
         {
-            if (ProgramEnd > MaxAddress || !AddressIsValid(ProgramCounter))
+            if (ProgramEnd > MaxAddress)
             {
-                var bank = (_pc + size) / BufferSize;
-                if (!AllowLongOutput || bank > 255 || _sectionCollection.SectionSelected)
-                {
-                    if (!AddressIsValid(ProgramCounter))
-                        throw new InvalidPCAssignmentException(ProgramCounter, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
+                if (!AllowLongOutput || _output.Count == 255)
                     throw new ProgramOverflowException($"Program overflowed {size} bytes.");
-                }
-                CurrentBank = bank;
+                _output.Add(new byte[BufferSize]);
+                Array.Fill(_output[^1], _initVal);
             }
+            else if (!AddressIsValid(ProgramCounter))
+            {
+                throw new InvalidPCAssignmentException(ProgramCounter, !_sectionCollection.IsEmpty && !_sectionCollection.SectionSelected);
+            }
+            _started = true;
             _pc = (_pc + size) % BufferSize;
             _logicalPc = (_logicalPc + size) % BufferSize;
             if (_sectionCollection.SectionSelected)
@@ -393,6 +394,9 @@ namespace Core6502DotNet
                 _compilingStarted = true;
                 ProgramStart = ProgramCounter;
             }
+            if (AllowLongOutput && !ReferenceEquals(_bytes, _output[^1]))
+                _bytes = _output[^1];
+
             if (Transform != null)
                 bytes = bytes.Select(b => Transform(b));
 
@@ -651,7 +655,7 @@ namespace Core6502DotNet
             if (starts >= ends)
                 throw new SectionException(1,
                     $"Section {name} start address cannot be equal or greater than end address.");
-            if (ends > MaxAddress + 1)
+            if (ends > BufferSize)
                 throw new SectionException(1,
                     $"Section {name} end address {ends} is not valid.");
             switch (_sectionCollection.Add(name, starts, ends))

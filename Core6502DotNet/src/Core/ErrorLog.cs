@@ -15,6 +15,28 @@ using System.Text.RegularExpressions;
 namespace Core6502DotNet
 {
     /// <summary>
+    /// An error for error log size being exceeded.
+    /// </summary>
+    public class ErrorLogFullException : Exception
+    {
+        /// <summary>
+        /// Create a new instance of the error.
+        /// </summary>
+        /// <param name="log">The <see cref="ErrorLog"/> raising the exception.</param>
+        /// <param name="message">The exception message.</param>
+        public ErrorLogFullException(ErrorLog log, string message)
+            : base(message)
+        {
+            Log = log;
+        }
+
+        /// <summary>
+        /// Gets the error log associated with the exception.
+        /// </summary>
+        public ErrorLog Log { get; }
+    }
+
+    /// <summary>
     /// A simple, flexible error log.
     /// </summary>
     public class ErrorLog
@@ -169,10 +191,7 @@ namespace Core6502DotNet
             if (!_errors.Contains((errorMessage, isError)))
                 _errors.Add((errorMessage, isError));
             if (_errors.Count > 1000)
-            {
-                DumpAll();
-                throw new Exception("Too many errors.");
-            }
+                throw new ErrorLogFullException(this, "Too many errors.");
         }
 
         /// <summary>
