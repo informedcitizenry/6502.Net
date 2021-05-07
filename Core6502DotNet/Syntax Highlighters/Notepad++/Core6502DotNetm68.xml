@@ -28,7 +28,7 @@
             <Keywords name="Keywords2">.assert .bank .binclude .break .case .comment .continue .cpu .default .dp .dsection .echo .encoding .end .endrelocate .eor .error .errorif .equ .forcepass .format .goto .include .initmem .invoke .let .map .org .proff .pron .relocate .return .section .format .target .tfradp .tfrbdp .unmap .warn .warnif</Keywords>
             <Keywords name="Keywords3">.addr .align .binary .bstring .byte .cbmflt .cbmfltp .char .cstring .dint .dword .fill .hstring .lint .long .lstring .nstring .pstring .rta .sbyte .short .sint .string .word</Keywords>
             <Keywords name="Keywords4">.</Keywords>
-            <Keywords name="Keywords5">abs acos atan byte cbmflt cbmfltp cbrt ceil char cos cosh deg dword exp float floor format frac hypot len ln log log10 long peek poke pow rad random round section sgn sin sinh sqrt tan tanh word</Keywords>
+            <Keywords name="Keywords5">abs acos atan byte cbmflt cbmfltp cbrt ceil char cos cosh deg dword exp float floor format frac hypot len ln log log10 long peek poke pow rad random round section sgn sin sinh sizeof sqrt tan tanh word</Keywords>
             <Keywords name="Keywords6">\</Keywords>
             <Keywords name="Keywords7">a b cc d dp pc s u x y false MATH_PI MATH_E INT8_MAX INT8_MIN INT16_MAX INT16_MIN INT32_MAX INT32_MIN true UINT8_MAX UINT8_MIN UINT16_MAX UINT16_MIN UINT32_MAX UINT32_MIN</Keywords>
             <Keywords name="Keywords8"></Keywords>

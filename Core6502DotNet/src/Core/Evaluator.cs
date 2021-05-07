@@ -163,6 +163,7 @@ namespace Core6502DotNet
                 { "sgn",    new OperationDef(parms => Math.Sign(parms[0]),                                      1) },
                 { "sin",    new OperationDef(parms => Math.Sin(parms[0]),                                       1) },
                 { "sinh",   new OperationDef(parms => Math.Sinh(parms[0]),                                      1) },
+                { "sizeof", new OperationDef(parms => parms[0].Size(),                                          1) },
                 { "sqrt",   new OperationDef(parms => Math.Sqrt(parms[0]),                                      1) },
                 { "tan",    new OperationDef(parms => Math.Tan(parms[0]),                                       1) },
                 { "tanh",   new OperationDef(parms => Math.Tanh(parms[0]),                                      1) },

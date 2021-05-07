@@ -232,7 +232,7 @@ namespace Core6502DotNet
             return scopedName;
         }
 
-        bool InSameFunctionScope(string symbol1, string symbol2)
+        static bool InSameFunctionScope(string symbol1, string symbol2)
         {
             var sym1Ix = symbol1.LastIndexOf('@');
             var sym2Ix = symbol2.LastIndexOf('@');
@@ -538,7 +538,9 @@ namespace Core6502DotNet
         public string ListLabels(bool listAll)
         {
             var listBuilder = new StringBuilder();
-            var labels = _symbolTable.Where(s => !s.Key.Equals("CURRENT_PASS") && (listAll || s.Value.DataType == DataType.Address))
+            var labels = _symbolTable.Where(s => !s.Key.Equals("CURRENT_PASS") && 
+                                                 s.Value.StorageType == StorageType.Scalar &&
+                                                 (listAll || s.Value.DataType == DataType.Address))
                                      .OrderBy(s => s.Key);
             foreach (var label in labels)
             {

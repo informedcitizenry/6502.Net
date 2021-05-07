@@ -45,7 +45,7 @@
         },
         {
           "name": "keyword.function.core6502_net_z80",
-          "match": "(?i)\\b(abs|acos|atan|byte|cbmflt|cbmfltp|cbrt|ceil|char|cos|cosh|deg|dword|exp|float|floor|format|frac|hypot|len|ln|log|log10|long|peek|poke|pow|rad|random|round|section|sgn|sin|sinh|sqrt|tan|tanh|word)\\b"
+          "match": "(?i)\\b(abs|acos|atan|byte|cbmflt|cbmfltp|cbrt|ceil|char|cos|cosh|deg|dword|exp|float|floor|format|frac|hypot|len|ln|log|log10|long|peek|poke|pow|rad|random|round|section|sgn|sin|sinh|sizeof|sqrt|tan|tanh|word)\\b"
         },
         {
           "name": "keyword.define",

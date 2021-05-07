@@ -41,29 +41,25 @@ namespace Core6502DotNet
 
         static IBinaryFormatProvider SelectFormatProvider(string cpu, string format)
         {
-            if (format.Equals("flat"))
-                return null;
-
-            if (format.Equals("srec") || format.Equals("srecmos"))
-                return new SRecordFormatProvider();
-
-            if (format.Equals("hex"))
-                return new HexFormatProvider();
-
-            if (format.Equals("bytesource"))
-                return new ByteSourceFormatProvider();
-
-            return cpu switch
+            return format switch
             {
-                "i8080" => null,
-                "z80"   => new Z80FormatProvider(),
-                "m68"   => new MotorolaFormatProvider(),
-                _       => format switch
+                "flat"          => null,
+                "srec"          => new SRecordFormatProvider(),
+                "srecmos"       => new SRecordFormatProvider(),
+                "hex"           => new HexFormatProvider(),
+                "bytesource"    => new ByteSourceFormatProvider(),
+                _               => cpu switch
                 {
-                    "cart" => new C64CartFormatProvider(),
-                    "d64"  => new D64FormatProvider(),
-                    "t64"  => new T64FormatProvider(),
-                    _      => new M6502FormatProvider()
+                    "i8080"     => null,
+                    "z80"       => new Z80FormatProvider(),
+                    "m68"       => new MotorolaFormatProvider(),
+                    _           => format switch
+                    {
+                        "cart"  => new C64CartFormatProvider(),
+                        "d64"   => new D64FormatProvider(),
+                        "t64"   => new T64FormatProvider(),
+                        _       => new M6502FormatProvider()
+                    }
                 }
             };
         }

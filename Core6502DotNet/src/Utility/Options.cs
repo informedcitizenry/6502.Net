@@ -524,7 +524,7 @@ namespace Core6502DotNet
 
         #region Methods
 
-        ReadOnlyCollection<T> GetReadOnlyList<T>(IList<T> list) 
+        static ReadOnlyCollection<T> GetReadOnlyList<T>(IList<T> list) 
             => list == null ? new List<T>().AsReadOnly() : new ReadOnlyCollection<T>(list);
 
         string JsonSerialize()
@@ -587,7 +587,7 @@ namespace Core6502DotNet
             if (WarnNotUnusedSections)
                 logging.Add("suppressUnusedSectionWarning", true);
             if (_werror)
-                logging.Add("WarningsAsErrors", true);
+                logging.Add("warningsAsErrors", true);
             if (WarnLeft)
                 logging.Add("warnLeft", true);
 
@@ -730,7 +730,13 @@ namespace Core6502DotNet
                     h.Copyright = string.Empty;
                     return HelpText.DefaultParsingErrorsHandler(result, h);
                 }, e => e);
-                var ht = helpText.ToString().Replace("(pos. 0)", "        ");
+                var ht = helpText.ToString().Replace("(pos. 0)", "        ")
+                                            .Replace("ERROR(S):\n  Option 'h' is unknown.", string.Empty)
+                                            .Replace("ERROR(S):\r\n  Option 'h' is unknown.", string.Empty)
+                                            .Replace("ERROR(S):\n  Option '?' is unknown.", string.Empty)
+                                            .Replace("ERROR(S):\r\n  Option '?' is unknown.", string.Empty)
+                                            .Replace("\r\n\r\nUSAGE", "USAGE")
+                                            .Replace("\n\nUSAGE", "USAGE");
                 throw new Exception(ht);
             } 
             throw new Exception("Invalid arguments. Try '--help' for usage.");
@@ -888,7 +894,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the target binary format.
         /// </summary>
-        [Option("format", Required = false, HelpText = "Specify binary output format", MetaValue = "<format>")]
+        [Option('f', "format", Required = false, HelpText = "Specify binary output format", MetaValue = "<format>")]
         public string Format { get; }
 
         /// <summary>

@@ -50,7 +50,6 @@ namespace Core6502DotNet
                     Operands.Add(token);
             }
         }
-
         #endregion
 
         #region Methods

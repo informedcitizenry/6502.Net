@@ -360,9 +360,6 @@ namespace Core6502DotNet
                 if (!string.IsNullOrEmpty(_services.Options.OutputFile) ||
                     !string.IsNullOrEmpty(_services.Options.Format))
                     _services.Log.LogEntrySimple("Output options ignored for patch mode.", false);
-                if (_services.Options.LabelsAddressesOnly && string.IsNullOrEmpty(_services.Options.LabelFile))
-                    _services.Log.LogEntrySimple("Label listing not specified; option '-labels-addresses-only' ignored.",
-                        false);
                 try
                 {
                     var offsetLine = new Preprocessor(_processorOptions).ProcessDefine("patch=" + _services.Options.Patch);
@@ -406,6 +403,9 @@ namespace Core6502DotNet
             // write labels
             if (!string.IsNullOrEmpty(_services.Options.LabelFile))
                 File.WriteAllText(_services.Options.LabelFile, _services.SymbolManager.ListLabels(!_services.Options.LabelsAddressesOnly));
+            else if (_services.Options.LabelsAddressesOnly && string.IsNullOrEmpty(_services.Options.LabelFile))
+                _services.Log.LogEntrySimple("Label listing not specified; option '-labels-addresses-only' ignored.",
+                    false);
             return objectCode.Count;
         }
         #endregion
