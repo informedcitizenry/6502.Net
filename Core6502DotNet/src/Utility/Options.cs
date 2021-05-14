@@ -723,6 +723,7 @@ namespace Core6502DotNet
             {
                 var helpText = HelpText.AutoBuild(result, h =>
                 {
+                    h.MaximumDisplayWidth = 120;
                     h.AdditionalNewLineAfterOption = false;
                     h.AddEnumValuesToHelpText = false;
                     h.AddPostOptionsLine("To log a defect, go to https://github.com/informedcitizenry/6502.Net/issues");
@@ -818,114 +819,114 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the read-only list of input filenames.
         /// </summary>
-        [Value(0, Required = false, HelpText = "The source file(s) to assemble", MetaName = "<inputs>")]
+        [Value(0, Required = false, HelpText = "The source file(s) to assemble.", MetaName = "<inputs>.")]
         public ReadOnlyCollection<string> InputFiles { get; }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress assembly bytes.
         /// </summary>
-        [Option('a', "no-assembly", Required = false, HelpText = "Suppress assembled bytes from listing")]
+        [Option('a', "no-assembly", Required = false, HelpText = "Suppress assembled bytes from listing.")]
         public bool NoAssembly { get; }
 
         /// <summary>
         /// Gets a flag that indicates the source should be processed as
         /// case-sensitive.
         /// </summary>
-        [Option('C', "case-sensitive", Required = false, HelpText = "Treat all symbols as case-sensitive")]
+        [Option('C', "case-sensitive", Required = false, HelpText = "Treat all symbols as case-sensitive.")]
         public bool CaseSensitive { get; }
 
         /// <summary>
         /// Create a config template.
         /// </summary>
-        [Option("createconfig", Required = false, HelpText = "Create a config file", MetaValue = "{a|f|m|s}")]
+        [Option("createconfig", Required = false, HelpText = "Create a config file.", MetaValue = "{a|f|m|s}.")]
         public string CreateConfig { get; }
 
         /// <summary>
         /// Gets the selected CPU.
         /// </summary>
         /// <value>The cpu.</value>
-        [Option('c', "cpu", Required = false, HelpText = "Specify the target CPU and instruction set", MetaValue = "<arg>")]
+        [Option('c', "cpu", Required = false, HelpText = "Specify the target CPU and instruction set.", MetaValue = "<arg>.")]
         public string CPU { get; }
 
         /// <summary>
         /// Gets a flag indicating that checksum information should be printed after 
         /// assembly.
         /// </summary>
-        [Option("checksum", Required = false, HelpText = "Display checksum information on assembly")]
+        [Option("checksum", Required = false, HelpText = "Display checksum information on assembly.")]
         public bool ShowChecksums { get; }
 
         /// <summary>
         /// Gets the config option file.
         /// </summary>
-        [Option("config", Required = false, HelpText = "Load all settings from a configuration file", MetaValue = "<file>")]
+        [Option("config", Required = false, HelpText = "Load all settings from a configuration file.", MetaValue = "<file>.")]
         public string ConfigFile { get; }
 
         /// <summary>
         /// Gets the read-only list of label defines.
         /// </summary>
-        [Option('D', "define", Separator = ':', Required = false, HelpText = "Assign value to a global label in <args>", MetaValue = "<arg>")]
+        [Option('D', "define", Separator = ':', Required = false, HelpText = "Assign value to a global label in <args>.", MetaValue = "<arg>.")]
         public ReadOnlyCollection<string> LabelDefines { get; }
 
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress 6502 disassembly.
         /// </summary>
-        [Option('d', "no-dissassembly", Required = false, HelpText = "Suppress disassembly from assembly listing")]
+        [Option('d', "no-dissassembly", Required = false, HelpText = "Suppress disassembly from assembly listing.")]
         public bool NoDisassembly { get; }
 
         /// <summary>
         /// Gets the list of defined sections.
         /// </summary>
-        [Option("dsections", Required = false, HelpText = "Define one or more sections", MetaValue = "<sections>")]
+        [Option("dsections", Required = false, HelpText = "Define one or more sections.", MetaValue = "<sections>.")]
         public ReadOnlyCollection<string> Sections { get; }
 
         /// <summary>
         /// Gets the flag indicating whether to output ".echo" directive to console on each
         /// pass.
         /// </summary>
-        [Option("echo-each-pass", Required = false, HelpText = "\".echo\" output on each pass")]
+        [Option("echo-each-pass", Required = false, HelpText = "\".echo\" output on each pass.")]
         public bool EchoEachPass { get; }
 
         /// <summary>
         /// Gets the error filename.
         /// </summary>
-        [Option('E', "error", Required = false, HelpText = "Dump errors to <file>", MetaValue = "<file>")]
+        [Option('E', "error", Required = false, HelpText = "Dump errors to <file>.", MetaValue = "<file>.")]
         public string ErrorFile { get; }
 
         /// <summary>
         /// Gets the target binary format.
         /// </summary>
-        [Option('f', "format", Required = false, HelpText = "Specify binary output format", MetaValue = "<format>")]
+        [Option('f', "format", Required = false, HelpText = "Specify binary output format.", MetaValue = "<format>.")]
         public string Format { get; }
 
         /// <summary>
         /// Gets the path to search to include in sources.
         /// </summary>
-        [Option('I', "include-path", Required = false, HelpText = "Include search path", MetaValue = "<path>")]
+        [Option('I', "include-path", Required = false, HelpText = "Include search path.", MetaValue = "<path>.")]
         public string IncludePath { get; }
 
         /// <summary>
         /// Gets a flag indicating that colons in semi-colon comments should be treated
         /// as comments.
         /// </summary>
-        [Option("ignore-colons", Required = false, HelpText = "Ignore colons in semi-colon comments")]
+        [Option("ignore-colons", Required = false, HelpText = "Ignore colons in semi-colon comments.")]
         public bool IgnoreColons { get; }
 
         /// <summary>
         /// Gets the label listing filename.
         /// </summary>
-        [Option('l', "labels", Required = false, HelpText = "Output label definitions to <arg>", MetaValue = "<arg>")]
+        [Option('l', "labels", Required = false, HelpText = "Output label definitions to <arg>.", MetaValue = "<arg>.")]
         public string LabelFile { get; }
 
         /// <summary>
         /// Gets the label listing addresses only flag.
         /// </summary>
-        [Option("labels-addresses-only", Required = false, HelpText = "Only include addresses in label definitions")]
+        [Option("labels-addresses-only", Required = false, HelpText = "Only include addresses in label definitions.")]
         public bool LabelsAddressesOnly { get; }
 
         /// <summary>
         /// Gets the assembly listing filename.
         /// </summary>
-        [Option('L', "list", Required = false, HelpText = "Output listing to <file>", MetaValue = "<file>")]
+        [Option('L', "list", Required = false, HelpText = "Output listing to <file>.", MetaValue = "<file>.")]
         public string ListingFile { get; }
 
         /// <summary>
@@ -943,7 +944,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the output filename.
         /// </summary>
-        [Option('o', "output", Required = false, HelpText = "Output assembly to <file>", MetaValue = "<file>")]
+        [Option('o', "output", Required = false, HelpText = "Output assembly to <file>.", MetaValue = "<file>.")]
         public string OutputFile { get; }
 
         /// <summary>
@@ -955,13 +956,13 @@ namespace Core6502DotNet
         /// <summary>
         /// Indicates the output is a patch to an existing object file.
         /// </summary>
-        [Option('p', "patch", Required = false, HelpText = "Patch the output file at <offset>", MetaValue = "<offset>")]
+        [Option('p', "patch", Required = false, HelpText = "Patch the output file at <offset>.", MetaValue = "<offset>.")]
         public string Patch { get; }
 
         /// <summary>
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
-        [Option('q', "quiet", Required = false, HelpText = "Assemble in quiet mode (no console)")]
+        [Option('q', "quiet", Required = false, HelpText = "Assemble in quiet mode (no console).")]
         public bool Quiet { get; }
 
         /// <summary>
@@ -974,40 +975,40 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets a flag indicating if assembly listing should suppress original source.
         /// </summary>
-        [Option('s', "no-source", Required = false, HelpText = "Suppress original source from listing")]
+        [Option('s', "no-source", Required = false, HelpText = "Suppress original source from listing.")]
         public bool NoSource { get; }
 
 
         /// <summary>
         /// Gets a flag indicating if the Program Counter should reset on bank switching.
         /// </summary>
-        [Option("reset-pc-on-bank", Required = false, HelpText = "Reset the PC on '.bank' directive")]
+        [Option("reset-pc-on-bank", Required = false, HelpText = "Reset the PC on '.bank' directive.")]
         public bool ResetPCOnBank { get; }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should truncate
         /// the number of bytes.
         /// </summary>
-        [Option('t', "truncate-assembly", Required = false, HelpText = "Truncate assembled bytes in listing")]
+        [Option('t', "truncate-assembly", Required = false, HelpText = "Truncate assembled bytes in listing.")]
         public bool TruncateAssembly { get; }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 
         /// verbose.
         /// </summary>
-        [Option("verbose-asm", Required = false, HelpText = "Include all directives/comments in listing")]
+        [Option("verbose-asm", Required = false, HelpText = "Include all directives/comments in listing.")]
         public bool VerboseList { get; }
 
         /// <summary>
         /// Gets the flag that indicates warnings should be suppressed.
         /// </summary>
-        [Option('w', "no-warn", Required = false, HelpText = "Suppress all warnings")]
+        [Option('w', "no-warn", Required = false, HelpText = "Suppress all warnings.")]
         public bool NoWarnings { get; }
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
         /// </summary>
-        [Option("Werror", Required = false, HelpText = "Treat all warnings as errors")]
+        [Option("Werror", Required = false, HelpText = "Treat all warnings as errors.")]
         public bool WarningsAsErrors => !NoWarnings && _werror;
 
         /// <summary>
@@ -1015,7 +1016,7 @@ namespace Core6502DotNet
         /// before labels.
         /// </summary>
         /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
-        [Option("Wleft", Required = false, HelpText = "Warn when a whitespace precedes a label")]
+        [Option("Wleft", Required = false, HelpText = "Warn when a whitespace precedes a label.")]
         public bool WarnLeft { get; }
 
         /// <summary>
@@ -1025,7 +1026,7 @@ namespace Core6502DotNet
         public bool WarnNotUnusedSections { get; }
 
 
-        [Usage(ApplicationAlias = "6502.Net.exe")]
+        [Usage(ApplicationAlias = "6502.Net.exe.")]
         public static IEnumerable<Example> Examples
         {
             get

@@ -128,6 +128,13 @@ namespace Core6502DotNet
         /// <returns><c>true</c> if the token is an opening, <c>false</c> otherwise.</returns>
         public bool IsOpen() => Type.HasFlag(TokenType.Open);
 
+        /// <summary>
+        /// Indicates whether the current token name is equal to the given string.
+        /// </summary>
+        /// <param name="name">The name string.</param>
+        /// <returns><c>true</c> if the token name equals the string, <c>false</c> otherwise.</returns>
+        public bool Equals(string name)
+            => Name.Equals(name);
 
         public bool Equals(Token other) 
             => Name.Equals(other.Name) && Type == other.Type;

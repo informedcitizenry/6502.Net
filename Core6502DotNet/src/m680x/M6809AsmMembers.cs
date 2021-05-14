@@ -70,13 +70,13 @@ namespace Core6502DotNet.m680x
             PC8      = 0b1000_1100,
             PC16     = 0b1000_1101,
             Indir    = 0b0001_0000,
-            XReg     = 0b0000_0000,
             YReg     = 0b0010_0000,
             UReg     = 0b0100_0000,
             SReg     = 0b0110_0000,
             ExtInd   = 0b1001_1111,
             OffsMask = 0b1000_1111,
-            Mask     = 0b1111_1111
+            Mask     = 0b1111_1111,
+            XReg     = None
         };
 
         readonly Dictionary<StringView, IndexModes> _ixRegisterModes;

@@ -952,11 +952,11 @@ namespace Core6502DotNet
                 {
                     fullPath = Path.Combine(includePath, fileName);
                     if (!File.Exists(fullPath))
-                        throw new FileNotFoundException($"\"{fileInfo.FullName}\" not found.");
+                        throw new FileNotFoundException($"\"{fileInfo.Name}\" not found.");
                 }
                 else
                 {
-                    throw new FileNotFoundException($"\"{fileInfo.FullName}\" not found.");
+                    throw new FileNotFoundException($"\"{fileInfo.Name}\" not found.");
                 }
             }
             return fullPath;

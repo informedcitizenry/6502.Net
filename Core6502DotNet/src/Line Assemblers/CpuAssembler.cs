@@ -69,7 +69,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Resets the state of the <see cref="CpuAssembler"/>.
         /// </summary>
-        protected virtual void OnReset() => _cpu = _initCpu;
+        protected virtual void OnReset() { }
 
         /// <summary>
         /// Actions to perform when the CPU is set. This method must be inherited.
@@ -91,8 +91,10 @@ namespace Core6502DotNet
         public abstract bool IsCpuValid(string cpu);
 
         void OnPassChanged(object sender, EventArgs args)
-            => OnReset();
-
+        {
+            _cpu = _initCpu;
+            OnReset();
+        }
 
         protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
         {

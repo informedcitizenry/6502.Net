@@ -302,7 +302,7 @@ namespace Core6502DotNet.m680x
             if (firstparam.Name.Equals("["))
             {
                 // check for indirect modes
-                disSb.Append("[");
+                disSb.Append('[');
                 firstparam = operand.GetNext();
                 if (!firstparam.Name.Equals("]"))
                     modes |= IndexModes.Indir;

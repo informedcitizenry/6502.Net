@@ -34,7 +34,6 @@ namespace Core6502DotNet
             ZeroPage     = 0b000000000000000000001,
             Absolute     = 0b000000000000000000011,
             Long         = 0b000000000000000000111,
-            SizeMask     = 0b000000000000000000111,
             Indirect     = 0b000000000000000001000,
             DirectPage   = 0b000000000000000010000,
             IndexedX     = 0b000000000000000100000,
@@ -61,6 +60,7 @@ namespace Core6502DotNet
             MemModMask   = 0b011111111111111111000,
             ModeMask     = 0b011111111111111111111,
             ForceWidth   = 0b100000000000000000000,
+            SizeMask     = Long,
             AbsoluteX    = Absolute     | IndexedX,
             AbsoluteY    = Absolute     | IndexedY,
             ZeroPageX    = ZeroPage     | IndexedX,
@@ -186,11 +186,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Reset the state of the <see cref="MotorolaBase"/> assembler. This method must be inherited.
         /// </summary>
-        protected override void OnReset()
-        {
-            base.OnReset();
-            Page = 0;
-        }
+        protected override void OnReset() => Page = 0;
 
         /// <summary>
         /// Evaluate whether the given token with the total expression count
@@ -203,11 +199,9 @@ namespace Core6502DotNet
         /// <exception cref="ExpressionException"></exception>
         protected Modes GetForcedModifier(RandomAccessIterator<Token> tokens)
         {
-            var ix = tokens.Index;
             if (tokens.MoveNext())
             {
                 var firstToken = tokens.Current;
-
                 if (firstToken.Name.Equals("["))
                 {
                     var forcedGroup = Token.GetGroup(tokens).Skip(1).SkipLast(1).GetIterator();
@@ -227,7 +221,6 @@ namespace Core6502DotNet
                         tokens.Rewind(tokens.Index - 1);
                         return forcedMode | Modes.ForceWidth;
                     }
-
                 }
             }
             tokens.Reset();
