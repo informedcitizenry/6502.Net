@@ -280,7 +280,10 @@ namespace Core6502DotNet.m65xx
                                                 .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "6502i":
-                    ActiveInstructions = s_opcodes6502.Concat(s_opcodes6502i)
+                    ActiveInstructions = Services.Options.BranchAlways
+                        ? s_opcodes6502.Concat(s_opcodes6502i).Concat(s_pseudoBra)
+                                                .ToDictionary(k => k.Key, k => k.Value)
+                        : s_opcodes6502.Concat(s_opcodes6502i)
                                                 .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 case "c64dtv2":
@@ -288,10 +291,13 @@ namespace Core6502DotNet.m65xx
                                                 .ToDictionary(k => k.Key, k => k.Value);
                     break;
                 default:
-                    ActiveInstructions = new Dictionary<(string Mnem, Modes mode), CpuInstruction>(s_opcodes6502);
+                    ActiveInstructions = Services.Options.BranchAlways
+                        ? s_opcodes6502.Concat(s_pseudoBra)
+                                                .ToDictionary(k => k.Key, k => k.Value)
+                        : new Dictionary<(string Mnem, Modes mode), CpuInstruction>(s_opcodes6502);
                     break;
 
-            }
+            }             
         }
 
         void SetImmediate(int size, char register)

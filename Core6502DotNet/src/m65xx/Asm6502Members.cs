@@ -597,6 +597,12 @@ namespace Core6502DotNet.m65xx
             { ("sir", Modes.Immediate   ), new CpuInstruction( "c64dtv2", 0x42, 2) }
         };
 
+        static readonly Dictionary<(string Mnem, Modes Mode), CpuInstruction> s_pseudoBra =
+            new Dictionary<(string Mnem, Modes Mode), CpuInstruction>()
+        {
+            { ("bra", Modes.Relative    ), new CpuInstruction( "6502",    0x50, 2) }
+        };
+
         static readonly IReadOnlyDictionary<StringView, string> s_pseudoBranchTranslations =
             new Dictionary<StringView, string>
         {

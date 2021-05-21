@@ -58,11 +58,6 @@ namespace Core6502DotNet
 
         #region Methods
 
-        /// <summary>
-        /// Get the actual encoded bytes for a string element.
-        /// </summary>
-        /// <param name="s">The string element to encode.</param>
-        /// <returns>An array of encoded bytes for the character.</returns>
         byte[] GetCharBytes(string s)
         {
             var utf32 = char.ConvertToUtf32(s, 0);
@@ -210,10 +205,6 @@ namespace Core6502DotNet
 
         #region Encoding Methods
 
-        /// <summary>
-        /// Calculates the number of bytes produced by encoding the string.
-        /// </summary>
-        /// <param name="s">The string to encode</param>
         public override int GetByteCount(string s)
         {
             var numbytes = 0;
@@ -230,28 +221,12 @@ namespace Core6502DotNet
             return numbytes;
         }
 
-        /// <summary>
-        /// Calculates the number of bytes produced by encoding all the characters
-        /// in the specified character array.
-        /// </summary>
-        /// <param name="chars">The character array containing the characters to encode</param>
-        /// <param name="index">The index of the first character to encode</param>
-        /// <param name="count">The number of characters to encode</param>
-        /// <returns>The number of bytes produced by encoding the specified characters.</returns>
-        /// <exception cref="IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetByteCount(char[] chars, int index, int count)
         {
             var s = new string(chars.Skip(index).Take(count).ToArray());
             return GetByteCount(s);
         }
 
-        /// <summary>
-        /// Encodes a string into a byte array.
-        /// </summary>
-        /// <param name="s">The string to encode</param>
-        /// <returns>The array of bytes representing the string encoding.</returns>
-        /// <exception cref="ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="ArgumentException">System.ArgumentException</exception>
         public override byte[] GetBytes(string s)
         {
             var bytes = new List<byte>();
@@ -265,20 +240,6 @@ namespace Core6502DotNet
              return bytes.ToArray();
         }
 
-        /// <summary>
-        /// Encodes a set of characters from the specified character 
-        /// array into the specified byte array.
-        /// </summary>
-        /// <param name="chars">The character array containing the set of characters to encode</param>
-        /// <param name="charIndex">The index of the first character to encode</param>
-        /// <param name="charCount">The number of characters to encode</param>
-        /// <param name="bytes">The byte array to contain the resulting sequence of bytes</param>
-        /// <param name="byteIndex">The index at which to start writing the resulting 
-        /// sequence of bytes</param>
-        /// <returns>The actual number of bytes written into bytes.</returns>
-        /// <exception cref="ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="ArgumentException">System.ArgumentException</exception>
-        /// <exception cref="IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             var s = new string(chars.Skip(charIndex).Take(charCount).ToArray());
@@ -291,78 +252,53 @@ namespace Core6502DotNet
             return j - byteIndex;
         }
 
-        /// <summary>
-        /// Calculates the number of characters produced by decoding a sequence of bytes 
-        /// from the specified byte array.
-        /// </summary>
-        /// <param name="bytes">The byte array containing the sequence of bytes to decode</param>
-        /// <param name="index">The index of the first byte to decode</param>
-        /// <param name="count">The number of bytes to decode</param>
-        /// <returns>The number of characters produced by decoding the specified sequence of bytes.</returns>
-        /// <exception cref="ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
             var chars = new char[GetMaxCharCount(count)];
             return GetChars(bytes, index, count, chars, 0);
         }
 
-        /// <summary>
-        /// Decodes a sequence of bytes from the specified byte array 
-        /// into the specified character array. 
-        /// </summary>
-        /// <param name="bytes">The byte array containing the sequence of bytes to decode</param>
-        /// <param name="byteIndex">The index of the first byte to decode</param>
-        /// <param name="byteCount">The number of bytes to decode</param>
-        /// <param name="chars">The character array to contain the resulting set of characters</param>
-        /// <param name="charIndex">The index at which to start writing the resulting set of characters</param>
-        /// <returns>The actual number of characters written into chars.</returns>
-        /// <exception cref="ArgumentNullException">System.ArgumentNullException</exception>
-        /// <exception cref="ArgumentOutOfRangeException">System.ArgumentOutOfRangeException</exception>
-        /// <exception cref="ArgumentException">System.ArgumentException</exception>
-        /// <exception cref="IndexOutOfRangeException">System.IndexOutOfRangeException</exception>
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            var j = charIndex;
-            var i = 0;
-            while (i < byteCount)
+            var i = charIndex;
+            while (byteIndex < byteCount)
             {
                 var displ = 0;
                 var encoding = 0;
-                if (i + 3 + byteIndex < byteCount)
+                if (byteIndex + 3 < byteCount)
                 {
-                    encoding = bytes[i + byteIndex] |
-                               (bytes[i + 1 + byteIndex] * 0x100) |
-                               (bytes[i + 2 + byteIndex] * 0x10000) |
-                               (bytes[i + 3 + byteIndex] * 0x1000000);
+                    encoding = bytes[byteIndex] |
+                               (bytes[byteIndex + 1] * 0x100) |
+                               (bytes[byteIndex + 2] * 0x10000) |
+                               (bytes[byteIndex + 3] * 0x1000000);
                     if (_currentMap.ContainsValue(encoding))
                     {
                         displ = 4;
                         goto SetChar;
                     }
                 }
-                if (i + 2 + byteIndex < byteCount)
+                if (byteIndex + 2 < byteCount)
                 {
-                    encoding = bytes[i + byteIndex] |
-                               (bytes[i + 1 + byteIndex] * 0x100) |
-                               (bytes[i + 2 + byteIndex] * 0x10000);
+                    encoding = bytes[byteIndex] |
+                               (bytes[byteIndex + 1] * 0x100) |
+                               (bytes[byteIndex + 2] * 0x10000);
                     if (_currentMap.ContainsValue(encoding))
                     {
                         displ = 3;
                         goto SetChar;
                     }
                 }
-                if (i + 1 + byteIndex < byteCount)
+                if (byteIndex + 1 < byteCount)
                 {
-                    encoding = bytes[i + byteIndex] |
-                               (bytes[i + 1 + byteIndex] * 0x100);
+                    encoding = bytes[byteIndex] |
+                               (bytes[byteIndex + 1] * 0x100);
                     if (_currentMap.ContainsValue(encoding))
                     {
                         displ = 2;
                         goto SetChar;
                     }
                 }
-                encoding = bytes[i + byteIndex];
+                encoding = bytes[byteIndex];
                 if (_currentMap.ContainsValue(encoding))
                 {
                     displ = 1;
@@ -370,45 +306,30 @@ namespace Core6502DotNet
                 }
 
                 var count = 1;
-                var utfChars = UTF8.GetChars(bytes.Skip(i).ToArray(), 0, byteCount - i);
+                var utfChars = UTF8.GetChars(bytes.Skip(byteIndex).ToArray(), 0, byteCount - byteIndex);
 
                 if (char.IsSurrogate(utfChars.First()))
                     count++;
 
                 utfChars = utfChars.Take(count).ToArray();
                 foreach (var utfChar in utfChars)
-                    chars[j++] = utfChar;
+                    chars[i++] = utfChar;
 
-                i += UTF8.GetByteCount(utfChars);
+                byteIndex += UTF8.GetByteCount(utfChars);
                 continue;
 
             SetChar:
                 var key = _currentMap.First(e => e.Value.Equals(encoding)).Key;
                 var utfchars = char.ConvertFromUtf32(key);
                 foreach (var utfc in utfchars)
-                    chars[j++] = utfc;
-                i += displ;
-
+                    chars[i++] = utfc;
+                byteIndex += displ;
             }
-            return j - charIndex;
+            return i - charIndex;
         }
 
-        /// <summary>
-        /// Calculates the maximum number of bytes 
-        /// produced by encoding the specified number of characters.
-        /// </summary>
-        /// <param name="charCount">The number of characters to encode</param>
-        /// <returns>The maximum number of bytes produced by 
-        /// encoding the specified number of characters.</returns>
         public override int GetMaxByteCount(int charCount) => charCount * sizeof(int);
 
-        /// <summary>
-        /// Calculates the maximum number of characters produced 
-        /// by decoding the specified number of bytes.
-        /// </summary>
-        /// <param name="byteCount">The number of bytes to decod</param>
-        /// <returns>The maximum number of characters produced by 
-        /// decoding the specified number of bytes.</returns>
         public override int GetMaxCharCount(int byteCount)
         {
             // An encoding could be mapped to a surrogate pair, so we must double max char count

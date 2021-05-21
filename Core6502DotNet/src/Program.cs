@@ -29,6 +29,10 @@ namespace Core6502DotNet
 
         static CpuAssembler SetCpu(string cpu, AssemblyServices services)
         {
+            if (services.Options.BranchAlways &&
+                !string.IsNullOrEmpty(cpu) && 
+                !cpu.StartsWith("6502"))
+                services.Log.LogEntrySimple("Option '--enable-branch-always' ignored for non-6502 CPU.", false);
             return cpu switch
             {
                 "m6800" => new M6809Asm(services),

@@ -265,12 +265,18 @@ namespace Core6502DotNet
             /// <param name="cpu">The CPU.</param>
             /// <param name="autoSizeRegisters">Autosize registers for 65816 mode.</param>
             /// <param name="longAddressing">Long addressing supported.</param>
-            public Target(string binaryFormat, string cpu, bool autoSizeRegisters, bool longAddressing)
+            /// <param name="branchAlways">Enable branch-always pseudo-mnemonic for 6502.</param>
+            public Target(string binaryFormat, 
+                          string cpu, 
+                          bool autoSizeRegisters, 
+                          bool longAddressing,
+                          bool branchAlways)
             {
                 Format = binaryFormat ?? string.Empty;
                 Cpu = cpu ?? string.Empty;
                 Autosize = autoSizeRegisters;
                 LongAddressing = longAddressing;
+                BranchAlways = branchAlways;
             }
 
             /// <summary>
@@ -282,6 +288,11 @@ namespace Core6502DotNet
             /// Gets the CPU.
             /// </summary>
             public string Cpu { get; }
+
+            /// <summary>
+            /// Gets the branch always option.
+            /// </summary>
+            public bool BranchAlways { get; }
 
             /// <summary>
             /// Gets the autosize option.
@@ -310,6 +321,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="inputFiles">The input files.</param>
         /// <param name="noAssembly">The no-assembly flag.</param>
+        /// <param name="branchAlways">The branch-always flag.</param>
         /// <param name="caseSensitive">The case-sensitive flag.</param>
         /// <param name="createConfig">The create-config option.</param>
         /// <param name="cpu">The cpu option.</param>
@@ -343,6 +355,7 @@ namespace Core6502DotNet
         /// <param name="warnNotUnusedSections">The warn not about unused sections flag.</param>
         public Options(IList<string> inputFiles,
                        bool noAssembly,
+                       bool branchAlways,
                        bool caseSensitive,
                        string createConfig,
                        string cpu,
@@ -391,7 +404,11 @@ namespace Core6502DotNet
                                                          warnLeft,
                                                          warnNotUnusedSections),
                                              null,
-                                             new Target(format, cpu, autoSize, longAddressing),
+                                             new Target(format, 
+                                                        cpu, 
+                                                        autoSize, 
+                                                        longAddressing,
+                                                        branchAlways),
                                              labelDefines,
                                              echoEachPass,
                                              caseSensitive,
@@ -495,11 +512,12 @@ namespace Core6502DotNet
                 CPU = target.Cpu;
                 Autosize = target.Autosize;
                 LongAddressing = target.LongAddressing;
+                BranchAlways = target.BranchAlways;
             }
             else
             {
                 Format = CPU = string.Empty;
-                Autosize = LongAddressing = false;
+                Autosize = LongAddressing = BranchAlways = false;
             }
             EchoEachPass = echoEachPass;
             CaseSensitive = caseSensitive;
@@ -636,6 +654,7 @@ namespace Core6502DotNet
                 target.Add("cpu", string.IsNullOrEmpty(CPU) ? "6502" : CPU);
                 target.Add("autoSizeRegisters", Autosize);
                 target.Add("longAddressing", LongAddressing);
+                target.Add("branchAlways", BranchAlways);
                 root.Add("target", target);
             }
             return root.ToString();
@@ -827,6 +846,13 @@ namespace Core6502DotNet
         /// </summary>
         [Option('a', "no-assembly", Required = false, HelpText = "Suppress assembled bytes from listing.")]
         public bool NoAssembly { get; }
+
+        /// <summary>
+        /// Gets the flag indicating that the BRA mnemonic should be enabled as a pseudo-instruction for 
+        /// 6502 assembly.
+        /// </summary>
+        [Option('b', "enable-branch-always", Required = false, HelpText = "Enable (pseudo) BRA for the 6502.")]
+        public bool BranchAlways { get; }
 
         /// <summary>
         /// Gets a flag that indicates the source should be processed as
@@ -1032,7 +1058,7 @@ namespace Core6502DotNet
             get
             {
                 yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false, false));
-                yield return new Example("From Config", new Options(null, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, false, null, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false));
+                yield return new Example("From Config", new Options(null, false, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, false, null, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false));
             }
         }
 
