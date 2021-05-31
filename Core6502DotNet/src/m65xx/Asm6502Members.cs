@@ -635,7 +635,8 @@ namespace Core6502DotNet.m65xx
             "45GS02",
             "m65",
             "65816",
-            "65CS02"
+            "65CS02",
+            "W65C02"
         };
 
         #endregion
