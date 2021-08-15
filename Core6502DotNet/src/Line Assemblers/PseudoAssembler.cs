@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Core6502DotNet
@@ -17,11 +18,35 @@ namespace Core6502DotNet
     /// </summary>
     public class PseudoAssembler : AssemblerBase, IFunctionEvaluator
     {
+        #region Structs
+
+        [StructLayout(LayoutKind.Explicit, Size = 8)]
+        struct Ieee754Converter
+        {
+            [FieldOffset(0)]
+            public readonly ulong Binary;
+
+            [FieldOffset(0)]
+            public readonly double Float;
+
+            public Ieee754Converter(double floatVal)
+            {
+                Binary = 0;
+                Float = floatVal;
+            }
+
+            public Ieee754Converter(ulong ulongVal)
+            {
+                Float = 0;
+                Binary = ulongVal;
+            }
+        }
+
+        #endregion
+
         #region Constants
 
-        const int IeeeBias = 1023;
-
-        const int CbmBias = 129;
+        const int AdjustedBias = 894;
 
         #endregion
 
@@ -188,35 +213,27 @@ namespace Core6502DotNet
                 if (val != 0 && double.IsNormal(val))
                 {
                     // Convert float to binary.
-                    var ieee = BitConverter.GetBytes(val);
-
-                    if (!BitConverter.IsLittleEndian)
-                        ieee = ieee.Reverse().ToArray();
+                    var ieeeConv = new Ieee754Converter(val);
+                    var ieee = ieeeConv.Binary;
 
                     // Calculate exponent
-                    var exp = (((ieee[7] << 4) + (ieee[6] >> 4)) & 0x7ff) - IeeeBias;
-                    exp += CbmBias;
+                    var exp = ((ieee >> 52) & 0x7ff) - AdjustedBias;
                     bytes[0] = Convert.ToByte(exp);
-                
-                    // Calculate mantissa
-                    var mantissa = (       ieee[2]                | 
-                                   ( (long)ieee[3]         << 8)  | 
-                                   ( (long)ieee[4]         << 16) | 
-                                   ( (long)ieee[5]         << 24) | 
-                                   (((long)ieee[6] & 0xf)  << 32)) 
-                                   << 3;
 
-                    var manix = packed ? 1 : 2;
-                    bytes[manix    ] = (byte)((mantissa >> 32) & 0xff);
-                    bytes[manix + 1] = (byte)((mantissa >> 24) & 0xff);
-                    bytes[manix + 2] = (byte)((mantissa >> 16) & 0xff);
-                    bytes[manix + 3] = (byte)((mantissa >>  8) & 0xff);
+                    // Calculate mantissa
+                    var mantissa = ieee >> 21; 
+
+                     var manix = packed ? 1 : 2;
+                    bytes[manix    ] = (byte)(mantissa >> 24);
+                    bytes[manix + 1] = (byte)(mantissa >> 16);
+                    bytes[manix + 2] = (byte)(mantissa >>  8);
+                    bytes[manix + 3] = (byte)(mantissa      );
 
                     if (bytes[manix] >= 0x80 && packed)
                         bytes[manix] &= 0x7f;
 
                     // Calculate sign
-                    if ((ieee[7] & 0x80) != 0)
+                    if (unchecked((long)ieee) < 0)
                     {
                         if (packed)
                             bytes[1] |= 0x80;
@@ -522,9 +539,6 @@ namespace Core6502DotNet
                 return double.NaN;
 
             var bytes = Services.Output.GetRange(address, size).ToList();
-
-            var ieeebytes = new byte[8];
-            var exp = bytes[0] - CbmBias + IeeeBias;
             int sign;
             if (packed)
             {
@@ -539,20 +553,13 @@ namespace Core6502DotNet
                 for (var i = 2; i < 5; i++)
                     bytes[i] = bytes[i + 1];
             }
-            exp |= sign << 4;
+            ulong ieee = ((((ulong)bytes[0] + AdjustedBias) | ((ulong)sign << 4)) << 52) |
+                          (((ulong)bytes[1] & 0x7f) << 45) |
+                           ((ulong)bytes[2]         << 37) |
+                           ((ulong)bytes[3]         << 29) |
+                           ((ulong)bytes[4]         << 21);
 
-            ieeebytes[7] = (byte)(exp >> 4);
-            ieeebytes[6] = (byte)(((exp & 0x0F) << 4) | ((bytes[1] & 0x78) >> 3));
-
-            for (var i = 1; i < 4; i++)
-                ieeebytes[6 - i] = (byte)(((bytes[i] & 0x7) << 5) | ((bytes[i + 1] & 0xf8) >> 3));
-
-            ieeebytes[2] = (byte)((bytes[4] & 0x7) << 5);
-
-            if (!BitConverter.IsLittleEndian)
-                ieeebytes = ieeebytes.Reverse().ToArray();
-
-            return BitConverter.ToDouble(ieeebytes);
+            return new Ieee754Converter(ieee).Float;
         }
 
         public bool EvaluatesFunction(Token function) => Reserved.IsOneOf("Functions", function.Name);

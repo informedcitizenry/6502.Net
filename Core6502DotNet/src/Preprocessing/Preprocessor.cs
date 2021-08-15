@@ -245,15 +245,13 @@ namespace Core6502DotNet
         {
             var sourceLines = new List<SourceLine>();
             var lineSources = new List<string>();
-            var blockComment = false;
-            var readyForNewLine = true;
+            bool blockComment, readyForNewLine, stopProcessing, previousWasPlus;
             var expected = TokenType.LabelInstr;
             var previousType = TokenType.None;
             var opens = new Stack<char>();
             Macro definingMacro = null;
             string nextLine, lineSource;
-            var stopProcessing = false;
-            var previousWasPlus = false;
+            blockComment = stopProcessing = previousWasPlus = false; readyForNewLine = true;
             List<Token> tokens = null;
             var linesProcessed = lineNumber;
             while ((nextLine = sr.ReadLine()) != null && !stopProcessing)

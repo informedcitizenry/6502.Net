@@ -93,11 +93,7 @@ namespace Core6502DotNet
             { new Token(">>", TokenType.Binary),    new OperationDef(parms =>  (int)parms[1] >> (int)parms[0],                      9) },
             { new Token("-",  TokenType.Binary),    new OperationDef(parms =>  parms[1] - parms[0],                                10) },
             { new Token("+",  TokenType.Binary),    new OperationDef(parms =>  parms[1] + parms[0],                                10) },
-            { new Token("/",  TokenType.Binary),
-                new OperationDef(delegate(List<double> parms)
-                {
-                    if (parms[0].AlmostEquals(0)) throw new DivideByZeroException(); return parms[1] / parms[0];
-                },                                                                                                                 11) },
+            { new Token("/",  TokenType.Binary),    new OperationDef(parms =>  parms[0]==0?throw new DivideByZeroException():parms[1]/parms[0],11) },
             { new Token("*",  TokenType.Binary),    new OperationDef(parms => parms[1] * parms[0],                                 11) },
             { new Token("%",  TokenType.Binary),    new OperationDef(parms => (long)parms[1] % (long)parms[0],                     11) },
             { new Token("^^", TokenType.Binary),    new OperationDef(parms => Math.Pow(parms[1], parms[0]),                        12) },
