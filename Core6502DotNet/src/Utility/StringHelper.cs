@@ -166,6 +166,8 @@ namespace Core6502DotNet
                             parms.Add((int)parmVal);
                         else
                             parms.Add(parmVal);
+                        if (iterator.Current.Type == TokenType.Closed && !Token.IsEnd(iterator.PeekNext()))
+                            break; // are we part of a larger expression?
                     }
                 }
             }

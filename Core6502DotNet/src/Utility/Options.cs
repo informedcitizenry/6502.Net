@@ -707,37 +707,27 @@ namespace Core6502DotNet
 
         static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
         {
-            var heading = $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
             bool isVersion = errs.IsVersion();
-            if (!isVersion)
+            var isHelp = errs.IsHelp();
+            var errors = new List<string>();
+            if (!isHelp && !isVersion)
             {
+                var errorText = SentenceBuilder.Create().FormatError;
                 foreach (var err in errs)
                 {
-                    if (err is UnknownOptionError optionError && optionError.Token.Equals("V"))
+                    if (err is UnknownOptionError optionError)
                     {
-                        isVersion = true;
-                        break;
+                        isVersion = optionError.Token.Equals("V");
+                        isHelp = optionError.Token.Equals("?") || optionError.Token.Equals("h");
+                        if (isVersion || isHelp)
+                            break;
                     }
+                    errors.Add(errorText(err));
                 }
             }
+            var heading = $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
             if (isVersion)
                 throw new Exception(heading);
-            var isHelp = errs.IsHelp();
-            if (!isHelp)
-            {
-                foreach(var err in errs)
-                {
-                    if (err is UnknownOptionError optionError && (optionError.Token.Equals("?") || optionError.Token.Equals("h")))
-                    {
-                        isHelp = true;
-                    }
-                    else if (isHelp)
-                    {
-                        isHelp = false;
-                        break;
-                    }
-                }
-            }
             if (isHelp)
             {
                 var helpText = HelpText.AutoBuild(result, h =>
@@ -758,8 +748,13 @@ namespace Core6502DotNet
                                             .Replace("\r\n\r\nUSAGE", "USAGE")
                                             .Replace("\n\nUSAGE", "USAGE");
                 throw new Exception(ht);
-            } 
-            throw new Exception("Invalid arguments. Try '--help' for usage.");
+            }
+            Console.WriteLine("Option error(s):");
+            var consoleColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+            errors.ForEach(err => Console.Error.WriteLine($"  {err}"));
+            Console.ForegroundColor = consoleColor;
+            throw new Exception("Try '--h|help|?' for usage.");
         }
 
         /// <summary>
