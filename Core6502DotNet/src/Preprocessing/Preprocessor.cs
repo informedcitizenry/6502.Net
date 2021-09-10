@@ -137,7 +137,8 @@ namespace Core6502DotNet
             { '<', new List<char>{ '<', '=' } },
             { '>', new List<char>{ '>', '=' } },
             { '=', new List<char>{ '=' } },
-            { '!', new List<char>{ '=' } }
+            { '!', new List<char>{ '=' } },
+            { '^', new List<char>{ '^' } }
         };
 
         static readonly Regex s_defineRegex = new Regex(@"^((_+(\d|\p{L}))|\p{L})(\d|\p{L}|_)*((=.+)|$)");
