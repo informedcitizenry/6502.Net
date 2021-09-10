@@ -130,6 +130,30 @@ namespace Core6502DotNet
         void AssembleValues(SourceLine line, double minValue, double maxValue, int setSize, bool isAddr = false, bool isRta = false)
         {
             Token token;
+            double actualMin = minValue;
+            double actualMax = maxValue;
+            if (Services.Options.AllowOverflow)
+            {
+                switch (setSize)
+                {
+                    case 1:
+                        actualMin = sbyte.MinValue;
+                        actualMax = byte.MaxValue;
+                        break;
+                    case 2:
+                        actualMin = short.MinValue;
+                        actualMax = ushort.MaxValue;
+                        break;
+                    case 3:
+                        actualMin = Int24.MinValue;
+                        actualMax = UInt24.MaxValue;
+                        break;
+                    default:
+                        actualMin = int.MinValue;
+                        actualMax = uint.MaxValue;
+                        break;
+                }
+            }
             var iterator = line.Operands.GetIterator();
             while ((token = iterator.GetNext()) != null)
             {
@@ -143,7 +167,7 @@ namespace Core6502DotNet
                 }
                 else
                 {
-                    var val = Services.Evaluator.Evaluate(iterator, false, minValue, maxValue);
+                    var val = Services.Evaluator.Evaluate(iterator, false, actualMin, actualMax);
                     if (isAddr && !val.IsInteger())
                         throw new ExpressionException(token, $"Value {val} is not an address.");
                     if (isRta)

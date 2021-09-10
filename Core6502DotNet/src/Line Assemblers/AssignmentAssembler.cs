@@ -152,9 +152,7 @@ namespace Core6502DotNet
             {
                 if (instruction.Equals(".org"))
                 {
-                    return string.Format(".{0}{1}",
-                        Services.Output.LogicalPC.ToString("x4").PadRight(41),
-                        unparsedSource);
+                    return $".{Services.Output.LogicalPC,-41:x4}{unparsedSource}";
                 }
                 Token tokenSymbol;
                 if (instruction.Equals(".let"))
@@ -172,18 +170,13 @@ namespace Core6502DotNet
                         else
                             condition = Services.Evaluator.ExpressionIsCondition(line.Operands.GetIterator());
                         if (condition)
-                            return string.Format("={0}{1}",
-                                (symbol.NumericValue == 0 ? "false" : "true").PadRight(42), unparsedSource);
+                            return $"={(symbol.NumericValue == 0 ? "false" : "true"),-42}{unparsedSource}";
                         if (symbol.NumericValue.IsInteger())
-                            return string.Format("=${0}{1}",
-                                ((int)symbol.NumericValue).ToString("x").PadRight(41),
-                                unparsedSource);
-                        return string.Format("={0}{1}",
-                                symbol.NumericValue.ToString().PadRight(41),
-                                unparsedSource);
+                            return $"=${(int)symbol.NumericValue,-41:x}{unparsedSource}";
+                        return $"={symbol.NumericValue,-41}{unparsedSource}";
                     }
                     var elliptical = $"\"{symbol.StringValue.ToString().Elliptical(38)}\"";
-                    return string.Format("={0}{1}", elliptical.PadRight(42), unparsedSource);
+                    return $"={elliptical,-42}{unparsedSource}";
                 }
             }
             return string.Empty;

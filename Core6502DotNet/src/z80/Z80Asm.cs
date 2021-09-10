@@ -377,5 +377,8 @@ namespace Core6502DotNet.z80
             }
             return string.Empty;
         }
+        protected override string[] Calls => new string[] { "call" };
+
+        protected override string[] Returns => new string[] { "ret", "reti", "retn" };
     }
 }

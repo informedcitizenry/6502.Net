@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 using System;
+using System.Linq;
 
 namespace Core6502DotNet
 {
@@ -113,6 +114,14 @@ namespace Core6502DotNet
                 return string.Empty;
             }
             Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;
+            var next = lines.PeekNext();
+            if (next != null && next.Instruction != null &&
+                Calls.Contains(line.Instruction.Name.ToString()) &&
+                Returns.Contains(next.Instruction.Name.ToString()))
+                Services.Log.LogEntry(line,
+                    $"Consider changing \"{line.Instruction}\" to a jump instruction.",
+                    line.Instruction.Name.ToString(),
+                    false);
             return AssembleCpuInstruction(line);
         }
         #endregion
@@ -138,6 +147,16 @@ namespace Core6502DotNet
         /// Gets the individual evaluations in the expression.
         /// </summary>
         protected double[] Evaluations { get; }
+
+        /// <summary>
+        /// Gets the subroutine call mnemonics. This property must be implemented.
+        /// </summary>
+        protected abstract string[] Calls { get; }
+
+        /// <summary>
+        /// Gets the subroutine return mnemonics. This property must be implemented.
+        /// </summary>
+        protected abstract string[] Returns { get; }
 
         #endregion
     }

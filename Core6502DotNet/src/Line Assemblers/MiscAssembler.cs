@@ -85,11 +85,11 @@ namespace Core6502DotNet
                 var iterator = line.Operands.GetIterator();
                 var eor = Services.Evaluator.Evaluate(iterator, sbyte.MinValue, byte.MaxValue);
                 var eor_b = Convert.ToByte(eor);
-                Services.Output.Transform = (delegate (byte b)
+                Services.Output.Transform = delegate (byte b)
                 {
                     b ^= eor_b;
                     return b;
-                });
+                };
                 if (iterator.Current != null)
                     Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
             }

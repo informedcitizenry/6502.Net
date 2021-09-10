@@ -87,7 +87,7 @@ namespace Core6502DotNet
             if (bytes.Length < 4)
                 Array.Resize(ref bytes, 4);
             else if (bytes.Length > 4)
-                throw new OverflowException($"Size of char literal \"{s}\" exceeds integer value");
+                throw new OverflowException($"Size of string literal \"{s}\" exceeds integer value");
             return BitConverter.ToInt32(bytes, 0);
         }
 

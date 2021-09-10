@@ -68,13 +68,13 @@ namespace Core6502DotNet
                     {
                         if (Params.Any(p => p.Name.Equals(t.Name, comp)))
                         {
-                            throw new ExpressionException(t.Position,
+                            throw new ExpressionException(t,
                                 $"Parameter \"{t.Name}\" previously defined in parameter list.");
 
                         }
                         var parmName = t.Name;
                         if (!char.IsLetter(parmName[0]))
-                            throw new ExpressionException(t.Position, "Invalid parameter name.");
+                            throw new ExpressionException(t, "Invalid parameter name.");
                         var defaultValue = new List<Token>();
                         if (it.PeekNext() != null && it.PeekNext().Type != TokenType.Separator)
                         {

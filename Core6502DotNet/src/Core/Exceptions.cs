@@ -30,7 +30,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Constructs a new expression exception.
         /// </summary>
-        /// <param name="position">The token that caused the exception.</param>
+        /// <param name="position">The position of the token that caused the exception.</param>
         /// <param name="message">The exception message.</param>
         public ExpressionException(int position, string message)
             : base(message) => Position = position;

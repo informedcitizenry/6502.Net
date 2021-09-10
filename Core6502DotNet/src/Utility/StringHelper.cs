@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -32,6 +33,8 @@ namespace Core6502DotNet
         public static bool ExpressionIsAString(RandomAccessIterator<Token> iterator, AssemblyServices services)
         {
             var token = iterator.Current;
+            if (token == null)
+                return false;
             if (token.IsDoubleQuote())
                 return token.Name.Length > 2 && Token.IsEnd(iterator.PeekNext());
             var ix = iterator.Index;
@@ -107,6 +110,13 @@ namespace Core6502DotNet
                     return string.Empty;
                 if (sym.DataType == DataType.String)
                 {
+                    if (services.Options.WarnCaseMismatch)
+                    {
+                        var lookupName = token.Name.Length == sym.Name.Length ? token.Name.ToString() :
+                            token.Name.ToString().Split('.', StringSplitOptions.RemoveEmptyEntries)[^1];
+                        if (!lookupName.Equals(sym.Name, StringComparison.Ordinal))
+                            services.Log.LogEntry(token, $"Specified lookup to symbol \"{sym.Name}\" did not match its case.", false);
+                    }
                     if ((!iterator.MoveNext() || Token.IsEnd(iterator.Current)) && sym.StorageType == StorageType.Scalar)
                     {
                         return sym.StringValue.TrimOnce('"').ToString();
@@ -173,7 +183,14 @@ namespace Core6502DotNet
             }
             if (parms.Count == 0)
                 return fmt;
-            return string.Format(fmt, parms.ToArray());
+            try
+            {
+                return string.Format(fmt, parms.ToArray());
+            }
+            catch (FormatException)
+            {
+                throw new SyntaxException(format, "There was a problem with the format string.");
+            }
         }
     }
 }

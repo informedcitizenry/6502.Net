@@ -101,9 +101,7 @@ namespace Core6502DotNet
             {
                 var symbol = Services.SymbolManager.GetSymbol(first.Label, false);
                 if (symbol != null && symbol.IsNumeric && symbol.StorageType == StorageType.Scalar && !double.IsNaN(symbol.NumericValue))
-                    return string.Format(".{0}{1}",
-                                        ((int)symbol.NumericValue).ToString("x4").PadRight(42),
-                                        Services.Options.NoSource ? string.Empty : first.Source);
+                    return $".{(int)symbol.NumericValue,-42:x4}{(Services.Options.NoSource ? string.Empty : first.Source)}";
             }
             return string.Empty;
         }

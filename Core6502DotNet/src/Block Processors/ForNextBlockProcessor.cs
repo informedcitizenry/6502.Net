@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 
 namespace Core6502DotNet

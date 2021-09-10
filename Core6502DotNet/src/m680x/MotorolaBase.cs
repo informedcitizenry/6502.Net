@@ -528,6 +528,10 @@ namespace Core6502DotNet
         protected IReadOnlyDictionary<(string Mnem, Modes Mode), CpuInstruction> 
             ActiveInstructions { get; set; }
 
+        protected override string[] Calls => new string[] { "jsr" };
+
+        protected override string[] Returns => new string[] { "rti", "rts" };
+
         #endregion
     }
 }

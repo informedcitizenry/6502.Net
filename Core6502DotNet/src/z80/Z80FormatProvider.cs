@@ -78,7 +78,7 @@ namespace Core6502DotNet.z80
                     else
                         name = name.PadRight(8);
 
-                    name = string.Format("{0}$$$", name);
+                    name = $"{name}$$$";
 
                     // user number 0
                     buffer.Add(0);

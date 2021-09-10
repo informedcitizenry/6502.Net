@@ -398,6 +398,11 @@ namespace Core6502DotNet
         /// </summary>
         public bool IsMutable { get; }
 
+        /// <summary>
+        /// Gets or sets the symbol's name.
+        /// </summary>
+        public string Name { get; set; }
+
         #endregion
     }
 }

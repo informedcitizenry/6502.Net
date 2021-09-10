@@ -71,6 +71,13 @@ namespace Core6502DotNet
                     PassNeeded = true;
                     return 0x100;
                 }
+                if (Options.WarnCaseMismatch)
+                {
+                    var lookupName = token.Name.Length == symbol.Name.Length ? token.Name.ToString() :
+                        token.Name.ToString().Split('.', StringSplitOptions.RemoveEmptyEntries)[^1];
+                    if (!lookupName.Equals(symbol.Name, StringComparison.Ordinal))
+                        Log.LogEntry(token, $"Specified lookup to symbol \"{symbol.Name}\" did not match its case.", false);
+                }
                 if (subscript >= 0)
                 {
                     if (symbol.StorageType != StorageType.Vector)

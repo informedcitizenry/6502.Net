@@ -212,7 +212,7 @@ namespace Core6502DotNet
                             var iterator = line.Operands.GetIterator();
                             if (stringBlock != null)
                             {
-                                if (!StringHelper.ExpressionIsAString(iterator, Services))
+                                if (!iterator.MoveNext() || !StringHelper.ExpressionIsAString(iterator, Services))
                                     Services.Log.LogEntry(line.Operands[0],
                                         "String expression expected.");
                                 else

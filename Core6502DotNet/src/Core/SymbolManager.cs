@@ -271,7 +271,36 @@ namespace Core6502DotNet
             }
             if (_symbolTable.TryGetValue(fqdn, out var existing) && !existing.IsEqualType(symbol))
                 throw new Exception("Type mismatch.");
+            symbol.Name = nameStr;
             _symbolTable[fqdn] = symbol;
+        }
+
+        /// <summary>
+        /// Determines whether a symbol is mutable.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
+        /// <returns><c>true</c> if the symbol exists and is mutable,
+        /// <c>false</c> otherwise.</returns>
+        public bool SymbolIsMutable(StringView name)
+        {
+            if (_symbolTable.TryGetValue(GetFullyQualifiedName(name), out var existing))
+                return existing.IsMutable;
+            return false;
+        }
+
+        /// <summary>
+        /// Determines if the symbol has been defined.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
+        /// <param name="searchUp">Search up the scope hierarchy.</param>
+        /// <returns><c>true</c> if the symbol has been defined, 
+        /// otherwise <c>false</c>.</returns>
+        public bool SymbolIsMutable(StringView name, bool searchUp)
+        {
+            var fqdn = searchUp ? GetFullyQualifiedName(name) : GetScopedName(name);
+            if (_symbolTable.TryGetValue(fqdn, out var symbol))
+                return symbol.IsMutable;
+            return false;
         }
 
         /// <summary>
@@ -301,8 +330,9 @@ namespace Core6502DotNet
         /// <param name="raiseExceptionIfNotFound">Raise exception if the symbol is not found.</param>
         /// <returns>The <see cref="Symbol"/> if it exists.</returns>
         /// <exception cref="SymbolException"></exception>
-        public Symbol GetSymbol(Token symbolToken, bool raiseExceptionIfNotFound)
-        {
+        public Symbol GetSymbol(Token symbolToken,
+                                bool raiseExceptionIfNotFound)
+        { 
             var fqdn = GetFullyQualifiedName(symbolToken.Name);
             if (_symbolTable.ContainsKey(fqdn))
                 return _symbolTable[fqdn];
@@ -396,7 +426,6 @@ namespace Core6502DotNet
                     DefineSymbol(lhs.Name, new Symbol(_evaluator.Evaluate(tokens, false), isMutable), isGlobal, isWeak);
                 }
             }
-
         }
 
         /// <summary>
@@ -447,6 +476,15 @@ namespace Core6502DotNet
         /// <param name="tokens">The tokenized symbol assignment expression (rhs).</param>
         public void DefineSymbol(StringView name, RandomAccessIterator<Token> tokens)
             => DefineSymbol(name, new Symbol(tokens, _evaluator, false), false);
+
+        /// <summary>
+        /// Define a scoped symbol.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
+        /// <param name="tokens">The tokenized symbol assignment expression (rhs).</param>
+        /// <param name="isMutable">Whether the symbol is mutable.</param>
+        public void DefineSymbol(StringView name, RandomAccessIterator<Token> tokens, bool isMutable)
+            => DefineSymbol(name, new Symbol(tokens, _evaluator, false), isMutable);
 
         /// <summary>
         /// Gets the reference symbol specified.

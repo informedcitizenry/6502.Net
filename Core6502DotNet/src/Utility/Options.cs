@@ -123,6 +123,7 @@ namespace Core6502DotNet
             /// <param name="warningsAsErrors">The warnings-as-errors flag.</param>
             /// <param name="warnLeft">The warn left flag.</param>
             /// <param name="suppressUnusedSectionWarning">The suppress warning about unused section flag.</param>
+            /// <param name="warnCaseMismatch">The warn on case mismatch flag.</param>
             public Logging(string errorPath,
                            bool checksum,
                            bool noStats,
@@ -130,7 +131,8 @@ namespace Core6502DotNet
                            bool quietMode,
                            bool warningsAsErrors,
                            bool warnLeft,
-                           bool suppressUnusedSectionWarning)
+                           bool suppressUnusedSectionWarning,
+                           bool warnCaseMismatch)
             {
                 ErrorFile = errorPath ?? string.Empty;
                 Checksum = checksum;
@@ -140,6 +142,7 @@ namespace Core6502DotNet
                 WarningsAsErrors = warningsAsErrors;
                 WarnLeft = warnLeft;
                 SuppressUnusedSectionWarning = suppressUnusedSectionWarning;
+                WarnCaseMismatch = warnCaseMismatch;
             }
             #endregion
 
@@ -184,6 +187,11 @@ namespace Core6502DotNet
             /// Gets the warn not about unused sections flag.
             /// </summary>
             public bool SuppressUnusedSectionWarning { get; }
+
+            /// <summary>
+            /// Gets the warn case mismatch flag.
+            /// </summary>
+            public bool WarnCaseMismatch { get; }
 
             #endregion
         }
@@ -321,6 +329,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="inputFiles">The input files.</param>
         /// <param name="noAssembly">The no-assembly flag.</param>
+        /// <param name="allowOverflow">The allow overflow flag.</param>
         /// <param name="branchAlways">The branch-always flag.</param>
         /// <param name="caseSensitive">The case-sensitive flag.</param>
         /// <param name="createConfig">The create-config option.</param>
@@ -353,8 +362,10 @@ namespace Core6502DotNet
         /// <param name="warningsAsErrors">The warnings as errors flag.</param>
         /// <param name="warnLeft">The warn left flag.</param>
         /// <param name="warnNotUnusedSections">The warn not about unused sections flag.</param>
+        /// <param name="warnCaseMismatch"
         public Options(IList<string> inputFiles,
                        bool noAssembly,
+                       bool allowOverflow,
                        bool branchAlways,
                        bool caseSensitive,
                        string createConfig,
@@ -386,7 +397,8 @@ namespace Core6502DotNet
                        bool noWarnings,
                        bool warningsAsErrors,
                        bool warnLeft,
-                       bool warnNotUnusedSections) : this(inputFiles,
+                       bool warnNotUnusedSections,
+                       bool warnCaseMismatch) : this(inputFiles,
                                              new Listing(labelFile,
                                                          listingFile,
                                                          noAssembly,
@@ -402,7 +414,8 @@ namespace Core6502DotNet
                                                          quiet,
                                                          warningsAsErrors,
                                                          warnLeft,
-                                                         warnNotUnusedSections),
+                                                         warnNotUnusedSections,
+                                                         warnCaseMismatch),
                                              null,
                                              new Target(format, 
                                                         cpu, 
@@ -417,7 +430,8 @@ namespace Core6502DotNet
                                              patch,
                                              includePath,
                                              ignoreColons,
-                                             resetPcOnBank)
+                                             resetPcOnBank,
+                                             allowOverflow)
         {
             if (!string.IsNullOrEmpty(configFile))
             {
@@ -459,6 +473,7 @@ namespace Core6502DotNet
         /// <param name="includePath">The include path.</param>
         /// <param name="ignoreColons">The ignore-colons flag.</param>
         /// <param name="resetPcOnBank">The reset PC on bank flag.</param>
+        /// <param name="allowOverflow">The allow overflow flag.</param>
         [JsonConstructor]
         public Options(IList<string> sources,
                        Listing listingOptions,
@@ -473,7 +488,8 @@ namespace Core6502DotNet
                        string patchOffset,
                        string includePath,
                        bool ignoreColons,
-                       bool resetPcOnBank)
+                       bool resetPcOnBank,
+                       bool allowOverflow)
         {
             if (listingOptions != null)
             {
@@ -501,6 +517,7 @@ namespace Core6502DotNet
                 _werror = loggingOptions.WarningsAsErrors;
                 Quiet = loggingOptions.Quiet;
                 ShowChecksums = loggingOptions.Checksum;
+                WarnCaseMismatch = loggingOptions.WarnCaseMismatch;
             }
             else
             {
@@ -536,6 +553,7 @@ namespace Core6502DotNet
             else
                 Sections = new List<string>().AsReadOnly();
             CreateConfig = null;
+            AllowOverflow = allowOverflow;
         }
 
         #endregion
@@ -571,6 +589,9 @@ namespace Core6502DotNet
 
             if (ResetPCOnBank)
                 root.Add("resetPCOnBank", true);
+
+            if (AllowOverflow)
+                root.Add("allowOverflow", true);
 
             if (!string.IsNullOrEmpty(LabelFile))
                 listing.Add("labelPath", LabelFile);
@@ -608,6 +629,8 @@ namespace Core6502DotNet
                 logging.Add("warningsAsErrors", true);
             if (WarnLeft)
                 logging.Add("warnLeft", true);
+            if (WarnCaseMismatch)
+                logging.Add("warnCaseMismatch", true);
 
             if (logging.Count > 0)
                 root.Add("loggingOptions", logging);
@@ -741,6 +764,10 @@ namespace Core6502DotNet
                     return HelpText.DefaultParsingErrorsHandler(result, h);
                 }, e => e);
                 var ht = helpText.ToString().Replace("(pos. 0)", "        ")
+                                            .Replace("--help                                Display this help screen.",
+                                                     "-?, -h, --help                        Display this help screen.")
+                                            .Replace("--version                             Display version information.",
+                                                     "-V, --version                         Display version information.")
                                             .Replace("ERROR(S):\n  Option 'h' is unknown.", string.Empty)
                                             .Replace("ERROR(S):\r\n  Option 'h' is unknown.", string.Empty)
                                             .Replace("ERROR(S):\n  Option '?' is unknown.", string.Empty)
@@ -754,7 +781,7 @@ namespace Core6502DotNet
             Console.ForegroundColor = ConsoleColor.Red;
             errors.ForEach(err => Console.Error.WriteLine($"  {err}"));
             Console.ForegroundColor = consoleColor;
-            throw new Exception("Try '--h|help|?' for usage.");
+            throw new Exception("Try '--help' for usage.");
         }
 
         /// <summary>
@@ -843,10 +870,16 @@ namespace Core6502DotNet
         public bool NoAssembly { get; }
 
         /// <summary>
+        /// Gets a flag indicating all pseudo-ops that output values (<c>.byte</c>, <c>.word</c>, etc.) should allow sign overflows.
+        /// </summary>
+        [Option("allow-overflow", Required = false, HelpText = "Allow value overflows for pseudo-op assembly.")]
+        public bool AllowOverflow { get; }
+
+        /// <summary>
         /// Gets the flag indicating that the BRA mnemonic should be enabled as a pseudo-instruction for 
         /// 6502 assembly.
         /// </summary>
-        [Option('b', "enable-branch-always", Required = false, HelpText = "Enable (pseudo) BRA for the 6502.")]
+        [Option('b', "enable-branch-always", Required = false, HelpText = "Enable (pseudo) 'bra' for the 6502.")]
         public bool BranchAlways { get; }
 
         /// <summary>
@@ -994,17 +1027,16 @@ namespace Core6502DotNet
         public bool Autosize { get; }
 
         /// <summary>
-        /// Gets a flag indicating if assembly listing should suppress original source.
-        /// </summary>
-        [Option('s', "no-source", Required = false, HelpText = "Suppress original source from listing.")]
-        public bool NoSource { get; }
-
-
-        /// <summary>
         /// Gets a flag indicating if the Program Counter should reset on bank switching.
         /// </summary>
         [Option("reset-pc-on-bank", Required = false, HelpText = "Reset the PC on '.bank' directive.")]
         public bool ResetPCOnBank { get; }
+
+        /// <summary>
+        /// Gets a flag indicating if assembly listing should suppress original source.
+        /// </summary>
+        [Option('s', "no-source", Required = false, HelpText = "Suppress original source from listing.")]
+        public bool NoSource { get; }
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should truncate
@@ -1025,6 +1057,13 @@ namespace Core6502DotNet
         /// </summary>
         [Option('w', "no-warn", Required = false, HelpText = "Suppress all warnings.")]
         public bool NoWarnings { get; }
+
+        /// <summary>
+        /// Gets the flag that indicates the assembler should issue a warning on a symbol lookup which does
+        /// not match the case of the definition.
+        /// </summary>
+        [Option("Wcase-mismatch", Required = false, HelpText = "Warn on symbol case mismatch.")]
+        public bool WarnCaseMismatch { get; }
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
@@ -1052,8 +1091,8 @@ namespace Core6502DotNet
         {
             get
             {
-                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false, false));
-                yield return new Example("From Config", new Options(null, false, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, false, null, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false));
+                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false, false, false));
+                yield return new Example("From Config", new Options(null, false, false, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, false, null, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false, false));
             }
         }
 

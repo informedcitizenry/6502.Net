@@ -24,6 +24,7 @@ namespace Core6502DotNet
         readonly AssemblyServices _services;
         readonly List<AssemblerBase> _assemblers;
         readonly ProcessorOptions _processorOptions;
+        readonly Func<string, AssemblyServices, CpuAssembler> _cpuSetHandler;
 
         #endregion
 
@@ -42,59 +43,31 @@ namespace Core6502DotNet
                                   Func<string, string, IBinaryFormatProvider> formatSelector)
         {
             if (args == null || cpuSetHandler == null || formatSelector == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException("One or more arguments was null.");
             _services = new AssemblyServices(Options.FromArgs(args));
             _services.PassChanged += (s, a) => _services.Output.Reset();
             _services.PassChanged += (s, a) => _services.SymbolManager.Reset();
             _services.FormatSelector = formatSelector;
             _processorOptions = new ProcessorOptions
             {
-                CaseSensitive       = _services.Options.CaseSensitive,
-                Log                 = _services.Log,
-                IncludePath         = _services.Options.IncludePath,
+                CaseSensitive = _services.Options.CaseSensitive,
+                Log = _services.Log,
+                IncludePath = _services.Options.IncludePath,
                 IgnoreCommentColons = _services.Options.IgnoreColons,
-                WarnOnLabelLeft     = _services.Options.WarnLeft,
-                InstructionLookup   = symbol => _services.InstructionLookupRules.Any(ilr => ilr(symbol))
+                WarnOnLabelLeft = _services.Options.WarnLeft,
+                InstructionLookup = symbol => _services.InstructionLookupRules.Any(ilr => ilr(symbol)),
+                IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol)),
+                LineTerminates = _services.LineTerminates
             };
-            CpuAssembler cpuAssembler = null;
-            var cpu = _services.Options.CPU;
-            if (!string.IsNullOrEmpty(cpu))
-                cpuAssembler = cpuSetHandler(cpu, _services);
-            if (_services.Options.InputFiles.Count > 0)
+            _assemblers = new List<AssemblerBase>
             {
-                var src = new Preprocessor(_processorOptions).ProcessToFirstDirective(_services.Options.InputFiles[0]);
-                if (src != null && src.Instruction != null && src.Instruction.Name.Equals(".cpu", _services.StringViewComparer))
-                {
-                    if (src.Operands.Count != 1 || !src.Operands[0].IsDoubleQuote())
-                    {
-                        _services.Log.LogEntry(src.Instruction,
-                            "Invalid expression for directive \".cpu\".");
-                    }
-                    else
-                        cpu = src.Operands[0].Name.ToString().TrimOnce('"');
-                }
-            } 
-            _services.CPU = cpu;
-            if (!string.IsNullOrEmpty(cpu) && cpuAssembler != null && !cpuAssembler.IsCpuValid(cpu))
-            {
-                _services.Log.LogEntrySimple($"Invalid CPU \"{cpu}\" specified.");
-            }
-            else
-            {
-                if (cpuAssembler == null)
-                    cpuAssembler = cpuSetHandler(cpu, _services);
-                _assemblers = new List<AssemblerBase>
-                {
-                    new AssignmentAssembler(_services),
-                    new BlockAssembler(_services),
-                    new EncodingAssembler(_services),
-                    new PseudoAssembler(_services),
-                    new MiscAssembler(_services),
-                    cpuAssembler
-                };
-                _processorOptions.IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol));
-                _processorOptions.LineTerminates = _services.LineTerminates;
-            }
+                new AssignmentAssembler(_services),
+                new BlockAssembler(_services),
+                new EncodingAssembler(_services),
+                new PseudoAssembler(_services),
+                new MiscAssembler(_services)
+            };
+            _cpuSetHandler = cpuSetHandler;
         }
 
         #endregion
@@ -108,13 +81,10 @@ namespace Core6502DotNet
         /// <exception cref="Exception"></exception>
         public double Assemble()
         {
-            if (_services.Log.HasErrors)
-            {
-                _services.Log.DumpErrors();
-                return double.NaN;
-            }
             if (_services.Options.InputFiles.Count == 0)
-                throw new Exception("One or more required input files was not specified.");
+                _services.Log.LogEntrySimple("One or more required input files was not specified.");
+            else
+                Initialize();
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -127,16 +97,18 @@ namespace Core6502DotNet
             var processed = new List<SourceLine>();
             try
             {
-                // preprocess all passed option defines and sections
-                foreach (var define in _services.Options.LabelDefines)
-                    processed.Add(preprocessor.ProcessDefine(define));
-                foreach (var section in _services.Options.Sections)
-                    processed.AddRange(preprocessor.Process(string.Empty, processed.Count, $".dsection {section}"));
+                if (!_services.Log.HasErrors)
+                {
+                    // preprocess all passed option defines and sections
+                    foreach (var define in _services.Options.LabelDefines)
+                        processed.Add(preprocessor.ProcessDefine(define));
+                    foreach (var section in _services.Options.Sections)
+                        processed.AddRange(preprocessor.Process(string.Empty, processed.Count, $".dsection {section}"));
 
-                // preprocess all input files 
-                foreach (var inputFile in _services.Options.InputFiles)
-                    processed.AddRange(preprocessor.Process(inputFile));
-
+                    // preprocess all input files 
+                    foreach (var inputFile in _services.Options.InputFiles)
+                        processed.AddRange(preprocessor.Process(inputFile));
+                }
                 if (!_services.Options.NoStats)
                 {
                     Console.WriteLine($"{Assembler.AssemblerName}");
@@ -179,7 +151,7 @@ namespace Core6502DotNet
                 {
                     if (!_services.Options.NoWarnings && _services.Log.HasWarnings)
                         _services.Log.DumpWarnings();
-                    _services.Log.DumpErrors();
+                    DumpErrors(false);
                 }
                 else
                 {
@@ -237,8 +209,63 @@ namespace Core6502DotNet
             finally
             {
                 if (_services.Log.HasErrors)
-                    _services.Log.DumpErrors();
+                    DumpErrors(true);
             }
+        }
+
+        void Initialize()
+        {
+            CpuAssembler cpuAssembler = null;
+            var cpu = _services.Options.CPU;
+            if (!string.IsNullOrEmpty(cpu))
+                cpuAssembler = _cpuSetHandler(cpu, _services);
+            if (_services.Options.InputFiles.Count > 0)
+            {
+                try
+                {
+                    var src = new Preprocessor(_processorOptions).ProcessToFirstDirective(_services.Options.InputFiles[0]);
+                    if (src != null && src.Instruction != null && src.Instruction.Name.Equals(".cpu", _services.StringViewComparer))
+                    {
+                        if (src.Operands.Count != 1 || !src.Operands[0].IsDoubleQuote())
+                        {
+                            _services.Log.LogEntry(src.Instruction,
+                                "Invalid expression for directive \".cpu\".");
+                        }
+                        else
+                            cpu = src.Operands[0].Name.ToString().TrimOnce('"');
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _services.Log.LogEntrySimple(ex.Message);
+                }
+            }
+            _services.CPU = cpu;
+            if (!string.IsNullOrEmpty(cpu) && cpuAssembler != null && !cpuAssembler.IsCpuValid(cpu))
+            {
+                _services.Log.LogEntrySimple($"Invalid CPU \"{cpu}\" specified.");
+            }
+            else
+            {
+                if (cpuAssembler == null)
+                    cpuAssembler = _cpuSetHandler(cpu, _services);
+                _assemblers.Add(cpuAssembler);
+            }
+        }
+
+        void DumpErrors(bool clearLog)
+        {
+            _services.Log.DumpErrors();
+            if (!string.IsNullOrEmpty(_services.Options.ErrorFile))
+            {
+                using FileStream fs = new FileStream(_services.Options.ErrorFile, FileMode.Create);
+                using StreamWriter writer = new StreamWriter(fs);
+                writer.WriteLine($"{Assembler.AssemblerNameSimple}");
+                writer.WriteLine($"Error file generated {DateTime.Now:f}");
+                writer.WriteLine($"{_services.Log.ErrorCount} error(s):\n");
+                _services.Log.DumpErrors(writer);
+            }
+            if (clearLog) _services.Log.ClearAll();
         }
 
         bool AssemblyErrorHandler(AssemblerBase assembler, SourceLine line, AssemblyErrorReason reason, Exception ex)
@@ -264,7 +291,7 @@ namespace Core6502DotNet
                             if (symbEx.SymbolToken != null)
                                 _services.Log.LogEntry(symbEx.SymbolToken, symbEx.Message);
                             else
-                                _services.Log.LogEntry(line, symbEx.Position, symbEx.Message);
+                                _services.Log.LogEntry(line, symbEx.Position, symbEx.Message, symbEx.SymbolName.ToString());
                             return true;
                         }
                         else if (ex is SyntaxException synEx)
@@ -280,19 +307,12 @@ namespace Core6502DotNet
                         {
                             _services.Log.LogEntry(line.Instruction, cpuEx.Message);
                         }
-                        else if (ex is FormatException ||
-                                 ex is ReturnException ||
+                        else if (ex is ReturnException ||
                                  ex is BlockAssemblerException ||
                                  ex is SectionException)
                         {
-                            if (ex is FormatException)
-                            {
-                                _services.Log.LogEntry(line.Operands[0],
-                                                  $"There was a problem with the format string.",
-                                                  true);
-                            }
-                            else if (ex is ReturnException retEx)
-                                _services.Log.LogEntry(line, retEx.Position, retEx.Message);
+                            if (ex is ReturnException retEx)
+                                _services.Log.LogEntry(line, retEx.Position, retEx.Message, line.Source);
                             else
                                 _services.Log.LogEntry(line.Instruction, ex.Message);
                         }
@@ -318,6 +338,7 @@ namespace Core6502DotNet
                                     {
                                         _services.Log.LogEntry(line, illegalExp.Position,
                                             $"Illegal quantity for \"{line.Instruction.Name}\" ({illegalExp.Quantity}).");
+                                        return true;
                                     }
                                     else
                                         _services.Log.LogEntry(line, expEx.Position, ex.Message);
@@ -366,7 +387,7 @@ namespace Core6502DotNet
                     var patchExp = offsetLine.Operands.GetIterator();
                     var offset = _services.Evaluator.Evaluate(patchExp, 0, ushort.MaxValue);
                     if (patchExp.Current != null || _services.PassNeeded)
-                        throw new Exception();
+                        throw new Exception($"Patch offset specified in the expression \"{_services.Options.Patch}\" is not valid.");
                     var filePath = Preprocessor.GetFullPath(outputFile, _services.Options.IncludePath);
                     var fileBytes = File.ReadAllBytes(filePath);
                     Array.Copy(objectCode.ToArray(), 0, fileBytes, (int)offset, objectCode.Count);
@@ -374,7 +395,7 @@ namespace Core6502DotNet
                 }
                 catch
                 {
-                    throw new Exception($"Cannot patch file \"{outputFile}\". One or more arguments is not valid.");
+                    throw new Exception($"Cannot patch file \"{outputFile}\". One or more arguments is not valid, or the file does not exist.");
                 }
             }
             else
