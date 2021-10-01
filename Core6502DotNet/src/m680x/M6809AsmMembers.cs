@@ -49,7 +49,7 @@ namespace Core6502DotNet.m680x
 
         // leax +1,x    => 30 01
         // leax $10,PC  => 30 8C 0D
-        // leay [234,u] => 31 D9 EA
+        // leay [234,u] => 31 D9 00 EA
         // lda ,--x     => A6 83
         [Flags]
         enum IndexModes

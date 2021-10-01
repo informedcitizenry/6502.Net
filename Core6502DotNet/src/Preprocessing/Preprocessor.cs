@@ -529,11 +529,13 @@ namespace Core6502DotNet
                         else if (c.IsOperator())
                         {
                             type = TokenType.Binary;
-                            if (s_compounds.TryGetValue(c, out var comp) && comp.Contains(peek))
+                            while (peek != char.MinValue && s_compounds.TryGetValue(c, out var comp) && comp.Contains(peek))
                             {
-                                c = it.GetNext();
+                                it.MoveNext();
+                                peek = it.PeekNext();
                                 size++;
                             }
+                            c = it.Current;
                         }
                         switch (expected)
                         {

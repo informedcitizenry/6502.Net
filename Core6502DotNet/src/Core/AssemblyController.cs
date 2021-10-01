@@ -56,8 +56,7 @@ namespace Core6502DotNet
                 IgnoreCommentColons = _services.Options.IgnoreColons,
                 WarnOnLabelLeft = _services.Options.WarnLeft,
                 InstructionLookup = symbol => _services.InstructionLookupRules.Any(ilr => ilr(symbol)),
-                IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol)),
-                LineTerminates = _services.LineTerminates
+                IsMacroNameValid = symbol => !_assemblers.Any(asm => asm.Assembles(symbol))
             };
             _assemblers = new List<AssemblerBase>
             {
@@ -250,6 +249,7 @@ namespace Core6502DotNet
                 if (cpuAssembler == null)
                     cpuAssembler = _cpuSetHandler(cpu, _services);
                 _assemblers.Add(cpuAssembler);
+                _processorOptions.LineTerminates = _services.LineTerminates;
             }
         }
 
