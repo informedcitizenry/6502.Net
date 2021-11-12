@@ -130,16 +130,8 @@ namespace Core6502DotNet
             { '[', ']' }
         };
 
-        static readonly Dictionary<char, List<char>> s_compounds = new Dictionary<char, List<char>>()
-        {
-            { '|', new List<char>{ '|' } },
-            { '&', new List<char>{ '&' } },
-            { '<', new List<char>{ '<', '=' } },
-            { '>', new List<char>{ '>', '=' } },
-            { '=', new List<char>{ '=' } },
-            { '!', new List<char>{ '=' } },
-            { '^', new List<char>{ '^' } }
-        };
+        static readonly HashSet<char> s_compounds = new HashSet<char>
+        { '|', '&', '<', '>', '^' };
 
         static readonly Regex s_defineRegex = new Regex(@"^((_+(\d|\p{L}))|\p{L})(\d|\p{L}|_)*((=.+)|$)");
 
@@ -259,7 +251,7 @@ namespace Core6502DotNet
             int c;
             while ((c = sr.Read()) != -1 && sr.BaseStream.Position < 80)
             {
-                if (char.IsControl(Convert.ToChar(c)) && c != '\n' && c != '\r')
+                if (char.IsControl(Convert.ToChar(c)) && c != '\n' && c != '\r' && c != '\t')
                 {
                     if (c == char.MinValue)
                         if (++nulls > 2)
@@ -268,6 +260,19 @@ namespace Core6502DotNet
                             nulls = 0;
                     if (++controls > 5)
                         return false;
+                }
+                else if (c < 0 || c > 127)
+                {
+                    if (char.IsSurrogate(Convert.ToChar(c)))
+                    {
+                        var hi = sr.Read();
+                        if (hi == -1 || !char.IsSurrogatePair(Convert.ToChar(c), Convert.ToChar(hi)))
+                            return false;
+                    }
+                    else if (c > 0x10FFFF)
+                    {
+                        return false;
+                    }
                 }
             }
             sr.BaseStream.Position = 0;
@@ -278,7 +283,7 @@ namespace Core6502DotNet
         List<SourceLine> ProcessFromStream(string fileName, int lineNumber, StreamReader sr, bool stopAtFirstInstruction = false)
         {
             if (!FileFormatIsValid(sr))
-                throw new Exception($"Format of \"{fileName}\" is not valid.");
+                _options.Log?.LogEntrySimple($"Format of \"{fileName}\" does not appear to be valid and might not assemble correctly.", false);
             var sourceLines = new List<SourceLine>();
             var lineSources = new List<string>();
             bool blockComment, readyForNewLine, stopProcessing, previousWasPlus;
@@ -349,7 +354,7 @@ namespace Core6502DotNet
                         if (c == EOS)
                             break;
                     }
-                    if (c == ':')
+                    if (c == ':' && it.PeekNext() != '=')
                     {
                         if ((expected != TokenType.Instruction && expected != TokenType.EndOrBinary && 
                             (tokens.Count == 0 || tokens[^1].Type != TokenType.Instruction)) || !LineTerminates())
@@ -529,8 +534,15 @@ namespace Core6502DotNet
                         else if (c.IsOperator())
                         {
                             type = TokenType.Binary;
-                            while (peek != char.MinValue && s_compounds.TryGetValue(c, out var comp) && comp.Contains(peek))
+                            if (s_compounds.Contains(c) && peek == c)
                             {
+                                it.MoveNext();
+                                peek = it.PeekNext();
+                                size++;
+                            }
+                            if (peek == '=' && (!c.IsSpecialOperator() || expected != TokenType.LabelInstr)) 
+                            {
+                                // for assignment operators and comparers
                                 it.MoveNext();
                                 peek = it.PeekNext();
                                 size++;
@@ -702,7 +714,9 @@ namespace Core6502DotNet
                         }
                         previous = it.Current;
                         previousType = type;
-                        tokens.Add(new Token(new StringView(nextLine, position, size), type, position + 1));
+                        var token = new Token(new StringView(nextLine, position, size), type, position + 1);
+                        token.LineSourceIndex = lineSources.Count - 1;
+                        tokens.Add(token);
                     }
                 }
                 if (blockComment && tokens.Count == 0)
@@ -739,122 +753,122 @@ namespace Core6502DotNet
             void ProcessLine(bool atColonBreak)
             {
                 var line = new SourceLine(fileName, lineNumber + 1, lineSources, tokens, _index++);
-                if (line.Instruction != null)
+                try
                 {
-                    if (_preprocessors.IsOneOf("End", line.Instruction.Name))
+                    if (line.Instruction != null)
                     {
-                        stopProcessing = true;
-                        return;
-                    }
-                    StringComparison stringComparison = _options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                    if (definingMacro != null)
-                    {
-                        if (_preprocessors.IsOneOf("Macros", line.Instruction.Name))
+                        if (_preprocessors.IsOneOf("End", line.Instruction.Name))
                         {
-                            if (line.Instruction.Name.Equals(".macro", stringComparison))
-                            {
-                                LogError(fileName, lineNumber, line.Instruction.Position, "Recursive macro definition not allowed.", lineSource);
-                                return;
-                            }
-                            if (line.Operands.Count > 0)
-                            {
-                                LogError(fileName, lineNumber, line.Operands[0].Position, "Unexpected expression.", lineSource);
-                                return;
-                            }
-                            if (line.Label != null)
-                                definingMacro.AddSource(GetBlockDirective(fileName, lineNumber, string.Empty, line.Label));
-                            definingMacro = null;
+                            stopProcessing = true;
+                            return;
                         }
-                        else
+                        StringComparison stringComparison = _options.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                        if (definingMacro != null)
                         {
-                            definingMacro.AddSource(line);
-                        }
-                    }
-                    else if (_preprocessors.IsReserved(line.Instruction.Name) && !stopAtFirstInstruction)
-                    {
-                        if (_preprocessors.IsOneOf("Macros", line.Instruction.Name))
-                        {
-                            if (line.Instruction.Name.Equals(".endmacro", stringComparison))
+                            if (_preprocessors.IsOneOf("Macros", line.Instruction.Name))
                             {
-                                LogError(fileName, lineNumber, line.Instruction.Position, "Directive does not close a macro definition.", line.Instruction.Name.ToString(), lineSource);
-                                return;
-                            }
-                            if (line.Label == null)
-                            {
-                                LogError(fileName, lineNumber, 1, "Macro name not specified.", 0, lineSource);
-                                return;
-                            }
-                            var macroname = "." + line.Label.Name.ToString();
-                            if (_macros.ContainsKey(macroname))
-                            {
-                                LogError(fileName, lineNumber, line.Label.Position, "Redefinition of macro.", macroname, lineSource);
-                                return;
-                            }
-                            if (_options.IsMacroNameValid != null && !_options.IsMacroNameValid(macroname))
-                            {
-                                LogError(fileName, lineNumber, line.Label.Position, $"Macro name \"{line.Label}\" not allowed.", line.Label.Name.ToString(), lineSource);
-                                return;
-                            }
-                            try
-                            {
-                                definingMacro = new Macro(line.Operands, _options.CaseSensitive, this);
-                            }
-                            catch (ExpressionException ex)
-                            {
-                                if (ex.Token != null)
-                                    LogError(fileName, lineNumber, ex.Position, ex.Message, ex.Token.Name.ToString(), lineSource);
-                                else
-                                    LogError(fileName, lineNumber, ex.Position, ex.Message, lineSource);
-                                return;
-                            }
-                            _macros[macroname] = definingMacro;
-                        }
-                        else
-                        {
-                            if (line.Operands.Count != 1 || !line.Operands[0].IsDoubleQuote())
-                            {
-                                LogError(fileName, lineNumber, line.Instruction.Position + line.Instruction.Name.Length, "Invalid filename.", lineSource.Length, lineSource);
+                                if (line.Instruction.Name.Equals(".macro", stringComparison))
+                                {
+                                    LogError(fileName, lineNumber, line.Instruction.Position, "Recursive macro definition not allowed.", lineSource);
+                                    return;
+                                }
+                                if (line.Operands.Count > 0)
+                                {
+                                    LogError(fileName, lineNumber, line.Operands[0].Position, "Unexpected expression.", lineSource);
+                                    return;
+                                }
+                                if (line.Label != null)
+                                    definingMacro.AddSource(GetBlockDirective(fileName, lineNumber, string.Empty, line.Label));
+                                definingMacro = null;
                             }
                             else
                             {
-                                var includeFile = line.Operands[0].Name.ToString().TrimOnce('"');
-                                if (line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B')
-                                    sourceLines.Add(GetBlockDirective(includeFile, lineNumber, ".block", line.Label));
-                                sourceLines.AddRange(Process(includeFile));
-                                if (line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B')
-                                    sourceLines.Add(GetBlockDirective(includeFile, lineNumber, ".endblock", null));
+                                definingMacro.AddSource(line);
                             }
                         }
-                    }
-                    else if (!stopAtFirstInstruction && _macros.TryGetValue(line.Instruction.Name.ToString(), out var macro))
-                    {
-                        sourceLines.AddRange(ExpandMacros(line, macro));
-                    }
-                    else if (stopAtFirstInstruction && _preprocessors.IsOneOf("Includes", line.Instruction.Name) && line.Operands.Count == 1 && line.Operands[0].IsDoubleQuote())
-                    {
-                        var firstLincFileName = line.Operands[0].Name.TrimOnce('"').ToString();
-                        using FileStream fs = File.OpenRead(firstLincFileName);
-                        using BufferedStream bs = new BufferedStream(fs);
-                        using StreamReader sr = new StreamReader(bs);
-                        var firstLine = ProcessFromStream(firstLincFileName, lineNumber, sr, true).FirstOrDefault(l => l.Instruction != null);
-                        if (firstLine != null)
+                        else if (_preprocessors.IsReserved(line.Instruction.Name) && !stopAtFirstInstruction)
                         {
-                            sourceLines = new List<SourceLine> { firstLine };
-                            stopProcessing = true;
+                            if (_preprocessors.IsOneOf("Macros", line.Instruction.Name))
+                            {
+                                if (line.Instruction.Name.Equals(".endmacro", stringComparison))
+                                {
+                                    LogError(fileName, lineNumber, line.Instruction.Position, "Directive does not close a macro definition.", line.Instruction.Name.ToString(), lineSource);
+                                    return;
+                                }
+                                if (line.Label == null)
+                                {
+                                    LogError(fileName, lineNumber, 1, "Macro name not specified.", 0, lineSource);
+                                    return;
+                                }
+                                var macroname = "." + line.Label.Name.ToString();
+                                if (_macros.ContainsKey(macroname))
+                                {
+                                    LogError(fileName, lineNumber, line.Label.Position, "Redefinition of macro.", macroname, lineSource);
+                                    return;
+                                }
+                                if (_options.IsMacroNameValid != null && !_options.IsMacroNameValid(macroname))
+                                {
+                                    LogError(fileName, lineNumber, line.Label.Position, $"Macro name \"{line.Label}\" not allowed.", line.Label.Name.ToString(), lineSource);
+                                    return;
+                                }
+                                definingMacro = new Macro(line.Operands, _options.CaseSensitive, this);
+                                _macros[macroname] = definingMacro;
+                            }
+                            else
+                            {
+                                if (line.Operands.Count != 1 || !line.Operands[0].IsDoubleQuote())
+                                {
+                                    LogError(fileName, lineNumber, line.Instruction.Position + line.Instruction.Name.Length, "Invalid filename.", lineSource.Length, lineSource);
+                                }
+                                else
+                                {
+                                    var includeFile = line.Operands[0].Name.ToString().TrimOnce('"');
+                                    if (line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B')
+                                        sourceLines.Add(GetBlockDirective(includeFile, lineNumber, ".block", line.Label));
+                                    sourceLines.AddRange(Process(includeFile));
+                                    if (line.Instruction.Name[1] == 'b' || line.Instruction.Name[1] == 'B')
+                                        sourceLines.Add(GetBlockDirective(includeFile, lineNumber, ".endblock", null));
+                                }
+                            }
                         }
+                        else if (!stopAtFirstInstruction && _macros.TryGetValue(line.Instruction.Name.ToString(), out var macro))
+                        {
+                            sourceLines.AddRange(ExpandMacros(line, macro));
+                        }
+                        else if (stopAtFirstInstruction && _preprocessors.IsOneOf("Includes", line.Instruction.Name) && line.Operands.Count == 1 && line.Operands[0].IsDoubleQuote())
+                        {
+                            var firstLincFileName = line.Operands[0].Name.TrimOnce('"').ToString();
+                            using FileStream fs = File.OpenRead(firstLincFileName);
+                            using BufferedStream bs = new BufferedStream(fs);
+                            using StreamReader sr = new StreamReader(bs);
+                            var firstLine = ProcessFromStream(firstLincFileName, lineNumber, sr, true).FirstOrDefault(l => l.Instruction != null);
+                            if (firstLine != null)
+                            {
+                                sourceLines = new List<SourceLine> { firstLine };
+                                stopProcessing = true;
+                            }
+                        }
+                        else
+                        {
+                            sourceLines.Add(line);
+                        }
+                    }
+                    else if (definingMacro != null)
+                    {
+                        definingMacro.AddSource(line);
                     }
                     else
                     {
                         sourceLines.Add(line);
                     }
                 }
-                else if (definingMacro != null)
+                catch (ExpressionException ex)
                 {
-                    definingMacro.AddSource(line);
-                }
-                else
-                {
-                    sourceLines.Add(line);
+                    if (ex.Token != null)
+                        LogError(fileName, lineNumber, ex.Position, ex.Message, ex.Token.Name.ToString(), lineSource);
+                    else
+                        LogError(fileName, lineNumber, ex.Position, ex.Message, lineSource);
+                    return;
                 }
                 readyForNewLine = true;
                 if (!atColonBreak)
@@ -878,7 +892,7 @@ namespace Core6502DotNet
             {
                 GetBlockDirective(line.Filename, line.LineNumber, ".block", line.Label)
             };
-            var sources = macro.Expand(line.Operands);
+            var sources = macro.Expand(line.Instruction, line.Operands);
             foreach(var source in sources)
             {
                 if (source.Instruction != null &&
@@ -902,7 +916,7 @@ namespace Core6502DotNet
         public List<SourceLine> Process(string fileName, int lineNumber, string source)
         {
             if (_options.InstructionLookup == null)
-                throw new Exception("Instruction lookup option not configured.");
+                throw new ArgumentException("Instruction lookup option not configured.");
             var sourceBytes = Encoding.UTF8.GetBytes(source);
             using MemoryStream ms = new MemoryStream(sourceBytes);
             using StreamReader sr = new StreamReader(ms);
@@ -917,7 +931,7 @@ namespace Core6502DotNet
         public SourceLine ProcessDefine(string defineExpression)
         {
             if (!s_defineRegex.IsMatch(defineExpression))
-                throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
+                throw new ArgumentException($"Define expression \"{defineExpression}\" is not valid.");
             if (!defineExpression.Contains('='))
                 defineExpression += "=1";
             try
@@ -927,7 +941,7 @@ namespace Core6502DotNet
             }
             catch
             {
-                throw new Exception($"Define expression \"{defineExpression}\" is not valid.");
+                throw new ArgumentException($"Define expression \"{defineExpression}\" is not valid.");
             }
         }
 
@@ -941,10 +955,10 @@ namespace Core6502DotNet
             fileName = GetFullPath(fileName, _options.IncludePath);
             IncludeFile(fileName);
             if (_options.InstructionLookup == null)
-                throw new Exception("Instruction lookup option not configured.");
+                throw new ArgumentException("Instruction lookup option not configured.");
 
             using FileStream fs = File.OpenRead(fileName);
-            using StreamReader sr = new StreamReader(fs);
+            using StreamReader sr = new StreamReader(fs, Encoding.UTF8);
             return ProcessFromStream(fileName, 0, sr);
         }
 
@@ -956,7 +970,7 @@ namespace Core6502DotNet
         public SourceLine ProcessToFirstDirective(string fileName)
         {
             using FileStream fs = File.OpenRead(GetFullPath(fileName, _options.IncludePath));
-            using StreamReader sr = new StreamReader(fs);
+            using StreamReader sr = new StreamReader(fs, Encoding.UTF8);
             var sources = ProcessFromStream(fileName, 0, sr, true);
             if (sources.Count > 0)
                 return sources[^1];

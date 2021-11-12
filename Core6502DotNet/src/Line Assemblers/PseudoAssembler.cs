@@ -16,7 +16,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class responsible for multi-byte assembly, including string types.
     /// </summary>
-    public class PseudoAssembler : AssemblerBase, IFunctionEvaluator
+    public sealed class PseudoAssembler : AssemblerBase, IFunctionEvaluator
     {
         #region Structs
 
@@ -114,15 +114,14 @@ namespace Core6502DotNet
                     }
                     try
                     {
-                        foreach (var digit in hexBinDigits)
-                            Services.Output.Add(Convert.ToByte(digit, radix));
+                        hexBinDigits.ForEach(d => Services.Output.Add(Convert.ToByte(d, radix)));
                     }
                     catch (FormatException)
                     {
                         Services.Log.LogEntry(token, "String is not in the correct format.");
                     }
                 }
-                if (!Token.IsEnd(iterator.GetNext()))
+                if (!Token.IsTerminal(iterator.GetNext()))
                     throw new SyntaxException(iterator.Current, "Unexpected expression.");
             }
         }
@@ -159,7 +158,7 @@ namespace Core6502DotNet
             {
                 if (token.Name.Equals("?"))
                 {
-                    if (!Token.IsEnd(token = iterator.GetNext()))
+                    if (!Token.IsTerminal(token = iterator.GetNext()))
                         throw new SyntaxException(token.Position,
                             "Unexpected expression.");
                     Services.Output.AddUninitialized(setSize);
@@ -181,7 +180,7 @@ namespace Core6502DotNet
         {
             var iterator = line.Operands.GetIterator();
             var filename = iterator.GetNext();
-            if (Token.IsEnd(filename))
+            if (Token.IsTerminal(filename))
                 throw new SyntaxException(line.Instruction, "Filename not specified.");
             if (!filename.IsDoubleQuote())
                 throw new SyntaxException(line.Instruction, "Specified filename not valid.");
@@ -227,7 +226,7 @@ namespace Core6502DotNet
             {
                 if (iterator.Current.Name.Equals("?"))
                 {
-                    if (!Token.IsEnd(iterator.GetNext()))
+                    if (!Token.IsTerminal(iterator.GetNext()))
                         throw new SyntaxException(iterator.Current.Position,
                             "Unexpected expression.");
                     Services.Output.AddUninitialized(packed ? 5 : 6);
@@ -315,7 +314,7 @@ namespace Core6502DotNet
                             stringBytes.Add(0);
                         iterator.MoveNext();
                     }
-                    if (!Token.IsEnd(iterator.Current))
+                    if (!Token.IsTerminal(iterator.Current))
                         throw new SyntaxException(iterator.Current, "Unexpected expression.");
                 }
                 else if (StringHelper.ExpressionIsAString(iterator, Services))
@@ -337,14 +336,14 @@ namespace Core6502DotNet
                     break;
                 case ".pstring":
                     if (stringBytes.Count > 255)
-                        throw new ExpressionException(line.Operands[0].Position, $"String expression exceeds the maximum length of \".pstring\" directive.");
+                        throw new ExpressionException(line.Operands[0], $"String expression exceeds the maximum length of \".pstring\" directive.");
 
                     stringBytes.Insert(0, Convert.ToByte(stringBytes.Count));
                     break;
                 case ".lstring":
                 case ".nstring":
                     if (stringBytes.Any(b => b > 0x7f))
-                        throw new ExpressionException(line.Operands[0].Position, $"One or more elements in expression exceeds maximum value.");
+                        throw new ExpressionException(line.Operands[0], $"One or more elements in expression exceeds maximum value.");
                     if (instructionName.Equals(".lstring"))
                     {
                         stringBytes = stringBytes.Select(b => Convert.ToByte(b << 1)).ToList();
@@ -460,10 +459,8 @@ namespace Core6502DotNet
         {
             var line = iterator.Current;
             if (line.Operands.Count == 0)
-            {
-                Services.Log.LogEntry(line.Instruction, "Expression expected.");
-                return string.Empty;
-            }
+                return Services.Log.LogEntry<string>(line.Instruction, "Expression expected.");
+
             var instruction = line.Instruction.Name.ToLower();
             switch (instruction)
             {
@@ -605,12 +602,12 @@ namespace Core6502DotNet
                 return Services.Encoding.GetCodePoint((int)cp);
             }
             tokens.MoveNext();
-            if (Token.IsEnd(tokens.GetNext()))
+            if (Token.IsTerminal(tokens.GetNext()))
                 throw new SyntaxException(function, "Expression expected.");
             if (functionName.Equals("section"))
             {
                 var section = tokens.Current;
-                if (!section.IsDoubleQuote() || !Token.IsEnd(tokens.GetNext()))
+                if (!section.IsDoubleQuote() || !Token.IsTerminal(tokens.GetNext()))
                     throw new SyntaxException(function, "String expression expected.");
                 return Services.Output.GetSectionStart(section.Name);
             }

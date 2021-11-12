@@ -20,7 +20,7 @@ namespace Core6502DotNet.m680x
         {
             if (!string.IsNullOrEmpty(info.FormatName) &&
                 !info.FormatName.Equals("flat"))
-                throw new Exception($"Unrecognized file format: \"{info.FormatName}\".");
+                throw new FormatException($"Unrecognized file format: \"{info.FormatName}\".");
             return info.ObjectBytes;
         }
     }

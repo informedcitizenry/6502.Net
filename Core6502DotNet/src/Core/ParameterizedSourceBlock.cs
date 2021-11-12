@@ -80,9 +80,9 @@ namespace Core6502DotNet
                         {
 
                             t = it.GetNext();
-                            if (!t.Name.Equals("=") || it.PeekNext() == null || TokenType.End.HasFlag(it.PeekNext().Type))
+                            if (!t.Name.Equals("=") || it.PeekNext() == null || TokenType.Terminal.HasFlag(it.PeekNext().Type))
                                 throw new ExpressionException(t.Position, "Syntax error.");
-                            while ((t = it.GetNext()) != null && t.Type != TokenType.Separator)
+                            while ((t = it.GetNext()) != null && t.IsPartOfAnExpression)
                                 defaultValue.Add(t);
                         }
                         Params.Add(new Param(parmName, defaultValue));

@@ -168,7 +168,7 @@ namespace Core6502DotNet.z80
             }
             else
             {
-                throw new Exception($"Format \"{fmt}\" not supported with targetted CPU.");
+                throw new ArgumentException($"Format \"{fmt}\" not supported with targetted CPU.");
             }
             writer.Write(info.ObjectBytes.ToArray());
             return ms.ToArray();

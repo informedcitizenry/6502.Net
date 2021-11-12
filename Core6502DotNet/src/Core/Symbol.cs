@@ -125,20 +125,15 @@ namespace Core6502DotNet
             : this()
         {
             IsMutable = isMutable;
-            StorageType = StorageType.Vector;
-
-            var opens = 1;
+            StorageType = StorageType.Vector; 
             var token = tokens.GetNext();
-            if (TokenType.End.HasFlag(token.Type))
-                throw new SyntaxException(token.Position, "Expression expected.");
-
             if (StringHelper.IsStringLiteral(tokens))
                 DataType = DataType.String;
             else
                 DataType = DataType.Numeric;
 
             int index = 0;
-
+            var opens = 1;
             while (opens > 0)
             {
                 if (token.Type == TokenType.Open && token.Name.Equals("["))
@@ -152,20 +147,19 @@ namespace Core6502DotNet
                         if (!StringHelper.IsStringLiteral(tokens))
                             throw new SyntaxException(token.Position, "Type mismatch.");
                         StringVector.Add(index++, token.Name.TrimOnce('"'));
-                        token = tokens.GetNext();
-                        if (token.Name.Equals("]"))
-                            opens--;
+                        tokens.MoveNext();
                     }
                     else
                     {
                         NumericVector.Add(index++, eval.Evaluate(tokens, false));
-                        token = tokens.Current;
-                        if (token.Name.Equals("]"))
-                            continue;
                     }
+                    if (tokens.Current.Name.Equals("]"))
+                        opens--;
                 }
                 token = tokens.GetNext();
             }
+            if (!Token.IsTerminal(token))
+                throw new SyntaxException(tokens.Current, "Unexpected expression.");
         }
 
         /// <summary>
@@ -268,6 +262,21 @@ namespace Core6502DotNet
         }
 
         /// <summary>
+        /// Set the vector to the other symbol's.
+        /// </summary>
+        /// <param name="other">The other <see cref="Symbol"/>.</param>
+        public void SetVectorTo(Symbol other)
+        {
+            if (DataType == other.DataType && StorageType == other.StorageType)
+            {
+                if (DataType == DataType.Numeric)
+                    SetVectorTo(other.NumericVector);
+                else
+                    SetVectorTo(other.StringVector);
+            }
+        }
+
+        /// <summary>
         /// Set the vector to the instance.
         /// </summary>
         /// <param name="vector">The other vector.</param>
@@ -308,7 +317,8 @@ namespace Core6502DotNet
             else
             {
                 sb.Append('[');
-                for (var i = 0; i < StringVector.Count; i++)
+                var vectorCount = DataType == DataType.String ? StringVector.Count : NumericVector.Count;
+                for (var i = 0; i < vectorCount; i++)
                 {
                     if (i == 5)
                     {
@@ -318,9 +328,9 @@ namespace Core6502DotNet
                     if (DataType == DataType.String)
                         sb.Append('"').Append(StringVector[i].ToString()).Append('"');
                     else
-                        sb.Append(NumericValue);
+                        sb.Append(NumericVector[i]);
 
-                    if (i < StringVector.Count - 1)
+                    if (i < vectorCount - 1)
                         sb.Append(", ");
                 }
                 sb.Append(']');

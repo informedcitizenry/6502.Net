@@ -7,13 +7,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Core6502DotNet
 {
     /// <summary>
     /// A collection of uniquely defined reserved words.
     /// </summary>
-    public class ReservedWords
+    public sealed class ReservedWords
     {
         #region Members
 

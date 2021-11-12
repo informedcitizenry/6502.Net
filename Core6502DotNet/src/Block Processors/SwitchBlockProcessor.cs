@@ -5,7 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,122 +15,6 @@ namespace Core6502DotNet
     /// </summary>
     public sealed class SwitchBlock : BlockProcessorBase
     {
-        #region Subclassses
-
-        public class SwitchBlockException : Exception
-        {
-            public SwitchBlockException(string message)
-                : base(message)
-            {
-
-            }
-        }
-
-        class CaseBlock<T>
-        {
-            public CaseBlock()
-            {
-                Cases = new List<T>();
-                FallthroughIndex = -1;
-            }
-
-            public List<T> Cases { get; private set; }
-
-            public int FallthroughIndex { get; set; }
-        }
-
-        class SwitchContext
-        {
-            readonly List<CaseBlock<string>> _stringBlocks;
-            readonly List<CaseBlock<double>> _numericBlocks;
-
-            SwitchContext()
-            {
-                _stringBlocks = new List<CaseBlock<string>>();
-                _numericBlocks = new List<CaseBlock<double>>();
-            }
-
-            public SwitchContext(string value)
-                : this()
-            {
-                StringValue = value;
-                NumericValue = double.NaN;
-            }
-
-            public SwitchContext(double value)
-                : this()
-            {
-                NumericValue = value;
-                StringValue = string.Empty;
-            }
-
-            public double NumericValue { get; private set; }
-
-            public string StringValue { get; private set; }
-
-            public void AddBlock(CaseBlock<string> caseBlock)
-            {
-                if (caseBlock != null)
-                {
-                    if (string.IsNullOrEmpty(StringValue))
-                        throw new SwitchBlockException("String literal was expected but not provided in case.");
-                    if (_stringBlocks.Any(cb => cb.Cases.Intersect(caseBlock.Cases).Any()))
-                    {
-                        var blockFound = _stringBlocks.First(cb => cb.Cases.Intersect(caseBlock.Cases).Any());
-                        var dupCase = blockFound.Cases.Intersect(caseBlock.Cases);
-
-                        throw new SwitchBlockException($"Multiple instances of cases with comparison of values \"{string.Join(',', dupCase)}\".");
-                    }
-                    _stringBlocks.Add(caseBlock);
-                }
-            }
-
-            public void AddBlock(CaseBlock<double> caseBlock)
-            {
-                if (caseBlock != null)
-                {
-                    if (double.IsNaN(NumericValue))
-                        throw new SwitchBlockException("An expression was expected but provided in case.");
-                    if (_numericBlocks.Any(cb => cb.Cases.Intersect(caseBlock.Cases).Any()))
-                    {
-                        var blockFound = _numericBlocks.First(cb => cb.Cases.Intersect(caseBlock.Cases).Any());
-                        var dupCase = blockFound.Cases.Intersect(caseBlock.Cases);
-                        throw new SwitchBlockException($"Multiple instances of cases with comparison of values {string.Join(',', dupCase)}.");
-                    }
-                    _numericBlocks.Add(caseBlock);
-                }
-            }
-
-            public bool AnyCaseDefined()
-            {
-                if (_stringBlocks.Count > 0)
-                    return _stringBlocks.Sum(c => c.Cases.Count) > 0;
-                if (_numericBlocks.Count > 0)
-                    return _numericBlocks.Sum(c => c.Cases.Count) > 0;
-                return false;
-            }
-
-            public int GetFallthroughIndex()
-            {
-                if (_stringBlocks.Count > 0)
-                {
-                    var cb = _stringBlocks.FirstOrDefault(cb => cb.Cases.Any(c => c.Equals(StringValue)));
-                    if (cb != null)
-                        return cb.FallthroughIndex;
-                }
-                else if (_numericBlocks.Count > 0)
-                {
-                    var cb = _numericBlocks.FirstOrDefault(cb => cb.Cases.Any(c => c.AlmostEquals(NumericValue)));
-                    if (cb != null)
-                        return cb.FallthroughIndex;
-                }
-                return -1;
-            }
-        }
-
-
-        #endregion
-
         #region Constructors
 
         /// <summary>
@@ -143,9 +26,9 @@ namespace Core6502DotNet
                            int index)
             : base(services, index)
         {
-            Reserved.DefineType("Directives", ".switch", ".case", ".default", ".endswitch");
-
-            Reserved.DefineType("BreakContReturn", ".break", ".continue", ".return");
+            Reserved.DefineType("Directives", ".switch", ".endswitch");
+            Reserved.DefineType("CaseKeywords", ".case", ".default");
+            Reserved.DefineType("NonCaseKeywords", ".break", ".continue", ".return");
         }
 
         #endregion
@@ -155,164 +38,127 @@ namespace Core6502DotNet
         public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
             var line = lines.Current;
-            if (line.Instruction.Name.Equals(".endswitch", Services.StringComparison))
-                return;
-            CaseBlock<string> stringBlock = null;
-            CaseBlock<double> numericBlock = null;
-            SwitchContext context = null;
             var it = line.Operands.GetIterator();
-            if (it.MoveNext())
+            var stringCases = new Dictionary<string, int>();
+            var numCases = new Dictionary<double, int>();
+            string stringMatch = null, stringCase = stringMatch;
+            double numMatch = double.NaN, numCase = numMatch;
+            if (!it.MoveNext())
+            {
+                if (line.Instruction.Name.Equals(".endswitch", Services.StringViewComparer))
+                    return;
+                if (line.Instruction.Name.Equals(".switch", Services.StringViewComparer))
+                    Services.Log.LogEntry(line.Instruction, "Argument expected for \".switch\".");
+                return;
+            }
+            if (it.Current != null)
             {
                 if (StringHelper.ExpressionIsAString(it, Services))
-                    context = new SwitchContext(StringHelper.GetString(it, Services));
+                    stringMatch = StringHelper.GetString(it, Services);
                 else
-                    context = new SwitchContext(Services.Evaluator.Evaluate(it, false));
-                if (it.Current != null)
-                    throw new SyntaxException(it.Current, "Unexpected expression.");
+                    numMatch = Services.Evaluator.Evaluate(it, false);
             }
-            if (context == null)
-            {
-                string error;
-                if (line.Operands.Count == 0)
-                    error = "Expression must follow \".switch\" directive.";
-                else
-                    error = "Expression must be a valid symbol or an expression.";
-                Services.Log.LogEntry(line.Instruction, error);
-                return;
-            }
+            if (it.Current != null)
+                Services.Log.LogEntry(it.Current, "Unexpected expression.", false, true);
             var defaultIndex = -1;
-            if (!string.IsNullOrEmpty(context.StringValue))
-                stringBlock = new CaseBlock<string>();
-            else
-                numericBlock = new CaseBlock<double>();
-            while ((line = lines.GetNext()) != null &&
-                    (line.Instruction == null || !line.Instruction.Name.Equals(".endswitch", Services.StringComparison)))
+            var caseFound = false;
+            var lineProcessed = false;
+            var breakFound = true;
+            while (lines.MoveNext() && (lines.Current.Instruction == null || !lines.Current.Instruction.Name.Equals(".endswitch", Services.StringViewComparer)))
             {
+                line = lines.Current;
                 if (line.Instruction != null)
                 {
-                    if (line.Instruction.Name.Equals(".case", Services.StringComparison))
+                    if (!Reserved.IsOneOf("CaseKeywords", line.Instruction.Name))
                     {
-                        if (defaultIndex > -1)
+                        if (!caseFound)
                         {
                             Services.Log.LogEntry(line.Instruction,
-                                "\".case\" directive cannot follow a \".default\" directive.");
-                        }
-                        else if (stringBlock?.FallthroughIndex > -1 || numericBlock?.FallthroughIndex > -1)
-                        {
-                            Services.Log.LogEntry(line.Instruction,
-                                "\".case\" does not fall through.");
-                        }
-                        else if (line.Operands.Count == 0)
-                        {
-                            Services.Log.LogEntry(line.Instruction,
-                                "Expression expected.");
+                               "Expected a \".case\" or \".default\" directive.");
                         }
                         else
                         {
-                            var iterator = line.Operands.GetIterator();
-                            if (stringBlock != null)
+                            breakFound = Reserved.IsOneOf("NonCaseKeywords", line.Instruction.Name);
+                            lineProcessed |= !Reserved.IsReserved(line.Instruction.Name);
+                            if (!breakFound && Reserved.IsOneOf("Directives", line.Instruction.Name) &&
+                                line.Instruction.Name.Equals(".switch", Services.StringViewComparer))
+                                SeekBlockEnd(lines);
+                        }
+                    }
+                    else
+                    {
+                        caseFound = true;
+                        if (!breakFound)
+                            throw new SyntaxException(lines.Current.Instruction, "Expected a \".break\" directive.");
+                        lineProcessed = false;
+                        var nextIt = new RandomAccessIterator<SourceLine>(lines, false);
+                        var nextInstr = nextIt.First(l => l.Instruction != null).Instruction.Name;
+                        breakFound = Reserved.IsOneOf("CaseKeywords", nextInstr);
+                        if (breakFound)
+                            _ = nextIt.First(l => l.Instruction != null && !Reserved.IsOneOf("CaseKeywords", l.Instruction.Name));
+                        it = line.Operands.GetIterator();
+                        if (line.Instruction.Name.Equals(".default", Services.StringViewComparer))
+                        {
+                            if (it.MoveNext())
+                                Services.Log.LogEntry(line.Operands[0], "Unexpected expression.", false, true);
+                            else if (defaultIndex > -1)
+                                Services.Log.LogEntry(line.Instruction, "Default case already defined.");
+                            else
+                                defaultIndex = nextIt.Index;
+                        }
+                        else if (!it.MoveNext())
+                        {
+                            Services.Log.LogEntry(line.Instruction, "Expression expected.");
+                        }
+                        else
+                        {
+                            if (stringMatch != null)
                             {
-                                if (!iterator.MoveNext() || !StringHelper.ExpressionIsAString(iterator, Services))
-                                    Services.Log.LogEntry(line.Operands[0],
-                                        "String expression expected.");
+                                if (!StringHelper.ExpressionIsAString(it, Services))
+                                    Services.Log.LogEntry(line.Operands[0], "String expression expected.", false, true);
                                 else
-                                    stringBlock.Cases.Add(StringHelper.GetString(iterator, Services));
+                                    stringCase = StringHelper.GetString(it, Services);
                             }
                             else
                             {
-                                numericBlock?.Cases.Add(Services.Evaluator.Evaluate(iterator));
+                                if (StringHelper.ExpressionIsAString(it, Services))
+                                    Services.Log.LogEntry(line.Operands[0], "Numeric expression expected.");
+                                else
+                                    numCase = Services.Evaluator.Evaluate(it, false);
                             }
-                            if (iterator.Current != null)
-                                throw new SyntaxException(iterator.Current, "Unexpected expression.");
-                        }
-                    }
-                    else if (Reserved.IsOneOf("BreakContReturn", line.Instruction.Name))
-                    {
-                        if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0)
-                            && defaultIndex < 0)
-                        {
-                            Services.Log.LogEntry(line.Instruction,
-                                $"\"{line.Instruction}\" directive must follow a \".case\" or \".default\" directive.");
-                        }
-                        else
-                        {
-                            if (line.Instruction.Name.Equals(".return", Services.StringComparison) &&
-                                (stringBlock?.FallthroughIndex < 0 || numericBlock?.FallthroughIndex < 0))
+                            if (it.Current != null)
+                                Services.Log.LogEntry(it.Current, "Unexpected expression.", false, true);
+                            else if (!double.IsNaN(numCase) || stringCase != null)
                             {
-                                if (stringBlock != null) stringBlock.FallthroughIndex = lines.Index;
-                                if (numericBlock != null) numericBlock.FallthroughIndex = lines.Index;
+                                if ((stringCase != null && stringCases.ContainsKey(stringCase)) ||
+                                (!double.IsNaN(numCase) && numCases.ContainsKey(numCase)))
+                                {
+                                    Services.Log.LogEntry(line.Operands[0], "Matching case previously defined.", false, true);
+                                }
+                                else
+                                {
+                                    if (stringCase != null)
+                                        stringCases[stringCase] = nextIt.Index;
+                                    else
+                                        numCases[numCase] = nextIt.Index;
+                                }
+                                stringCase = null;
+                                numCase = double.NaN;
                             }
-                            else if (!line.Instruction.Name.Equals(".return", Services.StringComparison) && line.Operands.Count > 0)
-                            {
-                                throw new SyntaxException(line.Operands[0], "Unexpected expression.");
-                            }
-                            context.AddBlock(stringBlock);
-                            context.AddBlock(numericBlock);
-                            Services.SymbolManager.PopScope();
-                            if (stringBlock != null)
-                                stringBlock = new CaseBlock<string>();
-                            else
-                                numericBlock = new CaseBlock<double>();
-                        }
-                    }
-                    else if (line.Instruction.Name.Equals(".default", Services.StringComparison))
-                    {
-                        if (line.Operands.Count > 0)
-                            throw new SyntaxException(line.Operands[0], "Unexpected expression.");
-                        if (defaultIndex > -1)
-                            Services.Log.LogEntry(line.Instruction,
-                                "There can only be one \".default\" directive in a switch block.");
-                        else
-                            defaultIndex = lines.Index + 1;
-                    }
-                    else if (line.Label != null)
-                    {
-                        Services.Log.LogEntry(line.Label,
-                            "Label cannot be defined inside a switch block.");
-                    }
-                    else
-                    {
-                        if ((stringBlock?.Cases.Count == 0 || numericBlock?.Cases.Count == 0) && defaultIndex < 0)
-                        {
-                            Services.Log.LogEntry(line.Instruction, "\".case\" or \".default\" directive expected");
-                        }
-                        else if (stringBlock?.FallthroughIndex < 0 || numericBlock?.FallthroughIndex < 0)
-                        {
-                            if (stringBlock != null) stringBlock.FallthroughIndex = lines.Index;
-                            if (numericBlock != null) numericBlock.FallthroughIndex = lines.Index;
                         }
                     }
                 }
             }
-            if (line != null)
-            {
-                if (defaultIndex < 0 || !context.AnyCaseDefined())
-                {
-                    if (defaultIndex >= 0)
-                    {
-                        Services.Log.LogEntry(line.Instruction,
-                            "Only a default case was specified.", false);
-                    }
-                    else if (!context.AnyCaseDefined())
-                    {
-                        Services.Log.LogEntry(line.Instruction,
-                            "Switch statement did not encounter any cases to evaluate.");
-                        return;
-                    }
-                    else
-                    {
-                        Services.Log.LogEntry(line.Instruction,
-                            "Switch statement does not have a default case.", false);
-                    }
-                }
-                var fallthroughIndex = context.GetFallthroughIndex();
-                if (fallthroughIndex < 0)
-                    fallthroughIndex = defaultIndex;
-
-                if (fallthroughIndex > -1)
-                    lines.Rewind(fallthroughIndex - 1);
-                Services.SymbolManager.PushScope(lines.Index.ToString());
-            }
+            if (caseFound && !lineProcessed && !breakFound)
+                throw new SyntaxException(lines.Current.Instruction, "Directive \".endswitch\" terminates a case before it falls through.");
+            if (defaultIndex == -1)
+                Services.Log.LogEntry(lines.Current.Instruction, "A default case was not defined.", false);
+            var lineIndex = lines.Index;
+            if ((stringMatch != null && !stringCases.TryGetValue(stringMatch, out lineIndex)) ||
+                !numCases.TryGetValue(numMatch, out lineIndex))
+                lineIndex = defaultIndex;
+            if (lineIndex > -1)
+                lines.Rewind(lineIndex - 1);
         }
 
         #endregion
@@ -323,7 +169,7 @@ namespace Core6502DotNet
 
         public override bool AllowContinue => false;
 
-        public override IEnumerable<string> BlockOpens => new string[] { ".switch " };
+        public override IEnumerable<string> BlockOpens => new string[] { ".switch" };
 
         public override string BlockClosure => ".endswitch";
 

@@ -19,7 +19,7 @@ namespace Core6502DotNet
     /// <summary>
     /// An error for an invalid Program Counter assignment.
     /// </summary>
-    public class InvalidPCAssignmentException : Exception
+    public sealed class InvalidPCAssignmentException : Exception
     {
         readonly int _pc;
 
@@ -57,7 +57,7 @@ namespace Core6502DotNet
     /// <summary>
     /// An error for a Program Counter rollover.
     /// </summary>
-    public class ProgramOverflowException : Exception
+    public sealed class ProgramOverflowException : Exception
     {
         /// <summary>
         /// Creates a new instance of a program overflow error.
@@ -68,6 +68,20 @@ namespace Core6502DotNet
         {
         }
     }
+
+    /// <summary>
+    /// An error in compilation.
+    /// </summary>
+    public sealed class CompilationException : Exception
+    {
+        /// <summary>
+        /// Create a new instance of the compilation exception.
+        /// </summary>
+        /// <param name="message">The error message.</param>
+        public CompilationException(string message)
+            : base(message) { }
+    }
+
 
     /// <summary>
     /// A class that manages the internal state of a compiled assembly, including
@@ -192,7 +206,7 @@ namespace Core6502DotNet
         public void SetBank(int bank, bool resetPC)
         {
             if (bank < 0 || bank > 255)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(bank));
             if (resetPC && CurrentBank != bank)
             {
                 if (!AddressIsValid(0))
@@ -380,6 +394,12 @@ namespace Core6502DotNet
                 _compilingStarted = true;
                 ProgramStart = ProgramCounter;
             }
+            else if (ProgramStart > ProgramCounter && 
+                    _sectionCollection.SectionSelected && 
+                    _sectionCollection.SelectedStartAddress == ProgramCounter)
+            {
+                ProgramStart = ProgramCounter;
+            }
             if (Transform != null)
                 bytes = bytes.Select(b => Transform(b));
 
@@ -446,7 +466,7 @@ namespace Core6502DotNet
             int count;
             if (_sectionCollection.SetCurrentSection(section) == CollectionResult.NotFound ||
                 (count = _sectionCollection.GetSectionOutputCount()) == -1)
-                throw new Exception($"Could not get object for section {section}");
+                throw new CompilationException($"Could not get object for section {section}");
             var start = _sectionCollection.SelectedStartAddress;
             return new ReadOnlyCollection<byte>(_bytes.Skip(start).Take(count).ToArray());
         }
@@ -603,7 +623,7 @@ namespace Core6502DotNet
             int count;
             if (_sectionCollection.SetCurrentSection(section) == CollectionResult.NotFound ||
                 (count = _sectionCollection.GetSectionOutputCount()) == -1)
-                throw new Exception($"Could not get object bytes for section {section}.");
+                throw new CompilationException($"Could not get object bytes for section {section}.");
             return GetHashForOutput(_sectionCollection.SelectedStartAddress, count);
         }
 
@@ -618,7 +638,7 @@ namespace Core6502DotNet
             var start = _sectionCollection.GetSectionStart(name);
             if (start > int.MinValue)
                 return start;
-            throw new Exception($"Section {name} is not defined.");
+            throw new CompilationException($"Section {name} is not defined.");
         }
 
         /// <summary>

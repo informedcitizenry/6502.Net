@@ -22,7 +22,7 @@ namespace Core6502DotNet
         /// <param name="iterator">The iterator to the tokenized expression.</param>
         /// <returns></returns>
         public static bool IsStringLiteral(RandomAccessIterator<Token> iterator)
-            => iterator.Current != null && iterator.Current.IsDoubleQuote() && iterator.Current.Name.Length > 2 && Token.IsEnd(iterator.PeekNext());
+            => iterator.Current != null && iterator.Current.IsDoubleQuote() && iterator.Current.Name.Length > 2 && Token.IsTerminal(iterator.PeekNext());
 
         /// <summary>
         /// Determines whether the tokenized expression is a string.
@@ -36,7 +36,7 @@ namespace Core6502DotNet
             if (token == null)
                 return false;
             if (token.IsDoubleQuote())
-                return token.Name.Length > 2 && Token.IsEnd(iterator.PeekNext());
+                return token.Name.Length > 2 && Token.IsTerminal(iterator.PeekNext());
             var ix = iterator.Index;
             var result = false;
             if (token.Type == TokenType.Function && 
@@ -44,8 +44,8 @@ namespace Core6502DotNet
             {
                 iterator.MoveNext();
                 var parms = Token.GetGroup(iterator);
-                var last = iterator.Current;
-                result = Token.IsEnd(last);
+                var last = iterator.GetNext();
+                result = Token.IsTerminal(last);
                 if (token.Name.Equals("char", services.StringComparison))
                     result &= services.Evaluator.Evaluate(parms.GetIterator(), 0, 0x10FFFF).IsInteger();
             }
@@ -59,12 +59,12 @@ namespace Core6502DotNet
                     if (iterator.MoveNext() && iterator.Current.Name.Equals("["))
                     {
                         var subscript = (int)services.Evaluator.Evaluate(iterator);
-                        result = Token.IsEnd(iterator.Current) &&
+                        result = Token.IsTerminal(iterator.Current) &&
                                  subscript >= 0 && subscript < sym.StringVector.Count;
                     }
                     else
                     {
-                        result = Token.IsEnd(iterator.Current) &&
+                        result = Token.IsTerminal(iterator.Current) &&
                                  sym.StorageType == StorageType.Scalar &&
                                  sym.DataType == DataType.String;
                     }
@@ -93,7 +93,7 @@ namespace Core6502DotNet
             else if (token.Type == TokenType.Function && token.Name.Equals("format", services.StringComparison))
             {
                 var str = GetFormatted(iterator, services);
-                if (!string.IsNullOrEmpty(str) && Token.IsEnd(iterator.Current))
+                if (!string.IsNullOrEmpty(str) && Token.IsTerminal(iterator.Current))
                     return str;
             }
             else if (token.Type == TokenType.Function && token.Name.Equals("char", services.StringComparison))
@@ -117,7 +117,7 @@ namespace Core6502DotNet
                         if (!lookupName.Equals(sym.Name, StringComparison.Ordinal))
                             services.Log.LogEntry(token, $"Specified lookup to symbol \"{sym.Name}\" did not match its case.", false);
                     }
-                    if ((!iterator.MoveNext() || Token.IsEnd(iterator.Current)) && sym.StorageType == StorageType.Scalar)
+                    if ((!iterator.MoveNext() || Token.IsTerminal(iterator.Current)) && sym.StorageType == StorageType.Scalar)
                     {
                         return sym.StringValue.TrimOnce('"').ToString();
                     }
@@ -125,7 +125,7 @@ namespace Core6502DotNet
                     {
                         var current = iterator.Current;
                         var subscript = (int)services.Evaluator.Evaluate(iterator);
-                        if (Token.IsEnd(iterator.Current))
+                        if (Token.IsTerminal(iterator.Current))
                         {
                             if (subscript >= 0 && subscript < sym.StringVector.Count)
                                 return sym.StringVector[subscript].ToString();
@@ -147,7 +147,7 @@ namespace Core6502DotNet
         {
             iterator.MoveNext();
             var format = iterator.GetNext();
-            if (Token.IsEnd(format))
+            if (Token.IsTerminal(format))
                 return null;
             string fmt;
             if (!format.IsDoubleQuote())
@@ -163,7 +163,7 @@ namespace Core6502DotNet
             var parms = new List<object>();
             if (iterator.MoveNext())
             {
-                while (!Token.IsEnd(iterator.GetNext()))
+                while (!Token.IsTerminal(iterator.GetNext()))
                 {
                     if (ExpressionIsAString(iterator, services))
                     {
@@ -176,7 +176,7 @@ namespace Core6502DotNet
                             parms.Add((int)parmVal);
                         else
                             parms.Add(parmVal);
-                        if (iterator.Current.Type == TokenType.Closed && !Token.IsEnd(iterator.PeekNext()))
+                        if (iterator.Current.Type == TokenType.Closed && !Token.IsTerminal(iterator.PeekNext()))
                             break; // are we part of a larger expression?
                     }
                 }

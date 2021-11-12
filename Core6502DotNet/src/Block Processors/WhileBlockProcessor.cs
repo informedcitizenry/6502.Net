@@ -33,7 +33,12 @@ namespace Core6502DotNet
         public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {
             if (lines.Current.Instruction.Name.Equals(".while", Services.StringComparison))
-                _condition = lines.Current.Operands;
+            {
+                if (lines.Current.Operands.Count == 0)
+                    Services.Log.LogEntry(lines.Current.Instruction, "Condition expression in .while loop cannot be empty.");
+                else
+                    _condition = lines.Current.Operands;
+            }
             var iterator = _condition.GetIterator();
             if (Services.Evaluator.EvaluateCondition(iterator))
             {

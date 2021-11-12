@@ -35,11 +35,9 @@ namespace Core6502DotNet
                 services.Log.LogEntrySimple("Option '--enable-branch-always' ignored for non-6502 CPU.", false);
             return cpu switch
             {
-                "m6800" => new M6809Asm(services),
-                "m6809" => new M6809Asm(services),
-                "i8080" => new Z80Asm(services),
-                "z80"   => new Z80Asm(services),
-                _       => new Asm6502(services)
+                "m6800" or "m6809"  => new M6809Asm(services),
+                "i8080" or "z80"    => new Z80Asm(services),
+                _                   => new Asm6502(services)
             };
         }
 
@@ -47,22 +45,21 @@ namespace Core6502DotNet
         {
             return format switch
             {
-                "flat"          => null,
-                "srec"          => new SRecordFormatProvider(),
-                "srecmos"       => new SRecordFormatProvider(),
-                "hex"           => new HexFormatProvider(),
-                "bytesource"    => new ByteSourceFormatProvider(),
-                _               => cpu switch
+                "flat"              => null,
+                "srec" or "srecmos" => new SRecordFormatProvider(),
+                "hex"               => new HexFormatProvider(),
+                "bytesource"        => new ByteSourceFormatProvider(),
+                _                   => cpu switch
                 {
-                    "i8080"     => null,
-                    "z80"       => new Z80FormatProvider(),
-                    "m68"       => new MotorolaFormatProvider(),
-                    _           => format switch
+                    "i8080"         => null,
+                    "z80"           => new Z80FormatProvider(),
+                    "m68"           => new MotorolaFormatProvider(),
+                    _               => format switch
                     {
-                        "cart"  => new C64CartFormatProvider(),
-                        "d64"   => new D64FormatProvider(),
-                        "t64"   => new T64FormatProvider(),
-                        _       => new M6502FormatProvider()
+                        "cart"      => new C64CartFormatProvider(),
+                        "d64"       => new D64FormatProvider(),
+                        "t64"       => new T64FormatProvider(),
+                        _           => new M6502FormatProvider()
                     }
                 }
             };

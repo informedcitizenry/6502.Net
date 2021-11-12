@@ -35,66 +35,78 @@ namespace Core6502DotNet
             var instruction = line.Instruction.Name.ToLower();
             var iterator = line.Operands.GetIterator();
             if (!iterator.MoveNext())
-                Services.Log.LogEntry(line.Instruction, "Expected expression.");
+                return Services.Log.LogEntry<string>(line.Instruction, "Argument missing.");
+            
             if (instruction.Equals(".encoding"))
             {
-                if (!iterator.Current.IsDoubleQuote() || !Token.IsEnd(iterator.PeekNext()))
-                    Services.Log.LogEntry(iterator.Current, "Expected string expression for encoding definition.");
-                else
-                    Services.Encoding.SelectEncoding(iterator.Current.Name);
+                if (!StringHelper.IsStringLiteral(iterator))
+                    return Services.Log.LogEntry<string>(iterator.Current, "Expected string expression for encoding definition.", false, true);
+                Services.Encoding.SelectEncoding(iterator.Current.Name);
             }
             else
             {
                 string mapping;
-                if (!iterator.Current.IsDoubleQuote() || !Token.IsEnd(iterator.PeekNext()))
-                    mapping = char.ConvertFromUtf32((int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff));
+                if (StringHelper.IsStringLiteral(iterator))
+                    mapping = StringHelper.GetString(iterator, Services); 
                 else
-                    mapping = StringHelper.GetString(iterator, Services);
+                    mapping = char.ConvertFromUtf32((int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff));
                 if (instruction.Equals(".map"))
                 {
-                    if (!iterator.MoveNext())
+                    if (iterator.Current == null)
                     {
-                        Services.Log.LogEntry(line.Operands[0],
-                            "Missing one or more arguments for directive \".map\".");
+                        return Services.Log.LogEntry<string>(line.Operands[0],
+                            "Missing argument for directive \".map\".",false, true);
+                    }
+                    int translation = 0;
+                    iterator.MoveNext();
+                    var nextString = string.Empty;
+                    if (StringHelper.IsStringLiteral(iterator))
+                    {
+                        var stringToken = iterator.Current;
+                        nextString = StringHelper.GetString(iterator, Services);
+                        if (nextString.Length > 1)
+                            return Services.Log.LogEntry<string>(stringToken, "String literal argument can only be a single character.");
                     }
                     else
                     {
-                        int translation;
-                        if (iterator.Current.IsDoubleQuote() && Token.IsEnd(iterator.PeekNext()))
-                            translation = Services.Encoding.GetEncodedValue(StringHelper.GetString(iterator, Services));
-                        else
-                            translation = (int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff);
-                        if (iterator.Current != null)
-                        {
-                            if (!iterator.MoveNext())
-                            {
-                                Services.Log.LogEntry(iterator.Current, "Expected expression.");
-                            }
-                            else
-                            {
-                                mapping += char.ConvertFromUtf32(translation);
-                                if (StringHelper.IsStringLiteral(iterator))
-                                    translation = Services.Encoding.GetEncodedValue(StringHelper.GetString(iterator, Services));
-                                else
-                                    translation = (int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff);
-                                if (iterator.Current != null)
-                                {
-                                    Services.Log.LogEntry(iterator.Current,
-                                    "Unexpected expression.");
-                                    return string.Empty;
-                                }
-                            }
-                        }
-                        Services.Encoding.Map(mapping, translation);
+                        translation = (int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff);
                     }
+                    if (iterator.Current != null)
+                    {
+                        if (!string.IsNullOrEmpty(nextString))
+                        {
+                            mapping += nextString;
+                            nextString = null;
+                        }
+                        else
+                        { 
+                            mapping += char.ConvertFromUtf32(translation);
+                        } 
+                        iterator.MoveNext();
+                        if (StringHelper.IsStringLiteral(iterator))
+                        {
+                            var stringToken = iterator.Current;
+                            nextString = StringHelper.GetString(iterator, Services);
+                            if (nextString.Length > 1)
+                                return Services.Log.LogEntry<string>(stringToken, "String literal argument can only be a single character.");
+                        }
+                        else
+                        {
+                            translation = (int)Services.Evaluator.Evaluate(iterator, false, 0, 0x10ffff);
+                        }
+                    }
+                    if (!string.IsNullOrEmpty(nextString))
+                    {
+                        translation = char.ConvertToUtf32(nextString, 0);
+                    }
+                    Services.Encoding.Map(mapping, translation);
                 }
                 else
                 {
                     if (iterator.Current != null)
-                        Services.Log.LogEntry(iterator.Current,
-                            $"Unexpected argument \"{iterator.Current}\" given for directive \".unmap\".");
-                    else
-                        Services.Encoding.Unmap(mapping);
+                        return Services.Log.LogEntry<string>(iterator.PeekNext() ?? iterator.Current,
+                            $"Unexpected argument given for directive \".unmap\".", false, true);
+                    Services.Encoding.Unmap(mapping);
                 }
             }
             return string.Empty;

@@ -27,6 +27,7 @@ namespace Core6502DotNet
         {
             Services = services;
             ExcludedInstructionsForLabelDefines = new HashSet<StringView>(services.StringViewComparer);
+            ExcludeReservedTypesFromLabelDefines = new HashSet<string>(services.StringComparer);
             Reserved = new ReservedWords(services.StringViewComparer);
             services.IsReserved.Add(Reserved.IsReserved);
             services.SymbolManager.AddValidSymbolNameCriterion(s => !Reserved.IsReserved(s));
@@ -92,7 +93,8 @@ namespace Core6502DotNet
             {
                 if (isSpecial)
                     Services.SymbolManager.DefineLineReference(first.Label, LogicalPCOnAssemble);
-                else if (first.Instruction == null || !ExcludedInstructionsForLabelDefines.Contains(first.Instruction.Name))
+                else if (first.Instruction == null || 
+                    !ExcludedInstructionsForLabelDefines.Contains(first.Instruction.Name))
                     DefineLabel(first.Label, LogicalPCOnAssemble, true);
             }
             if (first.Instruction != null)
@@ -128,7 +130,7 @@ namespace Core6502DotNet
             }
             else
             {
-                Services.SymbolManager.DefineSymbolicAddress(label.Name, address, Services.Output.CurrentBank);
+                Services.SymbolManager.DefineSymbolicAddress(label, address, Services.Output.CurrentBank);
             }
             if (setLocalScope)
                 Services.SymbolManager.LocalScope = label.Name.ToString();
@@ -174,6 +176,13 @@ namespace Core6502DotNet
         protected HashSet<StringView> ExcludedInstructionsForLabelDefines { get; }
 
         /// <summary>
+        /// Gets the collection of instructions the <see cref="AssemblerBase"/> will 
+        /// not define any line label as a symbolic address or reference when
+        /// performing the <see cref="AssemblerBase.AssemblesLine(SourceLine)"/> action.
+        /// </summary>
+        protected HashSet<string> ExcludeReservedTypesFromLabelDefines { get; }
+
+        /// <summary>
         /// Gets the reserved keywords of the <see cref="AssemblerBase"/> object.
         /// </summary>
         protected ReservedWords Reserved { get; }
@@ -183,12 +192,6 @@ namespace Core6502DotNet
         /// object when OnAssemble was invoked.
         /// </summary>
         protected int LogicalPCOnAssemble { get; private set; }
-
-        /// <summary>
-        /// Gets the state of the long Logical Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
-        /// object when OnAssemble was invoked.
-        /// </summary>
-        protected int LongLogicalPCOnAssemble { get; private set; }
 
         /// <summary>
         /// Gets the state of the real Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>

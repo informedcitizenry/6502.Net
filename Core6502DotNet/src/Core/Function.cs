@@ -57,7 +57,10 @@ namespace Core6502DotNet
                 {
                     if (line.Instruction.Name.Equals(".global", _services.StringViewComparer))
                         throw new SyntaxException(line.Instruction,
-                            $"Directive \".global\" not allowed inside a function block.");
+                            "Directive \".global\" not allowed inside a function block.");
+                    if (line.Instruction.Name.Equals(".function", _services.StringViewComparer))
+                        throw new SyntaxException(line.Instruction,
+                            "Embedded function definitions not allowed.");
                     if (line.Instruction.Name.Equals(".endfunction", _services.StringViewComparer))
                     {
                         if (line.Operands.Count > 0)
@@ -69,8 +72,7 @@ namespace Core6502DotNet
                 _definedLines.Add(line);
             }
             if (line == null)
-                throw new SyntaxException(iterator.Current.Instruction,
-                                          "Function definition does not have a closing \".endfunction\" directive.");
+                throw new BlockClosureException(".function", _definedLines[^1]);
         }
 
         #endregion
@@ -81,9 +83,10 @@ namespace Core6502DotNet
         /// Invokes the function from its definition, starting assembly at the first line.
         /// </summary>
         /// <param name="parameterList">The parameters of the function call.</param>
+        /// <param name="fromBlockAssembler">The block assembler from which this call is being made.</param>
         /// <returns>A <see cref="double"/> of the function return.</returns>
         /// <exception cref="Exception"></exception>
-        public double Invoke(List<object> parameterList)
+        public double Invoke(List<object> parameterList, BlockAssembler fromBlockAssembler)
         {
             if (parameterList.Count > Params.Count)
                 throw new SyntaxException(parameterList.Count, $"Unexpected argument passed to function \"{Name}\".");
@@ -110,44 +113,44 @@ namespace Core6502DotNet
                 }
             }
             var iterator = _definedLines.GetIterator();
-            var assemblers = new List<AssemblerBase>
+            var mla = new MultiLineAssembler(false, () => _services.PrintOff);
+            _ = mla.WithAssemblers(new List<AssemblerBase>
                 {
                     new AssignmentAssembler(_services),
-                    new BlockAssembler(_services),
+                    new BlockAssembler(_services, mla, fromBlockAssembler),
                     new EncodingAssembler(_services),
                     new MiscAssembler(_services)
-                };
-            return new MultiLineAssembler()
-                .WithAssemblers(assemblers)
-                .WithOptions(new MultiLineAssembler.Options()
-                {
-                    AllowReturn = true,
-                    DisassembleAll = false,
-                    ErrorHandler = ErrorHandler,
-                    Evaluator = _services.Evaluator,
-                    StopDisassembly = () => _services.PrintOff
-                }).AssembleLines(_definedLines.GetIterator(), out string disassembly);
+                });
+            mla.AssemblyError += ErrorHandler;
+            _ = mla.AssembleLines(_definedLines.GetIterator());
+            return mla.ReturnValue;
         }
 
-        bool ErrorHandler(AssemblerBase assembler, SourceLine line, AssemblyErrorReason reason, Exception ex)
+        void ErrorHandler(object sender, AssemblyErrorEventArgs args)
         {
-            if (reason == AssemblyErrorReason.ExceptionRaised)
+            if (args.ErrorReason == AssemblyErrorReason.ExceptionRaised)
             {
+                if (args.Exception is SyntaxException synEx)
+                {
+                    _services.Log.LogEntry(synEx.Token, synEx.Message);
+                    ((MultiLineAssembler)sender).Returning = true;
+                }
                 if (_services.CurrentPass > 0)
                 {
-                    _services.Log.LogEntry(line.Instruction, ex.Message);
-                    return false;
+                    _services.Log.LogEntry(args.Line.Instruction, args.Exception.Message);
+                    ((MultiLineAssembler)sender).Returning = true;
                 }
-                return true;
             }
-            if (reason == AssemblyErrorReason.NotFound)
-                _services.Log.LogEntry(line.Instruction,
-                        $"Directive \"{line.Instruction}\" not allowed inside a function block.");
-            return false;
+            else
+            {
+                _services.Log.LogEntry(args.Line.Instruction,
+                        $"Directive \"{args.Line.Instruction}\" not allowed inside a function block.");
+                ((MultiLineAssembler)sender).Returning = true;
+            }
         }
         #endregion
 
-        #region
+        #region Properties
 
         public StringView Name { get; }
 
@@ -168,6 +171,15 @@ namespace Core6502DotNet
         /// <param name="index">The index at which the block is defined.</param>
         public FunctionBlock(AssemblyServices services, int index)
             : base(services, index) { }
+
+        /// <summary>
+        /// Creates a new instance of a function block processor placeholder.
+        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="index">The index at which the block is defined.</param>
+        /// <param name="createScope">Automatically create a scope when initialized.</param>
+        public FunctionBlock(AssemblyServices services, int index, bool createScope)
+            : base(services, index, createScope) { }
 
         #endregion
 

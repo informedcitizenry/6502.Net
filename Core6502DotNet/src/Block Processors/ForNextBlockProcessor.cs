@@ -29,7 +29,7 @@ namespace Core6502DotNet
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="index">The index at which the block is defined.</param>
         public ForNextBlock(AssemblyServices services, int index)
-            : base(services, index) => Reserved.DefineType("Directives", ".for", ".next");
+            : base(services, index, true) => Reserved.DefineType("Directives", ".for", ".next");
 
         #endregion
 
@@ -43,23 +43,16 @@ namespace Core6502DotNet
                 if (line.Operands.Count == 0)
                     throw new SyntaxException(line.Instruction, "Missing operands for \".for\" directive.");
                 var it = line.Operands.GetIterator();
-                if (!Token.IsEnd(it.GetNext()))
+                if (!Token.IsTerminal(it.GetNext()))
                     Services.SymbolManager.DefineSymbol(it);
 
                 if (!it.MoveNext())
                     throw new SyntaxException(line.Operands[^1], "Missing condition clause.");
                 _condition = new List<Token>();
-                while (!Token.IsEnd(it.Current))
+                while (it.Current?.IsPartOfAnExpression == true)
                 {
-                    if (it.Current.Name.Equals("("))
-                    {
-                        _condition.AddRange(Token.GetGroup(it));
-                    }
-                    else
-                    {
-                        _condition.Add(it.Current);
-                        it.MoveNext();
-                    }
+                    _condition.Add(it.Current);
+                    it.MoveNext();
                 }
                 if (_condition.Count > 0 && !Services.Evaluator.EvaluateCondition(_condition.GetIterator()))
                 {
@@ -68,12 +61,10 @@ namespace Core6502DotNet
                 else
                 {
                     if (it.Current == null)
-                        throw new SyntaxException(line.Operands[^1], "Expression expected.");
+                        throw new SyntaxException(line.Instruction.Position, "Iteration expression expected.");
                     _iterations = new List<Token>();
                     while (it.GetNext() != null)
                         _iterations.Add(it.Current);
-                    if (_iterations.Count == 0 || _iterations[^1].IsSeparator())
-                        throw new SyntaxException(line.Operands[^1], "Expression expected.");
                 }
             }
             else
@@ -143,12 +134,12 @@ namespace Core6502DotNet
             {
                 var line = lines.Current;
                 var it = line.Operands.GetIterator();
-                if (Token.IsEnd(it.GetNext()))
+                if (Token.IsTerminal(it.GetNext()))
                     throw new SyntaxException(line.Instruction, "Expression expected.");
                 _enumeration = it.Current.Name;
                 if (!it.MoveNext())
                     throw new SyntaxException(line.Operands[0], "Expression expected.");
-                if (!Token.IsEnd(it.Current))
+                if (!Token.IsTerminal(it.Current))
                     throw new SyntaxException(it.Current, "Unexpected expression.");
                 if (!it.MoveNext())
                     throw new SyntaxException(line.Operands[^1], "Expression expected.");

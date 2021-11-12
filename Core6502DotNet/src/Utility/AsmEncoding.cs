@@ -81,7 +81,7 @@ namespace Core6502DotNet
         public int GetEncodedValue(string s)
         {
             if (string.IsNullOrEmpty(s))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(s), "String cannot be null.");
 
             var bytes = GetCharBytes(s);
             if (bytes.Length < 4)
@@ -117,19 +117,19 @@ namespace Core6502DotNet
                 return;
 
             if (string.IsNullOrEmpty(mapping))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(mapping), "Mapping argument missing.");
 
             var stringInfo = StringInfo.ParseCombiningCharacters(mapping);
             if (stringInfo.Length > 1)
             {
                 if (stringInfo.Length > 2)
-                    throw new ArgumentException(mapping);
+                    throw new ArgumentException("Invalid mapping argument.");
 
                 var first = char.ConvertToUtf32(mapping, stringInfo.First());
                 var last = char.ConvertToUtf32(mapping, stringInfo.Last());
 
                 if (first > last)
-                    throw new ArgumentException(mapping);
+                    throw new ArgumentException("Invalid mapping range.");
 
                 while (first <= last)
                     _currentMap[first++] = code++;
@@ -137,7 +137,7 @@ namespace Core6502DotNet
             else
             {
                 if (mapping.Length > 1)
-                    throw new ArgumentException(mapping);
+                    throw new ArgumentException("Invalid mapping argument.");
                 _currentMap[char.ConvertToUtf32(mapping, 0)] = code;
             }
         }
@@ -164,7 +164,7 @@ namespace Core6502DotNet
                 return;
 
             if (string.IsNullOrEmpty(mapping))
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(mapping), "Argument cannot be null.");
 
             var stringInfo = StringInfo.ParseCombiningCharacters(mapping);
             if (stringInfo.Length > 1)

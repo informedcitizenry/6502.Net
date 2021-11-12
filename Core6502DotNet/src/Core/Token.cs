@@ -27,7 +27,7 @@ namespace Core6502DotNet
         StartOrOperand  = 0b000000011111,
         Closed          = 0b000000100000,
         Separator       = 0b000001000000,
-        End             = 0b000001100000,
+        Terminal        = 0b000001100000,
         Binary          = 0b000010000000,
         Function        = 0b000100000000,
         EndOrBinary     = 0b000111100000,
@@ -50,7 +50,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the key-value pairs of opens and closures.
         /// </summary>
-        public static readonly Dictionary<StringView, StringView> OpenClose = new Dictionary<StringView, StringView>
+        public static readonly Dictionary<StringView, StringView> s_openClose = new Dictionary<StringView, StringView>
         {
             { "(", ")" },
             { "{", "}" },
@@ -129,6 +129,23 @@ namespace Core6502DotNet
         public bool IsOpen() => Type.HasFlag(TokenType.Open);
 
         /// <summary>
+        /// Determines whether the token represents an assignment operator.
+        /// </summary>
+        /// <returns><c>true</c> if the token name is an assignment operator,
+        /// <c>false</c> otherwise.</returns>
+        public bool IsAssignment()
+            => Name?[^1] == '=' && (Name.Length == 1 || Name[0] == ':' || IsCompoundAssignment());
+
+        /// <summary>
+        /// Determines whether the token represents a compound assignment operator.
+        /// </summary>
+        /// <returns><c>true</c> if the token name is a compound assignment operator,
+        /// <c>false</c> otherwise.</returns>
+        public bool IsCompoundAssignment() 
+            => Name.Length > 1 && Name[^1] == '=' && ",+=,-=,*=,/=,%=,>>=,<<=,&=,^=,|=".Contains($",{Name}");
+       
+
+        /// <summary>
         /// Indicates whether the current token name is equal to the given string.
         /// </summary>
         /// <param name="name">The name string.</param>
@@ -170,21 +187,17 @@ namespace Core6502DotNet
             }
         }
 
-        public override string ToString()
-        {
-            return Name.ToString();
-
-        }
+        public override string ToString() => Name.ToString();
 
         #region Static Methods
 
         /// <summary>
-        /// Determines whether the token is an end of an expression, either as a closure,
-        /// separator, or a null.
+        /// Determines whether the token is a terminal, such as a closing bracket,
+        /// separator, or a null value.
         /// </summary>
         /// <param name="token">The token.</param>
         /// <returns></returns>
-        public static bool IsEnd(Token token) => token == null || TokenType.End.HasFlag(token.Type);
+        public static bool IsTerminal(Token token) => token == null || TokenType.Terminal.HasFlag(token.Type);
 
         /// <summary>
         /// Gets a grouping of tokens.
@@ -193,71 +206,109 @@ namespace Core6502DotNet
         /// <returns>The grouped tokens</returns>
         public static IEnumerable<Token> GetGroup(RandomAccessIterator<Token> tokens)
         {
-            var list = new List<Token> { tokens.Current };
+            var list = new List<Token>();
             var open = tokens.Current.Name;
-            var closed = OpenClose[open];
+            var closed = s_openClose[open];
             var opens = 1;
-            while (tokens.MoveNext() && opens > 0)
+            var token = tokens.Current;
+            while (opens > 0)
             {
-                list.Add(tokens.Current);
-                if (tokens.Current.Name.Equals(open))
+                list.Add(token);
+                if ((token = tokens.GetNext()).Name.Equals("("))
                     opens++;
-                else if (tokens.Current.Name.Equals(closed))
+                else if (token.Name.Equals(closed))
                     opens--;
             }
+            list.Add(token);
             return list;
         }
 
         /// <summary>
-        /// Joins the collection of tokens into a string.
+        /// Relate the <see cref="Token"/> objects in the collection by expressions.
         /// </summary>
-        /// <param name="tokens">The collection of tokens.</param>
-        /// <returns>A string representing the joint tokens.</returns>
-        public static string Join(IEnumerable<Token> tokens)
+        /// <param name="tokens"></param>
+        internal static void GatherIntoExpressions(List<Token> tokens)
         {
-            var first = tokens.First();
-            var source = first.Name.String;
-            if (tokens.Any(t => !ReferenceEquals(t.Name.String, source)))
+            Token firstToken = null, lastToken = null;
+            var inFunction = false;
+            var brackets = 0;
+            foreach (var token in tokens)
             {
-                var leadingNonTokenString = first.Name.Position == 0 ? string.Empty : source.Substring(0, first.Name.Position);
+                if ((!IsTerminal(token) && !token.IsAssignment() && 
+                    (token.Type != TokenType.Open || 
+                    lastToken?.Type != TokenType.Closed))|| 
+                    inFunction || 
+                    token.Type == TokenType.Closed)
+                {
+                    inFunction |= token.Type == TokenType.Function;
+                    if (token.Type == TokenType.Open)
+                        brackets++;
+                    else if (token.Type == TokenType.Closed)
+                    {
+                        if (--brackets == 0)
+                            inFunction = false;
+                    }
+                    if (lastToken != null && !lastToken.IsAssignment())
+                        lastToken.NextInExpression = token;
+                    if (firstToken == null)
+                        firstToken = token;
+                    token.FirstInExpression = firstToken;
+                    token.IsPartOfAnExpression = true;
+                }
+                else
+                {
+                    token.FirstInExpression = token;
+                    firstToken = lastToken = null;
+                }
+                lastToken = token;
+            }
+        }
 
-                var sb = new StringBuilder(leadingNonTokenString);
-                var it = tokens.GetIterator();
-                while (it.MoveNext())
-                {
-                    var t = it.Current;
-                    var n = it.PeekNext();
-                    var offs = t.Name.Position;
-                    int size;
-                    if (n == null || !ReferenceEquals(t.Name.String, n.Name.String))
-                    {
-                        sb.Append(t.Name.String.Substring(offs, t.Name.Length));
-                        var afterChars = t.Name.String.Substring(offs + t.Name.Length);
-                        var firstNonWhite = afterChars.ToList()
-                            .FindIndex(c => !char.IsWhiteSpace(c));
-                        if (firstNonWhite > 0)
-                            sb.Append(afterChars.Substring(0, firstNonWhite));   
-                    }
-                    else
-                    {
-                        size = n.Name.Position - offs;
-                        sb.Append(t.Name.String.Substring(offs, size));
-                    }
-                }
-                return sb.ToString();
-            }
-            else
+        /// <summary>
+        /// Gets the string representation of the expression of which a specified
+        /// <see cref="Token"/> is a part.
+        /// </summary>
+        /// <param name="token">A token in an expression.</param>
+        /// <param name="startAtToken">Only return the expression from 
+        /// the point of the specified token.</param>
+        /// <param name="toNewLine">Only return the expression of the current line.</param>
+        /// <returns>The string representation of the expression string of which 
+        /// the token is a part.</returns>
+        public static string GetExpression(Token token, bool startAtToken = false, bool toNewLine = false)
+        {
+            if (string.IsNullOrEmpty(token.Line?.FullSource) || !token.IsPartOfAnExpression)
+                return token.Name.ToString();
+            if (token.FirstInExpression != null && !startAtToken)
+                token = token.FirstInExpression;
+            var len = token.Name.Length;
+            var current = token.NextInExpression;
+            var previous = token;
+            var lineSourceIndex = token.LineSourceIndex;
+            var startOffset = token.Position - 1;
+            if (startAtToken && lineSourceIndex > 0)
             {
-                var offs = first.Name.Position;
-                if (offs > 0)
-                {
-                    var leadingWs = source.Substring(0, first.Name.Position).ToList().FindLastIndex(c => !char.IsWhiteSpace(c));
-                    if (leadingWs >= 0)
-                        offs = leadingWs + 1;
-                }
-                int size = tokens.Last().Name.Position + tokens.Last().Name.Length - offs;
-                return source.Substring(offs, size);
+                var sourceLines = token.Line.FullSource.Split('\n');
+                for (var i = 0; i < lineSourceIndex; i++)
+                    startOffset += sourceLines[i].Length + 1;
             }
+            while (current?.IsPartOfAnExpression == true)
+            {
+                if (current.LineSourceIndex > lineSourceIndex)
+                {
+                    if (toNewLine)
+                        break;
+                    len += current.Position;
+                    lineSourceIndex++;
+                }
+                else
+                {
+                    len += current.Position - (previous.Position + previous.Name.Length);
+                }
+                len += current.Name.Length;
+                previous = current;
+                current = current.NextInExpression;
+            }
+            return token.Line.FullSource.Substring(startOffset, len);
         }
 
         #endregion
@@ -285,6 +336,27 @@ namespace Core6502DotNet
         /// Gets or sets the token's parsed <see cref="SourceLine"/> in which it appears.
         /// </summary>
         public SourceLine Line { get; internal set; }
+        
+
+        /// <summary>
+        /// Gets or sets the source index of the line in which the token appears.
+        /// </summary>
+        public int LineSourceIndex { get; internal set; }
+
+        /// <summary>
+        /// Represents a token related to this token that succeeds it in a full expression.
+        /// </summary>
+        public Token NextInExpression { get; private set; }
+
+        /// <summary>
+        /// Represents a token beginning an expression containing this token.
+        /// </summary>
+        public Token FirstInExpression { get; private set; }
+
+        /// <summary>
+        /// Gets whether the token is part of an expression.
+        /// </summary>
+        public bool IsPartOfAnExpression { get; private set; }
 
         #endregion
     }

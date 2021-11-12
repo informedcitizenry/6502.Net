@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Core6502DotNet
@@ -23,7 +24,11 @@ namespace Core6502DotNet
         public AssignmentAssembler(AssemblyServices services)
             : base(services)
         {
-            Reserved.DefineType("Assignments", ".equ", ".global", "=");
+            Reserved.DefineType("Assignments", 
+                ".equ", ".global", "=");
+
+            Reserved.DefineType("VarAssignments",
+                ":=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=");
 
             Reserved.DefineType("Pseudo",
                 ".relocate", ".pseudopc", ".endrelocate", ".realpc");
@@ -34,8 +39,19 @@ namespace Core6502DotNet
 
             ExcludedInstructionsForLabelDefines.Add(".org");
             ExcludedInstructionsForLabelDefines.Add(".equ");
-            ExcludedInstructionsForLabelDefines.Add("=");
             ExcludedInstructionsForLabelDefines.Add(".global");
+            ExcludedInstructionsForLabelDefines.Add("=");
+            ExcludedInstructionsForLabelDefines.Add(":=");
+            ExcludedInstructionsForLabelDefines.Add("+=");
+            ExcludedInstructionsForLabelDefines.Add("-=");
+            ExcludedInstructionsForLabelDefines.Add("*=");
+            ExcludedInstructionsForLabelDefines.Add("/=");
+            ExcludedInstructionsForLabelDefines.Add("%=");
+            ExcludedInstructionsForLabelDefines.Add("&=");
+            ExcludedInstructionsForLabelDefines.Add("|=");
+            ExcludedInstructionsForLabelDefines.Add("^=");
+            ExcludedInstructionsForLabelDefines.Add("<<=");
+            ExcludedInstructionsForLabelDefines.Add(">>=");
 
             Services.Evaluator.AddFunctionEvaluator(this);
         }
@@ -48,7 +64,9 @@ namespace Core6502DotNet
         {
             var line = lines.Current;
             var instruction = line.Instruction.Name.ToLower();
-            if (Reserved.IsOneOf("Assignments", line.Instruction.Name))
+            RandomAccessIterator<Token> iterator = null;
+            if (Reserved.IsOneOf("Assignments", line.Instruction.Name) ||
+                Reserved.IsOneOf("VarAssignments", line.Instruction.Name))
             {
                 var isGlobal = line.Instruction.Name.Equals(".global", Services.StringComparison);
                 if (line.Label == null)
@@ -57,83 +75,79 @@ namespace Core6502DotNet
                 }
                 if (line.Label.IsSpecialOperator())
                 {
-                    if (isGlobal || !line.Label.Name.Equals("*"))
+                    if (isGlobal || !line.Label.Name.Equals("*") || Reserved.IsOneOf("VarAssignments", line.Instruction.Name))
                         throw new ExpressionException(line.Label.Position, "Invalid assignment.");
                     Services.Output.SetPC((int)Services.Evaluator.Evaluate(line.Operands.GetIterator(), short.MinValue, ushort.MaxValue));
+                }
+                else if (Reserved.IsOneOf("VarAssignments", line.Instruction.Name))
+                {
+                    var expressionList = new List<Token>
+                    {
+                        line.Label,
+                        line.Instruction
+                    };
+                    expressionList.AddRange(line.Operands);
+                    iterator = expressionList.GetIterator();
+                    iterator.MoveNext();
+                    Services.SymbolManager.DefineSymbol(iterator);
                 }
                 else
                 {
                     var exists = Services.SymbolManager.SymbolExists(line.Label.Name, false);
                     if (exists && Services.CurrentPass == 0)
                         throw new SymbolException(line.Label, SymbolException.ExceptionReason.Redefined);
-                    if (isGlobal)
+                    if (isGlobal && (line.Label.Name[0] == '_' || line.Operands.Count == 0))
                     {
                         if (line.Label.Name[0] == '_')
                             throw new SymbolException(line.Label, SymbolException.ExceptionReason.NotValid);
-                        if (line.Operands.Count > 0)
-                        {
-                            var iterator = line.Operands.GetIterator();
-                            Services.SymbolManager.DefineGlobal(line.Label.Name,
-                                Services.Evaluator.Evaluate(iterator));
-                            if (iterator.Current != null)
-                                throw new SyntaxException(iterator.Current, "Unexpected expression.");
-                        }
-                        else
-                        {
-                            Services.SymbolManager.DefineGlobal(line.Label.Name, Services.Output.LogicalPC);
-                        }
+                        Services.SymbolManager.DefineGlobal(line.Label.Name, Services.Output.LogicalPC);
                     }
                     else
                     {
-                        var iterator = line.Operands.GetIterator();
+                        iterator = line.Operands.GetIterator();
                         if (!iterator.MoveNext())
                             throw new SyntaxException(line.Label.Position, "Expected expression.");
                         
                         if (iterator.Current.Name.Equals("["))
-                        {
-                            if (Token.IsEnd(iterator.PeekNext()))
-                                throw new SyntaxException(line.Operands[0].Position,
-                                    "List cannot be empty.");
-                            Services.SymbolManager.DefineSymbol(line.Label.Name, iterator);
-                        }
+                            Services.SymbolManager.DefineSymbol(line.Label.Name, iterator, false, isGlobal);
                         else if (StringHelper.ExpressionIsAString(iterator, Services))
-                        {
-                            Services.SymbolManager.DefineSymbol(line.Label.Name, 
-                                                                StringHelper.GetString(iterator, Services));
-                        }
+                            Services.SymbolManager.DefineSymbol(line.Label, 
+                                                                StringHelper.GetString(iterator, Services), false, isGlobal);
                         else
-                        {
-                            Services.SymbolManager.DefineSymbol(line.Label.Name,
-                                Services.Evaluator.Evaluate(iterator, false));
-                        }
-                        if (iterator.Current != null)
-                            throw new SyntaxException(iterator.Current, "Unexpected expression.");
+                            Services.SymbolManager.DefineSymbol(line.Label,
+                                Services.Evaluator.Evaluate(iterator, false), 0, false, isGlobal);
                     }
                 }
             }
             else
             {
-
-                var iterator = line.Operands.GetIterator();
+                iterator = line.Operands.GetIterator();
                 switch (instruction)
                 {
                     case ".let":
                         if (!iterator.MoveNext())
                             throw new ExpressionException(line.Instruction.Position, "Expected expression.");
-                        Services.SymbolManager.DefineSymbol(iterator);
-                        iterator.MoveNext();
+                        if (iterator.Current.Name.Equals("*"))
+                        {
+                            Services.Log.LogEntry(line.Instruction, "Using Program Counter symbol '*' as a variable.", false);
+                            if (!iterator.MoveNext() || !iterator.Current.Name.Equals("="))
+                                return Services.Log.LogEntry<string>(iterator.Current ?? line.Operands[0], "Assignment operator expected.");
+                            Services.Output.SetPC((int)Services.Evaluator.Evaluate(iterator, short.MinValue, ushort.MaxValue));
+                        }
+                        else
+                        {
+                            Services.SymbolManager.DefineSymbol(iterator);
+                        }
                         break;
                     case ".org":
                         if (line.Label != null && line.Label.Name.Equals("*"))
                             Services.Log.LogEntry(line.Label,
                                 "Program Counter symbol is redundant for \".org\" directive.", false);
                         Services.Output.SetPC((int)Services.Evaluator.Evaluate(iterator, short.MinValue, ushort.MaxValue));
-                        SetLabel(line);
                         break;
                     case ".pseudopc":
                     case ".relocate":
                         Services.Output.SetLogicalPC((int)Services.Evaluator.Evaluate(iterator, short.MinValue, ushort.MaxValue));
-                        SetLabel(line);
                         break;
                     case ".endrelocate":
                     case ".realpc":
@@ -141,10 +155,10 @@ namespace Core6502DotNet
                         Services.Output.SynchPC();
                         break;
                 }
-                if (iterator.Current != null)
-                    throw new ExpressionException(iterator.Current, "Unexpected expression.");
-
+                SetLabel(line);
             }
+            if (iterator?.Current != null)
+                throw new SyntaxException(iterator.Current, "Unexpected expression.");
             if (Reserved.IsOneOf("Pseudo", line.Instruction.Name))
                 return $".{Services.Output.LogicalPC,-8:x4}";
             var unparsedSource = Services.Options.NoSource ? string.Empty : line.Source;
@@ -154,11 +168,7 @@ namespace Core6502DotNet
                 {
                     return $".{Services.Output.LogicalPC,-41:x4}{unparsedSource}";
                 }
-                Token tokenSymbol;
-                if (instruction.Equals(".let"))
-                    tokenSymbol = line.Operands[0];
-                else
-                    tokenSymbol = line.Label;
+                var tokenSymbol = instruction.Equals(".let") ? line.Operands[0] : line.Label;
                 var symbol = Services.SymbolManager.GetSymbol(tokenSymbol, false);
                 if (symbol != null && symbol.StorageType == StorageType.Scalar)
                 {
@@ -196,6 +206,7 @@ namespace Core6502DotNet
         public override bool AssemblesLine(SourceLine line)
             => line.Instruction != null &&
                 (Reserved.IsOneOf("Assignments", line.Instruction.Name) ||
+                 Reserved.IsOneOf("VarAssignments", line.Instruction.Name) ||
                  Reserved.IsOneOf("Pseudo", line.Instruction.Name) ||
                  Reserved.IsOneOf("Directives", line.Instruction.Name));
 

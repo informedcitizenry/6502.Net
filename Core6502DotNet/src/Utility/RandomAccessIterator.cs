@@ -97,7 +97,7 @@ namespace Core6502DotNet
         /// <returns>The next object.</returns>
         public T GetNext()
         {
-            if (++Index < _length)
+            if (MoveNext())
                 return _list[Index];
             return default;
         }
@@ -106,7 +106,7 @@ namespace Core6502DotNet
         {
             if (Index == _length || ++Index == _length)
             {
-                Index = _firstIndex;
+                //Index = _firstIndex;
                 return false;
             }
             return true;

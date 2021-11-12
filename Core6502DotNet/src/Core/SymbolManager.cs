@@ -16,7 +16,7 @@ namespace Core6502DotNet
     /// Represents an error in accessing, creating or modifying 
     /// a symbol.
     /// </summary>
-    public class SymbolException : Exception
+    public sealed class SymbolException : Exception
     {
         /// <summary>
         /// An enumeration representing categories of symbol errors.
@@ -28,6 +28,7 @@ namespace Core6502DotNet
             NotDefined,
             MutabilityChanged,
             NotValid,
+            IllegalReference,
             InvalidBackReference,
             InvalidForwardReference,
             Scalar
@@ -35,11 +36,12 @@ namespace Core6502DotNet
 
         static readonly Dictionary<ExceptionReason, string> s_reasonMessages = new Dictionary<ExceptionReason, string>
         {
-            { ExceptionReason.MutabilityChanged,        "Cannot redeclare a variable as a label."                     },
+            { ExceptionReason.MutabilityChanged,        "Cannot redeclare a label as a variable."                     },
             { ExceptionReason.Redefined,                "Cannot redefine \"{0}\"."                                    },
             { ExceptionReason.NonScalar,                "Symbol \"{0}\" is non-scalar but is being used as a scalar." },
             { ExceptionReason.NotDefined,               "Symbol \"{0}\" is not defined."                              },
             { ExceptionReason.NotValid,                 "\"{0}\" is not a valid symbol name."                         },
+            { ExceptionReason.IllegalReference,         "Illegal reference to symbol \"{0}\"."                               },
             { ExceptionReason.InvalidBackReference,     "Invalid back reference."                                     },
             { ExceptionReason.InvalidForwardReference,  "Invalid forward reference."                                  },
             { ExceptionReason.Scalar,                   "Symbol \"{0}\" is scalar but is being used as a non-scalar." }
@@ -95,7 +97,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class managing all valid assembly symbols, including their scope and values.
     /// </summary>
-    public class SymbolManager
+    public sealed class SymbolManager
     {
         #region Subclasses
 
@@ -179,7 +181,7 @@ namespace Core6502DotNet
             };
             _referenceTableCounter = 0;
             var comparer = caseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase;
-            
+
             _criteria = new List<Func<StringView, bool>>
             {
                 s =>
@@ -187,6 +189,14 @@ namespace Core6502DotNet
                     return s.Equals("+") || s.Equals("-") ||
                             (((s[0] == '_' && s.Length > 1 && s.ToString().Any(c => char.IsLetterOrDigit(c))) || char.IsLetter(s[0])) &&
                             (char.IsLetterOrDigit(s[^1]) || s[^1] == '_' ) && !s.Contains('.'));
+                },
+                s =>
+                {
+                    var stringComparer = _caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                    if (s.Equals("true", stringComparer) || s.Equals("false", stringComparer))
+                        return false;
+                    var fullSymbolName = GetScopedName(s);
+                    return !_evaluator.IsReserved(fullSymbolName);
                 }
             };
             SearchedNotFound = false;
@@ -196,7 +206,12 @@ namespace Core6502DotNet
 
         #region Methods
 
-        string GetScopedName(StringView name) => GetAncestor(name, 0);
+        /// <summary>
+        /// Gets the referenced symbol's fully scoped name.
+        /// </summary>
+        /// <param name="name">The reference symbol name.</param>
+        /// <returns>The fully scoped name.</returns>
+        public string GetScopedName(StringView name) => GetAncestor(name, 0);
 
         string GetAncestor(StringView name, int back)
         {
@@ -216,7 +231,7 @@ namespace Core6502DotNet
             return string.Join('.', symbolPath);
         }
 
-        string GetFullyQualifiedName(StringView name)
+        string GetFullyQualifiedName(StringView name, bool updateSearchNotFound)
         {
             var scopedName = GetScopedName(name);
             var original = scopedName;
@@ -227,10 +242,19 @@ namespace Core6502DotNet
                 if (i > _scope.Count)
                     break;
             }
-            if (!SearchedNotFound)
+            if (updateSearchNotFound && !SearchedNotFound)
                 SearchedNotFound = !original.Equals(scopedName);
             return scopedName;
         }
+
+        /// <summary>
+        /// Gets the fully qualified reference name of the symbol name, from within its scope and
+        /// working up. If found at the nearest scope, the scoped symbol name will be the return value.
+        /// If no reference for this symbol name is found, it will return the unscoped symbol name.
+        /// </summary>
+        /// <param name="name">The reference symbol name.</param>
+        /// <returns>The fully qualified name of the symbol reference.</returns>
+        public string GetFullyQualifiedName(StringView name) => GetFullyQualifiedName(name, true);
 
         static bool InSameFunctionScope(string symbol1, string symbol2)
         {
@@ -238,8 +262,8 @@ namespace Core6502DotNet
             var sym2Ix = symbol2.LastIndexOf('@');
             if (sym1Ix > -1 && sym1Ix == sym2Ix)
             {
-                var dot1Ix = symbol1.Substring(sym1Ix).IndexOf('.');
-                var dot2Ix = symbol2.Substring(sym2Ix).IndexOf('.');
+                var dot1Ix = symbol1[sym1Ix..].IndexOf('.');
+                var dot2Ix = symbol2[sym2Ix..].IndexOf('.');
                 return symbol1.Substring(0, sym1Ix + dot1Ix).Equals(symbol2.Substring(0, sym2Ix + dot2Ix));
 
             }
@@ -264,14 +288,18 @@ namespace Core6502DotNet
                 {
                     // but if it is weak (can be shadowed by same named symbol in outer scope)
                     // check if an outer scoped symbol exists
-                    var weak = GetFullyQualifiedName(nameStr);
+                    var weak = GetFullyQualifiedName(nameStr, false);
                     if (_symbolTable.ContainsKey(weak) && InSameFunctionScope(weak, fqdn) && _symbolTable[weak].IsMutable)
                         fqdn = weak; // if so, do not create the same symbol name in an inner scope
                 }
             }
-            if (_symbolTable.TryGetValue(fqdn, out var existing) && !existing.IsEqualType(symbol))
-                throw new Exception("Type mismatch.");
-            symbol.Name = nameStr;
+            if (_symbolTable.TryGetValue(fqdn, out var existing))
+            {
+                if ((existing == null && symbol != null) || (symbol == null && existing != null) || !existing.IsEqualType(symbol))
+                    throw new SymbolException(name, 1, SymbolException.ExceptionReason.Redefined);
+            }
+            if (symbol != null)
+                symbol.Name = nameStr;
             _symbolTable[fqdn] = symbol;
         }
 
@@ -283,7 +311,7 @@ namespace Core6502DotNet
         /// <c>false</c> otherwise.</returns>
         public bool SymbolIsMutable(StringView name)
         {
-            if (_symbolTable.TryGetValue(GetFullyQualifiedName(name), out var existing))
+            if (_symbolTable.TryGetValue(GetFullyQualifiedName(name, false), out var existing))
                 return existing.IsMutable;
             return false;
         }
@@ -310,8 +338,8 @@ namespace Core6502DotNet
         /// <returns><c>true</c> if the symbol has been defined, 
         /// otherwise <c>false</c>.</returns>
         public bool SymbolExists(StringView name)
-            => _symbolTable.ContainsKey(GetFullyQualifiedName(name));
-
+            => SymbolExists(name, true);
+        
         /// <summary>
         /// Determines if the symbol has been defined.
         /// </summary>
@@ -320,7 +348,7 @@ namespace Core6502DotNet
         /// <returns><c>true</c> if the symbol has been defined, 
         /// otherwise <c>false</c>.</returns>
         public bool SymbolExists(StringView name, bool searchUp)
-            => searchUp ? _symbolTable.ContainsKey(GetFullyQualifiedName(name)) :
+            => searchUp ? _symbolTable.ContainsKey(GetFullyQualifiedName(name, false)) :
                           _symbolTable.ContainsKey(GetScopedName(name));
 
         /// <summary>
@@ -332,12 +360,19 @@ namespace Core6502DotNet
         /// <exception cref="SymbolException"></exception>
         public Symbol GetSymbol(Token symbolToken,
                                 bool raiseExceptionIfNotFound)
-        { 
+        {
+            var searchNotFound = SearchedNotFound;
             var fqdn = GetFullyQualifiedName(symbolToken.Name);
             if (_symbolTable.ContainsKey(fqdn))
+            {
+                SearchedNotFound = searchNotFound;
+                var sym = _symbolTable[fqdn];
+                if (sym == null)
+                    throw new SymbolException(symbolToken, SymbolException.ExceptionReason.IllegalReference);
                 return _symbolTable[fqdn];
+            }
             if (raiseExceptionIfNotFound)
-                throw new SymbolException(symbolToken.Name, symbolToken.Position, SymbolException.ExceptionReason.NotDefined);
+                throw new SymbolException(symbolToken, SymbolException.ExceptionReason.NotDefined);
             return null;
         }
 
@@ -351,79 +386,177 @@ namespace Core6502DotNet
             => DefineSymbol(name, new Symbol(address, bank), false);
 
         /// <summary>
+        /// Define a symbol as representing the current state of the program counter.
+        /// </summary>
+        /// <param name="token">The token representing the address name.</param>
+        /// <param name="address">The address.</param>
+        /// <param name="bank">The current address bank.</param>
+        public void DefineSymbolicAddress(Token token, double address, int bank)
+            => DefineSymbol(token, address, bank, false, false, false);
+
+        /// <summary>
         /// Define a globally scoped symbol.
         /// </summary>
         /// <param name="name">The symbol name.</param>
         /// <param name="value">The symbol value.</param>
+        /// <exception cref="SymbolException"></exception>
         public void DefineGlobal(StringView name, double value)
             => DefineSymbol(name, new Symbol(value), true);
 
         void DefineFromExpression(RandomAccessIterator<Token> tokens, bool isGlobal, bool isMutable)
         {
             var lhs = tokens.Current;
-            if (lhs == null)
-                throw new ExpressionException(1, "Expression expected.");
             var isWeak = !isGlobal && isMutable;
-            var equ = tokens.GetNext();
-            if (equ == null || !equ.Name.Equals("="))
+            var sym = SymbolExists(lhs.Name, isWeak) ? GetSymbol(lhs, false) : null;
+            if (sym != null && 
+                isWeak && 
+                sym.IsMutable != true && 
+                !GetFullyQualifiedName(lhs.Name, false).Equals(GetScopedName(lhs.Name)))
             {
-                if (equ != null && equ.Name.Equals("["))
-                {
-                    var sym = GetSymbol(lhs, true);
-                    if (sym.StorageType != StorageType.Vector)
-                        throw new SymbolException(lhs, SymbolException.ExceptionReason.Scalar);
-                    if (!sym.IsMutable)
-                        throw new SymbolException(lhs, SymbolException.ExceptionReason.MutabilityChanged);
-                    var subscript = (int)_evaluator.Evaluate(tokens);
-                    if ((equ = tokens.GetNext()) != null && equ.Name.Equals("="))
-                    {
-                        if (!tokens.MoveNext())
-                            throw new SyntaxException(equ.Position, "rhs expression missing from assignment.");
-                        var rhs = tokens.Current;
-                        if (sym.DataType == DataType.String)
-                        {
-                            if (subscript < 0 || subscript >= sym.StringVector.Count)
-                                throw new ExpressionException(lhs.Position, "Index out of range.");
-                            if (rhs.IsDoubleQuote())
-                                sym.StringVector[subscript] = rhs.Name;
-                            else
-                                throw new SyntaxException(rhs.Position, "Type mismatch.");
-                        }
-                        else
-                        {
-                            if (subscript < 0 || subscript >= sym.NumericVector.Count)
-                                throw new ExpressionException(lhs.Position, "Index out of range.");
-                            sym.NumericVector[subscript] = _evaluator.Evaluate(tokens, false);
-                        }
-                        return;
-                    }
-                }
-                throw new SyntaxException(lhs.Position, "Assignment expression must have an expression operator.");
+                // if a non-mutable symbol of the same name exists outside of the current scope
+                // and this symbol is mutable, define the mutable symbol within its scope.
+                sym = null;
             }
-            else
+            var isIndexed = false;
+            var subscript = -1;
+            var expectedStorageType = StorageType.Scalar;
+            var assign = tokens.GetNext();
+            if (sym != null)
             {
-                var rhs = tokens.GetNext();
-                if (rhs == null)
-                    throw new ExpressionException(equ.Position, "rhs expression missing from assignment.");
-                var sym = GetSymbol(lhs, false);
-                if (sym != null && isMutable != sym.IsMutable)
-                    throw new SymbolException(lhs, SymbolException.ExceptionReason.MutabilityChanged);
-                if (rhs.Name.Equals("["))
+                if (assign?.Name.Equals("[") == true)
                 {
-                    DefineSymbol(lhs.Name, new Symbol(tokens, _evaluator, isMutable), isGlobal, isWeak);
+                    isIndexed = true;
+                    subscript = (int)_evaluator.Evaluate(tokens, 0, sym.Length);
+                    assign = tokens.GetNext();
                 }
                 else
                 {
-                    if (rhs.IsDoubleQuote())
+                    if (sym.IsMutable != isMutable)
+                        throw new SymbolException(lhs, SymbolException.ExceptionReason.MutabilityChanged);
+                    expectedStorageType = sym.StorageType;
+                }
+            }
+            if (Token.IsTerminal(assign) || !(assign.Name.Equals("=") || assign.Name.Equals(":=") || assign.IsCompoundAssignment()))
+                throw new SyntaxException(assign ?? lhs, "Assignment operator expected.");
+
+            var rhsIndex = tokens.Index;
+            var rhs = tokens.GetNext();
+            if (Token.IsTerminal(rhs))
+                throw new SyntaxException(assign, "rhs expression is missing.");
+            var rhsNext = tokens.PeekNext();
+            var rhsSubscript = -1;
+            var storageType = StorageType.Scalar;
+            DataType dataType;
+            Symbol rhsSym;
+            if (rhs.Name.Equals("["))
+            {
+                if (isIndexed)
+                    throw new SyntaxException(rhs, "Unexpected expression.");
+                if (Token.IsTerminal(rhsNext))
+                    throw new SyntaxException(rhs, "Array cannot be empty.");
+                rhsSym = new Symbol(tokens, _evaluator, isMutable);
+                expectedStorageType = sym?.StorageType ?? StorageType.Vector;
+                storageType = StorageType.Vector;
+                dataType = rhsSym.DataType;
+            }
+            else
+            {
+                rhsSym = SymbolExists(rhs.Name, true) ? GetSymbol(rhs, false) : null;
+                if (rhsNext?.Name.Equals("[") == true)
+                {
+                    if (rhsSym?.StorageType != StorageType.Vector)
+                        throw new SyntaxException(rhsNext, "Subscript operation invalid.");
+                    if (Token.IsTerminal(tokens.GetNext()))
+                        throw new SyntaxException(rhsNext, "Index expression expected for subscript.");
+                    rhsSubscript = (int)_evaluator.Evaluate(tokens, 0, rhsSym.Length);
+                    rhsNext = tokens.GetNext();
+                }
+                else if (rhsSym != null)
+                {
+                    if (Token.IsTerminal(tokens.GetNext()))
                     {
-                        if (tokens.PeekNext() == null || TokenType.End.HasFlag(tokens.PeekNext().Type))
-                        {
-                            DefineSymbol(lhs.Name, new Symbol(rhs.Name.TrimOnce('"'), isMutable), isGlobal, isWeak);
-                            return;
-                        }
-                        tokens.SetIndex(tokens.Index - 1);
+                        storageType = rhsSym.StorageType;
+                        if (sym == null)
+                            expectedStorageType = storageType;
                     }
-                    DefineSymbol(lhs.Name, new Symbol(_evaluator.Evaluate(tokens, false), isMutable), isGlobal, isWeak);
+                    else if (rhsSym.StorageType == StorageType.Vector) // ex: .let x = some_array + 2
+                    {
+                        throw new SyntaxException(rhsNext, "Unexpected expression.");
+                    }
+                }
+                if (rhsSym != null && Token.IsTerminal(rhsNext))
+                    dataType = rhsSym.DataType;
+                else
+                    dataType = !assign.IsCompoundAssignment() && rhs.IsDoubleQuote() && Token.IsTerminal(rhsNext) ? DataType.String : DataType.Numeric;
+            }
+            if (expectedStorageType != storageType || (sym != null && sym.DataType != dataType))
+                throw new SyntaxException(rhs, "Type mismatch.");
+
+            if (assign.IsCompoundAssignment() && (sym == null || !sym.IsMutable || expectedStorageType == StorageType.Vector))
+                throw new SyntaxException(assign, "Invalid use of compound assignment operator.");
+
+            if (expectedStorageType == StorageType.Vector)
+            {
+                if (sym != null)
+                    sym.SetVectorTo(rhsSym);
+                else
+                    DefineSymbol(lhs.Name, rhsSym, isGlobal, isWeak);
+            }
+            else
+            {
+                StringView stringValue = null;
+                var numericValue = double.NaN;
+                if (rhsSym?.DataType == DataType.String && Token.IsTerminal(rhsNext))
+                {
+                    stringValue = rhsSubscript > -1 ? rhsSym.StringVector[rhsSubscript] : rhsSym.StringValue;
+                }
+                else if (rhsSym?.DataType == DataType.Numeric && Token.IsTerminal(rhsNext))
+                {
+                    numericValue = rhsSubscript > -1 ? rhsSym.NumericVector[rhsSubscript] : rhsSym.NumericValue;
+                }
+                else if (dataType == DataType.String)
+                {
+                    stringValue = rhs.Name.TrimOnce('"');
+                }
+                else
+                {
+                    // reset the token iterator back to the beginning of the rhs expression
+                    tokens.SetIndex(rhsIndex);
+                    numericValue = _evaluator.Evaluate(tokens);
+                    if (assign.IsCompoundAssignment())
+                    {
+                        // break compound expression <sym> <op>= <rhs> into:
+                        //                           <sym_val> <op> <rhs>
+                        var compoundExpression = new List<Token>();
+                        if (isIndexed)
+                            compoundExpression.Add(new Token(sym.NumericVector[subscript].ToString(), TokenType.Operand));
+                        else
+                            compoundExpression.Add(new Token(sym.NumericValue.ToString(), TokenType.Operand));
+                        compoundExpression.Add(new Token(assign.Name[0..^2], TokenType.Binary));
+                        compoundExpression.Add(new Token(numericValue.ToString(), TokenType.Operand));
+                        numericValue = _evaluator.Evaluate(compoundExpression.GetIterator());
+                    }
+                }
+                if (sym != null)
+                {
+                    if (isIndexed)
+                    {
+                        if (dataType == DataType.String)
+                            sym.StringVector[subscript] = stringValue;
+                        else
+                            sym.NumericVector[subscript] = numericValue;
+                    }
+                    else if (dataType == DataType.String)
+                        sym.StringValue = stringValue;
+                    else
+                        sym.NumericValue = numericValue;
+                }
+                else
+                {
+                    if (dataType == DataType.String)
+                        DefineSymbol(lhs.Name, new Symbol(stringValue, isMutable), isGlobal, isWeak);
+                    else
+                        DefineSymbol(lhs.Name, new Symbol(numericValue, isMutable), isGlobal, isWeak);
                 }
             }
         }
@@ -431,7 +564,10 @@ namespace Core6502DotNet
         /// <summary>
         /// Define a scoped symbol.
         /// </summary>
-        /// <param name="tokens">The tokenized symbol assignment expression (lhs and rhs).</param>
+        /// <param name="tokens">The tokenized symbol assignment expression (lhs and rhs). This operation 
+        /// will advance the token iteration through to a terminating token.</param>
+        /// <exception cref="SymbolException"></exception>
+        /// <exception cref="SyntaxException"></exception>
         public void DefineSymbol(RandomAccessIterator<Token> tokens)
             => DefineFromExpression(tokens, false, true);
 
@@ -440,6 +576,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="name">The symbol name.</param>
         /// <param name="value">The symbol's value.</param>
+        /// <exception cref="SymbolException"></exception>
         public void DefineSymbol(StringView name, double value)
             => DefineSymbol(name, new Symbol(value), false);
 
@@ -449,6 +586,7 @@ namespace Core6502DotNet
         /// <param name="name">The symbol name.</param>
         /// <param name="value">The symbol's value.</param>
         /// <param name="isMutable">Whether the symbol is mutable.</param>
+        /// <exception cref="SymbolException"></exception>
         public void DefineSymbol(StringView name, double value, bool isMutable)
             => DefineSymbol(name, new Symbol(value, isMutable), false);
 
@@ -457,6 +595,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="name">The symbol name.</param>
         /// <param name="value">The symbol's value.</param>
+        /// <exception cref="SymbolException"></exception>
         public void DefineSymbol(StringView name, StringView value)
             => DefineSymbol(name, new Symbol(value), false);
 
@@ -466,25 +605,83 @@ namespace Core6502DotNet
         /// <param name="name">The symbol name.</param>
         /// <param name="value">The symbol's value.</param>
         /// <param name="isMutable">Whether the symbol is mutable.</param>
+        /// <exception cref="SymbolException"></exception>
         public void DefineSymbol(StringView name, StringView value, bool isMutable)
             => DefineSymbol(name, new Symbol(value, isMutable), false);
 
-        /// <summary>
-        /// Define a scoped symbol.
-        /// </summary>
-        /// <param name="name">The symbol name.</param>
-        /// <param name="tokens">The tokenized symbol assignment expression (rhs).</param>
-        public void DefineSymbol(StringView name, RandomAccessIterator<Token> tokens)
-            => DefineSymbol(name, new Symbol(tokens, _evaluator, false), false);
 
         /// <summary>
-        /// Define a scoped symbol.
+        /// Define a symbol.
+        /// </summary>
+        /// <param name="token">The token comprising the symbol name.</param>
+        /// <param name="value">The symbol's value.</param>
+        /// <param name="isMutable">Whether the symbol is mutable.</param>
+        /// <param name="isGlobal">The symbol is globally scoped.</param>
+        /// <param name="isWeak">The symbol's scope is weak.</param>
+        /// <exception cref="SymbolException"></exception>
+        public void DefineSymbol(Token token, StringView value, bool isGlobal, bool isMutable, bool isWeak = false)
+        {
+            var sym = SymbolExists(token.Name, isWeak) ? GetSymbol(token, false) : null;
+            if (sym == null)
+                DefineSymbol(token.Name, new Symbol(value, isMutable), isGlobal, isWeak);
+            else if (sym.DataType == DataType.String && sym.StorageType == StorageType.Scalar && sym.IsMutable == isMutable)
+                sym.StringValue = value;
+            else
+                throw new SymbolException(token, SymbolException.ExceptionReason.Redefined);
+        }
+
+        /// <summary>
+        /// Define a symbol.
+        /// </summary>
+        /// <param name="token">The token comprising the symbol name.</param>
+        /// <param name="value">The symbol's value.</param>
+        /// <param name="isMutable">Whether the symbol is mutable.</param>
+        /// <param name="isGlobal">The symbol is globally scoped.</param>
+        /// <param name="isWeak">The symbol's scope is weak.</param>
+        /// <exception cref="SymbolException"></exception>
+        public void DefineSymbol(Token token, double value, int bank, bool isGlobal, bool isMutable, bool isWeak = false)
+        {
+            var sym = SymbolExists(token.Name, isWeak) ? GetSymbol(token, false) : null;
+            if (sym == null)
+            {
+                if (isMutable)
+                    DefineSymbol(token.Name, new Symbol(value, true), isGlobal, isWeak);
+                else
+                    DefineSymbol(token.Name, new Symbol(value, bank), isGlobal, isWeak);
+                
+            }
+            else if (sym.IsNumeric && sym.StorageType == StorageType.Scalar && sym.IsMutable == isMutable)
+                sym.NumericValue = value;
+            else
+                throw new SymbolException(token, SymbolException.ExceptionReason.Redefined);
+        }
+
+        /// <summary>
+        /// Define a symbol.
         /// </summary>
         /// <param name="name">The symbol name.</param>
         /// <param name="tokens">The tokenized symbol assignment expression (rhs).</param>
         /// <param name="isMutable">Whether the symbol is mutable.</param>
-        public void DefineSymbol(StringView name, RandomAccessIterator<Token> tokens, bool isMutable)
-            => DefineSymbol(name, new Symbol(tokens, _evaluator, false), isMutable);
+        /// <param name="isGlobal">The symbol is globally scoped.</param>
+        /// <param name="isWeak">The symbol's scope is weak.</param>
+        /// <exception cref="SyntaxException"></exception>
+        public void DefineSymbol(StringView name, RandomAccessIterator<Token> tokens, bool isMutable, bool isGlobal, bool isWeak = false)
+        {
+            if (Token.IsTerminal(tokens.PeekNext()))
+                throw new SyntaxException(tokens.Current, "Array cannot be empty.");
+            var arraySym = new Symbol(tokens, _evaluator, isMutable);
+            if (!Token.IsTerminal(tokens.Current))
+                throw new SyntaxException(tokens.Current, "Unexpected expression.");
+            DefineSymbol(name, arraySym, isGlobal, isWeak);
+        }
+
+        /// <summary>
+        /// Reserve a valueless symbol in the symbol table to prevent other symbol definitions of the same name.
+        /// </summary>
+        /// <param name="name">The symbol name.</param>
+        /// <exception cref="SymbolException"></exception>
+        public void DefineVoidSymbol(StringView name)
+            => DefineSymbol(name, null, false, false);
 
         /// <summary>
         /// Gets the reference symbol specified.
@@ -559,7 +756,7 @@ namespace Core6502DotNet
         /// </summary>
         public void Reset()
         {
-            foreach (var symbol in _symbolTable.Where(s => s.Value.IsMutable))
+            foreach (var symbol in _symbolTable.Where(s => s.Value?.IsMutable == true))
                 _symbolTable.Remove(symbol.Key);
 
             _localScopes.Clear();
@@ -574,38 +771,48 @@ namespace Core6502DotNet
         /// <param name="listAll">List all labels, including non-addresses.</param>
         /// <returns>The string listing.</returns>
         public string ListLabels(bool listAll)
-        {
-            var listBuilder = new StringBuilder();
-            var labels = _symbolTable.Where(s => !s.Key.Equals("CURRENT_PASS") && 
-                                                 s.Value.StorageType == StorageType.Scalar &&
-                                                 (listAll || s.Value.DataType == DataType.Address))
+        {       //ADD2PLYSTAT                       = 4783         // $12af
+            var listBuilder = new StringBuilder(
+                "/*************************************************************/\n" +
+                "/* Symbol                            Value                   */\n"+
+                "/*************************************************************/\n");
+            var labels = _symbolTable.Where(s => !s.Key.Equals("CURRENT_PASS") &&
+                                                 (char.IsLetter(s.Key[0]) || s.Key[0] == '_') &&
+                                                 (s.Value == null || 
+                                                 (s.Value.StorageType == StorageType.Scalar &&
+                                                 (listAll || s.Value.DataType == DataType.Address))))
                                      .OrderBy(s => s.Key);
             foreach (var label in labels)
             {
                 var name = label.Key;
-                if (!char.IsLetter(name[0]) && name[0] != '_')
+                var paths = name.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var nonAnons = new List<string>();
+                foreach(var path in paths)
                 {
-                    var paths = name.Split('.', StringSplitOptions.RemoveEmptyEntries);
-                    var namesNoAnons = new List<string>();
-                    foreach (var path in paths)
+                    if (char.IsLetter(path[0]) || path[0] == '_')
+                        nonAnons.Add(path);
+                    else
+                        nonAnons.Add(".");
+                }
+                name = string.Join('.', nonAnons);
+                if (label.Value != null)
+                {
+                    listBuilder.Append(name.Elliptical(33).PadRight(33)).Append(" = ");
+                    switch (label.Value.DataType)
                     {
-                        if (char.IsLetter(path[0]) || path[0] == '_')
-                            namesNoAnons.Add(path);
-                        else
-                            namesNoAnons.Add("::");
+                        case DataType.String:
+                            listBuilder.Append($"\"{label.Value.StringValue}\"");
+                            break;
+                        default:
+                            listBuilder.Append($"{label.Value.NumericValue,-12} // ${(int)label.Value.NumericValue + (label.Value.Bank * 0x10000):x}");
+                            break;
                     }
-                    name = string.Join('.', namesNoAnons);
                 }
-                listBuilder.Append($"{name}".Elliptical(33).PadRight(33)).Append(" = ");
-                switch (label.Value.DataType)
+                else
                 {
-                    case DataType.String:
-                        listBuilder.Append($"\"{label.Value.StringValue}\"");
-                        break;
-                    default:
-                        listBuilder.Append($"{label.Value.NumericValue} (${(int)label.Value.NumericValue + (label.Value.Bank * 0x10000):x})");
-                        break;
+                    listBuilder.Append(name.Elliptical(33));
                 }
+                
                 listBuilder.AppendLine();
             }
             return listBuilder.ToString();

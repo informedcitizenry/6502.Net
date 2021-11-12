@@ -8,13 +8,13 @@
 using CommandLine;
 using CommandLine.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Schema;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Core6502DotNet
 {
@@ -22,7 +22,8 @@ namespace Core6502DotNet
     /// A helper class to parse and present strongly-typed options from the 
     /// command-line.
     /// </summary>
-    public sealed class Options
+    [JsonObject(MemberSerialization.OptIn)]
+    public sealed class Options : Json.JsonSerializable
     {
         #region Subclasses
 
@@ -43,6 +44,7 @@ namespace Core6502DotNet
             /// <param name="truncateAssembly">Truncate assembled bytes in listing flag.</param>
             /// <param name="verbose">The verbose listing flag.</param>
             /// <param name="labelsAddressesOnly">The labels addresses only flag.</param>
+            [JsonConstructor]
             public Listing(string labelPath,
                            string listPath,
                            bool noAssembly,
@@ -52,8 +54,8 @@ namespace Core6502DotNet
                            bool verbose,
                            bool labelsAddressesOnly)
             {
-                LabelFile = labelPath ?? string.Empty;
-                ListingFile = listPath ?? string.Empty;
+                LabelPath = labelPath;
+                ListPath = listPath;
                 NoAssembly = noAssembly;
                 NoDisassembly = noDisassembly;
                 NoSource = noSource;
@@ -63,19 +65,52 @@ namespace Core6502DotNet
             }
             #endregion
 
+            #region Methods
+
+            public static Listing Factory(string labelPath,
+                           string listPath,
+                           bool noAssembly,
+                           bool noDisassembly,
+                           bool noSource,
+                           bool truncateAssembly,
+                           bool verbose,
+                           bool labelsAddressesOnly)
+            {
+                if (!string.IsNullOrEmpty(labelPath) || 
+                    !string.IsNullOrEmpty(listPath) ||
+                    noAssembly || 
+                    noDisassembly || 
+                    noSource ||
+                    truncateAssembly || 
+                    verbose || 
+                    labelsAddressesOnly)
+                    return new Listing(labelPath, 
+                                       listPath, 
+                                       noAssembly, 
+                                       noDisassembly, 
+                                       noSource, 
+                                       truncateAssembly, 
+                                       verbose, 
+                                       labelsAddressesOnly);
+
+                return null;
+            }
+
+            #endregion
+
             #region Properties
 
             /// <summary>
             /// Gets the label filename.
             /// </summary>
-            public string LabelFile { get; }
+            public string LabelPath { get; }
 
             public bool LabelsAddressesOnly { get; }
 
             /// <summary>
             /// Gets the list filename.
             /// </summary>
-            public string ListingFile { get; }
+            public string ListPath { get; }
 
             /// <summary>
             /// Gets the no-assembly flag.
@@ -116,6 +151,7 @@ namespace Core6502DotNet
             /// Constructs a new instance of a logging options element.
             /// </summary>
             /// <param name="errorPath">The error filename.</param>
+            /// <param name="echoEachPass">The echo each pass flag.</param>
             /// <param name="checksum">The checksum flag.</param>
             /// <param name="noStats">The no-stats flag.</param>
             /// <param name="noWarnings">The no-warnings flag.</param>
@@ -124,7 +160,9 @@ namespace Core6502DotNet
             /// <param name="warnLeft">The warn left flag.</param>
             /// <param name="suppressUnusedSectionWarning">The suppress warning about unused section flag.</param>
             /// <param name="warnCaseMismatch">The warn on case mismatch flag.</param>
+            [JsonConstructor]
             public Logging(string errorPath,
+                           bool echoEachPass,
                            bool checksum,
                            bool noStats,
                            bool noWarnings,
@@ -134,16 +172,56 @@ namespace Core6502DotNet
                            bool suppressUnusedSectionWarning,
                            bool warnCaseMismatch)
             {
-                ErrorFile = errorPath ?? string.Empty;
+                EchoEachPass = echoEachPass;
+                ErrorPath = errorPath;
                 Checksum = checksum;
                 NoStats = noStats;
                 NoWarnings = noWarnings;
                 Quiet = quietMode;
-                WarningsAsErrors = warningsAsErrors;
+                WarningsAsErrors = !noWarnings && warningsAsErrors;
                 WarnLeft = warnLeft;
                 SuppressUnusedSectionWarning = suppressUnusedSectionWarning;
                 WarnCaseMismatch = warnCaseMismatch;
             }
+
+            #endregion
+
+            #region Methods
+
+            public static Logging Factory(string errorPath,
+                           bool echoEachPass,
+                           bool checksum,
+                           bool noStats,
+                           bool noWarnings,
+                           bool quietMode,
+                           bool warningsAsErrors,
+                           bool warnLeft,
+                           bool suppressUnusedSectionWarning,
+                           bool warnCaseMismatch)
+            {
+                if (!string.IsNullOrEmpty(errorPath) || 
+                    echoEachPass ||
+                    checksum ||
+                    noStats || 
+                    noWarnings || 
+                    quietMode ||
+                    warningsAsErrors || 
+                    warnLeft ||
+                    suppressUnusedSectionWarning || 
+                    warnCaseMismatch)
+                    return new Logging(errorPath,
+                                        echoEachPass,
+                                        checksum,
+                                        noStats,
+                                        noWarnings,
+                                        quietMode,
+                                        warningsAsErrors,
+                                        warnLeft,
+                                        suppressUnusedSectionWarning,
+                                        warnCaseMismatch);
+                return null;
+            }
+
             #endregion
 
             #region Properties
@@ -154,9 +232,14 @@ namespace Core6502DotNet
             public bool Checksum { get; }
 
             /// <summary>
+            /// Gets the echo each pass flag.
+            /// </summary>
+            public bool EchoEachPass { get; }
+
+            /// <summary>
             /// Gets the error filename.
             /// </summary>
-            public string ErrorFile { get; }
+            public string ErrorPath { get; }
 
             /// <summary>
             /// Gets the no-warnings flag.
@@ -206,39 +289,55 @@ namespace Core6502DotNet
             /// <summary>
             /// Constructs a new instance of a section element.
             /// </summary>
-            /// <param name="name">The section name.</param>
-            /// <param name="starts">The section starting address, as a string.</param>
-            /// <param name="ends">The section ending address, as a string.</param>
+            /// <param name="starts">The section starting address.</param>
+            /// <param name="ends">The section ending address.</param>
             [JsonConstructor]
-            public Section(string name, string starts, string ends = "")
-            {
-                Name = name;
-                Starts = starts;
-                Ends = ends;
-            }
+            public Section(object starts, object ends = null) =>
+                (Starts, Ends) = (starts, ends);
 
             #endregion
 
             #region Methods
 
-            public override string ToString()
+            public static IDictionary<string, Section> FromList(IList<string> sections)
             {
-                var asString = new List<string>();
-                if (!string.IsNullOrEmpty(Name))
+                if (sections == null)
+                    return null; 
+                var sectionDicts = new Dictionary<string, Section>();
+                foreach (var section in sections)
                 {
-                    if (Name.EnclosedInDoubleQuotes())
-                        asString.Add(Name);
+                    var parsed = Regex.Match(section,
+                        @"^((""[^""]+"")|([a-zA-Z]\w*))(,((""[^""]+"")|('[^']+')|([^,]+)))(,((""[^""]+"")|('[^']+')|([^,]+)))?$");
+                    if (!parsed.Success)
+                    {
+                        sectionDicts.Add(section, null);
+                        continue;
+                    }
+                    var key = parsed.Groups[1].Value.TrimOnce('"');
+                    var starts = parsed.Groups[5].Value;
+                    object startValue;
+                    if (int.TryParse(starts, out int startsNum))
+                        startValue = startsNum;
                     else
-                        asString.Add($"\"{Name}\"");
+                        startValue = starts;
+                    if (parsed.Groups.Count >= 10)
+                    {
+                        var ends = parsed.Groups[10].Value;
+                        object endValue;
+                        if (int.TryParse(ends, out int endsNum))
+                            endValue = endsNum;
+                        else
+                            endValue = string.IsNullOrEmpty(ends) ? null : ends;
+                        sectionDicts.Add(key, new Section(startValue, endValue));
+                    }
+                    else
+                    {
+                        sectionDicts.Add(key, new Section(startValue));
+                    }
                 }
-                if (!string.IsNullOrEmpty(Starts))
-                {
-                    asString.Add(Starts);
-                    if (!string.IsNullOrEmpty(Ends))
-                        asString.Add(Ends);
-                }
-                return string.Join(',', asString);
+                return sectionDicts;
             }
+
             #endregion
 
             #region Properties
@@ -246,17 +345,12 @@ namespace Core6502DotNet
             /// <summary>
             /// Gets the section starting address.
             /// </summary>
-            public string Starts { get; }
+            public object Starts { get; }
 
             /// <summary>
             /// Gets the section ending address.
             /// </summary>
-            public string Ends { get; }
-
-            /// <summary>
-            /// Gets the section name.
-            /// </summary>
-            public string Name { get; }
+            public object Ends { get; }
 
             #endregion
         }
@@ -274,23 +368,39 @@ namespace Core6502DotNet
             /// <param name="autoSizeRegisters">Autosize registers for 65816 mode.</param>
             /// <param name="longAddressing">Long addressing supported.</param>
             /// <param name="branchAlways">Enable branch-always pseudo-mnemonic for 6502.</param>
+            [JsonConstructor]
             public Target(string binaryFormat, 
                           string cpu, 
                           bool autoSizeRegisters, 
                           bool longAddressing,
                           bool branchAlways)
             {
-                Format = binaryFormat ?? string.Empty;
-                Cpu = cpu ?? string.Empty;
+                BinaryFormat = binaryFormat;
+                Cpu = cpu;
                 Autosize = autoSizeRegisters;
                 LongAddressing = longAddressing;
                 BranchAlways = branchAlways;
             }
 
+            public static Target Factory(string binaryFormat,
+                                         string cpu,
+                                         bool autoSizeRegisters,
+                                         bool longAddressing,
+                                         bool branchAlways)
+            {
+                if (!string.IsNullOrEmpty(binaryFormat) || 
+                    !string.IsNullOrEmpty(cpu) ||
+                    autoSizeRegisters || 
+                    longAddressing || 
+                    branchAlways)
+                    return new Target(binaryFormat, cpu, autoSizeRegisters, longAddressing, branchAlways);
+                return null;
+            }
+
             /// <summary>
             /// Gets the format.
             /// </summary>
-            public string Format { get; }
+            public string BinaryFormat { get; }
 
             /// <summary>
             /// Gets the CPU.
@@ -317,8 +427,19 @@ namespace Core6502DotNet
 
         #region Members
 
-        readonly bool _werror;
         IEnumerable<string> _passedArgs;
+
+        [JsonProperty(PropertyName = "listingOptions")]
+        readonly Listing _listing;
+
+        [JsonProperty(PropertyName = "loggingOptions")]
+        readonly Logging _logging;
+
+        [JsonProperty(PropertyName = "sections")]
+        readonly IDictionary<string, Section> _sections;
+
+        [JsonProperty(PropertyName = "target")]
+        readonly Target _target;
 
         #endregion
 
@@ -399,7 +520,7 @@ namespace Core6502DotNet
                        bool warnLeft,
                        bool warnNotUnusedSections,
                        bool warnCaseMismatch) : this(inputFiles,
-                                             new Listing(labelFile,
+                                             Listing.Factory(labelFile,
                                                          listingFile,
                                                          noAssembly,
                                                          noDisassembly,
@@ -407,7 +528,8 @@ namespace Core6502DotNet
                                                          truncateAssembly,
                                                          verboseList,
                                                          labelsAddressesOnly),
-                                             new Logging(errorFile,
+                                             Logging.Factory(errorFile,
+                                                         echoEachPass,
                                                          showChecksums,
                                                          noStats,
                                                          noWarnings,
@@ -416,14 +538,13 @@ namespace Core6502DotNet
                                                          warnLeft,
                                                          warnNotUnusedSections,
                                                          warnCaseMismatch),
-                                             null,
-                                             new Target(format, 
-                                                        cpu, 
-                                                        autoSize, 
-                                                        longAddressing,
-                                                        branchAlways),
+                                             Section.FromList(sections),
+                                             Target.Factory(format, 
+                                                         cpu, 
+                                                         autoSize, 
+                                                         longAddressing,
+                                                         branchAlways),
                                              labelDefines,
-                                             echoEachPass,
                                              caseSensitive,
                                              outputFile,
                                              outputSection,
@@ -444,16 +565,6 @@ namespace Core6502DotNet
             }
             if (createConfig != null)
                 CreateConfig = createConfig;
-            if (sections != null)
-                Sections = new ReadOnlyCollection<string>(sections.Select(s =>
-                {
-                    var parms = s.Split(',');
-                    if (parms.Length < 2 || parms.Length > 3)
-                        throw new Exception($"Invalid argument \"{s}\" for option '--dsection'.") ;
-                    if (parms.Length == 2)
-                        return new Section(parms[0], parms[1]).ToString();
-                    return new Section(parms[0], parms[1], parms[2]).ToString();
-                }).ToList());
         }
 
         /// <summary>
@@ -464,7 +575,6 @@ namespace Core6502DotNet
         /// <param name="sections">The sections.</param>
         /// <param name="target">The target options.</param>
         /// <param name="defines">The defines.</param>
-        /// <param name="echoEachPass">The echo-each-pass flag.</param>
         /// <param name="sources">The input files.</param>
         /// <param name="caseSensitive">The case-sensitive flag.</param>
         /// <param name="outputFile">The output filename.</param>
@@ -478,10 +588,9 @@ namespace Core6502DotNet
         public Options(IList<string> sources,
                        Listing listingOptions,
                        Logging loggingOptions,
-                       IList<Section> sections,
+                       IDictionary<string, Section> sections,
                        Target target,
                        IList<string> defines,
-                       bool echoEachPass,
                        bool caseSensitive,
                        string outputFile,
                        string outputSection,
@@ -491,197 +600,38 @@ namespace Core6502DotNet
                        bool resetPcOnBank,
                        bool allowOverflow)
         {
-            if (listingOptions != null)
-            {
-                ListingFile = listingOptions.ListingFile;
-                LabelFile = listingOptions.LabelFile;
-                NoAssembly = listingOptions.NoAssembly;
-                NoDisassembly = listingOptions.NoDisassembly;
-                NoSource = listingOptions.NoSource;
-                TruncateAssembly = listingOptions.TruncateAssembly;
-                VerboseList = listingOptions.VerboseList;
-                LabelsAddressesOnly = listingOptions.LabelsAddressesOnly;
-            }
-            else
-            {
-                ListingFile = string.Empty;
-                LabelFile = string.Empty;
-            }
-            if (loggingOptions != null)
-            {
-                NoStats = loggingOptions.NoStats;
-                ErrorFile = loggingOptions.ErrorFile;
-                NoWarnings = loggingOptions.NoWarnings;
-                WarnLeft = loggingOptions.WarnLeft;
-                WarnNotUnusedSections = loggingOptions.SuppressUnusedSectionWarning;
-                _werror = loggingOptions.WarningsAsErrors;
-                Quiet = loggingOptions.Quiet;
-                ShowChecksums = loggingOptions.Checksum;
-                WarnCaseMismatch = loggingOptions.WarnCaseMismatch;
-            }
-            else
-            {
-                ErrorFile = string.Empty;
-            }
-            if (target != null)
-            {
-                Format = target.Format;
-                CPU = target.Cpu;
-                Autosize = target.Autosize;
-                LongAddressing = target.LongAddressing;
-                BranchAlways = target.BranchAlways;
-            }
-            else
-            {
-                Format = CPU = string.Empty;
-                Autosize = LongAddressing = BranchAlways = false;
-            }
-            EchoEachPass = echoEachPass;
+            _listing = listingOptions;
+            _logging = loggingOptions;
+            _target = target;
             CaseSensitive = caseSensitive;
 
             OutputFile = outputFile ?? "a.out";
-            ConfigFile = string.Empty;
-            IncludePath = includePath ?? string.Empty;
+            ConfigFile = null;
+            IncludePath = includePath;
             IgnoreColons = ignoreColons;
             ResetPCOnBank = resetPcOnBank;
-            OutputSection = outputSection == null ?  string.Empty : $"\"{outputSection}\"";
-            Patch = patchOffset ?? string.Empty;
+            OutputSection = outputSection == null ? null : $"\"{outputSection}\"";
+            Patch = patchOffset;
             LabelDefines = GetReadOnlyList(defines);
             InputFiles = GetReadOnlyList(sources);
-            if (sections != null)
-                Sections = GetReadOnlyList(sections.Select(s => s.ToString()).ToList());
-            else
-                Sections = new List<string>().AsReadOnly();
+            _sections = sections;
             CreateConfig = null;
             AllowOverflow = allowOverflow;
+            Sections = _sections?.Where(kvp => kvp.Value != null).Select(kvp =>
+            {
+                if (kvp.Value.Ends != null)
+                    return $"\"{kvp.Key}\",{kvp.Value.Starts},{kvp.Value.Ends}";
+                return $"\"{kvp.Key}\",{kvp.Value.Starts}";
+            }).ToList().AsReadOnly();
         }
 
         #endregion
 
         #region Methods
 
-        static ReadOnlyCollection<T> GetReadOnlyList<T>(IList<T> list) 
-            => list == null ? new List<T>().AsReadOnly() : new ReadOnlyCollection<T>(list);
+        static ReadOnlyCollection<T> GetReadOnlyList<T>(IList<T> set)
+            => set == null ? null : new ReadOnlyCollection<T>(set);
 
-        string JsonSerialize()
-        {
-            var root = new JObject();
-            var logging = new JObject();
-            var listing = new JObject();
-            var target = new JObject();
-            var defines = new JArray();
-            var inputfiles = new JArray();
-            var sections = new JArray();
-
-
-            if (CaseSensitive)
-                root.Add("caseSensitive", true);
-            if (LabelDefines.Count > 0)
-            {
-                foreach (var d in LabelDefines)
-                    defines.Add(d);
-                root.Add("defines", defines);
-            }
-            if (IgnoreColons)
-                root.Add("ignoreColons", true);
-            if (!string.IsNullOrEmpty(IncludePath))
-                root.Add("includePath", IncludePath);
-
-            if (ResetPCOnBank)
-                root.Add("resetPCOnBank", true);
-
-            if (AllowOverflow)
-                root.Add("allowOverflow", true);
-
-            if (!string.IsNullOrEmpty(LabelFile))
-                listing.Add("labelPath", LabelFile);
-            if (!string.IsNullOrEmpty(ListingFile))
-                listing.Add("listPath", ListingFile);
-            if (NoAssembly)
-                listing.Add("noAssembly", true);
-            if (NoDisassembly)
-                listing.Add("noDisassembly", true);
-            if (NoSource)
-                listing.Add("noSource", true);
-            if (TruncateAssembly)
-                listing.Add("truncateAssembly", true);
-            if (VerboseList)
-                listing.Add("verbose", true);
-            if (LabelsAddressesOnly)
-                listing.Add("labelsAddressesOnly", true);
-
-            if (listing.Count > 0)
-                root.Add("listingOptions", listing);
-
-            if (ShowChecksums)
-                logging.Add("checksum", true);
-            if (NoStats)
-                logging.Add("noStats", true);
-            if (EchoEachPass)
-                logging.Add("echoEachPass", true);
-            if (!string.IsNullOrEmpty(ErrorFile))
-                logging.Add("errorPath", ErrorFile);
-            if (NoWarnings)
-                logging.Add("noWarnings", true);
-            if (WarnNotUnusedSections)
-                logging.Add("suppressUnusedSectionWarning", true);
-            if (_werror)
-                logging.Add("warningsAsErrors", true);
-            if (WarnLeft)
-                logging.Add("warnLeft", true);
-            if (WarnCaseMismatch)
-                logging.Add("warnCaseMismatch", true);
-
-            if (logging.Count > 0)
-                root.Add("loggingOptions", logging);
-
-            if (!string.IsNullOrEmpty(OutputFile) && !OutputFile.Equals("a.out"))
-                root.Add("outputFile", OutputFile);
-            if (!string.IsNullOrEmpty(OutputSection))
-                root.Add("outputSection", OutputSection);
-            if (!string.IsNullOrEmpty(Patch))
-                root.Add("patchOffset", Patch);
-            if (InputFiles.Count > 0)
-            {
-                foreach (var i in InputFiles)
-                    inputfiles.Add(i);
-                root.Add("sources", inputfiles);
-            }
-            if (Sections.Count > 0)
-            {
-                foreach (var s in Sections)
-                {
-                    var sParms = s.Split(',');
-                    if (sParms.Length >= 2 && sParms.Length < 4)
-                    {
-                        var section = new JObject
-                        {
-                            { "name",   sParms[0].TrimOnce('"') },
-                            { "starts", sParms[1] }
-                        };
-                        if (sParms.Length == 3)
-                            section.Add("ends", sParms[2]);
-                        sections.Add(section);
-                    }
-                    else
-                    {
-                        throw new Exception($"Invalid argument \"{s}\" for option '--dsection'.");
-                    }
-                }
-                if (sections.Count > 0)
-                    root.Add("sections", sections);
-            }
-            if (!string.IsNullOrEmpty(CPU) || !string.IsNullOrEmpty(Format) || Autosize)
-            {
-                target.Add("binaryFormat", string.IsNullOrEmpty(Format) ? "cbm" : Format);
-                target.Add("cpu", string.IsNullOrEmpty(CPU) ? "6502" : CPU);
-                target.Add("autoSizeRegisters", Autosize);
-                target.Add("longAddressing", LongAddressing);
-                target.Add("branchAlways", BranchAlways);
-                root.Add("target", target);
-            }
-            return root.ToString();
-        }
 
         static void CreateConfigFile(Options o)
         {
@@ -703,29 +653,20 @@ namespace Core6502DotNet
                     break;
                 case "s":
                 case "schema":
-                    json = ConfigConstants.CONFIG_SCHEMA;
+                    json = ConfigConstants.CONFIG_SCHEMA_202012;
                     typeName = "-schema";
                     break;
                 case "a":
                 case "args":
-                    jsonFormatted = o.JsonSerialize();
+                    jsonFormatted = o.ToJson();
                     break;
                 default:
-                    throw new Exception($"Invalid argument for option --createconfig: {config}.");
+                    throw new ArgumentException($"Invalid argument for option --createconfig: {config}.");
             }
             if (string.IsNullOrEmpty(jsonFormatted))
-            {
-                using (var stringReader = new StringReader(json))
-                using (var stringWriter = new StringWriter())
-                {
-                    var jsonReader = new JsonTextReader(stringReader);
-                    var jsonWriter = new JsonTextWriter(stringWriter) { Formatting = Formatting.Indented };
-                    jsonWriter.WriteToken(jsonReader);
-                    jsonFormatted = stringWriter.ToString();
-                }
-            }
+                jsonFormatted = ToFormattedJson(json);
             File.WriteAllText($"config{typeName}.json", jsonFormatted);
-            throw new Exception($"Config file \"config{typeName}.json\" created."); 
+            throw new ArgumentException($"Config file \"config{typeName}.json\" created."); 
         }
 
         static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
@@ -750,7 +691,7 @@ namespace Core6502DotNet
             }
             var heading = $"{Assembler.AssemblerNameSimple}\n{Assembler.AssemblerVersion}";
             if (isVersion)
-                throw new Exception(heading);
+                throw new ArgumentException(heading);
             if (isHelp)
             {
                 var helpText = HelpText.AutoBuild(result, h =>
@@ -774,14 +715,14 @@ namespace Core6502DotNet
                                             .Replace("ERROR(S):\r\n  Option '?' is unknown.", string.Empty)
                                             .Replace("\r\n\r\nUSAGE", "USAGE")
                                             .Replace("\n\nUSAGE", "USAGE");
-                throw new Exception(ht);
+                throw new ArgumentException(ht);
             }
             Console.WriteLine("Option error(s):");
             var consoleColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
             errors.ForEach(err => Console.Error.WriteLine($"  {err}"));
             Console.ForegroundColor = consoleColor;
-            throw new Exception("Try '--help' for usage.");
+            throw new ArgumentException("Try '--help' for usage.");
         }
 
         /// <summary>
@@ -807,30 +748,26 @@ namespace Core6502DotNet
                     if (string.IsNullOrEmpty(o.ConfigFile))
                     {
                         options = o;
+                        if (options._sections?.Any(kvp => kvp.Value == null) == true)
+                        {
+                            Console.WriteLine("Option '--dsection' has one more invalid parameters:");
+                            foreach(var section in options._sections)
+                            {
+                                if (section.Value == null)
+                                    Console.WriteLine(section.Key);
+                            }
+                            throw new ArgumentException("Unable to process options.");
+                        }
                     }
                     else
                     {
-                        var parseErrs = new HashSet<string>();
-
                         var confIx = args.ToList().FindIndex(s => s.StartsWith("--config", StringComparison.Ordinal));
                         if (confIx != 0 && confIx != args.ToList().FindLastIndex(s => s.StartsWith('-')))
                             Console.WriteLine("Option --config ignores all other options.");
-
-                        var configJson = File.ReadAllText(o.ConfigFile);
-                        var reader = new JsonTextReader(new StringReader(configJson));
-
-#pragma warning disable CS0618 // Type or member is obsolete
-                        var validatingReader = new JsonValidatingReader(reader)
-                        {
-                            Schema = JsonSchema.Parse(ConfigConstants.CONFIG_SCHEMA)
-                        };
-#pragma warning restore CS0618 // Type or member is obsolete
-                        validatingReader.ValidationEventHandler += (obj, a) => parseErrs.Add(a.Message);
-
-                        var serializer = new JsonSerializer();
-                        options = serializer.Deserialize<Options>(validatingReader);
-                        if (parseErrs.Count > 0)
-                            throw new Exception($"One or more errors in config file:\n{string.Join(Environment.NewLine, parseErrs)}");
+                        var validator = new Json.JsonValidator(ConfigConstants.CONFIG_SCHEMA_202012);
+                        options = validator.ValidateAndDeserialize<Options>(o.ConfigFile, out var errors);
+                        if (errors.Any())
+                            throw new ArgumentException($"One or more errors in config file:\n{string.Join(Environment.NewLine, errors)}");
                     }
                 })
                 .WithNotParsed(errs => DisplayHelp(result, errs));
@@ -842,16 +779,18 @@ namespace Core6502DotNet
             catch (Exception ex)
             {
                 if (ex is JsonException)
-                    throw new Exception($"Error parsing config file: {ex.Message}");
-                throw new Exception(ex.Message);
+                    throw new JsonException($"Error parsing config file: {ex.Message}");
+                throw;
             }
         }
+
+        public override string ToString() => Parser.Default.FormatCommandLine(this);
 
         /// <summary>
         /// Gets the original arguments passed to the <see cref="Options"/> object.
         /// </summary>
         /// <returns>The passed command line arguments as a collection of <see cref="string"/> objects.</returns>
-        public IEnumerable<string> GetPassedArgs() => _passedArgs;
+        public ReadOnlyCollection<string> GetPassedArgs() => _passedArgs?.ToList().AsReadOnly();
 
         #endregion
 
@@ -860,6 +799,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the read-only list of input filenames.
         /// </summary>
+        [JsonProperty(PropertyName = "sources")]
         [Value(0, Required = false, HelpText = "The source file(s) to assemble.", MetaName = "<inputs>.")]
         public ReadOnlyCollection<string> InputFiles { get; }
 
@@ -867,11 +807,12 @@ namespace Core6502DotNet
         /// Gets a flag indicating if assembly listing should suppress assembly bytes.
         /// </summary>
         [Option('a', "no-assembly", Required = false, HelpText = "Suppress assembled bytes from listing.")]
-        public bool NoAssembly { get; }
+        public bool NoAssembly => _listing?.NoAssembly == true;
 
         /// <summary>
         /// Gets a flag indicating all pseudo-ops that output values (<c>.byte</c>, <c>.word</c>, etc.) should allow sign overflows.
         /// </summary>
+        [JsonProperty]
         [Option("allow-overflow", Required = false, HelpText = "Allow value overflows for pseudo-op assembly.")]
         public bool AllowOverflow { get; }
 
@@ -880,12 +821,13 @@ namespace Core6502DotNet
         /// 6502 assembly.
         /// </summary>
         [Option('b', "enable-branch-always", Required = false, HelpText = "Enable (pseudo) 'bra' for the 6502.")]
-        public bool BranchAlways { get; }
+        public bool BranchAlways => _target?.BranchAlways == true;
 
         /// <summary>
         /// Gets a flag that indicates the source should be processed as
         /// case-sensitive.
         /// </summary>
+        [JsonProperty]
         [Option('C', "case-sensitive", Required = false, HelpText = "Treat all symbols as case-sensitive.")]
         public bool CaseSensitive { get; }
 
@@ -900,14 +842,14 @@ namespace Core6502DotNet
         /// </summary>
         /// <value>The cpu.</value>
         [Option('c', "cpu", Required = false, HelpText = "Specify the target CPU and instruction set.", MetaValue = "<arg>.")]
-        public string CPU { get; }
+        public string CPU => _target?.Cpu;
 
         /// <summary>
         /// Gets a flag indicating that checksum information should be printed after 
         /// assembly.
         /// </summary>
         [Option("checksum", Required = false, HelpText = "Display checksum information on assembly.")]
-        public bool ShowChecksums { get; }
+        public bool ShowChecksums => _logging?.Checksum == true;
 
         /// <summary>
         /// Gets the config option file.
@@ -918,6 +860,7 @@ namespace Core6502DotNet
         /// <summary>
         /// Gets the read-only list of label defines.
         /// </summary>
+        [JsonProperty(PropertyName = "defines")]
         [Option('D', "define", Separator = ':', Required = false, HelpText = "Assign value to a global label in <args>.", MetaValue = "<arg>.")]
         public ReadOnlyCollection<string> LabelDefines { get; }
 
@@ -925,7 +868,7 @@ namespace Core6502DotNet
         /// Gets a flag indicating if assembly listing should suppress 6502 disassembly.
         /// </summary>
         [Option('d', "no-dissassembly", Required = false, HelpText = "Suppress disassembly from assembly listing.")]
-        public bool NoDisassembly { get; }
+        public bool NoDisassembly => _listing?.NoDisassembly == true;
 
         /// <summary>
         /// Gets the list of defined sections.
@@ -938,19 +881,19 @@ namespace Core6502DotNet
         /// pass.
         /// </summary>
         [Option("echo-each-pass", Required = false, HelpText = "\".echo\" output on each pass.")]
-        public bool EchoEachPass { get; }
+        public bool EchoEachPass => _logging?.EchoEachPass == true;
 
         /// <summary>
         /// Gets the error filename.
         /// </summary>
         [Option('E', "error", Required = false, HelpText = "Dump errors to <file>.", MetaValue = "<file>.")]
-        public string ErrorFile { get; }
+        public string ErrorFile => _logging?.ErrorPath;
 
         /// <summary>
         /// Gets the target binary format.
         /// </summary>
         [Option('f', "format", Required = false, HelpText = "Specify binary output format.", MetaValue = "<format>.")]
-        public string Format { get; }
+        public string Format => _target?.BinaryFormat;
 
         /// <summary>
         /// Gets the path to search to include in sources.
@@ -962,54 +905,59 @@ namespace Core6502DotNet
         /// Gets a flag indicating that colons in semi-colon comments should be treated
         /// as comments.
         /// </summary>
-        [Option("ignore-colons", Required = false, HelpText = "Ignore colons in semi-colon comments.")]
+        [JsonProperty]
+        [Option("ignore-colons", Required = false, Default = null, HelpText = "Ignore colons in semi-colon comments.")]
         public bool IgnoreColons { get; }
 
         /// <summary>
         /// Gets the label listing filename.
         /// </summary>
         [Option('l', "labels", Required = false, HelpText = "Output label definitions to <arg>.", MetaValue = "<arg>.")]
-        public string LabelFile { get; }
+        public string LabelFile => _listing?.LabelPath;
 
         /// <summary>
         /// Gets the label listing addresses only flag.
         /// </summary>
         [Option("labels-addresses-only", Required = false, HelpText = "Only include addresses in label definitions.")]
-        public bool LabelsAddressesOnly { get; }
+        public bool LabelsAddressesOnly => _listing?.LabelsAddressesOnly == true;
 
         /// <summary>
         /// Gets the assembly listing filename.
         /// </summary>
         [Option('L', "list", Required = false, HelpText = "Output listing to <file>.", MetaValue = "<file>.")]
-        public string ListingFile { get; }
+        public string ListingFile => _listing?.ListPath ?? string.Empty;
 
         /// <summary>
         /// Gets the long addressing flag.
         /// </summary>
         [Option("long-addressing", Required = false, HelpText = "Support 24-bit (long) addressing mode.")]
-        public bool LongAddressing { get; }
+        public bool LongAddressing => _target?.LongAddressing == true;
 
         /// <summary>
         /// Gets the flag indicating whether to display statistics after assembly.
         /// </summary>
+        [JsonProperty]
         [Option('n', "no-stats", Required = false, HelpText = "Supress display of statistics from the assembly.")]
-        public bool NoStats { get; }
+        public bool NoStats => _logging?.NoStats == true;
 
         /// <summary>
         /// Gets the output filename.
         /// </summary>
+        [JsonProperty]
         [Option('o', "output", Required = false, HelpText = "Output assembly to <file>.", MetaValue = "<file>.")]
         public string OutputFile { get; }
 
         /// <summary>
         /// Gets the section to output to object file.
         /// </summary>
+        [JsonProperty]
         [Option("output-section", Required = false, HelpText = "Output the specified section only to object file.")]
         public string OutputSection { get; }
 
         /// <summary>
         /// Indicates the output is a patch to an existing object file.
         /// </summary>
+        [JsonProperty]
         [Option('p', "patch", Required = false, HelpText = "Patch the output file at <offset>.", MetaValue = "<offset>.")]
         public string Patch { get; }
 
@@ -1017,18 +965,19 @@ namespace Core6502DotNet
         /// Gets the flag that indicates assembly should be quiet.
         /// </summary>
         [Option('q', "quiet", Required = false, HelpText = "Assemble in quiet mode (no console).")]
-        public bool Quiet { get; }
+        public bool Quiet => _logging?.Quiet == true;
 
         /// <summary>
         /// Gets the flag that indicates whether to autosize the accumulator and index registers 
         /// in 65816 mode for the <c>rep</c> and <c>sep</c> instructions.
         /// </summary>
         [Option('r', "autosize-registers", Required = false, HelpText = "Auto-size .A and .X/.Y registers in 65816 mode.")]
-        public bool Autosize { get; }
+        public bool Autosize => _target?.Autosize == true;
 
         /// <summary>
         /// Gets a flag indicating if the Program Counter should reset on bank switching.
         /// </summary>
+        [JsonProperty]
         [Option("reset-pc-on-bank", Required = false, HelpText = "Reset the PC on '.bank' directive.")]
         public bool ResetPCOnBank { get; }
 
@@ -1036,40 +985,40 @@ namespace Core6502DotNet
         /// Gets a flag indicating if assembly listing should suppress original source.
         /// </summary>
         [Option('s', "no-source", Required = false, HelpText = "Suppress original source from listing.")]
-        public bool NoSource { get; }
+        public bool NoSource => _listing?.NoSource == true;
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should truncate
         /// the number of bytes.
         /// </summary>
         [Option('t', "truncate-assembly", Required = false, HelpText = "Truncate assembled bytes in listing.")]
-        public bool TruncateAssembly { get; }
+        public bool TruncateAssembly => _listing?.TruncateAssembly == true;
 
         /// <summary>
         /// Gets a flag indicating that assembly listing should be 
         /// verbose.
         /// </summary>
         [Option("verbose-asm", Required = false, HelpText = "Include all directives/comments in listing.")]
-        public bool VerboseList { get; }
+        public bool VerboseList => _listing?.VerboseList == true;
 
         /// <summary>
         /// Gets the flag that indicates warnings should be suppressed.
         /// </summary>
         [Option('w', "no-warn", Required = false, HelpText = "Suppress all warnings.")]
-        public bool NoWarnings { get; }
+        public bool NoWarnings => _logging?.NoWarnings == true;
 
         /// <summary>
         /// Gets the flag that indicates the assembler should issue a warning on a symbol lookup which does
         /// not match the case of the definition.
         /// </summary>
         [Option("Wcase-mismatch", Required = false, HelpText = "Warn on symbol case mismatch.")]
-        public bool WarnCaseMismatch { get; }
+        public bool WarnCaseMismatch => _logging?.WarnCaseMismatch == true;
 
         /// <summary>
         /// Gets a flag that treats warnings as errors.
         /// </summary>
         [Option("Werror", Required = false, HelpText = "Treat all warnings as errors.")]
-        public bool WarningsAsErrors => !NoWarnings && _werror;
+        public bool WarningsAsErrors => _logging?.WarningsAsErrors == true;
 
         /// <summary>
         /// Gets a value indicating whether to suppress warnings for whitespaces 
@@ -1077,13 +1026,13 @@ namespace Core6502DotNet
         /// </summary>
         /// <value>If <c>true</c> warn left; otherwise, suppress the warning.</value>
         [Option("Wleft", Required = false, HelpText = "Warn when a whitespace precedes a label.")]
-        public bool WarnLeft { get; }
+        public bool WarnLeft => _logging?.WarnLeft == true;
 
         /// <summary>
         /// Gets a flag indicating whether not to warn about unused sections.
         /// </summary>
         [Option("Wno-unused-sections", Required = false, HelpText = "Don't warn about unused sections.")]
-        public bool WarnNotUnusedSections { get; }
+        public bool WarnNotUnusedSections => _logging?.SuppressUnusedSectionWarning == true;
 
 
         [Usage(ApplicationAlias = "6502.Net.exe.")]
@@ -1091,7 +1040,7 @@ namespace Core6502DotNet
         {
             get
             {
-                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, false, "output.bin", null, null, null, false, false, false));
+                yield return new Example("General", new UnParserSettings() { PreferShortName = true }, new Options(new string[] { "inputfile.asm" }, null, null, null, null, null, false, "output.bin", null, null, null, false, false, false));
                 yield return new Example("From Config", new Options(null, false, false, false, false, null, null, false, "config.json", null, false, null, false, null, null, null, false, null, false, null, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false, false));
             }
         }

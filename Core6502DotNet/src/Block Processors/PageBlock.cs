@@ -12,7 +12,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class responsible for processing .page/.endpage blocks.
     /// </summary>
-    public sealed class PageBlockProcessor : BlockProcessorBase
+    public sealed class PageBlock : BlockProcessorBase
     {
         readonly int _page;
 
@@ -21,7 +21,7 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         /// <param name="index">The index at which the block is defined.</param>
-        public PageBlockProcessor(AssemblyServices services,
+        public PageBlock(AssemblyServices services,
                                   int index)
             : base(services, index, false)
         {
@@ -29,9 +29,10 @@ namespace Core6502DotNet
             _page = GetPage();
         }
 
-        int GetPage() => Services.Output.LogicalPC & 0xF00;
+        static int GetPage(int address) => address & 0xF00;
 
-        int GetPage(int address) => address & 0xF00;
+        int GetPage() => GetPage(Services.Output.LogicalPC);
+
 
         public override void ExecuteDirective(RandomAccessIterator<SourceLine> lines)
         {

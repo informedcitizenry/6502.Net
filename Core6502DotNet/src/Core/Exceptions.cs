@@ -55,7 +55,7 @@ namespace Core6502DotNet
     /// <summary>
     /// Represents a syntax error.
     /// </summary>
-    public class SyntaxException : ExpressionException
+    public sealed class SyntaxException : ExpressionException
     {
         /// <summary>
         /// Construct a new syntax exception.

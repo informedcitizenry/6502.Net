@@ -14,17 +14,19 @@ namespace Core6502DotNet
     /// <summary>
     /// Represents an error when a block is not properly closed.
     /// </summary>
-    public class BlockClosureException : Exception
+    public sealed class BlockClosureException : Exception
     {
         /// <summary>
         /// Creates an instance of a block closure exception.
         /// </summary>
         /// <param name="blockType">The block type.</param>
-        public BlockClosureException(string blockType)
-            : base($"Missing closure for \"{blockType}\" directive.")
-        {
+        /// <param name="lineExpectingClosure">The line expecting the block closure.</param>
+        public BlockClosureException(string blockType, SourceLine lineExpectingClosure)
+            : base($"Missing closure for \"{blockType}\" directive.") 
+            => LineExpectingClosure = lineExpectingClosure;
+       
 
-        }
+        public SourceLine LineExpectingClosure { get; }
     }
 
     /// <summary>
@@ -97,23 +99,21 @@ namespace Core6502DotNet
         /// <param name="directives">An array of directives, one of which to seek in the block.</param>
         protected void SeekBlockDirectives(RandomAccessIterator<SourceLine> iterator, StringView[] directives)
         {
-            var line = iterator.Current;
+            SourceLine line = iterator.Current, lineExpectingClosure = line;
             if (!line.Instruction.Name.Equals(BlockClosure, Services.StringComparison))
             {
                 var blockClose = BlockClosure;
-
-                var keywordsNotToSkip = new List<StringView>(directives)
+                var keywordsNotToSkip = new HashSet<StringView>(directives)
                 {
                     blockClose
                 };
-                keywordsNotToSkip.AddRange(BlockOpens.Select(bo => new StringView(bo)));
-
+                keywordsNotToSkip.UnionWith(BlockOpens.Select(bo => new StringView(bo)));
                 var opens = 1;
                 while (opens != 0)
                 {
                     line = iterator.FirstOrDefault(l => l.Instruction != null && keywordsNotToSkip.Contains(l.Instruction.Name, Services.StringViewComparer));
                     if (line == null)
-                        throw new BlockClosureException(BlockOpens.First());
+                        throw new BlockClosureException(BlockOpens.First(), lineExpectingClosure);
 
                     if (BlockOpens.Contains(line.Instruction.Name.ToString(), Services.StringComparer))
                         opens++;
@@ -123,6 +123,7 @@ namespace Core6502DotNet
 
                     if (line.Instruction.Name.Equals(blockClose, Services.StringComparison))
                         opens--;
+                    lineExpectingClosure = line;
                 }
             }
         }
@@ -134,7 +135,7 @@ namespace Core6502DotNet
         public void SeekBlockEnd(RandomAccessIterator<SourceLine> iterator)
             => SeekBlockDirectives(iterator, new StringView[] { BlockClosure });
 
-        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        protected sealed override string OnAssemble(RandomAccessIterator<SourceLine> lines)
             => throw new NotImplementedException();
 
         #endregion

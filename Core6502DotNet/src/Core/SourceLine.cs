@@ -14,7 +14,7 @@ namespace Core6502DotNet
     /// Represents one line of source code in the original
     /// assembly source.
     /// </summary>
-    public class SourceLine
+    public sealed class SourceLine
     {
         #region Members
 
@@ -49,12 +49,13 @@ namespace Core6502DotNet
                 else
                     Operands.Add(token);
             }
+            Token.GatherIntoExpressions(Operands);
         }
         #endregion
 
         #region Methods
 
-        public override string ToString() => $"{Filename} ({LineNumber}): {Source}";
+        public override string ToString() => $"{Filename} ({LineNumber}): {Source.Replace('\t', ' ')}";
 
         #endregion
 

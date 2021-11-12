@@ -15,9 +15,9 @@
             <Keywords name="Numbers, range"></Keywords>
             <Keywords name="Operators1">! ^ &amp; * / + - = &lt; &gt; ~ [ ( ) ] # ,</Keywords>
             <Keywords name="Operators2"></Keywords>
-            <Keywords name="Folders in code1, open">.block .ifdef .ifndef .if .foreach .for .function .macro .page .repeat .switch .while .namespace</Keywords>
+            <Keywords name="Folders in code1, open">.block .do .enum .ifdef .ifndef .if .foreach .for .function .macro .page .repeat .switch .while .namespace</Keywords>
             <Keywords name="Folders in code1, middle">.elseifdef .elseifndef .elseif .else</Keywords>
-            <Keywords name="Folders in code1, close">.endblock .endif .next .endfunction .endmacro .endpage .endrepeat .endswitch .endwhile .endnamespace</Keywords>
+            <Keywords name="Folders in code1, close">.endblock .endenum .endif .next .endfunction .endmacro .endpage .endrepeat .endswitch .endwhile .endnamespace .whiletrue</Keywords>
             <Keywords name="Folders in code2, open"></Keywords>
             <Keywords name="Folders in code2, middle"></Keywords>
             <Keywords name="Folders in code2, close"></Keywords>
@@ -25,7 +25,7 @@
             <Keywords name="Folders in comment, middle"></Keywords>
             <Keywords name="Folders in comment, close"></Keywords>
             <Keywords name="Keywords1">aci adc add adi ana and ani call cc cm cma cmc cmp cnc cnz cp cpe cpi cpo cz daa dad dcr dcx di ei hlt in inr inx jc jm jmp jnc jnz jp jpe jpo jz lda ldax lhld lxi mov mvi nop ora ori out pchl pop push ral rar rc ret rlc rm rnc rnz rp rpe rpo rrc rst rz sbb sbi shld sphl sta stax stc sub sui xchg xra xri xthl</Keywords>
-            <Keywords name="Keywords2">.assert .bank .binclude .break .case .comment .continue .cpu .default .dsection .echo .encoding .end .endrelocate .eor .error .errorif .equ .forcepass .format .goto .include .initmem .invoke .let .map .org .proff .pron .relocate .return .section .format .target .unmap .warn .warnif</Keywords>
+            <Keywords name="Keywords2">.assert .bank .binclude .break .case .comment .continue .cpu .default .dsection .echo .encoding .end .endrelocate .eor .error .errorif .equ .forcepass .format .goto .include .initmem .invoke .label .let .map .org .proff .pron .relocate .return .section .format .target .unmap .warn .warnif</Keywords>
             <Keywords name="Keywords3">.addr .align .binary .bstring .byte .cbmflt .cbmfltp .char .cstring .dint .dword .fill .hstring .lint .long .lstring .nstring .pstring .rta .sbyte .short .sint .string .word</Keywords>
             <Keywords name="Keywords4">.</Keywords>
             <Keywords name="Keywords5">abs acos atan byte cbmflt cbmfltp cbrt ceil char cos cosh deg dword exp float floor format frac hypot len ln log log10 long peek poke pow rad random round section sgn sin sinh sizeof sqrt tan tanh word</Keywords>

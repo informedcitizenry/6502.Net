@@ -221,7 +221,7 @@ namespace Core6502DotNet.m65xx
                         if (currentTrack < 0)
                             currentTrack = 35;
                         else if (currentTrack == 18)
-                            throw new Exception("Unable to write to D64. Capacity exceeded.");
+                            throw new CompilationException("Unable to write to D64. Capacity exceeded.");
                     }
                     else
                     {

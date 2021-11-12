@@ -335,7 +335,7 @@ namespace Core6502DotNet.m680x
             if (operand.Current != null && operand.Current.Name.Equals(","))
             {
                 var secondparam = operand.GetNext();
-                if (Token.IsEnd(secondparam))
+                if (Token.IsTerminal(secondparam))
                     throw new SyntaxException(firstparam, "Expression expected.");
                    
                 if (secondparam.Name[0] == '-')
@@ -343,7 +343,7 @@ namespace Core6502DotNet.m680x
                     autoDec = true;
                     modes |= IndexModes.Dec1;
                     secondparam = operand.GetNext();
-                    if (Token.IsEnd(secondparam))
+                    if (Token.IsTerminal(secondparam))
                         throw new SyntaxException(firstparam, "Expression expected.");
                     if (secondparam.Name[0] == '-')
                     {
@@ -361,10 +361,7 @@ namespace Core6502DotNet.m680x
                 if (!_ixRegisterModes.TryGetValue(secondparam.Name, out indexMode))
                 {
                     if (!secondparam.Name.Equals("pc", Services.StringComparison))
-                    {
-                        Services.Log.LogEntry(secondparam,  $"Invalid index register \"{secondparam}\".");
-                        return string.Empty;
-                    }
+                        return Services.Log.LogEntry<string>(secondparam,  $"Invalid index register \"{secondparam}\".");
                     indexMode = IndexModes.PC8;
                     modes |= IndexModes.PC8;
                 }
@@ -376,7 +373,7 @@ namespace Core6502DotNet.m680x
                 {
                     if (indexMode == IndexModes.PC8)
                     {
-                        if (!Token.IsEnd(operand.Current))
+                        if (!Token.IsTerminal(operand.Current))
                             throw new SyntaxException(operand.Current, "Unexpected expression.");
                     }
                     else
@@ -385,14 +382,11 @@ namespace Core6502DotNet.m680x
                         if (thirdparam.Name[0] == '+')
                         {
                             if (autoDec)
-                            {
-                                Services.Log.LogEntry(thirdparam, "Addressing mode not supported for selected CPU.");
-                                return string.Empty;
-                            }
+                                return Services.Log.LogEntry<string>(thirdparam, "Addressing mode not supported for selected CPU.");
                             modes |= IndexModes.Inc1;
                             autoInc = true;
                             thirdparam = operand.GetNext();
-                            if (!Token.IsEnd(thirdparam))
+                            if (!Token.IsTerminal(thirdparam))
                             {
                                 if (thirdparam.Name[0] == '+')
                                 {
@@ -401,20 +395,18 @@ namespace Core6502DotNet.m680x
                                 }
                                 else
                                 {
-                                    Services.Log.LogEntry(line.Operands[^1], "Addressing mode not supported for selected CPU.");
-                                    return string.Empty;
+                                    return Services.Log.LogEntry<string>(line.Operands[^1], "Addressing mode not supported for selected CPU.", false, true);
                                 }
                             }
                             else if (modes.HasFlag(IndexModes.Indir))
                             {
-                                Services.Log.LogEntry(line.Operands[^1], "Addressing mode not supported for selected CPU.");
-                                return string.Empty;
+                                return Services.Log.LogEntry<string>(line.Operands[^1], "Addressing mode not supported for selected CPU.", false, true);
                             }
                         }
                     }
                 }
             }
-            if ((operand.Current != null && !(operand.Current.Name.Equals("]") && operand.PeekNext() == null)))
+            if (operand.Current != null && !(operand.Current.Name.Equals("]") && operand.PeekNext() == null))
                 throw new SyntaxException(operand.Current, "Unexpected expression.");
             if (!double.IsNaN(offsetValue))
             {
@@ -479,6 +471,7 @@ namespace Core6502DotNet.m680x
                 if (forcedMod != Modes.Implied)
                     Services.Log.LogEntry(line.Operands[0],
                         "Width specifier does not affect operand size.",
+                        false,
                         false);
                 if (offsRegMode != IndexModes.None)
                 {
@@ -605,7 +598,7 @@ namespace Core6502DotNet.m680x
 
                 if (!register.IsSeparator())
                 {
-                    if (!Token.IsEnd(iterator.PeekNext()))
+                    if (!Token.IsTerminal(iterator.PeekNext()))
                         throw new SyntaxException(iterator.PeekNext(), "Unexpected expression.");
                     var registerName = Services.Options.CaseSensitive ? register.Name.ToString() : register.Name.ToLower();
                     if (!lookup.TryGetValue(registerName, out var postbyte))

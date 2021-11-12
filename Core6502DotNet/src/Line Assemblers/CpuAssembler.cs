@@ -97,20 +97,32 @@ namespace Core6502DotNet
             OnReset();
         }
 
-        protected override string OnAssemble(RandomAccessIterator<SourceLine> lines)
+        /// <summary>
+        /// Get the CPU name from operand arguments.
+        /// </summary>
+        /// <param name="line">The sourceline.</param>
+        /// <param name="services">The shared assembly services.</param>
+        /// <returns>A string representation of the CPU name.</returns>
+        public static string GetCpuName(SourceLine line, AssemblyServices services)
+        {
+            var iterator = line.Operands.GetIterator();
+            if (!iterator.MoveNext() || !StringHelper.IsStringLiteral(iterator))
+                throw new SyntaxException(line.Instruction,
+                    "String expression expected.");
+            var cpu = StringHelper.GetString(iterator, services);
+            if (iterator.Current != null)
+                services.Log.LogEntry(iterator.PeekNext() ?? iterator.Current,
+                    "Unexpected expression.", false, true);
+            return cpu;
+        }
+
+        protected sealed override string OnAssemble(RandomAccessIterator<SourceLine> lines)
         {
             var line = lines.Current;
             if (Reserved.IsOneOf("CPU", line.Instruction.Name))
             {
-                var iterator = line.Operands.GetIterator();
-                if (!iterator.MoveNext() || !StringHelper.IsStringLiteral(iterator) || iterator.PeekNext() != null)
-                    Services.Log.LogEntry(line.Instruction,
-                        "String expression expected.");
-                else
-                {
-                    CPU = iterator.Current.Name.ToString().TrimOnce('"');
-                    OnSetCpu();
-                }
+                CPU = GetCpuName(line, Services);
+                OnSetCpu();
                 return string.Empty;
             }
             Evaluations[0] = Evaluations[1] = Evaluations[2] = double.NaN;

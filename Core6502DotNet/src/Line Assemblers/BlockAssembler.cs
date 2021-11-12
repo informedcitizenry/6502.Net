@@ -14,7 +14,7 @@ namespace Core6502DotNet
     /// <summary>
     /// An error handling class for the <see cref="BlockAssembler"/>.
     /// </summary>
-    public class BlockAssemblerException : Exception
+    public sealed class BlockAssemblerException : Exception
     {
         /// <summary>
         /// Constructs a new instance of the <see cref="BlockAssemblerException"/>.
@@ -33,7 +33,7 @@ namespace Core6502DotNet
     /// Handles errors when function calls expect return values but
     /// none are returned.
     /// </summary>
-    public class ReturnException : ExpressionException
+    public sealed class ReturnException : ExpressionException
     {
         /// <summary>
         /// Creates the new instance of the exception.
@@ -42,6 +42,14 @@ namespace Core6502DotNet
         /// <param name="message">The exception message.</param>
         public ReturnException(int position, string message)
             : base(position, message) { }
+
+        /// <summary>
+        /// Creates the new instance of the exception.
+        /// </summary>
+        /// <param name="token">The token that caused the exception.</param>
+        /// <param name="message">The exception message.</param>
+        public ReturnException(Token token, string message)
+            : base(token, message) { }
     }
 
     /// <summary>
@@ -54,8 +62,10 @@ namespace Core6502DotNet
 
         readonly Stack<BlockProcessorBase> _blocks;
         readonly Dictionary<StringView, StringView> _openClosures;
-        BlockProcessorBase _currentBlock;
         readonly Dictionary<StringView, Function> _functionDefs;
+        readonly HashSet<int> _scannedBlockIndices;
+        readonly Dictionary<string, int> _gotoLabels;
+        BlockProcessorBase _currentBlock;
 
         #endregion
 
@@ -66,16 +76,33 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         public BlockAssembler(AssemblyServices services)
+            : this(services, null, null)
+        {
+
+        }
+
+        /// <summary>
+        /// Constructs a new instance of a block assembler.
+        /// </summary>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        /// <param name="multiLineAssembler">The <see cref="MultiLineAssembler"/> context to which this
+        /// <param name="blockAssembler">The <see cref="BlockAssembler"/> from which this block assembler is being called.</param>
+        /// block assembler is attached.</param>
+        public BlockAssembler(AssemblyServices services, MultiLineAssembler multiLineAssembler, BlockAssembler blockAssembler)
             : base(services)
         {
+            MultiLineAssembler = multiLineAssembler;
             _blocks = new Stack<BlockProcessorBase>();
             _functionDefs = new Dictionary<StringView, Function>(services.StringViewComparer);
-
+            _gotoLabels = new Dictionary<string, int>(services.StringComparer);
+            _scannedBlockIndices = blockAssembler?._scannedBlockIndices ?? new HashSet<int>();
             _currentBlock = null;
 
             _openClosures = new Dictionary<StringView, StringView>(services.StringViewComparer)
             {
                 { ".block",     ".endblock"     },
+                { ".do",        ".whiletrue"    },
+                { ".enum",      ".endenum"      },
                 { ".for",       ".next"         },
                 { ".foreach",   ".next"         }, 
                 { ".function",  ".endfunction"  },
@@ -93,16 +120,17 @@ namespace Core6502DotNet
                 ".function", ".endfunction");
 
             Reserved.DefineType("NonOpens",
-                ".break", ".case", ".continue", ".default", ".endblock", ".endif",
-                ".endfunction", ".endpage", ".endnamespace", ".endrepeat", ".endswitch",
-                ".endwhile", ".else", ".elseif", ".elseifdef", ".elseifdef", ".elseifndef", ".next");
+                ".break", ".case", ".continue", ".default", ".endblock", ".endenum", ".endif",
+                ".endfunction", ".endpage", ".endnamespace", ".endrepeat", ".endswitch", ".return",
+                ".endwhile", ".whiletrue", ".else", ".elseif", ".elseifdef", ".elseifdef", ".elseifndef", ".next");
 
             Reserved.DefineType("BreakContinue", ".break", ".continue");
 
-            Reserved.DefineType("Goto", ".goto");
+            Reserved.DefineType("Goto", ".goto", ".label");
 
             ExcludedInstructionsForLabelDefines.Add(".function");
             ExcludedInstructionsForLabelDefines.Add(".block");
+            ExcludedInstructionsForLabelDefines.Add(".label");
 
             Services.Evaluator.AddFunctionEvaluator(this);
 
@@ -117,29 +145,21 @@ namespace Core6502DotNet
         {
             var name = line.Instruction.Name;
             var type = Services.Options.CaseSensitive ? name.ToString() : name.ToLower();
-            switch (type)
+            return type switch
             {
-                case ".block":
-                    return new ScopeBlock(Services, iterationIndex);
-                case ".for":
-                    return new ForNextBlock(Services, iterationIndex);
-                case ".foreach":
-                    return new ForEachBlock(Services, iterationIndex);
-                case ".if":
-                case ".ifdef":
-                case ".ifndef":
-                    return new ConditionalBlock(Services, iterationIndex);
-                case ".namespace":
-                    return new NamespaceBlock(Services, iterationIndex);
-                case ".repeat":
-                    return new RepeatBlock(Services, iterationIndex);
-                case ".switch":
-                    return new SwitchBlock(Services, iterationIndex);
-                case ".while":
-                    return new WhileBlock(Services, iterationIndex);
-                default:
-                    return null;
-            }
+                ".block"                        => new ScopeBlock(Services, iterationIndex),
+                ".do"                           => new DoWhileBlock(Services, iterationIndex),
+                ".enum"                         => new EnumBlock(Services, iterationIndex),
+                ".for"                          => new ForNextBlock(Services, iterationIndex),
+                ".foreach"                      => new ForEachBlock(Services, iterationIndex),
+                ".if" or ".ifdef" or ".ifndef"  => new ConditionalBlock(Services, iterationIndex),
+                ".namespace"                    => new NamespaceBlock(Services, iterationIndex),
+                ".page"                         => new PageBlock(Services, iterationIndex),
+                ".repeat"                       => new RepeatBlock(Services, iterationIndex),
+                ".switch"                       => new SwitchBlock(Services, iterationIndex),
+                ".while"                        => new WhileBlock(Services, iterationIndex),
+                _                               => null,
+            };
         }
 
         void ScanBlock(RandomAccessIterator<SourceLine> lines)
@@ -148,19 +168,36 @@ namespace Core6502DotNet
             var line = lines.Current;
             var closures = new Stack<Token>();
             closures.Push(line.Instruction);
-            while (lines.MoveNext() && closures.Count > 0)
+            while ((line = lines.GetNext()) != null && closures.Count > 0)
             {
-                if (lines.Current.Instruction != null)
+                if (line.Instruction != null)
                 {
-                    if (lines.Current.Instruction.Name.Equals(_openClosures[closures.Peek().Name], Services.StringViewComparer))
+                    var instructionName = line.Instruction.Name;
+                    if (instructionName.Equals(_openClosures[closures.Peek().Name], Services.StringViewComparer))
+                    {
                         closures.Pop();
-                    else if (_openClosures.ContainsKey(lines.Current.Instruction.Name))
-                        closures.Push(lines.Current.Instruction);
+                    }
+                    else if (_openClosures.ContainsKey(instructionName))
+                    {
+                        closures.Push(line.Instruction);
+                    }
+                    else if (instructionName.Equals(".return", Services.StringViewComparer) || Reserved.IsOneOf("BreakContinue", instructionName))
+                    {
+                        if (instructionName.Equals(".return", Services.StringViewComparer) && MultiLineAssembler == null)
+                            throw new ReturnException(line.Instruction,
+                                        "The \".return\" directive is not valid in this context.");
+                        else if ((instructionName.Equals(".break", Services.StringViewComparer) &&
+                            !_blocks.Any(b => b.AllowBreak)) ||
+                            (instructionName.Equals(".continue", Services.StringViewComparer) &&
+                            !_blocks.Any(b => b.AllowContinue)))
+                            throw new SyntaxException(line.Instruction,
+                                $"Invalid use of \"{instructionName}\" directive.");
+                    }
                 }
             }
             if (closures.Count > 0)
                 throw new SyntaxException(closures.Peek(),
-                    $"Missing closure \"{_openClosures[closures.Peek().Name]}\" for directive \"{closures.Peek().Name}\".");
+                    $"Missing directive \"{_openClosures[closures.Peek().Name]}\" for directive \"{closures.Peek().Name}\".");
             lines.SetIndex(ix);
         }
 
@@ -182,54 +219,82 @@ namespace Core6502DotNet
             if (_openClosures.ContainsKey(line.Instruction.Name))
             {
                 var block = GetProcessor(line, lines.Index);
-                if (_blocks.Count == 0)
-                    ScanBlock(lines);
                 _blocks.Push(block);
+                if (_scannedBlockIndices.Add(lines.Index))
+                    ScanBlock(lines);
                 _currentBlock = block;
             }
             if (line.Instruction.Name.Equals(".block", Services.StringComparison) && line.Label != null)
+            {
                 DefineLabel(line.Label, LogicalPCOnAssemble, false);
-            
-            var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
-            if (_currentBlock == null || (!isBreakCont && !_currentBlock.IsReserved(line.Instruction.Name)))
-                throw new SyntaxException(line.Instruction.Position,
-                    $"\"{line.Instruction.Name}\" directive must come inside a block.");
-            
-            if (isBreakCont)
+            }
+            else if (line.Instruction.Name.Equals(".return", Services.StringViewComparer))
             {
                 if (line.Operands.Count > 0)
-                    throw new SyntaxException(line.Operands[0], "Unexpected expression.");
-                var isBreak = line.Instruction.Name.Equals(".break", Services.StringComparison);
-                if ((!_currentBlock.AllowContinue && line.Instruction.Name.Equals(".continue", Services.StringComparison)) ||
-                    (!_currentBlock.AllowBreak && isBreak))
                 {
-                    while (_currentBlock != null)
+                    var it = line.Operands.GetIterator();
+                    try
                     {
-                        var allowBreak = false;
-                        _currentBlock.SeekBlockEnd(lines);
-                        if (isBreak)
-                            allowBreak = _currentBlock.AllowBreak;
-                        else if (!isBreak && _currentBlock.AllowContinue)
-                            break;
-                        DoPop(lines);
-                        if (isBreak && allowBreak)
-                            return string.Empty;
+                        var result = Services.Evaluator.Evaluate(it);
+                        if (it.Current != null)
+                            throw new SyntaxException(it.Current, "Unexpected expression.");
+                        MultiLineAssembler.ReturnValue = result;
                     }
-                    if (_currentBlock == null)
+                    catch (IllegalQuantityException ex)
                     {
-                        var err = isBreak ? "break" : "continue";
-                        throw new SyntaxException(line.Instruction.Position,
-                        $"No enclosing loop out of which to {err}.");
+                        MultiLineAssembler.ReturnValue = ex.Quantity;
                     }
-                }
-                else if (isBreak)
-                {
-                    DoPop(lines);
-                    return string.Empty;
                 }
                 else
                 {
-                    _currentBlock.SeekBlockEnd(lines);
+                    MultiLineAssembler.ReturnValue = double.NaN;
+                }
+                MultiLineAssembler.Returning = true;
+                return string.Empty;
+            }
+            else
+            {
+                var isBreakCont = Reserved.IsOneOf("BreakContinue", line.Instruction.Name);
+                if (_currentBlock == null || (!isBreakCont && !_currentBlock.IsReserved(line.Instruction.Name)))
+                    throw new SyntaxException(line.Instruction.Position,
+                        $"\"{line.Instruction.Name}\" directive must come inside a block.");
+
+                if (isBreakCont)
+                {
+                    if (line.Operands.Count > 0)
+                        throw new SyntaxException(line.Operands[0], "Unexpected expression.");
+                    var isBreak = line.Instruction.Name.Equals(".break", Services.StringComparison);
+                    if ((!_currentBlock.AllowContinue && line.Instruction.Name.Equals(".continue", Services.StringComparison)) ||
+                        (!_currentBlock.AllowBreak && isBreak))
+                    {
+                        while (_currentBlock != null)
+                        {
+                            var allowBreak = false;
+                            _currentBlock.SeekBlockEnd(lines);
+                            if (isBreak)
+                                allowBreak = _currentBlock.AllowBreak;
+                            else if (!isBreak && _currentBlock.AllowContinue)
+                                break;
+                            DoPop(lines);
+                            if (isBreak && allowBreak)
+                                return string.Empty;
+                        }
+                        if (_currentBlock == null)
+                        {
+                            var err = isBreak ? "break" : "continue";
+                            throw new SyntaxException(line.Instruction,
+                            $"No enclosing loop out of which to {err}.");
+                        }
+                    }
+                    else if (isBreak)
+                    {
+                        DoPop(lines);
+                        return string.Empty;
+                    }
+                    else
+                    {
+                        _currentBlock.SeekBlockEnd(lines);
+                    }
                 }
             }
             _currentBlock.ExecuteDirective(lines);
@@ -243,20 +308,43 @@ namespace Core6502DotNet
         string DoGoto(RandomAccessIterator<SourceLine> lines)
         {
             var line = lines.Current;
+            if (line.Instruction.Name.Equals(".label", Services.StringViewComparer))
+            {
+                if (line.Label == null)
+                    throw new SyntaxException(line.Instruction, "Missing label for \".label\" directive.");
+                if (line.Operands.Count > 0)
+                    throw new SyntaxException(line.Operands[0], "Unexpected expression.");
+                var scopedName = Services.SymbolManager.GetScopedName(line.Label.Name);
+                if (_gotoLabels.TryGetValue(scopedName, out var labelIndex))
+                {
+                    if (lines.Index != labelIndex)
+                        throw new SyntaxException(line.Label, "Goto label previously defined.");
+                }
+                else
+                {
+                    Services.SymbolManager.DefineVoidSymbol(line.Label.Name);
+                    _gotoLabels[scopedName] = lines.Index;
+                }
+                return string.Empty;
+            }
             if (line.Operands.Count == 0)
                 throw new SyntaxException(line.Instruction.Position,
                     "Destination not specified for \".goto\" directive.");
 
             var gotoExp = line.Operands[0].Name;
             if ((!char.IsLetter(gotoExp[0]) && gotoExp[0] != '_') || line.Operands.Count > 1)
-            {
-                Services.Log.LogEntry(line.Operands[0],
-                    "\".goto\" operand must be a label.");
-            }
-            else if (line.Label != null && gotoExp.Equals(line.Label.Name, Services.StringViewComparer))
-            {
-                Services.Log.LogEntry(line.Instruction,
+                return Services.Log.LogEntry<string>(line.Operands[0],
+                    "\".goto\" destination must be a label.", false, true);
+            if (line.Label != null && gotoExp.Equals(line.Label.Name, Services.StringViewComparer))
+                return Services.Log.LogEntry<string>(line.Instruction,
                     "Destination cannot be the same line as \".goto\" directive.");
+            var scopedLabel = Services.SymbolManager.GetFullyQualifiedName(gotoExp);
+            if (_gotoLabels.TryGetValue(scopedLabel, out var index))
+            {
+                if (index < lines.Index)
+                    lines.Rewind(index - 1);
+                else
+                    lines.FastForward(index);
             }
             else
             {
@@ -283,39 +371,37 @@ namespace Core6502DotNet
                         )
                        )
                     {
-                        Services.Log.LogEntry(line.Instruction,
+                        return Services.Log.LogEntry<string>(line.Instruction,
                             $"\"{gotoExp}\" is not a valid destination.");
                     }
-                    else
+                    while (_currentBlock != null)
                     {
-                        while (_currentBlock != null)
+                        // if where we landed lies outside of the current block scope
+                        // we need to pop out of that scope.
+                        _currentBlock.SeekBlockEnd(lines);
+                        if (iterCopy.Index > _currentBlock.Index)
                         {
-                            // if where we landed lies outside of the current block scope
-                            // we need to pop out of that scope.
-                            _currentBlock.SeekBlockEnd(lines);
-                            if (iterCopy.Index > _currentBlock.Index)
-                            {
-                                // did we land in a place still within the block scope?
-                                if (iterCopy.Index > lines.Index)
-                                    // no, pop out
-                                    DoPop(lines);
-                                else
-                                    // we're still within the current block, don't pop it
-                                    break;
-                            }
-                            else
-                            {
-                                // we went backwards, pop out of current scope
+                            // did we land in a place still within the block scope?
+                            if (iterCopy.Index > lines.Index)
+                                // no, pop out
                                 DoPop(lines);
-                            }
+                            else
+                                // we're still within the current block, don't pop it
+                                break;
                         }
-                        if (iterCopy.Index >= lines.Index)
-                            lines.FastForward(iterCopy.Index);
-                        else if (iterCopy.Index == 0)
-                            lines.Reset();
                         else
-                            lines.Rewind(iterCopy.Index - 1);
+                        {
+                            // we went backwards, pop out of current scope
+                            DoPop(lines);
+                        }
                     }
+                    if (iterCopy.Index >= lines.Index)
+                        lines.FastForward(iterCopy.Index);
+                    else if (iterCopy.Index == 0)
+                        lines.Reset();
+                    else
+                        lines.Rewind(iterCopy.Index - 1);
+                    Services.Log.LogEntry(line.Operands[0], "Consider using the \".label\" directive for \".goto\" references.", false, false);
                 }
                 else
                 {
@@ -355,10 +441,10 @@ namespace Core6502DotNet
                 token = tokens.Current;
             }
             Services.SymbolManager.PushScopeEphemeral();
-            var value = _functionDefs[functionName].Invoke(evalParms);
+            var value = _functionDefs[functionName].Invoke(evalParms, this);
             Services.SymbolManager.PopScopeEphemeral();
             if (double.IsNaN(value) && returnValueExpected)
-                throw new ReturnException(functionToken.Position,
+                throw new ReturnException(functionToken,
                     $"Function name \"{functionName}\" did not return a value.");
             return value;
         }
@@ -381,7 +467,7 @@ namespace Core6502DotNet
             }
             else
             {
-                new FunctionBlock(Services, 1).SeekBlockEnd(lines);
+                new FunctionBlock(Services, lines.Index, false).SeekBlockEnd(lines);
             }
         }
 
@@ -398,6 +484,11 @@ namespace Core6502DotNet
         public void InvokeFunction(RandomAccessIterator<Token> tokens) => CallFunction(tokens, false);
 
         public bool IsFunctionName(StringView symbol) => _functionDefs.ContainsKey(symbol);
+
+        /// <summary>
+        /// Gets whether the context of the block assembler is in a function block.
+        /// </summary>
+        public MultiLineAssembler MultiLineAssembler { get; }
 
         #endregion
     }

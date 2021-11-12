@@ -27,7 +27,7 @@ namespace Core6502DotNet
                     ".assert", ".bank", ".end",
                     ".eor", ".echo", ".forcepass",
                     ".format", ".invoke",
-                    ".initmem", ".target",
+                    ".initmem",
                     ".error", ".errorif",
                     ".pron", ".proff",
                     ".warnif", ".warn",
@@ -54,20 +54,20 @@ namespace Core6502DotNet
                 {
                     if (iterator.Current == null || iterator.PeekNext() == null)
                     {
-                        Output(line, $"Expression \"{Token.Join(line.Operands).Trim()}\" evaluated to true.");
+                        Output(line, $"Expression \"{Token.GetExpression(line.Operands[0])}\" evaluated to true.");
                     }
                     else
                     {
                         iterator.MoveNext();
                         if (!StringHelper.ExpressionIsAString(iterator, Services))
                         {
-                            Services.Log.LogEntry(iterator.Current, "String expression expected.");
+                            Services.Log.LogEntry(iterator.Current, "String expression expected.", false, true);
                         }
                         else
                         {
                             Output(line, StringHelper.GetString(iterator, Services));
                             if (iterator.Current != null)
-                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.", false, true);
                         }
                     }
                 }
@@ -91,7 +91,7 @@ namespace Core6502DotNet
                     return b;
                 };
                 if (iterator.Current != null)
-                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.", false, true);
             }
         }
 
@@ -107,7 +107,7 @@ namespace Core6502DotNet
                 Services.Output.SetBank((int)Services.Evaluator.Evaluate(iterator, byte.MinValue, byte.MaxValue),
                                         Services.Options.ResetPCOnBank);
                 if (iterator.Current != null)
-                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.", false, true);
             }
         }
 
@@ -146,7 +146,7 @@ namespace Core6502DotNet
                     }
                     else
                     {
-                        Services.Log.LogEntry(line.Instruction, "String expression expected.");
+                        return Services.Log.LogEntry<string>(line.Instruction, "String expression expected.");
                     }
                     if (iterator.Current != null)
                         throw new SyntaxException(iterator.Current, "Unexpected expression.");
@@ -156,8 +156,8 @@ namespace Core6502DotNet
                     break;
                 case ".forcepass":
                     if (line.Operands.Count > 0)
-                        Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
-                    else if (Services.CurrentPass == 0)
+                        return Services.Log.LogEntry<string>(line.Operands[0], "Unexpected expression.", false, true);
+                    if (Services.CurrentPass == 0)
                         Services.PassNeeded = true;
                     break;
                 case ".invoke":
@@ -166,9 +166,8 @@ namespace Core6502DotNet
                 case ".proff":
                 case ".pron":
                     if (line.Operands.Count > 0)
-                        Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
-                    else
-                        Services.PrintOff = instruction.Equals(".proff");
+                        return Services.Log.LogEntry<string>(line.Operands[0], "Unexpected expression.", false, true);
+                    Services.PrintOff = instruction.Equals(".proff");
                     break;
                 case ".dsection":
                     DefineSection(line);
@@ -176,7 +175,6 @@ namespace Core6502DotNet
                 case ".section":
                     return SetSection(line);
                 case ".format":
-                case ".target":
                     if (Services.CurrentPass == 0)
                     {
                         if (Services.Output.HasOutput)
@@ -186,17 +184,13 @@ namespace Core6502DotNet
                         else
                         {
                             if (!iterator.MoveNext() || !StringHelper.ExpressionIsAString(iterator, Services))
-                                Services.Log.LogEntry(line.Instruction, "Expression must be a string.");
-                            else if (!string.IsNullOrEmpty(Services.OutputFormat))
-                                Services.Log.LogEntry(line.Instruction, "Output format was previously specified.");
-                            else
-                                Services.SelectFormat(StringHelper.GetString(iterator, Services));
+                                return Services.Log.LogEntry<string>(line.Instruction, "Expression must be a string.");
+                            if (!string.IsNullOrEmpty(Services.OutputFormat))
+                                return Services.Log.LogEntry<string> (line.Instruction, "Output format was previously specified.");
+                            Services.SelectFormat(StringHelper.GetString(iterator, Services));
                             if (iterator.Current != null)
-                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                                return Services.Log.LogEntry<string> (iterator.Current, "Unexpected expression.", false, true);
                         }
-                        if (instruction.Equals(".target"))
-                            Services.Log.LogEntry(line.Instruction,
-                                "\".target\" is deprecated. Use \".format\" instead.", false);
                     }
                     break;
                 default:
@@ -217,17 +211,19 @@ namespace Core6502DotNet
                     throw new SyntaxException(line.Instruction.Position,
                         "Section name must be a string.");
                 var name = parms.Current.Name;
-                if (!parms.MoveNext() || Token.IsEnd(parms.PeekNext()))
+                if (!parms.MoveNext() || Token.IsTerminal(parms.PeekNext()))
                     throw new SyntaxException(line.Operands[0],
                         "Expected expression.");
-                if (!Token.IsEnd(parms.Current))
+                if (!Token.IsTerminal(parms.Current))
                     throw new SyntaxException(parms.Current,
                         "Unexpected expression.");
 
                 var starts = Convert.ToInt32(Services.Evaluator.Evaluate(parms, UInt24.MinValue, UInt24.MaxValue));
                 var ends = BinaryOutput.MaxAddress + 1;
-                if (!Token.IsEnd(parms.PeekNext()))
+                if (!Token.IsTerminal(parms.PeekNext()))
                     ends = Convert.ToInt32(Services.Evaluator.Evaluate(parms, UInt24.MinValue, UInt24.MaxValue));
+                if (Services.PassNeeded)
+                    throw new SyntaxException(line.Instruction, "One or more section definition parameters could not be evaluated.");
                 if (parms.MoveNext())
                     throw new SyntaxException(parms.Current, "Unexpected expression.");
                 Services.Output.DefineSection(name, starts, ends);
@@ -281,7 +277,7 @@ namespace Core6502DotNet
                 var iterator = line.Operands.GetIterator();
                 var amount = Services.Evaluator.Evaluate(iterator, sbyte.MinValue, byte.MaxValue);
                 if (iterator.Current != null || iterator.PeekNext() != null)
-                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                    Services.Log.LogEntry(iterator.Current, "Unexpected expression.", false, true);
                 else
                     Services.Output.InitMemory(Convert.ToByte((int)amount & 0xFF));
 
@@ -295,7 +291,7 @@ namespace Core6502DotNet
             if (doEcho)
                 Console.WriteLine(output);
             else if (Services.CurrentPass == 0)
-                Services.Log.LogEntry(line.Operands[0], output, !type.Equals(".warn"));
+                Services.Log.LogEntry(line.Instruction, output, false, !type.Equals(".warn"));
         }
 
         void DoAssert(SourceLine line)
@@ -319,7 +315,7 @@ namespace Core6502DotNet
                         {
                             var message = StringHelper.GetString(iterator, Services);
                             if (iterator.Current != null || iterator.PeekNext() != null)
-                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                                Services.Log.LogEntry(iterator.Current, "Unexpected expression.", false, true);
                             else
                                 Output(line, message);
                         }

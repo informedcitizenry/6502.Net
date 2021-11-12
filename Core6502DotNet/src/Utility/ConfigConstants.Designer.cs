@@ -61,7 +61,7 @@ namespace Core6502DotNet {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {&quot;caseSensitive&quot;:false,&quot;defines&quot;:[&quot;MYLABEL&quot;],&quot;echoEachPass&quot;:false,&quot;ignoreColons&quot;:false,&quot;resetPCOnBank&quot;:false,&quot;allowOverflow&quot;:false,&quot;includePath&quot;:&quot;/includes&quot;,&quot;listingOptions&quot;:{&quot;labelPath&quot;:&quot;labeldump.asm&quot;,&quot;listPath&quot;:&quot;source_list.asm&quot;,&quot;noAssembly&quot;:false,&quot;noDisassembly&quot;:false,&quot;noSource&quot;:false,&quot;truncateAssembly&quot;:false,&quot;verbose&quot;:false,&quot;labelsAddressesOnly&quot;:false},&quot;loggingOptions&quot;:{&quot;checksum&quot;:false,&quot;noStats&quot;:false,&quot;errorPath&quot;:&quot;errors.txt&quot;,&quot;noWarnings&quot;:false,&quot;quietMode&quot;:false,&quot;suppressUnusedSectionWarning&quot;:false,&quot;w [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to {&quot;allowOverflow&quot;:false,&quot;caseSensitive&quot;:false,&quot;defines&quot;:[&quot;MYLABEL&quot;],&quot;ignoreColons&quot;:false,&quot;includePath&quot;:&quot;/includes&quot;,&quot;listingOptions&quot;:{&quot;labelPath&quot;:&quot;labeldump.asm&quot;,&quot;labelsAddressesOnly&quot;:false,&quot;listPath&quot;:&quot;source_list.asm&quot;,&quot;noAssembly&quot;:false,&quot;noDisassembly&quot;:false,&quot;noSource&quot;:false,&quot;truncateAssembly&quot;:false,&quot;verbose&quot;:false},&quot;loggingOptions&quot;:{&quot;checksum&quot;:false,&quot;echoEachPass&quot;:false,&quot;errorPath&quot;:&quot;errors.txt&quot;,&quot;noStats&quot;:false,&quot;noWarnings&quot;:false,&quot;quietMode&quot;:false,&quot;suppressUnusedSectionWarning&quot;:false,&quot;warnCaseMismatch&quot;:false [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CONFIG_FULL {
             get {
@@ -79,11 +79,20 @@ namespace Core6502DotNet {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {&quot;properties&quot;:{&quot;caseSensitive&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;ignoreColons&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;resetPCOnBank&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;allowOverflow&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;defines&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;default&quot;:[],&quot;items&quot;:{&quot;type&quot;:&quot;string&quot;}},&quot;echoEachPass&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;default&quot;:false},&quot;includePath&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},&quot;listingOptions&quot;:{&quot;type&quot;:&quot;object&quot;,&quot;default&quot;:{},&quot;properties&quot;:{&quot;labelPath&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;default&quot;:&quot;&quot;},&quot;listPath&quot;:{&quot;type&quot;:&quot;string&quot;,&quot; [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to {&quot;$schema&quot;:&quot;http://json-schema.org/draft-03/schema&quot;,&quot;properties&quot;:{&quot;caseSensitive&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;ignoreColons&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;resetPCOnBank&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;allowOverflow&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;defines&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;items&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;minItems&quot;:1,&quot;uniqueItems&quot;:true},&quot;includePath&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;listingOptions&quot;:{&quot;type&quot;:&quot;object&quot;,&quot;properties&quot;:{&quot;labelPath&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;listPath&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;noAssembly&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;noDisassembly&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;noSource&quot;:{&quot;typ [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CONFIG_SCHEMA {
             get {
                 return ResourceManager.GetString("CONFIG_SCHEMA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {&quot;$schema&quot;:&quot;https://json-schema.org/draft/2020-12/schema&quot;,&quot;type&quot;:&quot;object&quot;,&quot;properties&quot;:{&quot;allowOverflow&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;caseSensitive&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;defines&quot;:{&quot;$ref&quot;:&quot;#/$defs/nonEmptySet&quot;},&quot;ignoreColons&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;includePath&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;listingOptions&quot;:{&quot;allOf&quot;:[{&quot;properties&quot;:{&quot;labelPath&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;labelsAddressesOnly&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;listPath&quot;:{&quot;type&quot;:&quot;string&quot;},&quot;noAssembly&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;noDisassembly&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;noSource&quot;:{&quot;type&quot;:&quot;boolean&quot;},&quot;truncat [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CONFIG_SCHEMA_202012 {
+            get {
+                return ResourceManager.GetString("CONFIG_SCHEMA_202012", resourceCulture);
             }
         }
     }

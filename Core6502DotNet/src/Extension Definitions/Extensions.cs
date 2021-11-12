@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -93,49 +94,53 @@ namespace Core6502DotNet
         /// </summary>
         /// <param name="c">The Unicode character.</param>
         /// <returns><c>true</c>, if the character is of this type, <c>false</c> otherwise.</returns>
-        public static bool IsSpecialOperator(this char c) => c == '*' || c == '-' || c == '+';
+        public static bool IsSpecialOperator(this char c) => c == '*' || c == '+' || c == '-';
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a group operator
         /// </summary>
         /// <param name="c">The Unicode character.</param>
         /// <returns><c>true</c>, if the character is a group operator, <c>false</c> otherwise.</returns>
-        public static bool IsOpenOperator(this char c) => c == '(' || c == '[' || c == '{';
+        public static bool IsOpenOperator(this char c) => char.GetUnicodeCategory(c) == UnicodeCategory.OpenPunctuation;
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a group enclosing operator
         /// </summary>
         /// <param name="c">The Unicode character.</param>
         /// <returns><c>true</c>, if the character is a group enclosing operator, <c>false</c> otherwise.</returns>
-        public static bool IsClosedOperator(this char c) => c == ')' || c == ']' || c == '}';
+        public static bool IsClosedOperator(this char c) => char.GetUnicodeCategory(c) == UnicodeCategory.ClosePunctuation;
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a unary operator
         /// </summary>
         /// <param name="c">The Unicode character.</param>
         /// <returns><c>true</c>, if the character is a unary operator, <c>false</c> otherwise.</returns>
-        public static bool IsUnaryOperator(this char c) => c == '-' || c == '+' || c == '~' || c == '!' || c == '`' || 
-                                                           c == '<' || c == '>' || c == '^' || c == '&' || c == '$' || c == '%';
+        public static bool IsUnaryOperator(this char c) => c == '!' || c == '$' || c == '%' || c == '&' || c == '+' || 
+                                                           c == '-' || c == '<' || c == '>' || c == '^' || c == '`' || c == '~';
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a hex operator
         /// </summary>
         /// <param name="c">The Unicode character.</param>
         /// <returns><c>true</c>, if the character is a hex, <c>false</c> otherwise.</returns>
-        public static bool IsHex(this char c) => char.IsDigit(c) || ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+        public static bool IsHex(this char c) => Uri.IsHexDigit(c);
 
         /// <summary>
         /// Indicates whether the specified Unicode character is a radix operator.
         /// </summary>
-        /// <returns><c>true</c>, if the character is a radix operator, <c>false</c> otherwise.</returns>
         /// <param name="c">The Unicode character.</param>
+        /// <returns><c>true</c>, if the character is a radix operator, <c>false</c> otherwise.</returns>
         public static bool IsRadixOperator(this char c) => c == '$' || c == '%';
 
-        public static bool IsOperator(this char c) => c == '|' || c == '&' || c == '<' || c == '>' ||
-            c == '=' || c == '!' || c == '^' || c == '(' || c == ')' || c == '[' || c == ']' ||
-            c == '{' || c == '}' || c == '%' || c == '`' || c == '~' || c == '*' || c == '-' ||
-            c == '+' || c == '/' || c == ',' || c == ':' || c == '$';
-
+        /// <summary>
+        /// Indicates whether the specified Unicode character is a 6502.Net operator.
+        /// </summary>
+        /// <param name="c">The unicode character.</param>
+        /// <returns><c>true</c>, if the character is an operator, <c>false</c> otherwise.</returns>
+        public static bool IsOperator(this char c) => c == '!' || c == '$' || c == '%' || c == '&' ||
+                  c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == '-' || c == '/' || 
+                  c == ':' || c == '<' || c == '=' || c == '>' || c == '[' || c == ']' || c == '^' || 
+                  c == '`' || c == '{' || c == '|' || c == '}' || c == '~';
     }
 
     public static class Int32_Extension
@@ -222,7 +227,7 @@ namespace Core6502DotNet
             d1.AlmostEquals(Math.Truncate(d1));
     }
 
-    public static class IEnumerableTExtension
+    public static class IEnumerableT_Extension
     {
         /// <summary>
         /// Get the iterator for the <see cref="IEnumerable{T}"/> collection.
@@ -289,5 +294,116 @@ namespace Core6502DotNet
             }
             return sb.ToString();
         }
+    }
+
+    public static class NullableT_Extension
+    {
+        /// <summary>
+        /// Determines if the <see cref="bool"/>? is not null and its value is true.
+        /// </summary>
+        /// <param name="value">The bool.</param>
+        /// <returns><c>true</c> if the <see cref="bool"/>? is not null and 
+        /// its value is true, otherwise <c>false</c>.</returns>
+        public static bool IsTrue(this bool? value)
+                => value.HasValue && value.Value == true;
+
+        /// <summary>
+        /// Determines if the <see cref="int"/>? is not null and its value is greater
+        /// than the compared integer value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="int"/>? is not null and
+        /// its value is greater than the compared value, <c>false</c> otherwise.</returns>
+        public static bool GreaterThan(this int? d, int value)
+            => d.HasValue && d.Value > value;
+
+        /// <summary>
+        /// Determines if the <see cref="int"/>? is not null and its value is greater
+        /// than or equal to the compared integer value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="int"/>? is not null and
+        /// its value is greater or equal to the compared value, <c>false</c> otherwise.</returns>
+        public static bool GreaterThanOrEqual(this int? d, int value)
+            => d.HasValue && d.Value >= value;
+
+        /// <summary>
+        /// Determines if the <see cref="int"/>? is not null and its value is less
+        /// than or equal to the compared integer value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="int"/>? is not null and
+        /// its value is less than or equal to the compared value, <c>false</c> otherwise.</returns>
+        public static bool LessThanOrEqual(this int? d, int value)
+            => d.HasValue && d.Value <= value;
+
+        /// <summary>
+        /// Determines if the <see cref="int"/>? is not null and its value is less
+        /// than the compared integer value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="int"/>? is not null and
+        /// its value is less than the compared value, <c>false</c> otherwise.</returns>
+        public static bool LessThan(this int? d, int value)
+            => d.HasValue && d.Value < value;
+
+        /// <summary>
+        /// Determines if the <see cref="double"/>? is not null and its value is greater
+        /// than the compared double value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="double"/>? is not null and
+        /// its value is greater than the compared value, <c>false</c> otherwise.</returns>
+        public static bool GreaterThan(this double? d, double value)
+            => d.HasValue && d.Value > value;
+
+        /// <summary>
+        /// Determines if the <see cref="double"/>? is not null and its value is greater
+        /// than or equal to the compared double value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="double"/>? is not null and
+        /// its value is greater than or equal to the compared value, <c>false</c> otherwise.</returns>
+        public static bool GreaterThanOrEqual(this double? d, double value)
+            => d.HasValue && d.Value >= value;
+
+        /// <summary>
+        /// Determines if the <see cref="double"/>? is not null and its value is less
+        /// than the compared double value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="double"/>? is not null and
+        /// its value is less than the compared value, <c>false</c> otherwise.</returns>
+        public static bool LessThanOrEqual(this double? d, double value)
+            => d.HasValue && d.Value <= value;
+
+        /// <summary>
+        /// Determines if the <see cref="double"/>? is not null and its value is less
+        /// than the compared double value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="int"/>? is not null and
+        /// its value is greater than the compared value, <c>false</c> otherwise.</returns>
+        public static bool LessThan(this double? d, double value)
+            => d.HasValue && d.Value < value;
+
+        /// <summary>
+        /// Determines if the <see cref="long"/>? is not null and its value is less
+        /// than or equal to the compared long value.
+        /// </summary>
+        /// <param name="d">This value.</param>
+        /// <param name="value">The compared value.</param>
+        /// <returns><c>true</c> if the <see cref="long"/>? is not null and
+        /// its value is less than or equal to the compared value, <c>false</c> otherwise.</returns>
+        public static bool LessThanOrEqual(this long? d, long value)
+            => d.HasValue && d.Value <= value;
     }
 }

@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Core6502DotNet
@@ -14,11 +15,15 @@ namespace Core6502DotNet
     /// Represents a sequence of characters at a specific position and
     /// length in a <see cref="string"/> object.
     /// </summary>
-    public class StringView : IEquatable<StringView>, IComparable<StringView>
+    public class StringView : IEquatable<StringView>, 
+                              IComparable<StringView>, 
+                              IEnumerable<char>, 
+                              IEnumerator<char>
     {
         #region Members
         
         readonly int _endIndex;
+        int _enumerator;
 
         #endregion
 
@@ -46,7 +51,8 @@ namespace Core6502DotNet
 
         /// <summary>
         /// Constructs a new instance of a string view.
-        /// </summary>The string object to construct the view
+        /// </summary>
+        /// <param name="str">The string object to construct the view
         /// from.</param>
         /// <param name="position">The starting position of the string view.</param>
         /// <param name="length">The view length.</param>
@@ -55,7 +61,8 @@ namespace Core6502DotNet
             String = str;
             Position = position;
             Length = length;
-            _endIndex = Position + Length;
+            _endIndex = Position + Length; 
+            _enumerator = -1;
         }
 
         #endregion
@@ -131,13 +138,27 @@ namespace Core6502DotNet
             => Substring(startIndex, Length - startIndex);
 
         /// <summary>
-        /// Gets the <see cref="char"/> object at a specified position in the
-        /// current <see cref="StringView"/> object.
+        /// Gets a new <see cref="StringView"/> within the specified <see cref="Range"/>
+        /// of the current <see cref="StringView"/>.
         /// </summary>
-        /// <param name="index">The index.</param>
-        /// <returns>The object at position index.</returns>
+        /// <param name="range">The range within the current <see cref="StringView"/>.</param>
+        /// <returns>A <see cref="StringView"/> from a range of the current <see cref="StringView"/>.</returns>
         /// <exception cref="IndexOutOfRangeException"></exception>
-        public char this[int index] => String[index + Position];
+        public StringView this[Range range]
+        {
+            get
+            {
+                var actStart = range.Start.Value;
+                if (range.Start.IsFromEnd)
+                    actStart = Length - actStart;
+                var actEnd = range.End.Value;
+                if (range.End.IsFromEnd)
+                    actEnd = Length - actEnd;
+                var len = actEnd - actStart + 1;
+                return new StringView(String, Position + actStart, len);
+            }
+        }
+
 
         /// <summary>
         /// Gets the <see cref="char"/> object at a specified position in the
@@ -304,6 +325,20 @@ namespace Core6502DotNet
         public int CompareTo(StringView value, StringViewComparer comparer)
             => comparer.Compare(this, value);
 
+        public IEnumerator<char> GetEnumerator() => this;
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        
+        public bool MoveNext() => ++_enumerator + Position < _endIndex;
+        
+        public void Reset() { }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            _enumerator = -1;
+        }
+
         #endregion
 
         #region Properties
@@ -322,6 +357,11 @@ namespace Core6502DotNet
         /// The <see cref="string"/> object for the view.
         /// </summary>
         public string String { get; }
+
+        public char Current => 
+            _enumerator >= 0 && _enumerator + Position < _endIndex ? String[Position + _enumerator] : '\0';
+
+        object IEnumerator.Current => Current;
 
         #endregion
     }

@@ -205,9 +205,9 @@ namespace Core6502DotNet
                 if (firstToken.Name.Equals("["))
                 {
                     var forcedGroup = Token.GetGroup(tokens).Skip(1).SkipLast(1).GetIterator();
-                    if (!Token.IsEnd(tokens.Current))
+                    if (!Token.IsTerminal(tokens.GetNext()))
                     {
-                        var opSize = Services.Evaluator.Evaluate(forcedGroup, 8, 24);
+                        var opSize = Services.Evaluator.Evaluate(forcedGroup);
                         if (forcedGroup.Current != null)
                             throw new SyntaxException(forcedGroup.Current.Position, "Unexpected expression.");
                         var forcedMode = opSize switch
@@ -330,7 +330,7 @@ namespace Core6502DotNet
                     var iterator = line.Operands.GetIterator();
                     Page = (int)Services.Evaluator.Evaluate(iterator, byte.MinValue, byte.MaxValue);
                     if (iterator.Current != null)
-                        Services.Log.LogEntry(iterator.Current, "Unexpected expression.");
+                        Services.Log.LogEntry(iterator.Current, "Unexpected expression.", false, true);
                 }
                 return string.Empty;
             }
@@ -359,9 +359,9 @@ namespace Core6502DotNet
                             var errorMsg = "Relative offset for branch was too far.";
                             if (PseudoBranchSupported)
                                 Services.Log.LogEntry(line.Operands[0],
-                                    $"{errorMsg}. Consider using a pseudo branch directive.");
+                                    $"{errorMsg}. Consider using a pseudo branch directive.", false, true);
                             else
-                                Services.Log.LogEntry(line.Operands[0], errorMsg);
+                                Services.Log.LogEntry(line.Operands[0], errorMsg, false, true);
                             return string.Empty;
                         }
                         Evaluations[evalIx] = 0;

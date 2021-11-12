@@ -154,10 +154,11 @@ namespace Core6502DotNet
         /// <summary>
         /// Expands the macro into source from the invocation.
         /// </summary>
+        /// <param name="invocation">The <see cref="Token"/> representing the macro invocation.</param>
         /// <param name="passedParams">The parameters passed from the invocation.</param>
         /// <returns>A parsed collection of <see cref="SourceLine"/>s representing the expanded macro, including all
         /// substituted parameters.</returns>
-        public IEnumerable<SourceLine> Expand(List<Token> passedParams)
+        public IEnumerable<SourceLine> Expand(Token invocation, List<Token> passedParams)
         {
             var paramList = GetParamListFromParameters(passedParams.GetIterator());
             var expanded = new List<SourceLine>();
@@ -170,23 +171,25 @@ namespace Core6502DotNet
                     foreach (var (paramIndex, reference) in source.ParamPlaces)
                     {
                         string substitution;
+                        Token substitutionToken;
                         if (paramIndex >= paramList.Count)
                         {
                             if (paramIndex > Params.Count || Params[paramIndex].DefaultValue.Count == 0)
-                                throw new ExpressionException(source.Line.Instruction, "Macro expected parameter but was not supplied.");
-                            substitution = Token.Join(Params[paramIndex].DefaultValue).Trim();
+                                throw new ExpressionException(invocation, "Macro expected parameter but was not supplied.");
+                            substitutionToken = Params[paramIndex].DefaultValue[0];
                         }
                         else
                         {
-                            substitution = Token.Join(paramList[paramIndex]).Trim();
+                            substitutionToken = paramList[paramIndex][0];
                         }
+                        substitution = Token.GetExpression(substitutionToken);
                         if (substitution.Contains('$'))
-                            substitution = substitution.Replace("$", "$$");
+                            substitution = substitution.Replace("$", "$$"); // for regex
                         string pattern;
                         if (reference[0] == '@')
                         {
                             if (!substitution.EnclosedInDoubleQuotes())
-                                throw new ExpressionException(source.Line.Instruction, "Macro parameter was not a string.");
+                                throw new ExpressionException(substitutionToken, "Macro parameter was not a string.");
                             pattern = @"@\{" + reference[2..^1] + @"\}";
                             substitution = substitution.TrimOnce('"');
                         }

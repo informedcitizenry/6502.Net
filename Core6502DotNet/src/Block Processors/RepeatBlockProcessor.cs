@@ -12,7 +12,7 @@ namespace Core6502DotNet
     /// <summary>
     /// A class responsible for processing .repeat/.endrepeat blocks.
     /// </summary>
-    public class RepeatBlock : BlockProcessorBase
+    public sealed class RepeatBlock : BlockProcessorBase
     {
         #region Members
 

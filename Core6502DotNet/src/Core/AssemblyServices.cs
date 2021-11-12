@@ -12,14 +12,6 @@ using System.Text.RegularExpressions;
 namespace Core6502DotNet
 {
     /// <summary>
-    /// A delegate that defines a handler for the event when the current
-    /// pass count has changed.
-    /// </summary>
-    /// <param name="sender">The sender object.</param>
-    /// <param name="args">The event args.</param>
-    public delegate void PassesChangedEventHandler(object sender, EventArgs args);
-
-    /// <summary>
     /// A service for all shared assembly resources and state, such as
     /// <see cref="ErrorLog"/> and <see cref="BinaryOutput"/> support classes.
     /// </summary>
@@ -38,12 +30,11 @@ namespace Core6502DotNet
             IsReserved = new List<Func<StringView, bool>>();
             InstructionLookupRules = new List<Func<StringView, bool>> { sv => sv[0] == '.' };
             Options = options;
-            OutputFormat = Options.Format;
+            OutputFormat = Options.Format ?? string.Empty;
             CPU = Options.CPU;
             Encoding = new AsmEncoding(Options.CaseSensitive);
             Evaluator = new Evaluator(Options.CaseSensitive) { SymbolEvaluator = EvaluateSymbol };
             SymbolManager = new SymbolManager(options.CaseSensitive, Evaluator);
-            SymbolManager.AddValidSymbolNameCriterion(s => !Evaluator.IsReserved(s));
             Log = new ErrorLog(Options.WarningsAsErrors);
             Output = new BinaryOutput(true, Options.CaseSensitive, Options.LongAddressing);
         }
@@ -174,6 +165,15 @@ namespace Core6502DotNet
 
         #endregion
 
+        #region Events
+
+        /// <summary>
+        /// An event that signals to subscribing handlers that a pass has changed.
+        /// </summary>
+        public event EventHandler<EventArgs> PassChanged;
+
+        #endregion
+
         #region Properties
 
         /// <summary>
@@ -187,11 +187,6 @@ namespace Core6502DotNet
         /// property resets the PassNeeded property.
         /// </summary>
         public int CurrentPass { get; private set; }
-
-        /// <summary>
-        /// An event that signals to subscribing handlers that a pass has changed.
-        /// </summary>
-        public event PassesChangedEventHandler PassChanged;
 
         /// <summary>
         /// Gets or sets the flag that determines if another pass is needed. 

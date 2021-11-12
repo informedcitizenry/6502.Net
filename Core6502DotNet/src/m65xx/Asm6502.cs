@@ -355,7 +355,7 @@ namespace Core6502DotNet.m65xx
                 {
                     var ix = operand.Index;
                     _ = Token.GetGroup(operand);
-                    falseIndirect = !Token.IsEnd(operand.Current);
+                    falseIndirect = !Token.IsTerminal(operand.PeekNext());
                     operand.SetIndex(ix);
                 }
                 if (first.Name.Equals("[") || (first.Name.Equals("(") && !falseIndirect))
@@ -489,32 +489,27 @@ namespace Core6502DotNet.m65xx
         string AssembleLongShort(SourceLine line)
         {
             if (line.Operands.Count > 0)
+                return Services.Log.LogEntry<string>(line.Operands[0], "Unexpected expression.", false, true);
+            var instruction = line.Instruction.Name.ToLower();
+            if (!CPU.Equals("65816"))
             {
-                Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
+                Services.Log.LogEntry(line.Instruction,
+                    $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"",
+                    false);
             }
             else
             {
-                var instruction = line.Instruction.Name.ToLower();
-                if (!CPU.Equals("65816"))
+                var size = instruction.Contains("16") ? 3 : 2;
+                if (instruction[1] == 'm')
                 {
-                    Services.Log.LogEntry(line.Instruction, 
-                        $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", 
-                        false);
+                    _m16 = size == 3;
+                    SetImmediate(size, 'a');
                 }
-                else
+                if (instruction[1] == 'x' || instruction[2] == 'x')
                 {
-                    var size = instruction.Contains("16") ? 3 : 2;
-                    if (instruction[1] == 'm')
-                    {
-                        _m16 = size == 3;
-                        SetImmediate(size, 'a');
-                    }
-                    if (instruction[1] == 'x' || instruction[2] == 'x')
-                    {
-                        _x16 = size == 3;
-                        SetImmediate(size, 'x');
-                        SetImmediate(size, 'y');
-                    }
+                    _x16 = size == 3;
+                    SetImmediate(size, 'x');
+                    SetImmediate(size, 'y');
                 }
             }
             return string.Empty;
@@ -523,10 +518,8 @@ namespace Core6502DotNet.m65xx
         string AssemblePseudoBranch(SourceLine line)
         {
             if (line.Operands.Count == 0)
-            {
-                Services.Log.LogEntry(line.Instruction, "Missing branch location.");
-                return string.Empty;
-            }
+                return Services.Log.LogEntry<string>(line.Instruction, "Missing branch location.");
+            
             var iterator = line.Operands.GetIterator();
             var offset = Services.Evaluator.Evaluate(iterator, short.MinValue, ushort.MaxValue);
             if (iterator.Current != null)
@@ -615,7 +608,7 @@ namespace Core6502DotNet.m65xx
         string AssembleAuto(SourceLine line)
         {
             if (line.Operands.Count > 0)
-                Services.Log.LogEntry(line.Operands[0], "Unexpected expression.");
+                Services.Log.LogEntry(line.Operands[0], "Unexpected expression.", false, true);
             else if (!CPU.Equals("65816"))
                 Services.Log.LogEntry(line.Instruction, $"Directive \"{line.Instruction.Name}\" is ignored for CPU \"{CPU}\"", 
                     false);

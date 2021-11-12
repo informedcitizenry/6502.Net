@@ -120,7 +120,7 @@ namespace Core6502DotNet.z80
                 Z80Mode mode = Z80Mode.Implied;
                 if (operand.IsSeparator())
                     throw new SyntaxException(operand, "Expression expected.");
-                while (!Token.IsEnd(operand))
+                while (!Token.IsTerminal(operand))
                 {
                     if (line.Instruction.Name.Equals("rst", Services.StringComparison) && CPU.Equals("z80"))
                     {
@@ -146,7 +146,7 @@ namespace Core6502DotNet.z80
                         if (_namedModes.TryGetValue(operand.Name, out var regMode))
                         {
                             mode |= regMode;
-                            if (!Token.IsEnd((operand = operands.GetNext())))
+                            if (!Token.IsTerminal((operand = operands.GetNext())))
                             {
                                 if (!operand.IsSpecialOperator() || operand.Name.Equals("*"))
                                     throw new SyntaxException(operand, "Unexpected expression.");
@@ -171,7 +171,7 @@ namespace Core6502DotNet.z80
                                 {
                                     operands.SetIndex(firstIndex);
                                     _ = Token.GetGroup(operands);
-                                    isFalseIndirect = !Token.IsEnd(operands.Current);
+                                    isFalseIndirect = !Token.IsTerminal(operands.Current);
                                     operands.SetIndex(firstIndex);
                                 }
                                 if (isFalseIndirect)
@@ -185,7 +185,7 @@ namespace Core6502DotNet.z80
                         operand = operands.Current;
                         if (operand != null)
                         {
-                            if (!Token.IsEnd(operand) || (operand.Name.Equals(")") && !Token.IsEnd(operand = operands.GetNext())))
+                            if (!Token.IsTerminal(operand) || (operand.Name.Equals(")") && !Token.IsTerminal(operand = operands.GetNext())))
                                 throw new SyntaxException(operand, "Unexpected expression.");
                         }
                     }
@@ -310,66 +310,61 @@ namespace Core6502DotNet.z80
                 if (isCb00)
                     Services.Output.Add(instruction.Opcode >> 16, 1);
                 if (Services.Output.LongProgramCounter - LongPCOnAssemble != instruction.Size && !Services.PassNeeded)
+                    return Services.Log.LogEntry<string>(line.Instruction, $"Mode not supported for instruction \"{line.Instruction}\".");
+                if (Services.PassNeeded || string.IsNullOrEmpty(Services.Options.ListingFile))
+                    return string.Empty;
+                var disasmBuilder = new StringBuilder();
+                if (!Services.Options.NoAssembly)
                 {
-                    Services.Log.LogEntry(line.Instruction, $"Mode not supported for instruction \"{line.Instruction}\".");
+                    var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.', true);
+                    disasmBuilder.Append(byteString.PadRight(25));
                 }
                 else
                 {
-                    if (Services.PassNeeded || string.IsNullOrEmpty(Services.Options.ListingFile))
-                        return string.Empty;
-                    var disasmBuilder = new StringBuilder();
-                    if (!Services.Options.NoAssembly)
+                    disasmBuilder.Append($".{LogicalPCOnAssemble:x4}                        ");
+                }
+                if (!Services.Options.NoDisassembly)
+                {
+                    var asmBuilder = new StringBuilder($"{line.Instruction.Name.ToLower()} ");
+                    for (var i = 0; i < 3; i++)
                     {
-                        var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.', true);
-                        disasmBuilder.Append(byteString.PadRight(25));
-                    }
-                    else
-                    {
-                        disasmBuilder.Append($".{LogicalPCOnAssemble:x4}                        ");
-                    }
-                    if (!Services.Options.NoDisassembly)
-                    {
-                        var asmBuilder = new StringBuilder($"{line.Instruction.Name.ToLower()} ");
-                        for (var i = 0; i < 3; i++)
+                        if (modes[i] == Z80Mode.Implied ||
+                            (CPU.Equals("z80") && i == 1 &&
+                            modes[0] == Z80Mode.A &&
+                            modes[1] == Z80Mode.A &&
+                            Reserved.IsOneOf("ImpliedA", line.Instruction.Name)))
+                            break;
+                        if (i > 0)
+                            asmBuilder.Append(',');
+                        if (line.Instruction.Name.Equals("rst", Services.StringComparison))
                         {
-                            if (modes[i] == Z80Mode.Implied ||
-                                (CPU.Equals("z80") && i == 1 && 
-                                modes[0] == Z80Mode.A && 
-                                modes[1] == Z80Mode.A && 
-                                Reserved.IsOneOf("ImpliedA", line.Instruction.Name)))
-                                break;
-                            if (i > 0)
-                                asmBuilder.Append(',');
-                            if (line.Instruction.Name.Equals("rst", Services.StringComparison))
+                            if (CPU.Equals("z80"))
+                                asmBuilder.Append($"${(int)(modes[i] & Z80Mode.Bit7) * 8:x2}");
+                            else
+                                asmBuilder.Append((int)(modes[i] & ~Z80Mode.BitOp));
+                        }
+                        else
+                        {
+                            if (modes[i].HasFlag(Z80Mode.BitOp))
                             {
-                                if (CPU.Equals("z80"))
-                                    asmBuilder.Append($"${(int)(modes[i] & Z80Mode.Bit7) * 8:x2}");
-                                else
-                                    asmBuilder.Append((int)(modes[i] & ~Z80Mode.BitOp));
+                                asmBuilder.Append((int)(modes[i] & Z80Mode.Bit7));
                             }
                             else
                             {
-                                if (modes[i].HasFlag(Z80Mode.BitOp))
-                                {
-                                    asmBuilder.Append((int)(modes[i] & Z80Mode.Bit7));
-                                }
-                                else
-                                {
-                                    var format = s_disassemblyFormats[modes[i]];
-                                    asmBuilder.AppendFormat(format, displayEvals[i]);
-                                }
+                                var format = s_disassemblyFormats[modes[i]];
+                                asmBuilder.AppendFormat(format, displayEvals[i]);
                             }
                         }
-                        disasmBuilder.Append(asmBuilder.ToString().PadRight(18));
                     }
-                    else
-                    {
-                        disasmBuilder.Append("                  ");
-                    }
-                    if (!Services.Options.NoSource)
-                        disasmBuilder.Append(line.Source);
-                    return disasmBuilder.ToString();
+                    disasmBuilder.Append(asmBuilder.ToString().PadRight(18));
                 }
+                else
+                {
+                    disasmBuilder.Append("                  ");
+                }
+                if (!Services.Options.NoSource)
+                    disasmBuilder.Append(line.Source);
+                return disasmBuilder.ToString();
             }
             else if (!Services.PassNeeded)
             {
