@@ -108,7 +108,7 @@ namespace Core6502DotNet.Json
                     Maximum = GetProperty<double?>(obj, "maximum");
                     ExclusiveMaximum = GetProperty<double?>(obj, "exclusiveMaximum");
                     ExclusiveMinimum = GetProperty<double?>(obj, "exclusiveMinimum");
-                    MultipleOf = GetProperty<long?>(obj, "multipleOf");
+                    MultipleOf = GetProperty<double?>(obj, "multipleOf");
                     MinLength = GetProperty<int?>(obj, "minLength");
                     MaxLength = GetProperty<int?>(obj, "maxLength");
                     MinItems = GetProperty<int?>(obj, "minItems");
@@ -520,7 +520,7 @@ namespace Core6502DotNet.Json
         /// <summary>
         /// Validates the instance number is a multiple of the given value.
         /// </summary>
-        public long? MultipleOf { get; }
+        public double? MultipleOf { get; }
 
         /// <summary>
         /// Validates the instance number is greater than or equal to the given value.

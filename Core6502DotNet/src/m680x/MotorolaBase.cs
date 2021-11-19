@@ -423,7 +423,7 @@ namespace Core6502DotNet
             var sb = new StringBuilder();
             if (!Services.Options.NoAssembly)
             {
-                var byteString = Services.Output.GetBytesFrom(LongPCOnAssemble).ToString(LongPCOnAssemble, '.');
+                var byteString = Services.Output.GetBytesFrom(LongLogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.');
                 sb.Append(byteString.PadRight(Padding));
             }
             else

@@ -46,11 +46,11 @@ namespace Core6502DotNet
         public RandomAccessIterator(IEnumerable<T> collection, int firstIndex)
         {
             if (collection == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(collection), "Argument cannot be null.");
             _list = collection.ToArray();
             _length = _list.Length;
             if (_length > 0 && (firstIndex < -1 || firstIndex >= _length))
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(firstIndex), "Index is out of range.");
             _firstIndex = firstIndex;
             Index = firstIndex;
         }
@@ -62,13 +62,25 @@ namespace Core6502DotNet
         /// <param name="reset">Reset the copied indicator.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public RandomAccessIterator(RandomAccessIterator<T> iterator, bool reset)
+           : this(iterator, reset ? iterator._firstIndex : iterator.Index) {}
+
+        /// <summary>
+        /// Constructs a new instance of a <see cref="RandomAccessIterator{T}"/> class.
+        /// </summary>
+        /// <param name="iterator">An iterator from which to copy.</param>
+        /// <param name="index">Point the copy to the desired index.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public RandomAccessIterator(RandomAccessIterator<T> iterator, int index)
         {
             if (iterator == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(iterator), "Argument cannot be null.");
+            if (index < -1 || index >= iterator._length)
+                throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
             _firstIndex = iterator._firstIndex;
             _list = iterator._list;
             _length = iterator._length;
-            Index = reset ? _firstIndex : iterator.Index;
+            Index = index;
         }
 
         #endregion
@@ -84,10 +96,10 @@ namespace Core6502DotNet
         public void FastForward(int amount)
         {
             if (amount == 0)
-                throw new ArgumentException();
+                throw new ArgumentException("Amount cannot be zero.");
 
             if (amount < Index || amount >= _length)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(amount), "Amount is out of range.");
             Index = amount - 1;
         }
 
@@ -146,7 +158,7 @@ namespace Core6502DotNet
         public void Rewind(int index)
         {
             if (index < _firstIndex || index >= Index)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
             Index = index;
         }
 
@@ -168,7 +180,7 @@ namespace Core6502DotNet
             if (index < Index)
                 Rewind(index);
             else if (index >= _length)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(index), "Index is out of range.");
 
             Index = index;
         }

@@ -290,6 +290,7 @@ namespace Core6502DotNet
             var expected = TokenType.LabelInstr;
             var previousType = TokenType.None;
             var opens = new Stack<char>();
+            var ternaryExpressions = 0;
             Macro definingMacro = null;
             string nextLine, lineSource;
             blockComment = stopProcessing = previousWasPlus = false; readyForNewLine = true;
@@ -354,7 +355,7 @@ namespace Core6502DotNet
                         if (c == EOS)
                             break;
                     }
-                    if (c == ':' && it.PeekNext() != '=')
+                    if (c == ':' && it.PeekNext() != '=' && ternaryExpressions == 0)
                     {
                         if ((expected != TokenType.Instruction && expected != TokenType.EndOrBinary && 
                             (tokens.Count == 0 || tokens[^1].Type != TokenType.Instruction)) || !LineTerminates())
@@ -546,6 +547,13 @@ namespace Core6502DotNet
                                 it.MoveNext();
                                 peek = it.PeekNext();
                                 size++;
+                                if (c == '<' && peek == '>')
+                                {
+                                    // spaceship operator
+                                    it.MoveNext();
+                                    peek = it.PeekNext();
+                                    size++;
+                                }
                             }
                             c = it.Current;
                         }
@@ -566,7 +574,7 @@ namespace Core6502DotNet
                                         type = TokenType.Label;
                                         expected = TokenType.Instruction;
                                         if (c != '*' && position > 0 && _options.WarnOnLabelLeft)
-                                            _options.Log?.LogEntry(fileName, lineNumber, position + 1, "Label is not at the beginning of the line.", nextLine.Substring(0, position),  nextLine, false);
+                                            _options.Log?.LogEntry(fileName, lineNumber, position + 1, "Label is not at the beginning of the line.", nextLine.Substring(0, position), nextLine, false);
                                     }
                                 }
                                 else if (c == '\\' && definingMacro != null)
@@ -615,6 +623,10 @@ namespace Core6502DotNet
                                     else
                                     {
                                         expected = TokenType.EndOrBinary;
+                                    }
+                                    if (previousType == TokenType.Ternary && ternaryExpressions > 0 && tokens[^1].Name.Equals(":"))
+                                    {
+                                        ternaryExpressions--;
                                     }
                                 }
                                 else if (c == '*' || c == '?')
@@ -692,11 +704,22 @@ namespace Core6502DotNet
                                         isWidth = false;
                                     }
                                 }
+                                else if (c == '?')
+                                {
+                                    ternaryExpressions++;
+                                    type = TokenType.Ternary;
+                                    expected = TokenType.StartOrOperand;
+                                }
+                                else if (c == ':' && ternaryExpressions > 0)
+                                {
+                                    type = TokenType.Ternary;
+                                    expected = TokenType.StartOrOperand;
+                                }
                                 else if (TokenType.MoreTokens.HasFlag(type))
                                 {
                                     previousWasPlus = type == TokenType.Binary && c == '+';
                                     if (type == TokenType.Open && c != '[')
-                                        LogError(fileName, lineNumber, position + 1, "Unexpected token.",  it.Index + 1, lineSource);
+                                        LogError(fileName, lineNumber, position + 1, "Unexpected token.", it.Index + 1, lineSource);
                                     else
                                         expected = TokenType.StartOrOperand;
                                 }
@@ -712,11 +735,25 @@ namespace Core6502DotNet
                                 break;
 
                         }
-                        previous = it.Current;
-                        previousType = type;
                         var token = new Token(new StringView(nextLine, position, size), type, position + 1);
                         token.LineSourceIndex = lineSources.Count - 1;
+                        if (token.Type == TokenType.Operand && !token.IsSpecialOperator())
+                        {
+                            try
+                            {
+                                var radix = previousType == TokenType.Radix ? tokens[^1].Name : null;
+                                var (valueType, value) = Evaluator.GetValue(radix, token.Name, _options.CaseSensitive ? StringViewComparer.Ordinal : StringViewComparer.IgnoreCase);
+                                token.ValueType = valueType;
+                                token.Value = value;
+                            }
+                            catch (Exception ex)
+                            {
+                                LogError(fileName, lineNumber, token.Position, ex.Message, token.Name.ToString(), lineSource);
+                            }
+                        }
                         tokens.Add(token);
+                        previous = it.Current;
+                        previousType = type;
                     }
                 }
                 if (blockComment && tokens.Count == 0)

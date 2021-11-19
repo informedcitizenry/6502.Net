@@ -166,7 +166,7 @@ namespace Core6502DotNet
         /// <returns>The byte string converted.</returns>
         public IEnumerable<byte> ConvertToBytes(double value)
         {
-            var bytes = BitConverter.GetBytes(Convert.ToInt64(value)).ToList();
+            var bytes = BitConverter.GetBytes((long)value).ToList();
             int nonZero;
             if (value < 0)
                 nonZero = bytes.FindLastIndex(b => b != 255);
@@ -420,8 +420,8 @@ namespace Core6502DotNet
             }
             _logicalPc = (_logicalPc + size) % BufferSize;
 
-            if (ProgramEnd < ((_blocks << 16) | ProgramCounter))
-                ProgramEnd =  (_blocks << 16) | ProgramCounter;
+            if (ProgramEnd < LongProgramCounter)
+                ProgramEnd = LongProgramCounter;
             if (_sectionCollection.SectionSelected)
                 _sectionCollection.SetOutputCount(_pc - _sectionCollection.SelectedStartAddress);
         }
@@ -502,12 +502,12 @@ namespace Core6502DotNet
         /// <returns>The set of bytes from the specified start address to Program End.</returns>
         public ReadOnlyCollection<byte> GetBytesFrom(int start)
         {
-            if (!_compilingStarted || ((_blocks << 16) | ProgramCounter) < ProgramStart)
+            if (!_compilingStarted || LongProgramCounter < ProgramStart)
                 return new List<byte>().AsReadOnly();
-            if ((ProgramCounter & MaxAddress) != _logicalPc)
+            if (LongProgramCounter != LongLogicalPC)
             {
-                var diff = _logicalPc - start;
-                start = ProgramCounter - diff;
+                var diff = LongLogicalPC - start;
+                start = LongProgramCounter - diff;
             }
             if (start < ProgramStart || start >= ProgramEnd)
                 return new List<byte>().AsReadOnly();
@@ -754,6 +754,12 @@ namespace Core6502DotNet
         /// Gets the long real Program Counter.
         /// </summary>
         public int LongProgramCounter => ProgramCounter | (_blocks << 16);
+
+        /// <summary>
+        /// Gets the long logical Program Counter.
+        /// </summary>
+        public int LongLogicalPC => _logicalPc | (_blocks << 16);
+
 
         /// <summary>
         /// Gets the names of any defined sections not used during 

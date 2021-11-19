@@ -87,6 +87,7 @@ namespace Core6502DotNet
             var first = lines.Current;
             bool isSpecial = first.Label != null && first.Label.IsSpecialOperator();
             LogicalPCOnAssemble = Services.Output.LogicalPC;
+            LongLogicalPCOnAssemble = Services.Output.LongLogicalPC;
             PCOnAssemble = Services.Output.ProgramCounter;
             LongPCOnAssemble = Services.Output.LongProgramCounter;
             if (first.Label != null && !first.Label.Name.Equals("*"))
@@ -192,6 +193,12 @@ namespace Core6502DotNet
         /// object when OnAssemble was invoked.
         /// </summary>
         protected int LogicalPCOnAssemble { get; private set; }
+
+        /// <summary>
+        /// Gets the state of the long Logical Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>
+        /// object when OnAssemble was invoked.
+        /// </summary>
+        protected int LongLogicalPCOnAssemble { get; private set; }
 
         /// <summary>
         /// Gets the state of the real Program Counter for the <see cref="Assembler"/>'s <see cref="BinaryOutput"/>

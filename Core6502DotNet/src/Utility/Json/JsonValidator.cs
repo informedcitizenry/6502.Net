@@ -102,7 +102,7 @@ namespace Core6502DotNet.Json
                     default:
                         if (token.Type == JTokenType.String)
                             annotations.AddAnnotations(ValidateString(schema, token));
-                        else
+                        else if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
                             annotations.AddAnnotations(ValidateNumber(schema, token));
                         annotations.AddAnnotations(ValidateInSubschemas(schema, token, AnnotationAddType.None));
                         break;
@@ -114,7 +114,7 @@ namespace Core6502DotNet.Json
         static AnnotationCollection ValidateNumber(Schema schema, JToken token)
         {
             var annotations = new AnnotationCollection();
-            var value = (long)token;
+            var value = (double)token;
             if (!(!schema.ExclusiveMinimum.HasValue || value > schema.ExclusiveMinimum))
                 annotations.AddError($"{value} is not greater than {schema.ExclusiveMinimum}.",
                     schema, "exclusiveMinimum", token);
@@ -201,7 +201,7 @@ namespace Core6502DotNet.Json
                     annotations.AddAnnotations(dependencyCollection, AnnotationAddType.ErrorsAndProperties);
                 }
                 if (schema.PropertyNames != null)
-                    annotations.AddAnnotations(ValidateInstance(schema.PropertyNames, JToken.Parse($"\"{prop}\"")));
+                    annotations.AddAnnotations(ValidateInstance(schema.PropertyNames, JToken.FromObject(prop)));
                 var jProp = jObject[prop];
                 if (schema.Properties?.ContainsKey(prop) == true)
                 {
@@ -426,15 +426,19 @@ namespace Core6502DotNet.Json
             if (schema.If != null)
             {
                 var ifCollection = ValidateInstance(schema.If, token);
-                annotations.AddAnnotations(ifCollection, ifCollection.Valid ? addType : AnnotationAddType.Errors);
                 if (ifCollection.Valid)
                 {
+                    annotations.AddAnnotations(ifCollection, addType);
                     if (schema.Then != null)
                         annotations.AddAnnotations(ValidateInstance(schema.Then, token), addType | AnnotationAddType.Errors);
                 }
                 else if (schema.Else != null)
                 {
                     annotations.AddAnnotations(ValidateInstance(schema.Else, token), addType | AnnotationAddType.Errors);
+                }
+                else
+                {
+                    annotations.AddAnnotations(ifCollection, addType | AnnotationAddType.Errors);
                 }
             }
             if (!string.IsNullOrEmpty(schema.Ref))

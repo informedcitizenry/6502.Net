@@ -169,6 +169,10 @@ namespace Core6502DotNet
                     {
                         parms.Add(GetString(iterator, services));
                     }
+                    else if (services.Evaluator.ExpressionIsCondition(iterator))
+                    {
+                        parms.Add(services.Evaluator.EvaluateCondition(iterator, false));
+                    }
                     else
                     {
                         var parmVal = services.Evaluator.Evaluate(iterator, false);

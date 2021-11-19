@@ -19,24 +19,25 @@ namespace Core6502DotNet
     public enum TokenType : uint
     {
         None = 0,
-        Start           = 0b000000000001,
-        Open            = 0b000000000010,
-        Operand         = 0b000000000100,
-        Unary           = 0b000000001000,
-        Radix           = 0b000000010000,
-        StartOrOperand  = 0b000000011111,
-        Closed          = 0b000000100000,
-        Separator       = 0b000001000000,
-        Terminal        = 0b000001100000,
-        Binary          = 0b000010000000,
-        Function        = 0b000100000000,
-        EndOrBinary     = 0b000111100000,
-        Instruction     = 0b001000000000,
-        Label           = 0b010000000000,
-        LabelInstr      = 0b011000000000,
-        Misc            = 0b100000000000,
-        MoreTokens      = Binary | Separator | Open,
-        Evaluation      = Binary | Separator | Function
+        Start           = 0b0000000000001,
+        Open            = 0b0000000000010,
+        Operand         = 0b0000000000100,
+        Unary           = 0b0000000001000,
+        Radix           = 0b0000000010000,
+        StartOrOperand  = 0b0000000011111,
+        Closed          = 0b0000000100000,
+        Separator       = 0b0000001000000,
+        Terminal        = 0b0000001100000,
+        Ternary         = 0b0000010000000,
+        Binary          = 0b0000100000000,
+        Function        = 0b0001000000000,
+        EndOrBinary     = 0b0001111100000,
+        Instruction     = 0b0010000000000,
+        Label           = 0b0100000000000,
+        LabelInstr      = 0b0110000000000,
+        Misc            = 0b1000000000000,
+        MoreTokens      = Binary | Ternary | Separator | Open,
+        Evaluation      = Binary | Ternary | Separator | Function 
     }
 
     /// <summary>
@@ -47,14 +48,16 @@ namespace Core6502DotNet
     {
         #region Members
 
-        /// <summary>
-        /// Gets the key-value pairs of opens and closures.
-        /// </summary>
-        public static readonly Dictionary<StringView, StringView> s_openClose = new Dictionary<StringView, StringView>
+        static readonly Dictionary<StringView, StringView> s_openClose = new Dictionary<StringView, StringView>
         {
             { "(", ")" },
             { "{", "}" },
             { "[", "]" }
+        };
+
+        static readonly HashSet<StringView> s_compoundAssignments = new HashSet<StringView>
+        {
+            "+=","-=","*=","/=","%=",">>=","<<=","&=","^=","|=","^^="
         };
 
         #endregion
@@ -80,6 +83,8 @@ namespace Core6502DotNet
             Type = type;
             Name = name;
             Position = position;
+            IsCompoundAssignment = s_compoundAssignments.Contains(name);
+            IsAssignment = Name?[^1] == '=' && (Name.Length == 1 || Name[0] == ':' || IsCompoundAssignment);
         }
 
         /// <summary>
@@ -88,11 +93,7 @@ namespace Core6502DotNet
         /// <param name="name">The token's (parsed) name.</param>
         /// <param name="type">The token's <see cref="TokenType"/>.</param>
         public Token(StringView name, TokenType type)
-        {
-            Name = name;
-            Type = type;
-            Position = 1;
-        }
+            : this(name, type, 1) { }
 
         #endregion
 
@@ -127,23 +128,6 @@ namespace Core6502DotNet
         /// </summary>
         /// <returns><c>true</c> if the token is an opening, <c>false</c> otherwise.</returns>
         public bool IsOpen() => Type.HasFlag(TokenType.Open);
-
-        /// <summary>
-        /// Determines whether the token represents an assignment operator.
-        /// </summary>
-        /// <returns><c>true</c> if the token name is an assignment operator,
-        /// <c>false</c> otherwise.</returns>
-        public bool IsAssignment()
-            => Name?[^1] == '=' && (Name.Length == 1 || Name[0] == ':' || IsCompoundAssignment());
-
-        /// <summary>
-        /// Determines whether the token represents a compound assignment operator.
-        /// </summary>
-        /// <returns><c>true</c> if the token name is a compound assignment operator,
-        /// <c>false</c> otherwise.</returns>
-        public bool IsCompoundAssignment() 
-            => Name.Length > 1 && Name[^1] == '=' && ",+=,-=,*=,/=,%=,>>=,<<=,&=,^=,|=".Contains($",{Name}");
-       
 
         /// <summary>
         /// Indicates whether the current token name is equal to the given string.
@@ -234,9 +218,10 @@ namespace Core6502DotNet
             var brackets = 0;
             foreach (var token in tokens)
             {
-                if ((!IsTerminal(token) && !token.IsAssignment() && 
+                if ((!IsTerminal(token) && !token.IsAssignment && 
                     (token.Type != TokenType.Open || 
                     lastToken?.Type != TokenType.Closed))|| 
+                    token.Type == TokenType.Ternary ||
                     inFunction || 
                     token.Type == TokenType.Closed)
                 {
@@ -248,7 +233,7 @@ namespace Core6502DotNet
                         if (--brackets == 0)
                             inFunction = false;
                     }
-                    if (lastToken != null && !lastToken.IsAssignment())
+                    if (lastToken != null && !lastToken.IsAssignment)
                         lastToken.NextInExpression = token;
                     if (firstToken == null)
                         firstToken = token;
@@ -280,14 +265,15 @@ namespace Core6502DotNet
                 return token.Name.ToString();
             if (token.FirstInExpression != null && !startAtToken)
                 token = token.FirstInExpression;
-            var len = token.Name.Length;
+            var len = 0;
             var current = token.NextInExpression;
             var previous = token;
+            var firstInLine = token;
             var lineSourceIndex = token.LineSourceIndex;
             var startOffset = token.Position - 1;
+            var sourceLines = token.Line.FullSource.Split('\n');
             if (startAtToken && lineSourceIndex > 0)
             {
-                var sourceLines = token.Line.FullSource.Split('\n');
                 for (var i = 0; i < lineSourceIndex; i++)
                     startOffset += sourceLines[i].Length + 1;
             }
@@ -297,17 +283,14 @@ namespace Core6502DotNet
                 {
                     if (toNewLine)
                         break;
-                    len += current.Position;
+                    len += sourceLines[lineSourceIndex].Length - firstInLine.Position + current.Position + 1;
+                    firstInLine = current;
                     lineSourceIndex++;
                 }
-                else
-                {
-                    len += current.Position - (previous.Position + previous.Name.Length);
-                }
-                len += current.Name.Length;
                 previous = current;
                 current = current.NextInExpression;
             }
+            len += previous.Position - firstInLine.Position + previous.Name.Length;
             return token.Line.FullSource.Substring(startOffset, len);
         }
 
@@ -321,6 +304,10 @@ namespace Core6502DotNet
         /// Gets the token's type.
         /// </summary>
         public TokenType Type { get; }
+
+        public ValueType ValueType { get; set; }
+
+        public object Value { get; set; }
 
         /// <summary>
         /// Gets the token's position in its source line.
@@ -336,7 +323,16 @@ namespace Core6502DotNet
         /// Gets or sets the token's parsed <see cref="SourceLine"/> in which it appears.
         /// </summary>
         public SourceLine Line { get; internal set; }
-        
+
+        /// <summary>
+        /// Gets whether the token represents an assignment operator.
+        /// </summary>
+        public bool IsAssignment { get; }
+
+        /// <summary>
+        /// Gets whether the token represents a compound assignment operator.
+        /// </summary>
+        public bool IsCompoundAssignment { get; }
 
         /// <summary>
         /// Gets or sets the source index of the line in which the token appears.

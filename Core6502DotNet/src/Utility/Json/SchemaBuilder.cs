@@ -274,6 +274,7 @@ namespace Core6502DotNet.Json
                                   .Map("const", JTokenType.Raw);
         KeywordMapper AllDraftsPost3()
             => new KeywordMapper().Map("multipleOf", JTokenType.Integer)
+                                  .Map("multipleOf", JTokenType.Float)
                                   .Map("not", JTokenType.Object, MapToSchema)
                                   .Map("type", JTokenType.Array);
 

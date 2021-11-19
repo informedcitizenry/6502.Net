@@ -5,6 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -155,7 +156,6 @@ namespace Core6502DotNet
                         Services.Output.SynchPC();
                         break;
                 }
-                SetLabel(line);
             }
             if (iterator?.Current != null)
                 throw new SyntaxException(iterator.Current, "Unexpected expression.");
@@ -167,6 +167,26 @@ namespace Core6502DotNet
                 if (instruction.Equals(".org"))
                 {
                     return $".{Services.Output.LogicalPC,-41:x4}{unparsedSource}";
+                }
+                var valueTokenIndex = instruction.Equals(".let") ? 2 : 0;
+                if ((line.Operands.Count - valueTokenIndex) == 1)
+                {
+                    var valueToken = line.Operands[valueTokenIndex];
+                    if (valueToken.ValueType != ValueType.Unknown)
+                    {
+                        var value = valueToken.Value;
+                        return line.Operands[valueTokenIndex].ValueType switch
+                        {
+                            ValueType.Binary    => $"=${Convert.ToInt64(value),-41:x}{unparsedSource}",
+                            ValueType.Boolean   => $"={((double)value == 0 ? "false" : "true"),-42}{unparsedSource}",
+                            _                   => $"={(double)value,-41}{unparsedSource}"
+                        };
+                    }
+                    if (valueToken.IsQuote())
+                    {
+                        var value = valueToken.ToString().Elliptical(38);
+                        return $"={value,-42}{unparsedSource}";
+                    }
                 }
                 var tokenSymbol = instruction.Equals(".let") ? line.Operands[0] : line.Label;
                 var symbol = Services.SymbolManager.GetSymbol(tokenSymbol, false);
@@ -181,7 +201,8 @@ namespace Core6502DotNet
                             condition = Services.Evaluator.ExpressionIsCondition(line.Operands.GetIterator());
                         if (condition)
                             return $"={(symbol.NumericValue == 0 ? "false" : "true"),-42}{unparsedSource}";
-                        if (symbol.NumericValue.IsInteger())
+                        if (symbol.DataType == DataType.Address ||
+                            line.Operands.Any(t => t.Type == TokenType.Operand && t.IsSpecialOperator()))
                             return $"=${(int)symbol.NumericValue,-41:x}{unparsedSource}";
                         return $"={symbol.NumericValue,-41}{unparsedSource}";
                     }
@@ -190,17 +211,6 @@ namespace Core6502DotNet
                 }
             }
             return string.Empty;
-        }
-
-        void SetLabel(SourceLine line)
-        {
-            if (line.Label != null && !line.Label.Name.Equals("*"))
-            {
-                if (line.Label.IsSpecialOperator())
-                    Services.SymbolManager.DefineLineReference(line.Label, Services.Output.LogicalPC);
-                else
-                    DefineLabel(line.Label, Services.Output.LogicalPC, true);
-            }
         }
 
         public override bool AssemblesLine(SourceLine line)
@@ -232,22 +242,24 @@ namespace Core6502DotNet
             if (!param.Name.Equals(")"))
             {
                 param = tokens.GetNext();
-                int subscript = -1;
+                double subscript = -1;
                 if (param.Name.Equals("["))
-                    subscript = (int)Services.Evaluator.Evaluate(tokens, 0, int.MaxValue);
+                    subscript = Services.Evaluator.Evaluate(tokens, 0, int.MaxValue);
                 if (subscript < 0 || !tokens.PeekNext().Equals(")"))
-                    throw new SyntaxException(param.Position, "Unexpected argument.");
+                    throw new SyntaxException(param, "Unexpected argument.");
+                if (!subscript.IsInteger())
+                    throw new ExpressionException(param, "Subscript must be an integer.");
                 if (symbolLookup.StorageType != StorageType.Vector)
-                    throw new SyntaxException(param.Position, "Type mismatch.");
+                    throw new SyntaxException(param, "Type mismatch.");
                 if (symbolLookup.DataType == DataType.String)
                 {
                     if (subscript >= symbolLookup.StringVector.Count)
                         throw new SyntaxException(param.Position, "Index out of range.");
-                    return symbolLookup.StringVector[subscript].Length;
+                    return symbolLookup.StringVector[(int)subscript].Length;
                 }
                 if (subscript >= symbolLookup.NumericVector.Count)
                     throw new SyntaxException(param.Position, "Index out of range.");
-                return symbolLookup.NumericVector[subscript].Size();
+                return symbolLookup.NumericVector[(int)subscript].Size();
             }
             return symbolLookup.Length;
         }

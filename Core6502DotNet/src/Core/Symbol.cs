@@ -177,6 +177,100 @@ namespace Core6502DotNet
 
         #region Methods
 
+        public enum AccessResult
+        { 
+            Success,
+            InvalidType,
+            SubscriptOutOfRange,
+            SubscriptNotIntegral
+        }
+
+        /// <summary>
+        /// Get the element at the specified index in the string array symbol.
+        /// </summary>
+        /// <param name="subscript">The index subscript.</param>
+        /// <param name="str">The string to get.</param>
+        /// <returns>The <see cref="AccessResult"/> value.</returns>
+        public AccessResult TryGetElementAt(double subscript, out StringView str)
+        {
+            str = null;
+            var result = Validate(subscript, true);
+            if (result == AccessResult.Success)
+                str = StringVector[(int)subscript];
+            return result;
+        }
+        /// <summary>
+        /// Update the element at the specified index of the numeric array symbol.
+        /// </summary>
+        /// <param name="subscript">The index subscript.</param>
+        /// <param name="val">The updated value.</param>
+        /// <returns>The <see cref="AccessResult"/> value.</returns>
+        public AccessResult TryUpdateElementAt(double subscript, double val)
+        {
+            var result = Validate(subscript, false);
+            if (result == AccessResult.Success)
+                NumericVector[(int)subscript] = val;
+            return result;
+        }
+
+        /// <summary>
+        /// Update the element at the specified index of the string array symbol.
+        /// </summary>
+        /// <param name="subscript">The index subscript.</param>
+        /// <param name="str">The updated string vaule.</param>
+        /// <returns>The <see cref="AccessResult"/> value.</returns>
+        public AccessResult TryUpdateElementAt(double subscript, StringView str)
+        {
+            var result = Validate(subscript, false);
+            if (result == AccessResult.Success)
+                StringVector[(int)subscript] = str;
+            return result;
+        }
+
+        AccessResult Validate(double subscript, bool forString)
+        {
+            var result = AccessResult.SubscriptNotIntegral;
+            if (subscript.IsInteger())
+            {
+                result = AccessResult.InvalidType;
+                if (StorageType == StorageType.Vector || (forString && DataType == DataType.String && StorageType == StorageType.Scalar))
+                {
+                    result = AccessResult.SubscriptOutOfRange;
+                    int upperBounds;
+                    if (StorageType == StorageType.Vector)
+                        upperBounds = DataType == DataType.String ? StringVector.Count : NumericVector.Count;
+                    else
+                        upperBounds = StringValue.Length;
+                    var index = (int)subscript;
+                    if (index >= 0 && index < upperBounds)
+                        return AccessResult.Success;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Get the element at the specified index in the numeric array if the symbol is a number, or the
+        /// <see cref="char"/> at the specified index in the string if the symbol is a string. 
+        /// </summary>
+        /// <param name="subscript">The index subscript.</param>
+        /// <param name="val">The value to fetch.</param>
+        /// <returns>The <see cref="AccessResult"/> value.</returns>
+        public AccessResult TryGetElementAt(double subscript, out double val)
+        {
+            val = double.NaN;
+            var result = Validate(subscript, DataType == DataType.String);
+            if (result == AccessResult.Success)
+            {
+                var index = (int)subscript;
+                if (DataType == DataType.String)
+                    val = StringValue[index];
+                else
+                    val = NumericVector[index];
+            }
+            return result;
+        }
+
         /// <summary>
         /// Determine of the symbol is equal in type (both data and storage).
         /// </summary>

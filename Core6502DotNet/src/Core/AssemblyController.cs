@@ -150,11 +150,10 @@ namespace Core6502DotNet
                 else
                 {
                     var passedArgs = _services.Options.GetPassedArgs();
-                    var exec = Process.GetCurrentProcess().MainModule.ModuleName;
                     var inputFiles = string.Join("\n// ", preprocessor.GetInputFiles());
-                    var fullDisasm = $"// {Assembler.AssemblerNameSimple}\n" +
-                                     $"// {exec} {string.Join(' ', passedArgs)}\n" +
-                                     $"// {DateTime.Now:f}\n\n// Input files:\n\n" +
+                    var fullDisasm = $"// {Assembler.ProductSummary}\n" +
+                                     $"// Options: {string.Join(' ', passedArgs)}\n" +
+                                     $"// {DateTime.Now:f}\n// Input files:\n\n" +
                                      $"// {inputFiles}\n\n" + disassembly;
                     byteCount = WriteOutput(fullDisasm);
                     if (!_services.Options.NoWarnings && _services.Log.HasWarnings)

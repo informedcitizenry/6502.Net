@@ -75,7 +75,10 @@ namespace Core6502DotNet
             }
             else if (args.Exception is BlockClosureException blockEx)
             {
-                _services.Log.LogEntry(blockEx.LineExpectingClosure.Instruction, blockEx.Message);
+                if (blockEx.LineExpectingClosure.Instruction != null)
+                    _services.Log.LogEntry(blockEx.LineExpectingClosure.Instruction, blockEx.Message);
+                else
+                    _services.Log.LogEntry(blockEx.LineExpectingClosure, 1, blockEx.Message);
             }
             else
             {

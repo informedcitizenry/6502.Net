@@ -18,8 +18,7 @@ namespace Core6502DotNet
         #region Properties
 
         /// <summary>
-        /// Gets the version of the assembler. This can and should be set
-        /// by the client code.
+        /// Gets the version of the assembler.
         /// </summary>
         public static string AssemblerVersion
         {
@@ -31,8 +30,20 @@ namespace Core6502DotNet
         }
 
         /// <summary>
-        /// Gets the assembler (product) name. This can and should be set
-        /// by the client code.
+        /// Gets the assembly product summary, including simple name and version.
+        /// </summary>
+        public static string ProductSummary
+        {
+            get
+            {
+                var product = Assembly.GetEntryAssembly().GetName();
+                return $"{product.Name} Version {product.Version}";
+            }
+        }
+
+
+        /// <summary>
+        /// Gets the assembler (product) name.
         /// </summary>
         public static string AssemblerName
         {

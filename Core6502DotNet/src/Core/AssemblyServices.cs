@@ -33,7 +33,7 @@ namespace Core6502DotNet
             OutputFormat = Options.Format ?? string.Empty;
             CPU = Options.CPU;
             Encoding = new AsmEncoding(Options.CaseSensitive);
-            Evaluator = new Evaluator(Options.CaseSensitive) { SymbolEvaluator = EvaluateSymbol };
+            Evaluator = new Evaluator(Options.CaseSensitive) { UnknownValueEvaluator = EvaluateUnknownOperand };
             SymbolManager = new SymbolManager(options.CaseSensitive, Evaluator);
             Log = new ErrorLog(Options.WarningsAsErrors);
             Output = new BinaryOutput(true, Options.CaseSensitive, Options.LongAddressing);
@@ -43,17 +43,20 @@ namespace Core6502DotNet
 
         #region Methods
 
-        double EvaluateSymbol(RandomAccessIterator<Token> tokens)
+        double EvaluateUnknownOperand(RandomAccessIterator<Token> tokens)
         {
             var token = tokens.Current;
-            var subscript = -1;
+            var subscript = -1.0;
             var converted = double.NaN;
             var isString = token.IsDoubleQuote();
             if (char.IsLetter(token.Name[0]) || token.Name[0] == '_')
             {
-                var next = tokens.GetNext();
-                if (next != null && next.IsOpen() && next.Name.Equals("["))
-                    subscript = (int)Evaluator.Evaluate(tokens, 0, int.MaxValue);
+                var next = tokens.PeekNext();
+                if (next?.IsOpen() == true && next.Name.Equals("["))
+                {
+                    tokens.MoveNext();
+                    subscript = Evaluator.Evaluate(tokens, 0, int.MaxValue);
+                }
                 var symbol = SymbolManager.GetSymbol(token, CurrentPass > 0);
                 if (symbol == null)
                 {
@@ -71,15 +74,16 @@ namespace Core6502DotNet
                 }
                 if (subscript >= 0)
                 {
-                    if (symbol.StorageType != StorageType.Vector)
-                        throw new SyntaxException(token.Position, "Type mismatch.");
-                    if ((symbol.IsNumeric && subscript >= symbol.NumericVector.Count) ||
-                        (!symbol.IsNumeric && subscript >= symbol.StringVector.Count))
-                        throw new SyntaxException(token.Position, "Index was out of range.");
-                    if (symbol.IsNumeric)
-                        return symbol.NumericVector[subscript];
-                    token = new Token(symbol.StringVector[subscript], TokenType.Operand);
-                    isString = true;
+                    StringView tokenStringValue = "";
+                    double tokenValue = double.NaN;
+                    isString = symbol.DataType == DataType.String && symbol.StorageType == StorageType.Vector;
+                    Symbol.AccessResult result = isString ? symbol.TryGetElementAt(subscript, out tokenStringValue) :
+                                                            symbol.TryGetElementAt(subscript, out tokenValue);
+                    if (result != Symbol.AccessResult.Success)
+                        throw new ExpressionException(next, SymbolManager.GetErrorMessageFromGetResult(result));
+                    if (!isString)
+                        return tokenValue;
+                    token = new Token(tokenStringValue, TokenType.Operand);
                 }
                 else if (symbol.IsNumeric)
                 {

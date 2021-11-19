@@ -49,6 +49,7 @@ namespace Core6502DotNet
 
         }
 
+
         /// <summary>
         /// Constructs a new instance of a string view.
         /// </summary>
@@ -61,7 +62,7 @@ namespace Core6502DotNet
             String = str;
             Position = position;
             Length = length;
-            _endIndex = Position + Length; 
+            _endIndex = Position + Length;
             _enumerator = -1;
         }
 

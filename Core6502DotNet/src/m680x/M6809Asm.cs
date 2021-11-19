@@ -353,8 +353,7 @@ namespace Core6502DotNet.m680x
                     }
                     else if (modes.HasFlag(IndexModes.Indir))
                     {
-                        Services.Log.LogEntry(secondparam, "Addressing mode not supported for selected CPU.");
-                        return string.Empty;
+                        return Services.Log.LogEntry<string>(secondparam, "Addressing mode not supported for selected CPU.");
                     }
                     secondparam = operand.Current;
                 }

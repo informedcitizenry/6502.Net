@@ -316,7 +316,7 @@ namespace Core6502DotNet.z80
                 var disasmBuilder = new StringBuilder();
                 if (!Services.Options.NoAssembly)
                 {
-                    var byteString = Services.Output.GetBytesFrom(LogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.', true);
+                    var byteString = Services.Output.GetBytesFrom(LongLogicalPCOnAssemble).ToString(LogicalPCOnAssemble, '.', true);
                     disasmBuilder.Append(byteString.PadRight(25));
                 }
                 else

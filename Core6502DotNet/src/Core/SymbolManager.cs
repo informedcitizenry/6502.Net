@@ -376,6 +376,41 @@ namespace Core6502DotNet
             return null;
         }
 
+        public static string GetErrorMessageFromGetResult(Symbol.AccessResult result)
+        {
+            return result switch
+            {
+                Symbol.AccessResult.SubscriptNotIntegral   => "Subscript was not an integer.",
+                Symbol.AccessResult.SubscriptOutOfRange    => "Index out of range.",
+                _                                       => "Type mismatch."
+            };
+        }
+
+        public Symbol GetSymbol(RandomAccessIterator<Token> expression, bool raiseExceptionIfNotFound)
+        {
+            var searchnotFound = SearchedNotFound;
+            if (!expression.MoveNext())
+                throw new ArgumentException("Cannot evaluate the expression.");
+            var symbolToken = expression.Current;
+            if (symbolToken.Type == TokenType.Operand)
+            {
+                var fqdn = GetFullyQualifiedName(symbolToken.Name);
+                if (_symbolTable.TryGetValue(fqdn, out var sym))
+                {
+                    SearchedNotFound = searchnotFound;
+                    if (sym == null)
+                        throw new SymbolException(symbolToken, SymbolException.ExceptionReason.IllegalReference);
+                    if (expression.MoveNext() && expression.Current.Name.Equals("["))
+                    {
+                        var subscript = _evaluator.Evaluate(expression, 0, int.MaxValue);
+                    }
+                }
+            }
+            
+            return null;
+
+        }
+
         /// <summary>
         /// Define a symbol as representing the current state of the program counter.
         /// </summary>
@@ -418,7 +453,7 @@ namespace Core6502DotNet
                 sym = null;
             }
             var isIndexed = false;
-            var subscript = -1;
+            double subscript = -1;
             var expectedStorageType = StorageType.Scalar;
             var assign = tokens.GetNext();
             if (sym != null)
@@ -426,7 +461,7 @@ namespace Core6502DotNet
                 if (assign?.Name.Equals("[") == true)
                 {
                     isIndexed = true;
-                    subscript = (int)_evaluator.Evaluate(tokens, 0, sym.Length);
+                    subscript = _evaluator.Evaluate(tokens, 0, sym.Length);
                     assign = tokens.GetNext();
                 }
                 else
@@ -436,7 +471,7 @@ namespace Core6502DotNet
                     expectedStorageType = sym.StorageType;
                 }
             }
-            if (Token.IsTerminal(assign) || !(assign.Name.Equals("=") || assign.Name.Equals(":=") || assign.IsCompoundAssignment()))
+            if (Token.IsTerminal(assign) || !(assign.Name.Equals("=") || assign.Name.Equals(":=") || assign.IsCompoundAssignment))
                 throw new SyntaxException(assign ?? lhs, "Assignment operator expected.");
 
             var rhsIndex = tokens.Index;
@@ -444,10 +479,11 @@ namespace Core6502DotNet
             if (Token.IsTerminal(rhs))
                 throw new SyntaxException(assign, "rhs expression is missing.");
             var rhsNext = tokens.PeekNext();
-            var rhsSubscript = -1;
+            double rhsSubscript = -1;
             var storageType = StorageType.Scalar;
             DataType dataType;
             Symbol rhsSym;
+            var gettingStrChar = false;
             if (rhs.Name.Equals("["))
             {
                 if (isIndexed)
@@ -464,35 +500,30 @@ namespace Core6502DotNet
                 rhsSym = SymbolExists(rhs.Name, true) ? GetSymbol(rhs, false) : null;
                 if (rhsNext?.Name.Equals("[") == true)
                 {
-                    if (rhsSym?.StorageType != StorageType.Vector)
-                        throw new SyntaxException(rhsNext, "Subscript operation invalid.");
-                    if (Token.IsTerminal(tokens.GetNext()))
-                        throw new SyntaxException(rhsNext, "Index expression expected for subscript.");
-                    rhsSubscript = (int)_evaluator.Evaluate(tokens, 0, rhsSym.Length);
+                    gettingStrChar = rhsSym?.StorageType == StorageType.Scalar && rhsSym?.DataType == DataType.String;
+                    tokens.MoveNext();
+                    rhsSubscript = _evaluator.Evaluate(tokens, 0, rhsSym.Length);
                     rhsNext = tokens.GetNext();
                 }
                 else if (rhsSym != null)
                 {
-                    if (Token.IsTerminal(tokens.GetNext()))
-                    {
-                        storageType = rhsSym.StorageType;
-                        if (sym == null)
-                            expectedStorageType = storageType;
-                    }
-                    else if (rhsSym.StorageType == StorageType.Vector) // ex: .let x = some_array + 2
-                    {
-                        throw new SyntaxException(rhsNext, "Unexpected expression.");
-                    }
+                    // ex: .let x = some_array + 2
+                    if (rhsSym.StorageType == StorageType.Vector && !Token.IsTerminal(tokens.GetNext()))
+                        throw new SyntaxException(tokens.Current, "Unexpected expression.");
+                    
+                    storageType = rhsSym.StorageType;
+                    if (sym == null)
+                        expectedStorageType = storageType; 
                 }
                 if (rhsSym != null && Token.IsTerminal(rhsNext))
-                    dataType = rhsSym.DataType;
+                    dataType = gettingStrChar ? DataType.Numeric : rhsSym.DataType;
                 else
-                    dataType = !assign.IsCompoundAssignment() && rhs.IsDoubleQuote() && Token.IsTerminal(rhsNext) ? DataType.String : DataType.Numeric;
+                    dataType = !assign.IsCompoundAssignment && rhs.IsDoubleQuote() && Token.IsTerminal(rhsNext) ? DataType.String : DataType.Numeric;
             }
             if (expectedStorageType != storageType || (sym != null && sym.DataType != dataType))
                 throw new SyntaxException(rhs, "Type mismatch.");
 
-            if (assign.IsCompoundAssignment() && (sym == null || !sym.IsMutable || expectedStorageType == StorageType.Vector))
+            if (assign.IsCompoundAssignment && (sym == null || !sym.IsMutable || expectedStorageType == StorageType.Vector))
                 throw new SyntaxException(assign, "Invalid use of compound assignment operator.");
 
             if (expectedStorageType == StorageType.Vector)
@@ -506,13 +537,13 @@ namespace Core6502DotNet
             {
                 StringView stringValue = null;
                 var numericValue = double.NaN;
-                if (rhsSym?.DataType == DataType.String && Token.IsTerminal(rhsNext))
+                if (Token.IsTerminal(rhsNext) && (rhsSym?.StorageType == StorageType.Vector || gettingStrChar))
                 {
-                    stringValue = rhsSubscript > -1 ? rhsSym.StringVector[rhsSubscript] : rhsSym.StringValue;
-                }
-                else if (rhsSym?.DataType == DataType.Numeric && Token.IsTerminal(rhsNext))
-                {
-                    numericValue = rhsSubscript > -1 ? rhsSym.NumericVector[rhsSubscript] : rhsSym.NumericValue;
+                    var result = (rhsSym.DataType == DataType.Numeric || gettingStrChar) ?
+                            rhsSym.TryGetElementAt(rhsSubscript, out numericValue) :
+                            rhsSym.TryGetElementAt(rhsSubscript, out stringValue);
+                    if (result != Symbol.AccessResult.Success)
+                        throw new SyntaxException(rhs, GetErrorMessageFromGetResult(result));
                 }
                 else if (dataType == DataType.String)
                 {
@@ -523,17 +554,32 @@ namespace Core6502DotNet
                     // reset the token iterator back to the beginning of the rhs expression
                     tokens.SetIndex(rhsIndex);
                     numericValue = _evaluator.Evaluate(tokens);
-                    if (assign.IsCompoundAssignment())
+                    if (assign.IsCompoundAssignment)
                     {
                         // break compound expression <sym> <op>= <rhs> into:
                         //                           <sym_val> <op> <rhs>
-                        var compoundExpression = new List<Token>();
+                        var symValue = sym.NumericValue;
                         if (isIndexed)
-                            compoundExpression.Add(new Token(sym.NumericVector[subscript].ToString(), TokenType.Operand));
-                        else
-                            compoundExpression.Add(new Token(sym.NumericValue.ToString(), TokenType.Operand));
-                        compoundExpression.Add(new Token(assign.Name[0..^2], TokenType.Binary));
-                        compoundExpression.Add(new Token(numericValue.ToString(), TokenType.Operand));
+                        {
+                            var result = sym.TryGetElementAt(subscript, out symValue);
+                            if (result != Symbol.AccessResult.Success)
+                                throw new SyntaxException(lhs, GetErrorMessageFromGetResult(result));
+                        }
+                        var symToken = new Token(symValue.ToString(), TokenType.Operand)
+                        {
+                            Value = symValue
+                        };
+                        var valueToken = new Token(numericValue.ToString(), TokenType.Operand)
+                        {
+                            Value = numericValue,
+                            ValueType = symToken.ValueType = ValueType.Double
+                        };
+                        var compoundExpression = new List<Token>
+                        {
+                            symToken,
+                            new Token(assign.Name[0..^2], TokenType.Binary),
+                            valueToken
+                        };
                         numericValue = _evaluator.Evaluate(compoundExpression.GetIterator());
                     }
                 }
@@ -541,10 +587,11 @@ namespace Core6502DotNet
                 {
                     if (isIndexed)
                     {
-                        if (dataType == DataType.String)
-                            sym.StringVector[subscript] = stringValue;
-                        else
-                            sym.NumericVector[subscript] = numericValue;
+                        var result = dataType == DataType.Numeric ?
+                            sym.TryUpdateElementAt(subscript, numericValue) :
+                            sym.TryUpdateElementAt(subscript, stringValue);
+                        if (result != Symbol.AccessResult.Success)
+                            throw new SyntaxException(rhs, GetErrorMessageFromGetResult(result));
                     }
                     else if (dataType == DataType.String)
                         sym.StringValue = stringValue;
@@ -771,7 +818,7 @@ namespace Core6502DotNet
         /// <param name="listAll">List all labels, including non-addresses.</param>
         /// <returns>The string listing.</returns>
         public string ListLabels(bool listAll)
-        {       //ADD2PLYSTAT                       = 4783         // $12af
+        {       
             var listBuilder = new StringBuilder(
                 "/*************************************************************/\n" +
                 "/* Symbol                            Value                   */\n"+
