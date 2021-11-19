@@ -548,15 +548,14 @@ namespace Core6502DotNet
                     // try to convert non-base 10 literals in 0x/0b/0o notation.
                     try
                     {
-                        if (name[1] == 'b' || name[1] == 'B')
-                            converted = Convert.ToInt64(GetBinaryString(name.Substring(2)), 2);
-                        else if (name[1] == 'o' || name[1] == 'O')
-                            converted = Convert.ToInt64(name.Substring(2).Replace("_", string.Empty), 8);
-                        else if (name[1] == 'x' || name[1] == 'X')
-                            converted = Convert.ToInt64(name.Substring(2).Replace("_", string.Empty), 16);
-                        else
-                            throw new ArgumentException("Not a valid numeric constant.");
-                        return (ValueType.Binary, converted);
+                        var numBase = name[1] switch
+                        {
+                            'b' or 'B' => 2,
+                            'o' or 'O' => 8,
+                            'x' or 'X' => 16,
+                            _          => throw new ArgumentException("Not a valid numeric constant.")
+                        };
+                        return (ValueType.Binary, Convert.ToInt64(name.Substring(2).Replace("_", ""), numBase));
                     }
                     catch
                     {
