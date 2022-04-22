@@ -1,0 +1,18 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2022 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+chrout  = $ffd2
+        * = $c000
+        ldx #0
+-       lda message,x
+        beq +
+        jsr chrout
+        inx
+        bne -
++       rts
+
+message .cstring "HELLO, WORLD!"

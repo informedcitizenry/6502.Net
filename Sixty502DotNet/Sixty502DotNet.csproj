@@ -1,0 +1,123 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <PackageId>6502.Net</PackageId>
+    <Version>3.0.1.1</Version>
+    <Authors>informedcitizenry</Authors>
+    <Company>informedcitizenry</Company>
+    <Product>6502.Net</Product>
+    <Description>6502.Net, A .Net Cross Assembler for Several 8-Bit Microprocessors.</Description>
+    <Copyright>(C) Copyright 2017-2022 informedcitizenry</Copyright>
+    <ReleaseVersion>3.0.1.1</ReleaseVersion>
+    <StartupObject>Sixty502DotNet.Program</StartupObject>
+    <AssemblyName>6502.Net</AssemblyName>
+    <AssemblyVersion>3.0.1.1</AssemblyVersion>
+    <FileVersion>3.0.1.1</FileVersion>
+    <SignAssembly>false</SignAssembly>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <PackageProjectUrl>https://github.com/informedcitizenry/6502.Net</PackageProjectUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>1701;1702;3021</NoWarn>
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType></DebugType>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>1701;1702;3021</NoWarn>
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Properties\launchSettings.json" />
+    <None Remove="Releases.txt" />
+    <None Remove="wiki.txt" />
+    <None Remove="Antlr4.Runtime.Standard" />
+    <None Remove="Antlr4BuildTasks" />
+    <None Remove="src\Parser\" />
+    <None Remove="src\Parser\Antlr\" />
+    <None Remove="src\Parser\Antlr\CSharp\" />
+    <None Remove="src\Parser\Antlr\Grammar\" />
+    <None Remove="src\Parser\Antlr\Grammar\PreprocessorParser.g4" />
+    <None Remove="src\Parser\Antlr\Grammar\Sixty502DotNetLexer.g4" />
+    <None Remove="src\Parser\Antlr\Grammar\Sixty502DotNetParser.g4" />
+    <None Remove="src\Symbols\" />
+    <None Remove="src\ExpressionEvaluation\Symbols\" />
+    <None Remove="src\ExpressionEvaluation\ValueTypes\" />
+    <None Remove="src\ExpressionEvaluation\Converters\" />
+    <None Remove="src\ExpressionEvaluation\Symbols\Scopes\" />
+    <None Remove="src\ExpressionEvaluation\Symbols\Functions\" />
+    <None Remove="src\ErrorHandling\" />
+    <None Remove="src\ExpressionEvaluation\Symbols\Functions\BuiltIn\" />
+    <None Remove="src\CodeGen\" />
+    <None Remove="src\CodeGen\Output\" />
+    <None Remove="src\CodeGen\BlockEvaluation\" />
+    <None Remove="src\CodeGen\Assembler\" />
+    <None Remove="..\.editorconfig" />
+    <None Remove="src\CodeGen\Output\FormatProviders\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
+    <PackageReference Include="Antlr4BuildTasks" Version="10.3.0">
+        <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="src\Utility\ConfigConstants.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="src\Parser\" />
+    <Folder Include="src\Parser\Antlr\" />
+    <Folder Include="src\Parser\Antlr\CSharp\" />
+    <Folder Include="src\Parser\Antlr\Grammar\" />
+    <Folder Include="src\ExpressionEvaluation\" />
+    <Folder Include="src\ExpressionEvaluation\Symbols\" />
+    <Folder Include="src\ExpressionEvaluation\ValueTypes\" />
+    <Folder Include="src\ExpressionEvaluation\Converters\" />
+    <Folder Include="src\ExpressionEvaluation\Symbols\Scopes\" />
+    <Folder Include="src\ExpressionEvaluation\Symbols\Functions\" />
+    <Folder Include="src\ErrorHandling\" />
+    <Folder Include="src\ExpressionEvaluation\Symbols\Functions\BuiltIn\" />
+    <Folder Include="src\CodeGen\" />
+    <Folder Include="src\CodeGen\Output\" />
+    <Folder Include="src\CodeGen\BlockEvaluation\" />
+    <Folder Include="src\CodeGen\Assembler\" />
+    <Folder Include="src\CodeGen\Output\FormatProviders\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Antlr4 Include="src\Parser\Antlr\Grammar\Sixty502DotNetLexer.g4">
+      <Package>Sixty502DotNet</Package>
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Antlr4>
+    <Antlr4 Include="src\Parser\Antlr\Grammar\PreprocessorParser.g4">
+      <Listener>false</Listener>
+      <Visitor>true</Visitor>
+      <Package>Sixty502DotNet</Package>
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Antlr4>
+    <Antlr4 Include="src\Parser\Antlr\Grammar\Sixty502DotNetParser.g4">
+      <Package>Sixty502DotNet</Package>
+        <Listener>false</Listener>
+        <Visitor>true</Visitor>
+        <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Antlr4>
+  </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <DotNetNamingPolicy DirectoryNamespaceAssociation="None" ResourceNamePolicy="FileFormatDefault" />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
+</Project>

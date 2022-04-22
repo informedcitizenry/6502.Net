@@ -1,0 +1,153 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "6502.Net (Z80)",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#multiline-strings"
+    },
+    {
+      "include": "#characters"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#registers"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.pseudoop.6502_net_z80",
+          "match": "(?i)(?<=^|\\:|\\s)(\\.(addr|align|bankbytes|binary|bstring|byte|char|cbmflt|cbmfltp|cstring|dint|dword|fill|hibytes|hiwords|hstring|lint|lobytes|long|lowords|lstring|nstring|pstring|rta|sbyte|short|sint|string|word))\\b"
+        },
+        {
+          "name": "keyword.control.directive.6502_net_z80",
+          "match": "(?i)(?<=^|\\:|\\s)(\\.(assert|bank|binclude|block|break|case|continue|comment|cpu|default|do|dsection|echo|elseifn?const|elseifn?def|else|elseif|encoding|end|endblock|endenum|endfunction|endif|endmacro|endnamespace|endpage|endrepeat|endrelocate|endswitch|endwhile|enum|eor|equ|error|errorif|for|forcepass|foreach|format|function|global|goto|if|ifn?const|ifn?def|import|include|initmem|invoke|label|let|macro|map|namespace|next|org|page|proff|pron|pseudopc|realpc|relocate|repeat|return|section|switch|target|unmap|warn|warnif|while|whiletrue))\\b"
+        },
+        {
+          "name": "keyword.other.mnemonic.6502_net_z80",
+          "match": "(?i)\\b(adc|add|and|bit|call|ccf|cp|cpd|cpdr|cpi|cpir|cpl|daa|dec|di|djnz|ei|ex|exx|halt|im|in|inc|ind|indr|ini|inir|jp|jr|ld|ldd|lddr|ldi|ldir|neg|nop|or|otdr|otir|out|outd|outi|pop|push|res|ret|reti|retn|rl|rla|rlc|rlca|rld|rr|rra|rrc|rrca|rrd|rst|sbc|scf|set|sla|sll|sra|srl|sub|xor)\\b"
+        },
+        {
+          "name": "keyword.other.macro.6502_net_z80",
+          "match": "(?<=^|\\:|\\s)\\.[a-zA-Z]\\w*\\b"
+        },
+        {
+          "name": "keyword.function.6502_net_z80",
+          "match": "(?i)\\b(abs|acos|atan|byte|cbmflt|cbmfltp|cbrt|ceil|char|cos|cosh|deg|dword|exp|float|floor|format|frac|hypot|int|len|ln|log|log10|long|peek|poke|pow|rad|random|round|section|sgn|sin|sinh|sizeof|sqrt|tan|tanh|typeof|word)\\b"
+        },
+        {
+          "name": "keyword.define",
+          "match": "(?i)\\b(CURRENT_PASS|false|MATH_E|MATH_PI|MATH_TAU|INT8_MAX|INT8_MIN|INT16_MAX|INT16_MIN|INT24_MAX|INT24_MIN|INT32_MAX|INT32_MIN|true|UINT8_MAX|UINT8_MIN|UINT16_MAX|UINT16_MIN|UINT24_MAX|UINT24_MIN|UINT32_MAX|UINT32_MIN)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.6502_net_z80",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.6502_net_z80",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "multiline-strings": {
+      "name": "string.quoted.double.multi-line.6502_net_z80",
+      "begin": "\"\"\"",
+      "end": "\"\"\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.6502_net_z80",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "characters": {
+      "name": "string.quoted.single.6502_net_z80",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "name": "constant.character.escape.6502_net_z80",
+          "match": "\\\\(['\"\\\\0abfnrtv]|x[0-9a-fA-F]{1,4}|u[0-9a-fA-F]{4})"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.6502_net_z80",
+          "begin": "/\\*",
+          "end": "\\*/"
+        },
+        {
+          "name": "comment.line.6502_net_z80",
+          "begin": "//",
+          "end": "$"
+        },
+        {
+          "name": "comment.line.6502_net_z80",
+          "begin": ";",
+          "end": "$"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.numeric.binary.6502_net_z80",
+          "match": "(?i)(((^|[^)a-zA-Z0-9_])\\%)|0b)[0-1_]+(?:\\.[0-1_]+)?(?:[eEpP][\\-\\+]?[0-9_]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.altbinary.6502_net_z80",
+          "match": "(?i)(\\%|0b)[.#_]+\\b"
+        },
+        {
+          "name": "constant.numeric.hexadecimal.6502_net_z80",
+          "match": "(?i)(\\$|0x)[0-9a-fA-F_]+(?:\\.[0-9a-fA-F_]+)?(?:[pP][\\-\\+]?[0-9_]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.octal.6502_net_z80",
+          "match": "(?i)\\b(0[0-7_]+)|((0o)[0-7_]+)(?:\\.[0-7_]+)?(?:[eEpP][\\-\\+]?[0-9_]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.scientific.6502_net_z80",
+          "match": "(?i)\\b[0-9_]+((\\.\\d+)|(?:\\.\\d+)?[eE][\\-\\+]?[0-9_]+)?\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.6502_net_z80",
+          "match": "\\#|\\+|\\-|\\=|\\*|\\:|%|\\\/|\\!|\\<|\\>|\\&|\\||\\^|\\(|\\)|\\[|\\]|\\{|\\}|\\,"
+        }
+      ]
+    },
+    "registers": {
+      "patterns": [
+        {
+          "name": "keyword.register.6502_net_z80",
+          "match": "(?i)\\b(a|af|b|bc|c|d|de|e|h|hl|i|ix|ixh|ixl|iy|iyh|iyl|l|m|nc|nz|p|pe|po|r|sp|z)\\b"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.6502_net_z80"
+}

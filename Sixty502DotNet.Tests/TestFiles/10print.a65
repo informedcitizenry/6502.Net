@@ -1,0 +1,22 @@
+﻿CBM             .block
+VOICE3_FREQ     .equ $d40e
+VOICE3_CTRL_REG .equ $d412
+VOIC3_WAV_RO    .equ $d41b
+CHROUT          .equ $ffd2
+STOP            .equ $ffe1
+                .endblock
+                .org $c000
+                .encoding "petscii"     // set char encoding to PETSCII
+                lda #$ff                // max frequecy
+                sta CBM.VOICE3_FREQ     // set SID voice 3 low byte
+                sta CBM.VOICE3_FREQ+1   // and high
+                lda #$80                // noise
+                sta CBM.VOICE3_CTRL_REG // on voice 3
+loop            lda CBM.VOIC3_WAV_RO    // get next waveform on voice 3 (random)
+                clc
+                and #1                  // mask for low bit
+                adc #'╲'                // add 0 or 1 to maze char
+                jsr CBM.CHROUT          // print to screen
+                jsr CBM.STOP            // was RUN/STOP pressed?
+                bne loop                // no, loop back
+                rts                     // else return

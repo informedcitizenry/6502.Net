@@ -1,0 +1,16 @@
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2022 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+            * = $c000
+
+myarray        = [ $ff10, $ffd2, $ffcf ]
+
+            .for aix = 0, aix < 3, aix = aix + 1
+
+                .word myarray[aix]
+
+            .next
