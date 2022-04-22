@@ -4,7 +4,7 @@ Version 3.0
 
 ## Overview
 
-![example](https://github.com/informedcitizenry/6502.Net/blob/master/Core6502DotNet/docs/sample_code.png)
+![example](https://github.com/informedcitizenry/6502.Net/tree/master/Sixty502DotNet/docs/sample_code.png)
 
 The 6502.Net Macro Assembler is a cross-assembler targeting several CPUs from the 8-bit era of computing including the MOS 6502 and its variants, the Motorola M6800 and M6809, the Intel i8080, and the Zilog Z80. It has several advanced features, such as conditional assembly, macros and custom defined fuctions. With the aim of cross-platform compatibility, it is targeted for .Net 5, but is compatible with .Net Core 3.1.
 
