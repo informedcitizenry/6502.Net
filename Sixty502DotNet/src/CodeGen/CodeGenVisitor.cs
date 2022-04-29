@@ -90,14 +90,14 @@ namespace Sixty502DotNet
                 if (context.Parent is Sixty502DotNetParser.StatContext statContext &&
                     statContext.blockStat()?.enterBlock()?.directive.Type == Sixty502DotNetParser.Function)
                 {
-                    return BlockState.Evaluating();
+                    return BlockState.Evaluating;
                 }
                 if (UpdateLabelOrConstant(context.Start.Text, pc) is Label label)
                 {
                     label.Bank = Services.Output.CurrentBank;
                 }
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         public override BlockState VisitCpuStat([NotNull] Sixty502DotNetParser.CpuStatContext context)
@@ -110,7 +110,7 @@ namespace Sixty502DotNet
             {
                 Services.Log.LogEntry(context, Errors.ModeNotSupported);
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         // '.cpu' StringLiteral ;
@@ -221,7 +221,7 @@ namespace Sixty502DotNet
             {
                 GenDataListing();
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         /// <summary>

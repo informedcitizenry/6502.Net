@@ -23,7 +23,7 @@ namespace Sixty502DotNet.Tests
             {
                 return Services.ExpressionVisitor.Visit(exprTree);
             }
-            return Value.Undefined();
+            return Value.Undefined;
         }
 
         protected Value ParseExpressionList(string source)
@@ -34,7 +34,7 @@ namespace Sixty502DotNet.Tests
             {
                 return Services.ExpressionVisitor.Visit(exprListTree);
             }
-            return Value.Undefined();
+            return Value.Undefined;
         }
 
         protected Sixty502DotNetParser ParseSource(string source, SymbolManager table, bool caseSensitive = false)

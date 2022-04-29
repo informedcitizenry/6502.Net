@@ -250,6 +250,9 @@ paket-files/
 # FAKE - F# Make
 .fake/
 
+# macOS
+.DS_Store
+
 # JetBrains Rider
 .idea/
 *.sln.iml

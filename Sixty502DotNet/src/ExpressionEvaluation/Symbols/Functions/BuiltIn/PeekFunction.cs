@@ -36,7 +36,7 @@ namespace Sixty502DotNet
                 }
                 throw new Error(Errors.IllegalQuantity);
             }
-            return Value.Undefined();
+            return Value.Undefined;
         }
     }
 }

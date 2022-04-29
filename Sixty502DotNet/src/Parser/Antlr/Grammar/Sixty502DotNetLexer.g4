@@ -12,20 +12,22 @@ options {
     caseInsensitive=true;
 }
 
+channels { PREPROCESSOR, INCLUDE_CHANNEL, ERROR }
+
 tokens {
     /* directives */
     Addr, Align, Assert, Auto, BadMacro, Bank, Bankbytes, Binary, 
     Block, Break, Bstring, Byte, Case, Cbmflt, Cbmfltp, Char, 
     Continue, Cstring, Default, Dint, Do, DotEor, Dp, Dsection, 
-    Dword, Echo, Encoding,Endblock, Endenum, Endfunction, Endif,
-    Endnamespace, Endpage,Endrelocate, Endrepeat, Endswitch, 
-    Endwhile, Enum, Else,Elseif, Elseifconst, Elseifdef, 
+    Dword, Echo, Encoding, Endblock, Endenum, Endfunction, Endif,
+    Endnamespace, Endpage, Endproc, Endrelocate, Endrepeat, 
+    Endswitch, Endwhile, Enum, Else,Elseif, Elseifconst, Elseifdef, 
     Elseifnconst, Elseifndef, Equ, Error, Errorif, Fill, For,
     Forcepass, Foreach, Format, Function, Global, Goto, Hibytes, 
     Hstring, Hiwords, If, Ifconst, Ifdef, Ifnconst, Ifndef, 
     IllegalCpu, Import, Initmem, Invoke, Label, Lobytes,Let, Lint,
     Long, Lstring, Lowords, Manual,Map, M8, M16, MX8, MX16,
-    Namespace, Next, Nstring, Org, Page, Proff,Pron, Pseudopc, 
+    Namespace, Next, Nstring, Org, Page, Proc, Proff, Pron, Pseudopc, 
     Pstring, Realpc, Relocate, Repeat, Return, Rta, Sbyte, 
     Section, Short,Sint, String, Switch, Tfradp, Tfrbdp, Unmap, 
     Warn, Warnif, Word, While, Whiletrue, X8, X16,
@@ -113,10 +115,8 @@ tokens {
     NZ,   P,    PE,   PO,   R,
 
     /* shared */
-    True, False, A, B, CC, S, SP, Y, X, Z
+    A, B, CC, S, SP, Y, X, Z
 }
-
-channels { PREPROCESSOR, INCLUDE_CHANNEL }
 
 Cpu
     :   CpuDirective 
@@ -304,7 +304,7 @@ WS
     ;
 
 BadToken
-    :   .
+    :   . -> channel(ERROR)
     ;
 
 mode macroArgMode;
@@ -545,7 +545,7 @@ IncludeArgLineComment
     ;
 
 IncludeArgBad
-    :   .
+    :   . -> channel(ERROR)
     ;
 
 fragment

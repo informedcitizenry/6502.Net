@@ -72,7 +72,7 @@ namespace Sixty502DotNet
                             context.assignExpr().identifier());
                         if (startSym is Variable)
                         {
-                            return BlockState.Evaluating();
+                            return BlockState.Evaluating;
                         }
                     }
                     var expr = (context.assignExpr().pc == null &&
@@ -80,7 +80,7 @@ namespace Sixty502DotNet
                     context.assignExpr().expr() : null;
                     GenAssignmentListing(expr);
                 }
-                return BlockState.Evaluating();
+                return BlockState.Evaluating;
             }
             if (context.expr() == null)
             {
@@ -90,7 +90,7 @@ namespace Sixty502DotNet
             if (context.Ident() != null && Services.ExpressionVisitor.ExpressionHasNonConstants(context.expr()))
             {
                 Services.Log.LogEntry(context.expr(), Errors.ConstantAssignment);
-                return BlockState.Evaluating();
+                return BlockState.Evaluating;
             }
             var value = Services.ExpressionVisitor.Visit(context.expr());
             if (!value.IsDefined) return new BlockState();
@@ -113,7 +113,7 @@ namespace Sixty502DotNet
                 Services.Output.SetPC(value.ToInt());
                 GenLineLabelOnly();
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         private void Output(int directive, Sixty502DotNetParser.ExprContext[] expressions, int expected, int outputIndex)
@@ -570,11 +570,6 @@ namespace Sixty502DotNet
         public override BlockState VisitAsmDirective([NotNull] Sixty502DotNetParser.AsmDirectiveContext context)
         {
             var directive = context.directive.Type;
-            if (directive == Sixty502DotNetParser.BadMacro)
-            {
-                Services.Log.LogEntry(context, "Unrecognized directive.");
-                return BlockState.Evaluating();
-            }
             if (context.expressionList() != null)
             {
                 var expressions = context.expressionList().expr();
@@ -654,7 +649,7 @@ namespace Sixty502DotNet
                         break;
                 }
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         private BlockState Goto(Sixty502DotNetParser.DirectiveStatContext context)
@@ -669,7 +664,7 @@ namespace Sixty502DotNet
                 }
             }
             Services.Log.LogEntry(context, context.@goto, "Goto destination not valid.");
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         public override BlockState VisitDirectiveStat([NotNull] Sixty502DotNetParser.DirectiveStatContext context)
@@ -704,7 +699,7 @@ namespace Sixty502DotNet
             if (context.Import() != null)
             {
                 Import(context);
-                return BlockState.Evaluating();
+                return BlockState.Evaluating;
             }
             return base.VisitChildren(context);
         }
@@ -734,7 +729,7 @@ namespace Sixty502DotNet
                     return new BlockState(null, Status.Complete);
                 }
                 Services.Log.LogEntry(context, ex.Message);
-                return BlockState.Evaluating();
+                return BlockState.Evaluating;
             }
         }
 
@@ -745,7 +740,7 @@ namespace Sixty502DotNet
             {
                 fcnSym.Visitor = new BlockVisitor(Services);
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         public override BlockState VisitBlockStat([NotNull] Sixty502DotNetParser.BlockStatContext context)
@@ -758,7 +753,7 @@ namespace Sixty502DotNet
                 var label = statContext.label()?.Ident();
                 if (directive == Sixty502DotNetParser.Block && label != null)
                 {
-                    var blockLabel = new Label(label.GetText(), Services.Symbols.Scope, statContext)
+                    var blockLabel = new Label(label.GetText(), Services.Symbols.Scope, statContext, false)
                     {
                         IsBlockScope = true
                     };
@@ -777,16 +772,18 @@ namespace Sixty502DotNet
                     return SetFunctionVisitor(statContext.label()!.Ident().GetText());
                 }
                 Sixty502DotNetParser.BlockContext block = context.block();
-                if (directive != Sixty502DotNetParser.Block && directive != Sixty502DotNetParser.Namespace)
+                if (directive != Sixty502DotNetParser.Block &&
+                    directive != Sixty502DotNetParser.Namespace &&
+                    directive != Sixty502DotNetParser.Proc)
                 {
                     BlockEvaluatorBase blockEvaluator = directive switch
                     {
-                        Sixty502DotNetParser.Do => new DoBlockEvaluator(this, Services, context.exitBlock().expr()),
-                        Sixty502DotNetParser.For => new ForBlockEvaluator(this, Services),
+                        Sixty502DotNetParser.Do      => new DoBlockEvaluator(this, Services, context.exitBlock().expr()),
+                        Sixty502DotNetParser.For     => new ForBlockEvaluator(this, Services),
                         Sixty502DotNetParser.Foreach => new ForeachBlockEvaluator(this, Services),
-                        Sixty502DotNetParser.Page => new PageBlockEvaluator(this, Services),
-                        Sixty502DotNetParser.Repeat => new RepeatBlockEvaluator(this, Services),
-                        _ => new WhileBlockEvaluator(this, Services)
+                        Sixty502DotNetParser.Page    => new PageBlockEvaluator(this, Services),
+                        Sixty502DotNetParser.Repeat  => new RepeatBlockEvaluator(this, Services),
+                        _                            => new WhileBlockEvaluator(this, Services)
                     };
                     state = blockEvaluator.Evaluate(context);
                     if (state.status == Status.Break || state.status == Status.Continue)
@@ -796,9 +793,29 @@ namespace Sixty502DotNet
                 }
                 else
                 {
-                    if (directive == Sixty502DotNetParser.Block && statContext.label() != null)
+                    if ((directive == Sixty502DotNetParser.Block && statContext.label() != null) ||
+                        directive == Sixty502DotNetParser.Proc)
                     {
-                        GenLineLabelOnly();
+                        if (statContext.label() == null)
+                        {
+                            // cannot be referenced so just exit.
+                            if (Services.State.CurrentPass == 0)
+                            {
+                                Services.Log.LogEntry(context.enterBlock(), "Unlabeled procedure will not be evaluated.", false);
+                            }
+                            return BlockState.Evaluating;
+                        }
+                        var labelToken = statContext.label().Ident();
+                        if (directive == Sixty502DotNetParser.Proc && labelToken != null)
+                        {
+                            Services.State.PassNeeded |= Services.State.CurrentPass == 0;
+                            var label = Services.Symbols.Scope.Resolve(labelToken.GetText()) as Label;
+                            if (!Services.State.PassNeeded && !label!.IsReferenced)
+                            {
+                                return BlockState.Evaluating;
+                            }
+                        }
+                        _ = GenLineLabelOnly();
                     }
                     state = Visit(block);
                 }
@@ -829,14 +846,15 @@ namespace Sixty502DotNet
                         // for fall-through cases we just keep looping.
                         if (selectedBlock < caseBlocks.Length - 1)
                         {
+                            // but warn anyway
                             Services.Log.LogEntry(caseBlocks[selectedBlock].enterCase()[0],
                                 "Case fell through.", false);
                         }
                     }
                     if (state.status == Status.Break)
                     {
-                        // breaking out of a .switch statement should not signal to the outer
-                        // block.
+                        // breaking out of a .switch statement should not signal a
+                        // break to the outer block.
                         state.status = Status.Evaluating;
                     }
                 }
@@ -893,7 +911,7 @@ namespace Sixty502DotNet
                 var pc = Services.Output.LogicalPC;
                 Services.StatementListings.Add($"{GenLineListing(Services)}.{pc,-42:x4}{context.label().GetText()}");
             }
-            return BlockState.Evaluating();
+            return BlockState.Evaluating;
         }
 
         public override BlockState VisitExitEnum([NotNull] Sixty502DotNetParser.ExitEnumContext context)

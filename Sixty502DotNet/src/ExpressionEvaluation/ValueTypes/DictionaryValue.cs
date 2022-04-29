@@ -76,13 +76,13 @@ namespace Sixty502DotNet
             {
                 return true;
             }
-            value = Undefined();
+            value = Undefined;
             return false;
         }
 
         public override bool TryGetElements(Value start, Value end, out Value value)
         {
-            value = Undefined();
+            value = Undefined;
             return false;
         }
 

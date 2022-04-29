@@ -17,13 +17,6 @@ namespace Sixty502DotNet
     public class Value
     {
         /// <summary>
-        /// Get the undefined value, an object that is not null but is not
-        /// yet defined.
-        /// </summary>
-        /// <returns>The value as an undefined object.</returns>
-        public static Value Undefined() => new();
-
-        /// <summary>
         /// Construct a new instance of the <see cref="Value"/> class.
         /// </summary>
         public Value()
@@ -171,7 +164,7 @@ namespace Sixty502DotNet
                     return true;
                 }
             }
-            value = Undefined();
+            value = Undefined;
             return false;
         }
 
@@ -197,7 +190,7 @@ namespace Sixty502DotNet
                     return true;
                 }
             }
-            value = Undefined();
+            value = Undefined;
             return false;
         }
 
@@ -367,5 +360,23 @@ namespace Sixty502DotNet
             => Type == typeof(string) ? ((string)Data).Length : 0;
 
         public TypeCode DotNetType => Type.GetTypeCode(Type);
+
+        /// <summary>
+        /// Get the undefined value, an object that is not null but is not
+        /// yet defined.
+        /// </summary>
+        /// <returns>The value as an undefined object.</returns>
+        public static Value Undefined => new();
+
+        /// <summary>
+        /// Get a value that represents a <see cref="double.NaN"/> value.
+        /// </summary>
+        /// <returns>The value as a <see cref="double"/> whose value is
+        /// not a number.</returns>
+        public static Value NaN => new()
+        {
+            Data = double.NaN,
+            Type = typeof(double)
+        };
     }
 }

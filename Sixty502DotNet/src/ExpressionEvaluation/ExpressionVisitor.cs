@@ -99,7 +99,7 @@ namespace Sixty502DotNet
             }
             catch (Exception ex)
             {
-                value = Value.Undefined();
+                value = Value.Undefined;
                 _services.Log.LogEntry(expr, ex.Message);
                 return false;
             }
@@ -112,7 +112,7 @@ namespace Sixty502DotNet
                 if (context.LeftParen() == null)
                 {
                     _services.Log.LogEntry(context, "Function being used as a type.");
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 _services.Log.LogEntry(context, "User function is called before it is defined.");
                 return new Value();
@@ -123,7 +123,7 @@ namespace Sixty502DotNet
                 args = Visit(context.expressionList()) as ArrayValue;
                 if (!args!.ElementsDefined)
                 {
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
             }
             try
@@ -132,7 +132,7 @@ namespace Sixty502DotNet
                 if (returnVal == null || (!returnVal.IsDefined && _services.State.CurrentPass > 0))
                 {
                     _services.Log.LogEntry(context, $"The call to {context.name?.Text ?? context.lhs.GetText()}() did not return a value.");
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 if (!returnVal.IsPrimitiveType)
                 {
@@ -143,7 +143,7 @@ namespace Sixty502DotNet
             catch (Error err)
             {
                 _services.Log.LogEntry(context, err.Message);
-                return Value.Undefined();
+                return Value.Undefined;
             }
         }
 
@@ -153,17 +153,16 @@ namespace Sixty502DotNet
             {
                 if (context.range().Length > 0)
                 {
-                    return GetSubsequence(resolver.Value, context.range()) ?? Value.Undefined();
+                    return GetSubsequence(resolver.Value, context.range()) ?? Value.Undefined;
                 }
                 _services.Log.LogEntry(context, Errors.TypeMismatchError);
-                return Value.Undefined();
+                return Value.Undefined;
             }
             if (resolver is Label || resolver is Constant)
             {
                 _services.State.PassNeeded |= !resolver.Value.IsDefined;
                 if (resolver is Label label && label.Bank >= 0 && label.Value.IsIntegral && label.Bank != _services.Output.CurrentBank)
                 {
-                    label.IsReferenced = true;
                     return new Value((label.Bank * 0x10000) | label.Value.ToInt());
                 }
             }
@@ -175,20 +174,35 @@ namespace Sixty502DotNet
             var symbol = Evaluator.ResolveIdentifierSymbol(_services.Symbols.Scope, _services.Symbols.ImportedScopes, context);
             if (symbol == null)
             {
-
                 _services.Log.LogEntry(context, "Symbol not found.");
-                return Value.Undefined();
+                return Value.Undefined;
             }
             if (_services.Options.WarnCaseMismatch && context.name != null && !context.name.Equals(symbol.Name))
             {
                 _services.Log.LogEntry(context, "Case mismatch.", false);
             }
-            Value identifierValue = Value.Undefined();
+            Value identifierValue = Value.Undefined;
             if (symbol is IValueResolver || symbol is IFunction)
             {
                 identifierValue = symbol is IValueResolver resolver ? ResolveValue(resolver, context) :
                     ResolveValue((IFunction)symbol, context);
-                symbol.IsReferenced = identifierValue.IsDefined;
+                var currentScopeIsProcScope = _services.Symbols.Scope is Label currScope && currScope.IsProcScope;
+                if (symbol is not Label || !currentScopeIsProcScope || !ReferenceEquals(symbol, _services.Symbols.Scope))
+                {
+                    // If a symbol is a proc scope it can only be tagged as referenced if the current scope
+                    // is not a proc scope, or if the symbol is enclosed in the scope.
+                    symbol.IsReferenced = identifierValue.IsDefined;
+                    if (!currentScopeIsProcScope)
+                    {
+                        // if we are not being referenced from a proc scope, propagate the reference up
+                        IScope? symScope = symbol.Scope;
+                        while (symScope is Label symScopeLabel && symScopeLabel.IsProcScope)
+                        {
+                            symScopeLabel.IsReferenced = symbol.IsReferenced;
+                            symScope = symScope.EnclosingScope;
+                        }
+                    }
+                }
                 return identifierValue;
             }
             _services.Log.LogEntry(context, Errors.TypeMismatchError);
@@ -202,7 +216,7 @@ namespace Sixty502DotNet
             if (anonLabel == null)
             {
                 _services.Log.LogEntry(context, "Unable to resolve anonymous label.");
-                return Value.Undefined();
+                return Value.Undefined;
             }
             if (!anonLabel.Value.IsDefined && anonLabel.LabelType == AnonymousLabel.Forward)
             {
@@ -218,7 +232,7 @@ namespace Sixty502DotNet
             if (!array!.ElementsSameType)
             {
                 _services.Log.LogEntry(context.expressionList(), "Array elements must be the same type.");
-                return Value.Undefined();
+                return Value.Undefined;
             }
             return array;
         }
@@ -237,7 +251,7 @@ namespace Sixty502DotNet
                         assignExpr.identifier()?.name == null)
                     {
                         _services.Log.LogEntry(context, "Invalid enumeration definition expression.");
-                        return Value.Undefined();
+                        return Value.Undefined;
                     }
                     if (assignExpr.assignOp()?.Start.Type == Sixty502DotNetParser.Equal &&
                         assignExpr.identifier()?.name != null)
@@ -249,7 +263,7 @@ namespace Sixty502DotNet
                                 _services.Log.LogEntry(assignExpr.expr(), def.Value.IsDefined ?
                                     "Enum definition must be an integer" : Errors.ExpectedConstant);
                             }
-                            return Value.Undefined();
+                            return Value.Undefined;
                         }
                     }
                 }
@@ -262,12 +276,12 @@ namespace Sixty502DotNet
                 {
                     _services.Log.LogEntry(assignExpr.expr(), "Enum definition must be greater than previous.");
                 }
-                return Value.Undefined();
+                return Value.Undefined;
             }
             // if we didn't find it it's because it wasn't a proper label
             // which would have gotten defined during parse.
             _services.Log.LogEntry(context, "Enum definition name is not valid.");
-            return Value.Undefined();
+            return Value.Undefined;
         }
 
         public override Value VisitDictionary([NotNull] Sixty502DotNetParser.DictionaryContext context)
@@ -280,25 +294,25 @@ namespace Sixty502DotNet
                 if (!DictionaryValue.CanBeKey(k))
                 {
                     _services.Log.LogEntry(kvp.key, "Invalid key type.");
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 if (keys.Contains(k))
                 {
                     _services.Log.LogEntry(kvp.key, "Duplicate key entry.");
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 keys.Add(k);
                 if (!keys.ElementsSameType)
                 {
                     _services.Log.LogEntry(kvp.key, "Key type mismatch.");
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 var v = Visit(kvp.val); if (!v.IsDefined) return v;
                 vals.Add(v);
                 if (!vals.ElementsSameType)
                 {
                     _services.Log.LogEntry(kvp.val, Errors.TypeMismatchError);
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
             }
             return new DictionaryValue(keys, vals);
@@ -316,12 +330,12 @@ namespace Sixty502DotNet
             if (!sequence.IsString && (sequence is not ArrayValue || sequence is DictionaryValue))
             {
                 _services.Log.LogEntry(range, Errors.InvalidOperation);
-                return Value.Undefined();
+                return Value.Undefined;
             }
             (Value s, Value e) = GetRangeValues(range);
             if (!s.IsDefined || !e.IsDefined)
             {
-                return Value.Undefined();
+                return Value.Undefined;
             }
             if (!sequence.TryGetElements(s, e, out var subsequence))
             {
@@ -335,7 +349,7 @@ namespace Sixty502DotNet
                     error = Errors.InvalidOperation;
                 }
                 _services.Log.LogEntry(range, error);
-                return Value.Undefined();
+                return Value.Undefined;
             }
             return subsequence;
         }
@@ -371,7 +385,7 @@ namespace Sixty502DotNet
                             }
                         }
                         _services.Log.LogEntry(ranges[i - 1], error);
-                        return Value.Undefined();
+                        return Value.Undefined;
                     }
                 }
                 sequence = subsequence;
@@ -397,10 +411,10 @@ namespace Sixty502DotNet
                     : context.designator()?.dictionary() != null
                     ? Visit(context.designator().dictionary())
                     : Evaluator.GetPrimaryExpression(context.StringLiteral().Symbol);
-                return GetSubsequence(sequence, ranges) ?? Value.Undefined();
+                return GetSubsequence(sequence, ranges) ?? Value.Undefined;
             }
             _services.Log.LogEntry(ranges[^1], Errors.UnexpectedExpression);
-            return Value.Undefined();
+            return Value.Undefined;
         }
 
         private void SetSymbolRef(IValueResolver resolver, Sixty502DotNetParser.ExprContext expr)
@@ -443,7 +457,7 @@ namespace Sixty502DotNet
                     if (Evaluator.IsCompoundAssignment(opType))
                     {
                         _services.Log.LogEntry(context, op, Errors.InvalidOperation);
-                        return Value.Undefined();
+                        return Value.Undefined;
                     }
                     if (!Label.IsCheapLocal(lhs))
                     {
@@ -464,7 +478,7 @@ namespace Sixty502DotNet
                 if (identSymbol is not IValueResolver)
                 {
                     _services.Log.LogEntry(context.expr(), Errors.TypeMismatchError);
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 var resolver = (IValueResolver)identSymbol;
                 /* If the operator is a ':=' -OR- if the symbol is NOT a constant (checking the context parent
@@ -485,7 +499,7 @@ namespace Sixty502DotNet
                 {
                     _services.Log.LogEntry(context, context.Start,
                         string.Format(Errors.SymbolExistsError, context.identifier().Start.Text));
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 if (Evaluator.IsCompoundAssignment(opType))
                 {
@@ -494,7 +508,7 @@ namespace Sixty502DotNet
                 else if (identSymbol is Constant && ExpressionHasNonConstants(context.expr()))
                 {
                     _services.Log.LogEntry(context.expr(), Errors.ConstantAssignment);
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 var prevVal = resolver.Value;
                 if (resolver is Constant)
@@ -533,7 +547,7 @@ namespace Sixty502DotNet
                     if (!updated)
                     {
                         _services.Log.LogEntry(context.expr(), Errors.TypeMismatchError);
-                        return Value.Undefined();
+                        return Value.Undefined;
                     }
                 }
                 if (rhsCopy is ArrayValue)
@@ -554,11 +568,11 @@ namespace Sixty502DotNet
                         _services.Output.SetPC((int)pc);
                         return new Value(pc);
                     }
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
             }
             _services.Log.LogEntry(context, Errors.InvalidOperation);
-            return Value.Undefined();
+            return Value.Undefined;
         }
 
         private Value PrePostfix(Sixty502DotNetParser.IdentifierContext context, IToken op, bool returnNewValue)
@@ -566,7 +580,7 @@ namespace Sixty502DotNet
             if (op.Text.Length != 2)
             {
                 _services.Log.LogEntry(context, op, Errors.InvalidOperation);
-                return Value.Undefined();
+                return Value.Undefined;
             }
             var incdec = op.Text[0] == '+' ? 1 : -1;
             Value returnValue = new(_services.Output.ProgramCounter + incdec);
@@ -585,7 +599,7 @@ namespace Sixty502DotNet
                     return returnValue;
                 }
                 _services.Log.LogEntry(context, Errors.InvalidOperation);
-                returnValue = Value.Undefined();
+                returnValue = Value.Undefined;
             }
             _services.Output.SetPC(returnValue.ToInt());
             if (returnNewValue)
@@ -618,7 +632,7 @@ namespace Sixty502DotNet
                 {
                     Value rhs = Visit(context.rhs);
                     int op = context.op.Type;
-                    if (!rhs.IsDefined) return Value.Undefined();
+                    if (!rhs.IsDefined) return Value.Undefined;
                     if (context.lhs != null)
                     {
                         if (op == Sixty502DotNetParser.TripleEqual)
@@ -631,7 +645,7 @@ namespace Sixty502DotNet
                                 _services.Symbols.ImportedScopes,
                                 context.lhs, context.rhs).ToBool() == false);
                         }
-                        var lhs = Visit(context.lhs); if (!lhs.IsDefined) return Value.Undefined();
+                        var lhs = Visit(context.lhs); if (!lhs.IsDefined) return Value.Undefined;
                         if (lhs.IsNumeric && (rhs.DotNetType == TypeCode.Char || rhs.IsString) ||
                             rhs.IsNumeric && (lhs.DotNetType == TypeCode.Char || lhs.IsString))
                         {
@@ -661,8 +675,13 @@ namespace Sixty502DotNet
             }
             catch (Exception ex)
             {
-                _services.Log.LogEntry(context, ex.Message);
-                return Value.Undefined();
+                var offendingSymbol = context.Start;
+                if (ex is InvalidOperationException)
+                {
+                    offendingSymbol = context.op ?? context.Query().Symbol;
+                }
+                _services.Log.LogEntry((Token)offendingSymbol, ex.Message);
+                return Value.Undefined;
             }
         }
 

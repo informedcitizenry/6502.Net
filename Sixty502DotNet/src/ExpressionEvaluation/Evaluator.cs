@@ -24,14 +24,14 @@ namespace Sixty502DotNet
         private static readonly NumberConverter s_num = new();
         private static readonly OctalDoubleConverter s_octDouble = new();
         private static readonly StringConverter s_str = new();
-        private static readonly BooleanConverter s_bool = new();
+
         private static readonly int[] s_compoundAssignments =
         {
-            Sixty502DotNetParser.CaretEqual, Sixty502DotNetParser.AmpersandEqual,
-            Sixty502DotNetParser.HyphenEqual, Sixty502DotNetParser.LeftShiftEqual,
-            Sixty502DotNetParser.SolidusEqual, Sixty502DotNetParser.RightShiftEqual,
-            Sixty502DotNetParser.PlusEqual,  Sixty502DotNetParser.PercentEqual,
-            Sixty502DotNetParser.PipeEqual,  Sixty502DotNetParser.AsteriskEq,
+            Sixty502DotNetParser.CaretEqual,    Sixty502DotNetParser.AmpersandEqual,
+            Sixty502DotNetParser.HyphenEqual,   Sixty502DotNetParser.LeftShiftEqual,
+            Sixty502DotNetParser.SolidusEqual,  Sixty502DotNetParser.RightShiftEqual,
+            Sixty502DotNetParser.PlusEqual,     Sixty502DotNetParser.PercentEqual,
+            Sixty502DotNetParser.PipeEqual,     Sixty502DotNetParser.AsteriskEq,
             Sixty502DotNetParser.RightSignShiftEq
         };
 
@@ -39,8 +39,8 @@ namespace Sixty502DotNet
             new()
         {
             { Sixty502DotNetParser.CaretEqual,      Sixty502DotNetParser.Caret },
-            { Sixty502DotNetParser.HyphenEqual,      Sixty502DotNetParser.Hyphen },
-            { Sixty502DotNetParser.SolidusEqual,      Sixty502DotNetParser.Solidus },
+            { Sixty502DotNetParser.HyphenEqual,     Sixty502DotNetParser.Hyphen },
+            { Sixty502DotNetParser.SolidusEqual,    Sixty502DotNetParser.Solidus },
             { Sixty502DotNetParser.PlusEqual,       Sixty502DotNetParser.Plus },
             { Sixty502DotNetParser.PipeEqual,       Sixty502DotNetParser.Pipe },
             { Sixty502DotNetParser.AsteriskEq,      Sixty502DotNetParser.Asterisk },
@@ -264,10 +264,10 @@ namespace Sixty502DotNet
                     return op switch
                     {
                         Sixty502DotNetParser.Asterisk       => new Value(lhsInt * rhsInt),
-                        Sixty502DotNetParser.Solidus          => new Value(lhsInt / rhsInt),
+                        Sixty502DotNetParser.Solidus        => new Value(lhsInt / rhsInt),
                         Sixty502DotNetParser.Percent        => new Value(lhsInt % rhsInt),
                         Sixty502DotNetParser.Plus           => new Value(lhsInt + rhsInt),
-                        Sixty502DotNetParser.Hyphen          => new Value(lhsInt - rhsInt),  
+                        Sixty502DotNetParser.Hyphen         => new Value(lhsInt - rhsInt),  
                         Sixty502DotNetParser.LeftAngle      => new Value(lhsInt < rhsInt),
                         Sixty502DotNetParser.LTE            => new Value(lhsInt <= rhsInt),
                         Sixty502DotNetParser.GTE            => new Value(lhsInt >= rhsInt),
@@ -284,10 +284,10 @@ namespace Sixty502DotNet
                 return op switch
                 {
                     Sixty502DotNetParser.Asterisk           => new Value(lhsDouble * rhsDouble),
-                    Sixty502DotNetParser.Solidus              => new Value(lhsDouble / rhsDouble),
+                    Sixty502DotNetParser.Solidus            => new Value(lhsDouble / rhsDouble),
                     Sixty502DotNetParser.Percent            => new Value(lhsDouble % rhsDouble),
                     Sixty502DotNetParser.Plus               => new Value(lhsDouble + rhsDouble),
-                    Sixty502DotNetParser.Hyphen              => new Value(lhsDouble - rhsDouble),
+                    Sixty502DotNetParser.Hyphen             => new Value(lhsDouble - rhsDouble),
                     Sixty502DotNetParser.LeftAngle          => new Value(lhsDouble < rhsDouble),
                     Sixty502DotNetParser.LTE                => new Value(lhsDouble <= rhsDouble),
                     Sixty502DotNetParser.GTE                => new Value(lhsDouble >= rhsDouble),
@@ -476,7 +476,7 @@ namespace Sixty502DotNet
                         }
                         return UnaryOp(context.op.Type, rhs);
                     }
-                    return Value.Undefined();
+                    return Value.Undefined;
                 }
                 if (context.cond != null)
                 {
@@ -501,7 +501,7 @@ namespace Sixty502DotNet
             {
                 return GetPrimaryExpression(context.primaryExpr());
             }
-            return Value.Undefined();
+            return Value.Undefined;
         }
 
         /// <summary>
@@ -514,18 +514,14 @@ namespace Sixty502DotNet
             ICustomConverter converter = token.Type switch
             {
                 Sixty502DotNetParser.Hexadecimal        => s_hex,
-                Sixty502DotNetParser.HexadecimalDouble  => s_hexDouble,
-                Sixty502DotNetParser.Double        or
-                Sixty502DotNetParser.Integer       or
-                Sixty502DotNetParser.BinaryDigits  or
-                Sixty502DotNetParser.Octal              => s_num,
+                Sixty502DotNetParser.HexadecimalDouble  => s_hexDouble,    
                 Sixty502DotNetParser.OctalDouble        => s_octDouble,
                 Sixty502DotNetParser.BinaryLiteral or
                 Sixty502DotNetParser.AltBinary          => s_bin,
                 Sixty502DotNetParser.BinaryLiteralDouble=> s_binDouble,
                 Sixty502DotNetParser.StringLiteral      => s_str,
                 Sixty502DotNetParser.CharLiteral        => s_char,
-                _                                       => s_bool,
+                _                                       => s_num,
             };
             return converter.Convert(token.Text);
         }

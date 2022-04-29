@@ -49,12 +49,13 @@ namespace Sixty502DotNet
         /// <param name="parent">The label's parent scope.</param>
         /// <param name="definedAt">The parsed source statement at which the
         /// label is defined.</param>
-        public Label(string name, IScope? parent, Sixty502DotNetParser.StatContext definedAt)
+        public Label(string name, IScope? parent, Sixty502DotNetParser.StatContext definedAt, bool isProcScope)
             : base(name, parent)
         {
-            Value = Value.Undefined();
+            Value = Value.Undefined;
             DefinedAt = definedAt;
             IsBlockScope = false;
+            IsProcScope = isProcScope;
             Bank = -1;
         }
 
@@ -76,6 +77,12 @@ namespace Sixty502DotNet
         /// block scope.
         /// </summary>
         public bool IsBlockScope { get; set; }
+
+        /// <summary>
+        /// Get or set the flag that indicates whether the label also is a
+        /// procedure block scope.
+        /// </summary>
+        public bool IsProcScope { get; set; }
 
         /// <summary>
         /// Gets or sets the addressing bank.

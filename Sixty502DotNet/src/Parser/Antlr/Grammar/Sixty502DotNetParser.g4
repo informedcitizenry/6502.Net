@@ -69,6 +69,7 @@ enterBlock
         |   directive=For induction=assignExpr? Comma cond=expr? Comma assignExprList
         |   directive=Foreach iter=expr Comma seq=expr
         |   directive=Page expr
+        |   directive=Proc
         |   directive=Namespace namespace=identifier?
         |   directive=Repeat times=expr
         |   directive=While cond=expr
@@ -143,6 +144,7 @@ exitBlock
         |   Endfunction   
         |   Endnamespace
         |   Endpage
+        |   Endproc
         |   Endrepeat
         |   Endwhile
         |   Next
@@ -604,7 +606,7 @@ expr
     ;
 
 primaryExpr
-    locals [Value value = Value.Undefined()]
+    locals [Value value = Value.Undefined]
     :
     (   constExpr=HexadecimalDouble
     |   constExpr=BinaryLiteralDouble
@@ -618,8 +620,6 @@ primaryExpr
     |   constExpr=AltBinary
     |   constExpr=CharLiteral
     |   constExpr=StringLiteral
-    |   constExpr=True
-    |   constExpr=False
     )   {  SetPrimaryExprValue($ctx); }
     ;
 

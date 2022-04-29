@@ -43,6 +43,7 @@ namespace Sixty502DotNet
             scope.Define("deg",         MathFunction.OneArg(p => p[0] * 180.0 / Math.PI));
             scope.Define("dword",       MathFunction.OneArg(p => (int)p[0]));
             scope.Define("exp",         MathFunction.OneArg(p => Math.Exp(p[0])));
+            scope.Define("false",       new Constant("false", new Value(false))); 
             scope.Define("float",       new FloatFunction());
             scope.Define("floor",       MathFunction.OneArg(p => Math.Floor(p[0])));
             scope.Define("frac",        MathFunction.OneArg(p => p[0] - Convert.ToInt64(p[0])));
@@ -68,6 +69,7 @@ namespace Sixty502DotNet
             scope.Define("MATH_TAU",    new Constant("MATH_TAU", new Value(Math.Tau)));
             scope.Define("max",         MathFunction.TwoArg(p => Math.Max(p[0], p[1])));
             scope.Define("min",         MathFunction.TwoArg(p => Math.Min(p[0], p[1])));
+            scope.Define("NaN",         new Constant("NaN", Value.NaN));
             scope.Define("peek",        new PeekFunction(services.Output));
             scope.Define("poke",        new PokeFunction(services.Output));
             scope.Define("pow",         MathFunction.TwoArg(p => Math.Pow(p[0], p[1])));
@@ -82,6 +84,7 @@ namespace Sixty502DotNet
             scope.Define("sqrt",        MathFunction.OneArg(p => Math.Sqrt(p[0])));
             scope.Define("tan",         MathFunction.OneArg(p => Math.Tan(p[0])));
             scope.Define("tanh",        MathFunction.OneArg(p => Math.Tanh(p[0])));
+            scope.Define("true",        new Constant("true", new Value(true)));
             scope.Define("typeof",      new TypeofFunction());
             scope.Define("UINT8_MAX",   new Constant("UINT8_MAX", new Value(byte.MaxValue)));
             scope.Define("UINT8_MIN",   new Constant("UINT8_MIN", new Value(byte.MinValue)));

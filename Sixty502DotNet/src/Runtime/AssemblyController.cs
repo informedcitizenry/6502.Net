@@ -161,13 +161,10 @@ namespace Sixty502DotNet
             }
             try
             {
-                _services.Output.OutputFormat = OutputFormatSelector.DefaultProvider;
-                if (!string.IsNullOrEmpty(_services.Options.Format) ||
-                    !string.IsNullOrEmpty(_services.Options.CPU))
+                if (!string.IsNullOrEmpty(_services.Options.Format))
                 {
                     _services.Output.OutputFormat =
-                        OutputFormatSelector.Select(_services.Options.Format ?? "",
-                                                          _services.Options.CPU ?? "");
+                        OutputFormatSelector.Select(_services.Options.Format, _services.Options.CPU ?? "");
                 }
             }
             catch (Error err)
@@ -225,8 +222,15 @@ namespace Sixty502DotNet
                 {
                     return null;
                 }
+                var tokens = stream.GetTokens();
+                var errorTokens = tokens.Where(t => t.Channel == Sixty502DotNetLexer.ERROR).ToList();
+                for (var i = 0; i < errorTokens.Count; ++i)
+                {
+                    _services.Log.LogEntry((Token)errorTokens[i], Errors.UnexpectedExpression);
+                }
                 if (!_services.Log.HasErrors)
                 {
+                    stream.Reset();
                     var parser = new Sixty502DotNetParser(stream)
                     {
                         Symbols = _services.Symbols
@@ -308,13 +312,10 @@ namespace Sixty502DotNet
                 {
                     _services.Log.LogEntry(macroToken, $"Macro \"{macroToken.Text}\" is defined but never referenced.", false);
                 }
-                var symbols = _services.Symbols.GetUnreferencedSymbols();
+                var symbols = _services.Symbols.GetUnreferencedSymbols().Where(s => s is not Enum && s.Token != null);
                 foreach (var sym in symbols)
                 {
-                    if (sym.Token != null && sym.Scope is not Enum)
-                    {
-                        _services.Log.LogEntry(sym.Token, $"Symbol \"{sym.Name}\" is defined but never referenced.", false);
-                    }
+                    _services.Log.LogEntry(sym.Token!, $"Symbol \"{sym.Name}\" is defined but never referenced.", false);
                 }
             }
         }
@@ -323,7 +324,11 @@ namespace Sixty502DotNet
         {
             var section = _services.Options.OutputSection ?? "";
             var outputFile = _services.Options.OutputFile ?? "a.out";
-            var codeGenBytes = _services.Output.GetCompilation(outputFile, section);
+            if (_services.Output.OutputFormat == null)
+            {
+                _services.Output.OutputFormat = OutputFormatSelector.DefaultProvider;
+            }
+            var objCode = _services.Output.GetCompilation(outputFile, section);
             if (_patchAddress > 0)
             {
                 if (_services.Output.OutputFormat != null)
@@ -337,13 +342,13 @@ namespace Sixty502DotNet
                 else
                 {
                     var fileBytes = File.ReadAllBytes(filePath);
-                    Array.Copy(codeGenBytes.ToArray(), 0, fileBytes, _patchAddress, codeGenBytes.Count);
+                    Array.Copy(objCode.ToArray(), 0, fileBytes, _patchAddress, objCode.Count);
                     File.WriteAllBytes(filePath, fileBytes);
                 }
             }
             else
             {
-                File.WriteAllBytes(outputFile, codeGenBytes.ToArray());
+                File.WriteAllBytes(outputFile, objCode.ToArray());
             }
             WriteListing();
         }

@@ -59,6 +59,7 @@ namespace Sixty502DotNet
             if (IsAMacro(Preprocessor.GetMacroName(text)))
             {
                 Type = Sixty502DotNetLexer.BadMacro;
+                Channel = Sixty502DotNetLexer.ERROR;
                 return true;
             }
             return false;

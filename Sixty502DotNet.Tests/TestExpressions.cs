@@ -285,7 +285,7 @@ to me
             parse = ParseSource("TRUE", true, false);
             tree = parse.expr();
             Assert.IsFalse(Services.Log.HasErrors);
-            result = Evaluator.GetPrimaryExpression(tree);
+            result = Services.ExpressionVisitor.Visit(tree);//Evaluator.GetPrimaryExpression(tree);
             Assert.IsTrue(result.IsDefined);
             Assert.AreEqual(TypeCode.Boolean, result.DotNetType);
             Assert.IsTrue(result.ToBool());

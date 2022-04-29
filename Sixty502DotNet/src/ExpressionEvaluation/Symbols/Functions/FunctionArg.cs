@@ -12,10 +12,10 @@ namespace Sixty502DotNet
     public struct FunctionArg
     {
         public FunctionArg(string name)
-            => (Name, Type, DefaultValue) = (name, TypeCode.Double, Value.Undefined());
+            => (Name, Type, DefaultValue) = (name, TypeCode.Double, Value.Undefined);
 
         public FunctionArg(string name, TypeCode type)
-            => (Name, Type, DefaultValue) = (name, type, Value.Undefined());
+            => (Name, Type, DefaultValue) = (name, type, Value.Undefined);
 
         public FunctionArg(string name, Value defaultValue)
             => (Name, Type, DefaultValue) = (name, TypeCode.Double, defaultValue);

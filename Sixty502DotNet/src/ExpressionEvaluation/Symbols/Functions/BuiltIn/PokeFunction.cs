@@ -40,7 +40,7 @@ namespace Sixty502DotNet
                 }
                 _output.Poke(args[0].ToInt() & 0xFFFF, Convert.ToByte(args[1].ToInt() & 0xFF));
             }
-            return Value.Undefined();
+            return Value.Undefined;
         }
     }
 }

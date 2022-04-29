@@ -39,9 +39,9 @@ namespace Sixty502DotNet
                 System.Convert.ToInt64(mantissaParts[1], atBase) * 1.0 / Math.Pow(atBase, mantissaParts[1].Length);
             if (mantissaExponent.Groups.Count > 2 && mantissaExponent.Groups[3].Success)
             {
-                var expBase = mantissaExponent.Groups[2].Value.ToLower()[0] == 'e' ? 10 : 2;
-                var pow = double.Parse(mantissaExponent.Groups[3].Value);
-                return mantissa * Math.Pow(expBase, pow);
+                var base_ = mantissaExponent.Groups[2].Value.ToLower()[0] == 'e' ? 10 : 2;
+                var exponentent = double.Parse(mantissaExponent.Groups[3].Value);
+                return mantissa * Math.Pow(base_, exponentent);
             }
             return mantissa;
         }
@@ -49,23 +49,16 @@ namespace Sixty502DotNet
         public Value Convert(string str)
         {
             str = str.Replace("_", "");
-            Value numVal;
-            bool isDouble = str.IndexOf('.') > -1 || str.IndexOf('e') > -1 || str.IndexOf('E') > -1;
             if (str[0] == '0' && str.Length > 1)
             {
                 if (!char.IsDigit(str[1]))
                 {
-                    numVal = new Value(System.Convert.ToInt64(str[2..], 8));
+                    return Evaluator.ConvertToIntegral(new Value(System.Convert.ToInt64(str[2..], 8)));
                 }
-                else
-                {
-                    numVal = new Value(System.Convert.ToInt64(str, 8));
-                }
+                return Evaluator.ConvertToIntegral(new Value(System.Convert.ToInt64(str, 8)));
             }
-            else
-            {
-                numVal = new Value(System.Convert.ToDouble(str));
-            }
+            var numVal = new Value(System.Convert.ToDouble(str));
+            bool isDouble = str.IndexOf('.') > -1 || str.IndexOf('e') > -1 || str.IndexOf('E') > -1;
             if (!isDouble)
             {
                 return Evaluator.ConvertToIntegral(numVal);
@@ -82,8 +75,8 @@ namespace Sixty502DotNet
     {
         public Value Convert(string str)
         {
-            string oString = !char.IsDigit(str[1]) ? str[2..] : str[1..];
-            return new Value(NumberConverter.GetDoubleAtBase(oString, 8));
+            string octalStr = !char.IsDigit(str[1]) ? str[2..] : str[1..];
+            return new Value(NumberConverter.GetDoubleAtBase(octalStr, 8));
         }
     }
 }

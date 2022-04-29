@@ -93,7 +93,7 @@ namespace Sixty502DotNet
         /// </summary>
         /// <returns>The <see cref="BlockState"/> that is in a state of
         /// <see cref="Status.Evaluating"/>.</returns>
-        public static BlockState Evaluating() => new();
+        public static BlockState Evaluating => new();
 
         /// <summary>
         /// The status value of the block state.

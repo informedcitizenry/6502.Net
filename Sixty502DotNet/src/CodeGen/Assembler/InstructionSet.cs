@@ -102,6 +102,7 @@ namespace Sixty502DotNet
                 { ".endif", Sixty502DotNetLexer.Endif },
                 { ".endnamespace", Sixty502DotNetLexer.Endnamespace },
                 { ".endpage", Sixty502DotNetLexer.Endpage },
+                { ".endproc", Sixty502DotNetLexer.Endproc },
                 { ".endrelocate", Sixty502DotNetLexer.Endrelocate },
                 { ".endrepeat", Sixty502DotNetLexer.Endrepeat },
                 { ".endswitch", Sixty502DotNetLexer.Endswitch },
@@ -148,6 +149,7 @@ namespace Sixty502DotNet
                 { ".nstring", Sixty502DotNetLexer.Nstring },
                 { ".org", Sixty502DotNetLexer.Org },
                 { ".page", Sixty502DotNetLexer.Page },
+                { ".proc", Sixty502DotNetLexer.Proc },
                 { ".proff", Sixty502DotNetLexer.Proff },
                 { ".pron", Sixty502DotNetLexer.Pron },
                 { ".pseudopc", Sixty502DotNetLexer.Pseudopc },
@@ -172,9 +174,7 @@ namespace Sixty502DotNet
                 { ".whiletrue", Sixty502DotNetLexer.Whiletrue },
                 { ".word", Sixty502DotNetLexer.Word },
                 { ".x8", Sixty502DotNetLexer.X8 },
-                { ".x16", Sixty502DotNetLexer.X16 },
-                { "true", Sixty502DotNetLexer.True },
-                { "false", Sixty502DotNetLexer.False }
+                { ".x16", Sixty502DotNetLexer.X16 }
             };
 
         /// <summary>

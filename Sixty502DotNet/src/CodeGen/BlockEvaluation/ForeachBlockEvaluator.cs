@@ -102,7 +102,7 @@ namespace Sixty502DotNet
         {
             if (!dict.IsValid)
             {
-                return BlockState.Evaluating();
+                return BlockState.Evaluating;
             }
             var iterVarName = refExpr.GetText();
             var currentScope = block.scope ?? Services.Symbols.Scope;
@@ -110,18 +110,18 @@ namespace Sixty502DotNet
             if (currentScope.Resolve(iterVarName) != null)
             {
                 Services.Log.LogEntry(refExpr, string.Format(Errors.SymbolExistsError, iterVarName));
-                return BlockState.Evaluating();
+                return BlockState.Evaluating;
             }
             var iterVarScope = new Namespace(iterVarName, currentScope);
             currentScope.Define(iterVarName, iterVarScope);
 
-            var key = new Constant("key", Value.Undefined());
-            var value = new Constant("value", Value.Undefined());
+            var key = new Constant("key", Value.Undefined);
+            var value = new Constant("value", Value.Undefined);
             iterVarScope.Define("key", key);
             iterVarScope.Define("value", value);
             try
             {
-                var state = BlockState.Evaluating();
+                var state = BlockState.Evaluating;
                 var entries = dict.Entries;
                 foreach (var kvp in entries)
                 {

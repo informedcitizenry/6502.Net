@@ -27,7 +27,7 @@ namespace Sixty502DotNet
 
         public override BlockState Evaluate(Sixty502DotNetParser.BlockStatContext context)
         {
-            var state = BlockState.Evaluating();
+            var state = BlockState.Evaluating;
             var induction = context.enterBlock().induction;
             if (induction == null || Services.ExpressionVisitor.Visit(induction).IsDefined)
             {

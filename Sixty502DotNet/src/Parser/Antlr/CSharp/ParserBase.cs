@@ -24,15 +24,16 @@ namespace Sixty502DotNet
 
         private readonly static Dictionary<int, int> s_endDirectives = new()
         {
-            { Sixty502DotNetParser.Block,        Sixty502DotNetParser.Endblock },
-            { Sixty502DotNetParser.Do,            Sixty502DotNetParser.Whiletrue },
-            { Sixty502DotNetParser.For,            Sixty502DotNetParser.Next },
-            { Sixty502DotNetParser.Foreach,        Sixty502DotNetParser.Next },
+            { Sixty502DotNetParser.Block,       Sixty502DotNetParser.Endblock },
+            { Sixty502DotNetParser.Do,          Sixty502DotNetParser.Whiletrue },
+            { Sixty502DotNetParser.For,         Sixty502DotNetParser.Next },
+            { Sixty502DotNetParser.Foreach,     Sixty502DotNetParser.Next },
             { Sixty502DotNetParser.Function,    Sixty502DotNetParser.Endfunction },
-            { Sixty502DotNetParser.Namespace,    Sixty502DotNetParser.Endnamespace },
+            { Sixty502DotNetParser.Namespace,   Sixty502DotNetParser.Endnamespace },
             { Sixty502DotNetParser.Page,        Sixty502DotNetParser.Endpage },
-            { Sixty502DotNetParser.Repeat,        Sixty502DotNetParser.Endrepeat },
-            { Sixty502DotNetParser.While,        Sixty502DotNetParser.Endwhile }
+            { Sixty502DotNetParser.Proc,        Sixty502DotNetParser.Endproc },
+            { Sixty502DotNetParser.Repeat,      Sixty502DotNetParser.Endrepeat },
+            { Sixty502DotNetParser.While,       Sixty502DotNetParser.Endwhile }
         };
         private readonly static HashSet<int> s_controls = new()
         {
@@ -218,20 +219,20 @@ namespace Sixty502DotNet
         protected static void SetEndDirective(Sixty502DotNetParser.BlockStatContext context)
             => context.endDirective = s_endDirectives[context.enterBlock().directive.Type];
 
-        private void CreateNamedSymbol(Sixty502DotNetParser.StatContext context, IToken symbol, int type)
+        private void CreateNamedSymbol(Sixty502DotNetParser.StatContext context, IToken symToken, int type)
         {
-            if (symbol?.Type == Sixty502DotNetParser.Ident)
+            if (symToken?.Type == Sixty502DotNetParser.Ident)
             {
                 if (_inFunction && type != Sixty502DotNetParser.Label && type != Sixty502DotNetParser.Equ)
                 {
-                    NotifyErrorListeners(symbol, "Directive not valid in function call.", new CustomParseError());
+                    NotifyErrorListeners(symToken, "Directive not valid in function call.", new CustomParseError());
                     return;
                 }
-                if (symbol.Text.Equals("_"))
+                if (symToken.Text.Equals("_"))
                 {
                     if (type == Sixty502DotNetParser.Enum)
                     {
-                        NotifyErrorListeners(symbol, "Invalid use of discard label for enum definition.", new CustomParseError());
+                        NotifyErrorListeners(symToken, "Invalid use of discard label for enum definition.", new CustomParseError());
                     }
                     return;
                 }
@@ -240,22 +241,22 @@ namespace Sixty502DotNet
                 switch (type)
                 {
                     case Sixty502DotNetParser.Namespace:
-                        sym = new Namespace(symbol.Text, Symbols.Scope);
+                        sym = new Namespace(symToken.Text, Symbols.Scope);
                         break;
                     case Sixty502DotNetParser.Enum:
-                        sym = new Enum(symbol.Text, Symbols.Scope);
+                        sym = new Enum(symToken.Text, Symbols.Scope);
                         break;
                     case Sixty502DotNetParser.Global:
                     case Sixty502DotNetParser.Equ:
                         exprContext = context.labelStat()?.expr() ??
                                         context.labelStat()?.assignExpr()?.expr();
-                        sym = new Constant(symbol.Text, Value.Undefined())
+                        sym = new Constant(symToken.Text, Value.Undefined)
                         {
                             IsReferenced = false
                         };
                         break;
                     case Sixty502DotNetParser.Label:
-                        sym = new Label(symbol.Text, Symbols.Scope, context);
+                        sym = new Label(symToken.Text, Symbols.Scope, context, Symbols.Scope is Label l && l.IsProcScope);
                         break;
                 }
                 if (sym != null)
@@ -269,7 +270,7 @@ namespace Sixty502DotNet
                     {
                         if (type == Sixty502DotNetParser.Global)
                         {
-                            Symbols.GlobalScope.Define(symbol.Text, sym);
+                            Symbols.GlobalScope.Define(symToken.Text, sym);
                         }
                         else
                         {
@@ -281,7 +282,7 @@ namespace Sixty502DotNet
                             {
                                 localScope = Symbols.PopLocalLabel();
                             }
-                            Symbols.Scope.Define(symbol.Text, sym);
+                            Symbols.Scope.Define(symToken.Text, sym);
                             if (!symIsCheapLocal && sym is IScope scope)
                             {
                                 Symbols.PushScope(scope);
@@ -291,22 +292,22 @@ namespace Sixty502DotNet
                                 Symbols.PushScope(localScope);
                             }
                         }
-                        sym.Token = (Token)symbol;
-                        if (sym is Label && symbol.Column != 0 &&
-                            char.IsWhiteSpace((char)symbol.InputStream.LA(-1)))
+                        sym.Token = (Token)symToken;
+                        if (sym is Label && symToken.Column != 0 &&
+                            char.IsWhiteSpace((char)symToken.InputStream.LA(-1)))
                         {
-                            LabelsAfterWhitespace.Add(symbol);
+                            LabelsAfterWhitespace.Add(symToken);
                         }
                     }
                     catch (Exception ex)
                     {
-                        if (Symbols.Scope.Resolve(symbol.Text) is Namespace existing && sym is Namespace)
+                        if (Symbols.Scope.Resolve(symToken.Text) is Namespace existing && sym is Namespace)
                         {
                             Symbols.PushScope(existing);
                         }
                         else
                         {
-                            NotifyErrorListeners(symbol, ex.Message, new CustomParseError());
+                            NotifyErrorListeners(symToken, ex.Message, new CustomParseError());
                         }
                     }
                 }
@@ -339,6 +340,11 @@ namespace Sixty502DotNet
         protected void EnterBlock(Sixty502DotNetParser.EnterBlockContext context)
         {
             var statContext = (Sixty502DotNetParser.StatContext)context.Parent.Parent;
+            if (context.directive.Type == Sixty502DotNetParser.Proc && _inFunction)
+            {
+                NotifyErrorListeners(context.directive, "Cannot define a procedure inside a funciton definition.", new CustomParseError());
+                return;
+            }
             if (statContext.label()?.Ident() != null)
             {
                 if (context.directive.Type == Sixty502DotNetParser.Function)
@@ -356,6 +362,7 @@ namespace Sixty502DotNet
                             return;
                         }
                         blockLabel.IsBlockScope = true;
+                        blockLabel.IsProcScope = context.directive.Type == Sixty502DotNetParser.Proc;
                     }
                 }
             }
