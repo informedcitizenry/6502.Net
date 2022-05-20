@@ -77,7 +77,7 @@ namespace Sixty502DotNet
             {
                 if (IsNumeric && other.IsNumeric == true)
                 {
-                    return ToDouble() == other.ToDouble();
+                    return Math.Abs(ToDouble() - other.ToDouble()) < 0.0000001;
                 }
                 if (IsString && other.IsString || (DotNetType == TypeCode.Char && other.DotNetType == TypeCode.Char))
                 {
@@ -92,7 +92,14 @@ namespace Sixty502DotNet
         /// Get the value's hash code.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
-        public override int GetHashCode() => Data.GetHashCode();
+        public override int GetHashCode()
+        {
+            if (DotNetType != TypeCode.Double)
+            {
+                return Data.GetHashCode();
+            }
+            return Math.Round((double)Data, 7).GetHashCode();
+        }
 
         /// <summary>
         /// Determine if this value is equal to another object.

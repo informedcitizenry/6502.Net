@@ -19,7 +19,7 @@ namespace Sixty502DotNet
             Value hexVal = str[0] == '$' ?
                 new Value(System.Convert.ToInt64(str[1..], 16)) :
                 new Value(System.Convert.ToInt64(str[2..], 16));
-            return Evaluator.ConvertToIntegral(hexVal);
+            return NumberConverter.ConvertToIntegral(hexVal);
         }
     }
 
@@ -32,7 +32,7 @@ namespace Sixty502DotNet
         public Value Convert(string str)
         {
             var hString = str[0] == '$' ? str[1..] : str[2..];
-            return new Value(NumberConverter.GetDoubleAtBase(hString, 16));
+            return NumberConverter.GetDoubleAtBase(hString, 16);
         }
     }
 }

@@ -347,29 +347,6 @@ namespace Sixty502DotNet
             throw new InvalidOperationException(Errors.TypeMismatchError);
         }
 
-        /// <summary>
-        /// Convert a <see cref="double"/> to an <see cref="int"/> or
-        /// <see cref="uint"/> if the converted value is able to be converted.
-        /// Otherwise, the returned value is the original value itself.
-        /// </summary>
-        /// <param name="value">The <see cref="double"/> as an <see cref="IValue"/>.
-        /// </param>
-        /// <returns>The converted <see cref="int"/> or <see cref="uint"/> as an
-        /// <see cref="Value"/> if conversion was successful, otherwise the
-        /// original value itself.</returns>
-        public static Value ConvertToIntegral(Value value)
-        {
-            if (value.ToDouble() >= int.MinValue && value.ToDouble() <= uint.MaxValue)
-            {
-                if (value.ToDouble() <= int.MaxValue)
-                {
-                    return new Value(unchecked((int)(value.ToLong() & 0xFFFF_FFFF)));
-                }
-                return new Value((uint)(value.ToLong() & 0xFFFF_FFFF));
-            }
-            return value;
-        }
-
         private static bool ExpressionContainsPC(Sixty502DotNetParser.ExprContext context)
         {
             if (context.refExpr()?.programCounter() != null)

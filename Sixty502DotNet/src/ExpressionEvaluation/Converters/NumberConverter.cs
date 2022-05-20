@@ -28,7 +28,7 @@ namespace Sixty502DotNet
         /// <param name="str">The non-decimal string.</param>
         /// <param name="atBase">The number base.</param>
         /// <returns>The converted string as a double.</returns>
-        public static double GetDoubleAtBase(string str, int atBase)
+        public static Value GetDoubleAtBase(string str, int atBase)
         {
             var regex = atBase == 16 ? s_hexDoubleParserRegex : s_nonHexDoubleParserRegex;
             var mantissaExponent = regex.Match(str.Replace("_", ""));
@@ -40,10 +40,33 @@ namespace Sixty502DotNet
             if (mantissaExponent.Groups.Count > 2 && mantissaExponent.Groups[3].Success)
             {
                 var base_ = mantissaExponent.Groups[2].Value.ToLower()[0] == 'e' ? 10 : 2;
-                var exponentent = double.Parse(mantissaExponent.Groups[3].Value);
-                return mantissa * Math.Pow(base_, exponentent);
+                var exponent = double.Parse(mantissaExponent.Groups[3].Value);
+                return new Value(mantissa * Math.Pow(base_, exponent));
             }
-            return mantissa;
+            return new Value(mantissa);
+        }
+
+        /// <summary>
+        /// Convert a <see cref="double"/> to an <see cref="int"/> or
+        /// <see cref="uint"/> if the converted value is able to be converted.
+        /// Otherwise, the returned value is the original value itself.
+        /// </summary>
+        /// <param name="value">The <see cref="double"/> as an <see cref="IValue"/>.
+        /// </param>
+        /// <returns>The converted <see cref="int"/> or <see cref="uint"/> as an
+        /// <see cref="Value"/> if conversion was successful, otherwise the
+        /// original value itself.</returns>
+        public static Value ConvertToIntegral(Value value)
+        {
+            if (value.ToDouble() >= int.MinValue && value.ToDouble() <= uint.MaxValue)
+            {
+                if (value.ToDouble() <= int.MaxValue)
+                {
+                    return new Value(unchecked((int)(value.ToLong() & 0xFFFF_FFFF)));
+                }
+                return new Value((uint)(value.ToLong() & 0xFFFF_FFFF));
+            }
+            return value;
         }
 
         public Value Convert(string str)
@@ -53,15 +76,15 @@ namespace Sixty502DotNet
             {
                 if (!char.IsDigit(str[1]))
                 {
-                    return Evaluator.ConvertToIntegral(new Value(System.Convert.ToInt64(str[2..], 8)));
+                    return ConvertToIntegral(new Value(System.Convert.ToInt64(str[2..], 8)));
                 }
-                return Evaluator.ConvertToIntegral(new Value(System.Convert.ToInt64(str, 8)));
+                return ConvertToIntegral(new Value(System.Convert.ToInt64(str, 8)));
             }
             var numVal = new Value(System.Convert.ToDouble(str));
             bool isDouble = str.IndexOf('.') > -1 || str.IndexOf('e') > -1 || str.IndexOf('E') > -1;
             if (!isDouble)
             {
-                return Evaluator.ConvertToIntegral(numVal);
+                return ConvertToIntegral(numVal);
             }
             return numVal;
         }
@@ -76,7 +99,7 @@ namespace Sixty502DotNet
         public Value Convert(string str)
         {
             string octalStr = !char.IsDigit(str[1]) ? str[2..] : str[1..];
-            return new Value(NumberConverter.GetDoubleAtBase(octalStr, 8));
+            return NumberConverter.GetDoubleAtBase(octalStr, 8);
         }
     }
 }

@@ -49,7 +49,7 @@ namespace Sixty502DotNet
         public Value Convert(string str)
         {
             string bString = str[0] == '%' ? str[1..] : str[2..];
-            return new Value(NumberConverter.GetDoubleAtBase(bString, 2));
+            return NumberConverter.GetDoubleAtBase(bString, 2);
         }
     }
 }
