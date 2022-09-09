@@ -22,6 +22,8 @@ namespace Sixty502DotNet
         private int _groups;
         private IToken? _previousToken;
         private IDictionary<string, int>? _reservedWords;
+        private readonly Stack<int> _groupsStackFrame;
+        private bool _ignoreGroup;
 
         /// <summary>
         /// Construct a new instance of the <see cref="LexerBase"/> class.
@@ -42,8 +44,10 @@ namespace Sixty502DotNet
             : base(input, output, errorOutput)
         {
             _groups = 0;
+            _ignoreGroup = false;
             _previousToken = null;
             _cachedTokens = new LinkedList<IToken>();
+            _groupsStackFrame = new();
             Sources = new Stack<string>();
         }
 
@@ -269,6 +273,26 @@ namespace Sixty502DotNet
             return next;
         }
 
+        protected bool PreviousIsExpression()
+        {
+            return _previousToken?.Type == Sixty502DotNetLexer.RightParen ||
+                    _previousToken?.Type == Sixty502DotNetLexer.RightSquare ||
+                    _previousToken?.Type == Sixty502DotNetLexer.Ident ||
+                    _previousToken?.Type == Sixty502DotNetLexer.Hexadecimal ||
+                    _previousToken?.Type == Sixty502DotNetLexer.HexadecimalDouble ||
+                    _previousToken?.Type == Sixty502DotNetLexer.Integer ||
+                    _previousToken?.Type == Sixty502DotNetLexer.Double ||
+                    _previousToken?.Type == Sixty502DotNetLexer.Octal ||
+                    _previousToken?.Type == Sixty502DotNetLexer.OctalDouble ||
+                    _previousToken?.Type == Sixty502DotNetLexer.BinaryLiteral ||
+                    _previousToken?.Type == Sixty502DotNetLexer.BinaryLiteralDouble ||
+                    _previousToken?.Type == Sixty502DotNetLexer.AltBinary ||
+                    _previousToken?.Type == Sixty502DotNetLexer.StringLiteral ||
+                    _previousToken?.Type == Sixty502DotNetLexer.CharLiteral ||
+                    _previousToken?.Type == Sixty502DotNetLexer.ForwardReference ||
+                    _previousToken?.Type == Sixty502DotNetLexer.BackwardReference;
+        }
+
         /// <summary>
         /// Define a macro.
         /// </summary>
@@ -312,12 +336,16 @@ namespace Sixty502DotNet
         /// <summary>
         /// Signal to the lexer that a grouping token is encountered.
         /// </summary>
-        protected void Group() => ++_groups;
+        protected void Group()
+        {
+            if (_ignoreGroup) _ignoreGroup = false;
+            else ++_groups;
+        } 
 
         /// <summary>
         /// Signal to the lexer that an ungrouping token is encountered.
         /// </summary>
-        protected void Ungroup() => --_groups;
+        protected void Ungroup() { if (_groups > 0) --_groups; }
 
         /// <summary>
         /// Process the literal newline character whether it should be a token.
@@ -352,6 +380,32 @@ namespace Sixty502DotNet
                 Type = Sixty502DotNetLexer.MacroInvokeText;
             }
             Channel = Sixty502DotNetLexer.PREPROCESSOR;
+        }
+
+        /// <summary>
+        /// Force the lexer to recognize newlines even if in a group.
+        /// </summary>
+        public void ForceRecognizeNewline(bool value)
+        {
+            if (value)
+            {
+                int c;
+                int p = 1;
+                while (char.IsWhiteSpace((char)(c = InputStream.LA(p))) && c != Lexer.Eof)
+                {
+                    p++;
+                }
+                if (c == '{')
+                {
+                    _ignoreGroup = true;
+                    _groupsStackFrame.Push(_groups);
+                    _groups = 0;
+                }
+            }
+            else if (_groupsStackFrame.Count > 0)
+            {
+                _groups = _groupsStackFrame.Pop();
+            }
         }
 
         /// <summary>

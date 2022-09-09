@@ -37,13 +37,15 @@ namespace Sixty502DotNet
             scope.Define("cbrt",        MathFunction.OneArg(p => Math.Cbrt(p[0])));
             scope.Define("char",        new CharFunction(services.Encoding));
             scope.Define("ceil",        MathFunction.OneArg(p => Math.Ceiling(p[0])));
+            scope.Define("concat",      new ConcatFunction());
             scope.Define("cos",         MathFunction.OneArg(p => Math.Cos(p[0])));
             scope.Define("cosh",        MathFunction.OneArg(p => Math.Cosh(p[0])));
             scope.Define("CURRENT_PASS",new Constant("CURRENT_PASS", new Value(0)));
             scope.Define("deg",         MathFunction.OneArg(p => p[0] * 180.0 / Math.PI));
             scope.Define("dword",       MathFunction.OneArg(p => (int)p[0]));
             scope.Define("exp",         MathFunction.OneArg(p => Math.Exp(p[0])));
-            scope.Define("false",       new Constant("false", new Value(false))); 
+            scope.Define("false",       new Constant("false", new Value(false)));
+            scope.Define("filter",      new FilterFunction());
             scope.Define("float",       new FloatFunction());
             scope.Define("floor",       MathFunction.OneArg(p => Math.Floor(p[0])));
             scope.Define("frac",        MathFunction.OneArg(p => p[0] - Convert.ToInt64(p[0])));
@@ -67,6 +69,7 @@ namespace Sixty502DotNet
             scope.Define("MATH_E",      new Constant("MATH_E", new Value(Math.E)));
             scope.Define("MATH_PI",     new Constant("MATH_PI", new Value(Math.PI)));
             scope.Define("MATH_TAU",    new Constant("MATH_TAU", new Value(Math.Tau)));
+            scope.Define("map",         new MapFunction());
             scope.Define("max",         MathFunction.TwoArg(p => Math.Max(p[0], p[1])));
             scope.Define("min",         MathFunction.TwoArg(p => Math.Min(p[0], p[1])));
             scope.Define("NaN",         new Constant("NaN", Value.NaN));
@@ -74,6 +77,7 @@ namespace Sixty502DotNet
             scope.Define("poke",        new PokeFunction(services.Output));
             scope.Define("pow",         MathFunction.TwoArg(p => Math.Pow(p[0], p[1])));
             scope.Define("rad",         MathFunction.OneArg(p => p[0] * Math.PI / 180.0));
+            scope.Define("reduce",      new ReduceFunction());
             scope.Define("random",      MathFunction.TwoArg(p => s_rng.Next((int)p[0], (int)p[1])));
             scope.Define("round",       MathFunction.OneArg(p => Math.Round(p[0])));
             scope.Define("section",     new SectionFunction(services.Output));
@@ -81,6 +85,7 @@ namespace Sixty502DotNet
             scope.Define("sizeof",      new SizeofFunction());
             scope.Define("sin",         MathFunction.OneArg(p => Math.Sin(p[0])));
             scope.Define("sinh",        MathFunction.OneArg(p => Math.Sinh(p[0])));
+            scope.Define("sort",        new SortFunction());
             scope.Define("sqrt",        MathFunction.OneArg(p => Math.Sqrt(p[0])));
             scope.Define("tan",         MathFunction.OneArg(p => Math.Tan(p[0])));
             scope.Define("tanh",        MathFunction.OneArg(p => Math.Tanh(p[0])));
@@ -94,6 +99,7 @@ namespace Sixty502DotNet
             scope.Define("UINT24_MIN",  new Constant("UINT24_MIN", new Value(UInt24.MinValue)));
             scope.Define("UINT32_MAX",  new Constant("UINT32_MAX", new Value(uint.MaxValue)));
             scope.Define("UINT32_MIN",  new Constant("UINT32_MIN", new Value(uint.MinValue)));
+            scope.Define("union",       new UnionFunction());
             scope.Define("word",        MathFunction.OneArg(p => (int)p[0] & 0xFFFF));
         }
     }

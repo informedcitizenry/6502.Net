@@ -73,7 +73,7 @@ namespace Sixty502DotNet
                 writer.Write($"{SourceName}({LineNumber}:{Position}): ");
             }
             var consoleColor = Console.ForegroundColor;
-            (string type, ConsoleColor color) = IsError ? ("error", ConsoleColor.Red) : ("warning", ConsoleColor.Yellow);
+            (string type, ConsoleColor color) = IsError ? ("error", ConsoleColor.Red) : ("warning", ConsoleColor.Magenta);
             Console.ForegroundColor = color;
             writer.Write($"{type}: ");
             Console.ForegroundColor = consoleColor;
@@ -89,7 +89,7 @@ namespace Sixty502DotNet
                 writer.WriteLine(errorLine[afterTokenColumn..]);
                 for (var i = 0; i < Token.Column; ++i)
                     writer.Write(' ');
-                Console.ForegroundColor = color;
+                Console.ForegroundColor = ConsoleColor.Green;
                 writer.WriteLine("^~~");
                 Console.ForegroundColor = consoleColor;
             }

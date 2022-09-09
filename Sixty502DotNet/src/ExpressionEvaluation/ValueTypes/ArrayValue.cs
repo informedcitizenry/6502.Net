@@ -220,6 +220,33 @@ namespace Sixty502DotNet
             ElementType = TypeCode.Empty;
         }
 
+        public bool TypeCompatible(ArrayValue otherArray)
+        {
+            if (otherArray.Count == 0)
+            {
+                return true;
+            }
+            return TypeCompatible(otherArray[0]);
+        }
+
+        public bool TypeCompatible(Value val)
+        {
+            if (List.Count == 0 ||
+                val.DotNetType == ElementType ||
+                (val.IsNumeric && ElementsNumeric) ||
+                (val.IsString && (ElementType == TypeCode.String || ElementType == TypeCode.Char)))
+            {
+                return true;
+            }
+            if (ElementType == TypeCode.Object)
+            {
+                return (List[0] is ArrayValue && val is ArrayValue) ||
+                       (List[0] is DictionaryValue && val is DictionaryValue) ||
+                       (List[0] is FunctionValue && val is FunctionValue);
+            }
+            return false;
+        }
+
         public override bool Equals(Value? other)
         {
             if (other is ArrayValue array)
@@ -228,7 +255,6 @@ namespace Sixty502DotNet
             }
             return false;
         }
-
 
         /// <summary>
         /// Search the array for the first index of the element that matches

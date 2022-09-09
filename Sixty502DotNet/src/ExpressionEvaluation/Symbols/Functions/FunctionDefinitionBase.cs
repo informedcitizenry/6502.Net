@@ -84,6 +84,7 @@ namespace Sixty502DotNet
             {
                 if (args[i].IsDefined &&
                     args[i].DotNetType != Args[i].Type &&
+                    !Args[i].VariantType &&
                     !(args[i].IsNumeric && Args[i].Type == TypeCode.Double))
                 {
                     throw new Error(Errors.TypeMismatchError);

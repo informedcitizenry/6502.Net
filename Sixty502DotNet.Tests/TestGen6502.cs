@@ -192,6 +192,18 @@ namespace Sixty502DotNet.Tests
             Assert.AreEqual(0x6c, bytes[0]);
             Assert.AreEqual(0xff, bytes[1]);
             Assert.AreEqual(0x00, bytes[2]);
+
+            parse = ParseSource("jmp ($00ff)+1", true);
+            tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+            _ = Visitor.Visit(tree);
+            Assert.IsFalse(Services.Log.HasErrors);
+            Assert.AreEqual(0, Services.Output.ProgramStart);
+            Assert.AreEqual(3, Services.Output.ProgramCounter);
+            bytes = Services.Output.GetCompilation();
+            Assert.AreEqual(0x4c, bytes[0]);
+            Assert.AreEqual(0x00, bytes[1]);
+            Assert.AreEqual(0x01, bytes[2]);
         }
 
         [TestMethod]

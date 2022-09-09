@@ -544,19 +544,6 @@ namespace Sixty502DotNet
         }
 
         /// <summary>
-        /// Check the validity of the parse of the binary number.
-        /// </summary>
-        /// <param name="context">The parsed expression.</param>
-        protected void CheckBinary(Sixty502DotNetParser.ExprContext context)
-        {
-            var digitsSymbol = context.BinaryDigits() ?? context.BinaryDigitsDouble();
-            if (digitsSymbol.Symbol.StartIndex - context.op.StartIndex > 1)
-            {
-                NotifyErrorListeners(context.op, "Unexpected expression.", new CustomParseError());
-            }
-        }
-
-        /// <summary>
         /// Check the validity of the appearance of a <c>.break</c> in the
         /// current context.
         /// </summary>
@@ -630,6 +617,21 @@ namespace Sixty502DotNet
                 else if (context.cpuStat() != null)
                     NotifyErrorListeners(context.cpuStat().Start,
                         "Operation not allowed in a function block.", new CustomParseError());
+            }
+        }
+
+        protected void BeginArrow()
+        {
+            _inFunction = true;
+        }
+
+        protected void EndArrow()
+        {
+            var lexer = TokenStream.TokenSource as LexerBase;
+            if (lexer != null)
+            {
+                lexer.ForceRecognizeNewline(false);
+                _inFunction = false;
             }
         }
 

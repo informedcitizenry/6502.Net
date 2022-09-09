@@ -58,16 +58,20 @@ namespace Sixty502DotNet
                 }
                 return "Array";
             }
+            if (value is FunctionValue fcn)
+            {
+                return "Function";
+            }
             return value.DotNetType switch
             {
-                TypeCode.Boolean => "Boolean",
-                TypeCode.Char => "Char",
-                TypeCode.Double => "Double",
-                TypeCode.Int32 => "Integer",
-                TypeCode.Int64 => "Long",
-                TypeCode.String => "String",
-                TypeCode.UInt32 => "Unsigned",
-                _ => "Object"
+                TypeCode.Boolean    => "Boolean",
+                TypeCode.Char       => "Char",
+                TypeCode.Double     => "Double",
+                TypeCode.Int32      => "Integer",
+                TypeCode.Int64      => "Long",
+                TypeCode.String     => "String",
+                TypeCode.UInt32     => "Unsigned",
+                _                   => "Object"
             };
         }
 

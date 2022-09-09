@@ -211,6 +211,15 @@ namespace Sixty502DotNet
         /// <param name="directive">The pseudo-op name.</param>
         /// <param name="args">The parsed argument list.</param>
         public void GenStrings(int directive, PseudoList args)
+            => GenStrings(directive, args, false);
+
+        /// <summary>
+        /// Generates code output from strings in the argument list.
+        /// </summary>
+        /// <param name="directive">The pseudo-op name.</param>
+        /// <param name="args">The parsed argument list.</param>
+        /// <param name="stringify">Stringify non-string values.</param>
+        public void GenStrings(int directive, PseudoList args, bool stringify)
         {
             var strBytes = new List<byte>();
             var uninitialized = 0;
@@ -235,6 +244,10 @@ namespace Sixty502DotNet
                         if (str.IsString || str.DotNetType == TypeCode.Char)
                         {
                             strBytes.AddRange(_services.Encoding.GetBytes(str.ToString(true)));
+                        }
+                        else if (stringify)
+                        {
+                            strBytes.AddRange(_services.Encoding.GetBytes(str.ToString()));
                         }
                         else
                         {

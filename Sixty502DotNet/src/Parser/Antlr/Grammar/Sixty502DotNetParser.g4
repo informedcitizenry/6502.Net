@@ -506,13 +506,13 @@ pseudoOpStat
 
 pseudoOp
     :   directive=
-    (   Addr    | Align   | Bankbytes | Binary  | Bstring
-    |   Byte    | Cbmflt  | Cbmfltp   | Char    | Cpu
-    |   Cstring | Dint    | Dword     | DotEor  | Fill
-    |   Hibytes | Hstring | Hiwords   | Initmem | Lobytes
-    |   Lint    | Long    | Lstring   | Lowords | Nstring
-    |   Pstring | Rta     | Sbyte     | Short   | Sint
-    |   String  | Word
+    (   Addr    | Align     | Bankbytes | Binary  | Bstring
+    |   Byte    | Cbmflt    | Cbmfltp   | Char    | Cpu
+    |   Cstring | Dint      | Dword     | DotEor  | Fill
+    |   Hibytes | Hstring   | Hiwords   | Initmem | Lobytes
+    |   Lint    | Long      | Lstring   | Lowords | Nstring
+    |   Pstring | Rta       | Sbyte     | Short   | Sint
+    |   String  | Stringify | Word
     )
     ;
 
@@ -581,9 +581,13 @@ expressionList
     :   expr (Comma Newline? expr)*
     ;
 
+arrowFunc
+    :   LeftParen argList? RightParen Arrow Newline? LeftCurly Newline? {BeginArrow();} block Newline? RightCurly {EndArrow();} 
+    |   LeftParen argList? RightParen Arrow Newline? {BeginArrow();} expr {EndArrow();}
+    ;
+
 expr
     :   op=(Plus|Hyphen|Bang|Tilde)                                       rhs=expr
-    |   op=Percent (BinaryDigits|BinaryDigitsDouble) { CheckBinary($ctx); }
     |   lhs=expr op=(Asterisk|Solidus|Percent) Newline?                   rhs=expr
     |   lhs=expr op=(Plus|Hyphen) Newline?                                rhs=expr
     |   lhs=expr op=(LeftShift|RightShift|RightSignShift) Newline?        rhs=expr
@@ -599,9 +603,9 @@ expr
     |   <assoc=right>cond=expr op=Query Newline? then=expr Colon Newline? els=expr
     |   <assoc=right>op=(LeftAngle|RightAngle|Ampersand|Caret)            rhs=expr
     |   assignExpr
+    |   designator
     |   lparen=LeftParen expr RightParen
     |   primaryExpr
-    |   designator
     |   refExpr
     ;
 
@@ -613,7 +617,6 @@ primaryExpr
     |   constExpr=OctalDouble
     |   constExpr=Double
     |   constExpr=Hexadecimal
-    |   constExpr=BinaryDigits
     |   constExpr=Integer
     |   constExpr=Octal
     |   constExpr=BinaryLiteral
@@ -637,6 +640,7 @@ postfixExpr
 designator
     :   designator (LeftSquare range RightSquare)+
     |   StringLiteral LeftSquare range RightSquare
+    |   arrowFunc (LeftParen expressionList? RightParen)?
     |   array
     |   dictionary
     ;

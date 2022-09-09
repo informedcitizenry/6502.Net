@@ -12,15 +12,21 @@ namespace Sixty502DotNet
     public struct FunctionArg
     {
         public FunctionArg(string name)
-            => (Name, Type, DefaultValue) = (name, TypeCode.Double, Value.Undefined);
+            => (Name, Type, VariantType, DefaultValue) = (name, TypeCode.Double, false, Value.Undefined);
 
         public FunctionArg(string name, TypeCode type)
-            => (Name, Type, DefaultValue) = (name, type, Value.Undefined);
+            => (Name, Type, VariantType, DefaultValue) = (name, type, false, Value.Undefined);
 
         public FunctionArg(string name, Value defaultValue)
-            => (Name, Type, DefaultValue) = (name, TypeCode.Double, defaultValue);
+            => (Name, Type, VariantType, DefaultValue) = (name, defaultValue.DotNetType, false, defaultValue);
+
+        public FunctionArg(string name, bool variantType)
+            => (Name, Type, VariantType, DefaultValue) =
+            (name, variantType ? TypeCode.Object : TypeCode.Double, variantType, Value.Undefined);
 
         public string Name { get; init; }
+
+        public bool VariantType { get; init; }
 
         public TypeCode Type { get; init; }
 

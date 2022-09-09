@@ -210,6 +210,9 @@ namespace Sixty502DotNet
                 case Sixty502DotNetParser.Sint:
                     _pseudoOps.GenValues(args, short.MinValue, short.MaxValue, 2, false, false);
                     break;
+                case Sixty502DotNetParser.Stringify:
+                    _pseudoOps.GenStrings(directive, context.pseudoOpList(), true);
+                    break;
                 case Sixty502DotNetParser.Word:
                     _pseudoOps.GenValues(args, ushort.MinValue, ushort.MaxValue, 2, false, false);
                     break;

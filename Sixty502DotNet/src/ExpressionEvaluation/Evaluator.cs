@@ -149,24 +149,6 @@ namespace Sixty502DotNet
         }
 
         /// <summary>
-        /// Convert a <see cref="Sixty502DotNetParser.ExprContext"/> to a
-        /// binary number value.
-        /// </summary>
-        /// <param name="context">The <see cref="Sixty502DotNetParser.ExprContext"/>.</param>
-        /// <returns>An <see cref="IValue"/> representing the binary number
-        /// value.</returns>
-        public static Value BinaryNumber(Sixty502DotNetParser.ExprContext context)
-        {
-            if (context.BinaryDigitsDouble() != null)
-            {
-                var binDouble = context.BinaryDigitsDouble().GetText();
-                return s_binDouble.Convert($"%{binDouble}");
-            }
-            var bin = context.BinaryDigits().GetText();
-            return s_bin.Convert($"%{bin}");
-        }
-
-        /// <summary>
         /// Perform a prefix unary operation.
         /// </summary>
         /// <param name="op">The unary operator type.</param>
@@ -317,12 +299,18 @@ namespace Sixty502DotNet
             }
             else if (lhs.DotNetType == TypeCode.Boolean && rhs.DotNetType == TypeCode.Boolean)
             {
+                var lhsBool = lhs.ToBool();
+                if ((op == Sixty502DotNetParser.DoublePipe && lhsBool) ||
+                    (op == Sixty502DotNetParser.DoubleAmpersand && !lhsBool))
+                {
+                    return new Value(lhsBool);
+                }
                 return op switch
                 {
-                    Sixty502DotNetParser.DoubleEqual        => new Value(lhs.ToBool() == rhs.ToBool()),
-                    Sixty502DotNetParser.BangEqual          => new Value(lhs.ToBool() != rhs.ToBool()),
-                    Sixty502DotNetParser.DoubleAmpersand    => new Value(lhs.ToBool() && rhs.ToBool()),
-                    Sixty502DotNetParser.DoublePipe         => new Value(lhs.ToBool() || rhs.ToBool()),
+                    Sixty502DotNetParser.DoubleEqual        => new Value(lhsBool == rhs.ToBool()),
+                    Sixty502DotNetParser.BangEqual          => new Value(lhsBool != rhs.ToBool()),
+                    Sixty502DotNetParser.DoubleAmpersand    => new Value(lhsBool && rhs.ToBool()),
+                    Sixty502DotNetParser.DoublePipe         => new Value(lhsBool || rhs.ToBool()),
                     _                                       => throw new InvalidOperationException(Errors.InvalidOperation)
                 };
             }
@@ -405,10 +393,6 @@ namespace Sixty502DotNet
         {
             if (context.primaryExpr() == null)
             {
-                if (context.op?.Type == Sixty502DotNetParser.Percent && context.BinaryDigits() != null)
-                {
-                    return true;
-                }
                 return ExpressionContainsPC(context) || OperandsAreBinHexAndIntegral(context);   
             }
             return context.primaryExpr().Hexadecimal() != null ||
@@ -464,10 +448,6 @@ namespace Sixty502DotNet
                     {
                         return CondOp(cond, then, els);
                     }
-                }
-                if (context.op.Type == Sixty502DotNetParser.Percent)
-                {
-                    return BinaryNumber(context);
                 }
             }
             if (context.lparen != null)

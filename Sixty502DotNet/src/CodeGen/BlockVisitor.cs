@@ -138,7 +138,7 @@ namespace Sixty502DotNet
                     else if (!Services.State.PassNeeded && Services.State.CurrentPass == 0)
                     {
                         var error = directive == Sixty502DotNetParser.Error || directive == Sixty502DotNetParser.Errorif;
-                        Services.Log.LogEntry(expressions[outputIndex - 1], output.ToString(true), error);
+                        Services.Log.LogEntry(expressions[outputIndex], output.ToString(true), error);
                     }
                 }
                 else if (output.IsDefined)
@@ -563,7 +563,7 @@ namespace Sixty502DotNet
             if (!Services.Symbols.ImportedScopes.Any(s => ReferenceEquals(s, ns)))
             {
                 // only import once.
-                Services.Symbols.ImportedScopes.Add(ns!); 
+                Services.Symbols.ImportedScopes.Add(ns!);
             }
         }
 
@@ -900,6 +900,16 @@ namespace Sixty502DotNet
                 }
             }
             return state;
+        }
+
+      
+        public override BlockState VisitExpr([NotNull] Sixty502DotNetParser.ExprContext context)
+        {
+            var arrowFunc = context.designator()?.arrowFunc();
+            Value v = arrowFunc != null ?
+                new FunctionValue(arrowFunc, Services) :
+                Services.ExpressionVisitor.Visit(context);
+            return new BlockState(v, Status.Return);
         }
 
         public override BlockState VisitExitBlock([NotNull] Sixty502DotNetParser.ExitBlockContext context)

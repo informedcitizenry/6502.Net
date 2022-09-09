@@ -60,7 +60,14 @@ namespace Sixty502DotNet
                 {
                     if (e is RecognitionException)
                     {
-                        msg = $"Unexpected token \"{offendingSymbol.Text}\".";
+                        if (offendingSymbol.Type == Lexer.Eof)
+                        {
+                            msg = "Unexpected end of file encoutered.";
+                        }
+                        else
+                        {
+                            msg = $"Unexpected token \"{offendingSymbol.Text}\".";
+                        }
                     }
                     else
                     {

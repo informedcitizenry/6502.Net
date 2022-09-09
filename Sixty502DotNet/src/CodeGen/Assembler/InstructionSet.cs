@@ -164,6 +164,7 @@ namespace Sixty502DotNet
                 { ".short", Sixty502DotNetLexer.Short },
                 { ".sint", Sixty502DotNetLexer.Sint },
                 { ".string", Sixty502DotNetLexer.String },
+                { ".stringify", Sixty502DotNetLexer.Stringify },
                 { ".switch", Sixty502DotNetLexer.Switch },
                 { ".tfradp", Sixty502DotNetLexer.Tfradp },
                 { ".tfrbdp", Sixty502DotNetLexer.Tfrbdp },

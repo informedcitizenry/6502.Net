@@ -393,6 +393,9 @@ namespace Sixty502DotNet
             return subsequence;
         }
 
+        public override Value VisitArrowFunc([NotNull] Sixty502DotNetParser.ArrowFuncContext context)
+            => new FunctionValue(context, _services);
+
         public override Value VisitDesignator([NotNull] Sixty502DotNetParser.DesignatorContext context)
         {
             if (context.array() != null)
@@ -402,6 +405,22 @@ namespace Sixty502DotNet
             if (context.dictionary() != null)
             {
                 return Visit(context.dictionary());
+            }
+            if (context.arrowFunc() != null)
+            {
+                Value arrow = Visit(context.arrowFunc());
+                if (context.LeftParen() == null)
+                {
+                    return arrow;
+                }
+                Value parms = context.expressionList() != null ?
+                    VisitExpressionList(context.expressionList())  : new ArrayValue();
+                Value? ret = ((FunctionValue)arrow).Invoke((ArrayValue)parms);
+                if (ret == null || !ret.IsDefined)
+                {
+                    throw new Error("Function did not return a value");
+                }
+                return ret;
             }
             var ranges = context.range();
             if (context.designator()?.array() != null || context.designator()?.dictionary() != null || context.StringLiteral() != null)
@@ -655,10 +674,6 @@ namespace Sixty502DotNet
                         return Evaluator.BinaryOp(lhs, op, rhs);
                     }
                     return Evaluator.UnaryOp(op, StringToInt(rhs));
-                }
-                if (context.op?.Type == Sixty502DotNetParser.Percent)
-                {
-                    return Evaluator.BinaryNumber(context);
                 }
                 if (context.lparen != null)
                 {

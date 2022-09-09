@@ -5,17 +5,17 @@
     <TargetFramework>net5.0</TargetFramework>
     <RollForward>Major</RollForward>
     <PackageId>6502.Net</PackageId>
-    <Version>3.1.1.1</Version>
+    <Version>3.2.0.1</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
     <Description>6502.Net, A .Net Cross Assembler for Several 8-Bit Microprocessors.</Description>
     <Copyright>(C) Copyright 2017-2022 informedcitizenry</Copyright>
-    <ReleaseVersion>3.1.1.1</ReleaseVersion>
+    <ReleaseVersion>3.2.0.1</ReleaseVersion>
     <StartupObject>Sixty502DotNet.Program</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>3.1.1.1</AssemblyVersion>
-    <FileVersion>3.1.1.1</FileVersion>
+    <AssemblyVersion>3.2.0.1</AssemblyVersion>
+    <FileVersion>3.2.0.1</FileVersion>
     <SignAssembly>false</SignAssembly>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
@@ -63,10 +63,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.10.1" />
-    <PackageReference Include="Antlr4BuildTasks" Version="10.3.0">
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.11.1" />
+    <PackageReference Include="Antlr4BuildTasks" Version="11.1.0">
         <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>

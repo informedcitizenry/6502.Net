@@ -1,4 +1,11 @@
-﻿using System;
+﻿//-----------------------------------------------------------------------------
+// Copyright (c) 2017-2022 informedcitizenry <informedcitizenry@gmail.com>
+//
+// Licensed under the MIT license. See LICENSE for full license information.
+// 
+//-----------------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 namespace Sixty502DotNet
 {

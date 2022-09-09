@@ -29,7 +29,7 @@ tokens {
     Long, Lstring, Lowords, Manual,Map, M8, M16, MX8, MX16,
     Namespace, Next, Nstring, Org, Page, Proc, Proff, Pron, Pseudopc, 
     Pstring, Realpc, Relocate, Repeat, Return, Rta, Sbyte, 
-    Section, Short,Sint, String, Switch, Tfradp, Tfrbdp, Unmap, 
+    Section, Short,Sint, String, Stringify, Switch, Tfradp, Tfrbdp, Unmap, 
     Warn, Warnif, Word, While, Whiletrue, X8, X16,
 
     /* 45GS02 */
@@ -162,11 +162,6 @@ HexadecimalDouble
 BinaryLiteralDouble
     :   BinaryLiteral Dot BinaryDigits (Exponent | BinaryExponent)?
     |   BinaryLiteral (Exponent | BinaryExponent)
-    |   Percent (BinaryDigits | BinaryDigitsDouble) (Exponent | BinaryExponent)
-    ;
-
-BinaryDigitsDouble
-    :   BinaryDigits Dot BinaryDigits
     ;
 
 Double
@@ -182,21 +177,18 @@ Hexadecimal
     :   ('$' | '0x') HexDigit ('_'? HexDigit)* 
     ;
 
-BinaryDigits
-    :   [01] ('_'? [01])*
+BinaryLiteral
+    :   '0b' BinaryDigits
+    |   '%' BinaryDigits { !PreviousIsExpression() }?
+    ;
+
+Octal
+    :   '0' 'o'? [0-7] ('_'? [0-7])*
     ;
 
 Integer
     :   '0'
     |   [1-9] TrailingDigits Exponent?
-    ;
-
-BinaryLiteral
-    :   '0b' [01] ('_'? [01])*
-    ;
-
-Octal
-    :   '0' 'o'? [0-7] ('_'? [0-7])*
     ;
 
 AltBinary
@@ -242,6 +234,7 @@ DoubleEqual     :   '=='    ;
 BangEqual       :   '!='    ;
 LTE             :   '<='    ;
 GTE             :   '>='    ;
+Arrow           :   '=>' {ForceRecognizeNewline(true);} ;
 DoublePipe      :   '||'    ;
 DoubleAmpersand :   '&&'    ;
 DoubleCaret     :   '^^'    ;
@@ -592,6 +585,11 @@ HexQuad
 fragment
 HexDigit
     :   [0-9a-f]
+    ;
+
+fragment
+BinaryDigits
+    :   [01] ('_'? [01])*
     ;
 
 fragment
