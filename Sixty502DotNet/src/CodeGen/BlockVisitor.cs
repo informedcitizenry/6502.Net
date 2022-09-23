@@ -84,6 +84,11 @@ namespace Sixty502DotNet
             }
             if (context.expr() == null)
             {
+                if (context.label().programCounter() != null)
+                {
+                    Services.Log.LogEntry(context.label().programCounter(), "Program counter symbol is reserved.");
+                    return BlockState.Evaluating;
+                }
                 GenLineLabelOnly();
                 return Visit(context.label());
             }

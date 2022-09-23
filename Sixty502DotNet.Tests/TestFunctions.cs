@@ -257,6 +257,40 @@ myfunc .function
         }
 
         [TestMethod]
+        public void Assign()
+        {
+            var parse = ParseSource(
+@"myfunc .function val
+    .return val * 2
+    .endfunction
+    .let myfuncVar = myfunc
+    .let myval = myfuncVar(2)", true);
+            var tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+            _ = Visitor.Visit(tree);
+            Assert.IsFalse(Services.Log.HasErrors);
+            
+            var myval = Services.Symbols.GlobalScope.Resolve("myval") as Variable;
+            Assert.IsNotNull(myval);
+            Assert.IsNotNull(myval.Value);
+            Assert.IsTrue(myval.Value.IsDefined);
+            Assert.IsTrue(myval.Value.IsNumeric);
+            Assert.AreEqual(4, myval.Value.ToInt());
+
+            parse = ParseSource(
+@"  .let myfuncVar = myfunc
+    myfunc .function val
+    .return val * 2
+    .endfunction
+    
+    .let myval = myfuncVar(2)", true);
+            tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+            _ = Visitor.Visit(tree);
+            Assert.IsTrue(Services.Log.HasErrors);
+        }
+
+        [TestMethod]
         public void ArrowSimple()
         {
             var parse = ParseSource("(el) => 3", true);
@@ -291,6 +325,13 @@ myfunc .function
 })", true);
             _ = parse.expr();
             Assert.IsFalse(Services.Log.HasErrors);
+            var abs = Services.Symbols.GlobalScope.Resolve("abs") as MathFunction;
+            Assert.IsNotNull(abs);
+
+            FunctionValue math = new FunctionValue(abs, Services);
+            Value simple = new Value(3);
+            Assert.IsFalse(math.GetType() == simple.GetType());
+            Assert.IsFalse(math.GetType().Equals(simple.GetType()));
         }
 
         [TestMethod]
@@ -409,6 +450,29 @@ myfunc .function
             Assert.AreEqual(4, potsArray[1].ToInt());
             Assert.AreEqual(9, potsArray[2].ToInt());
             Assert.AreEqual(16, potsArray[3].ToInt());
+
+            parse = ParseSource(@"
+    .let arr = [-1,2,-3]
+    .let pos = map(arr, abs)", true);
+            tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+
+            _ = Visitor.Visit(tree);
+            Assert.IsFalse(Services.Log.HasErrors);
+
+            var pos = Services.Symbols.GlobalScope.Resolve("pos") as Variable;
+            Assert.IsNotNull(pos);
+            Assert.IsNotNull(pos.Value);
+            Assert.IsTrue(pos.Value.IsDefined);
+            Assert.IsInstanceOfType(pos.Value, typeof(ArrayValue));
+
+            var posArray = pos.Value as ArrayValue;
+            Assert.AreEqual(3, posArray.Count);
+            Assert.IsTrue(posArray.ElementsNumeric);
+            Assert.AreEqual(1, posArray[0].ToInt());
+            Assert.AreEqual(2, posArray[1].ToInt());
+            Assert.AreEqual(3, posArray[2].ToInt());
+
         }
 
         [TestMethod]
@@ -430,6 +494,21 @@ myfunc .function
             Assert.IsTrue(sum.Value.IsNumeric);
             Assert.AreEqual(1 + 2 + 3 + 4, sum.Value.ToInt());
 
+            parse = ParseSource(
+@"  .let arr = [2,3,4]
+    .let powed = reduce(arr, pow)", true);
+            tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+
+            _ = Visitor.Visit(tree);
+            Assert.IsFalse(Services.Log.HasErrors);
+
+            var powed = Services.Symbols.GlobalScope.Resolve("powed") as Variable;
+            Assert.IsNotNull(powed);
+            Assert.IsNotNull(powed.Value);
+            Assert.IsTrue(powed.Value.IsDefined);
+            Assert.IsTrue(powed.Value.IsNumeric);
+            Assert.AreEqual(4096, powed.Value.ToInt());
         }
 
 
@@ -458,6 +537,48 @@ myfunc .function
             Assert.AreEqual(4, sortedArray[1].ToInt());
             Assert.AreEqual(7, sortedArray[2].ToInt());
             Assert.AreEqual(8, sortedArray[3].ToInt());
+
+        }
+
+        [TestMethod]
+        public void ArrowVariable()
+        {
+            var parse = ParseSource(
+@" .let fcn = (el) => el * 2
+    .let times2 = fcn(2)", true);
+            var tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+            _ = Visitor.Visit(tree);
+            Assert.IsFalse(Services.Log.HasErrors);
+
+            var times2 = Services.Symbols.GlobalScope.Resolve("times2") as Variable;
+            Assert.IsNotNull(times2);
+            Assert.IsNotNull(times2.Value);
+            Assert.IsTrue(times2.Value.IsDefined);
+            Assert.IsTrue(times2.Value.IsNumeric);
+            Assert.AreEqual(4, times2.Value.ToInt());
+
+            parse = ParseSource(
+@" .let fcn = (el) => el * 2
+    .let arr = [1,2,3]
+    .let times2arr = map(arr, fcn)", true);
+            tree = parse.source();
+            Assert.IsFalse(Services.Log.HasErrors);
+            _ = Visitor.Visit(tree);
+            Assert.IsFalse(Services.Log.HasErrors);
+
+            times2 = Services.Symbols.GlobalScope.Resolve("times2arr") as Variable;
+            Assert.IsNotNull(times2);
+            Assert.IsNotNull(times2.Value);
+            Assert.IsTrue(times2.Value.IsDefined);
+            Assert.IsInstanceOfType(times2.Value, typeof(ArrayValue));
+
+            var times2Arr = times2.Value as ArrayValue;
+            Assert.AreEqual(3, times2Arr.Count);
+            Assert.IsTrue(times2Arr.ElementsNumeric);
+            Assert.AreEqual(2, times2Arr[0].ToInt());
+            Assert.AreEqual(4, times2Arr[1].ToInt());
+            Assert.AreEqual(6, times2Arr[2].ToInt());
 
         }
     }

@@ -20,7 +20,7 @@ namespace Sixty502DotNet
         private readonly AsmEncoding _encoding;
 
         /// <summary>
-        /// Construct a new instance of a <see cref="CharFunction"/> class.
+        /// Construct a new instance of the <see cref="CharFunction"/> class.
         /// </summary>
         /// <param name="encoding">The encoding that converts the function
         /// argument to a string.</param>

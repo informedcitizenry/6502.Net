@@ -11,8 +11,15 @@ using System.Text;
 
 namespace Sixty502DotNet
 {
+    /// <summary>
+    /// Represents the implementation of a function that filters a given array
+    /// or string according to a predicate.
+    /// </summary>
     public class FilterFunction : FunctionDefinitionBase
     {
+        /// <summary>
+        /// Construct a new instance of the <see cref="FilterFunction"/> class.
+        /// </summary>
         public FilterFunction()
             : base("filter", new List<FunctionArg>
             {

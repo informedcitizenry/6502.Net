@@ -5,27 +5,60 @@
 // 
 //-----------------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+
 namespace Sixty502DotNet
 {
-    public class FunctionValue : Value
+    /// <summary>
+    /// Represents a function definition as a value type.
+    /// </summary>
+    public class FunctionValue : Value, IFunction
     {
-        private readonly UserFunctionDefinition _fcnDefinition;
+        private readonly IFunction _fcnDefinition;
 
+        /// <summary>
+        /// Construct a new instance of a <see cref="FunctionValue"/> class.
+        /// </summary>
+        /// <param name="arrowCtx">The parsed arrow function context.</param>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
         public FunctionValue(Sixty502DotNetParser.ArrowFuncContext arrowCtx, AssemblyServices services)
+            : this(UserFunctionDefinition.Declare(arrowCtx, services.Symbols), services)
+        {
+            ((UserFunctionDefinition)_fcnDefinition).Visitor = Visitor;
+        }
+
+        /// <summary>
+        /// Construct a new instance of a <see cref="FunctionValue"/> class.
+        /// </summary>
+        /// <param name="function">The <see cref="IFunction"/> symbol to copy.</param>
+        /// <param name="services">The shared <see cref="AssemblyServices"/> object.</param>
+        public FunctionValue(IFunction function, AssemblyServices services)
         {
             Visitor = new BlockVisitor(services);
-            _fcnDefinition = UserFunctionDefinition.Declare(arrowCtx, services.Symbols);
+            _fcnDefinition = function;
             Type = typeof(FunctionValue); // just to get the DotNetType
         }
 
-        public Value? Invoke(ArrayValue args)
+        /// <summary>
+        /// Invoke the <see cref="FunctionValue"/> as a function.
+        /// </summary>
+        /// <param name="parms">The function parameters.</param>
+        /// <returns></returns>
+        public Value? Invoke(ArrayValue parms)
         {
-            _fcnDefinition.Visitor = Visitor;
-            return _fcnDefinition.Invoke(args);
+            return _fcnDefinition.Invoke(parms);
         }
 
         public override string ToString() => "() =>";
 
+        /// <summary>
+        /// The <see cref="FunctionValue"/>'s <see cref="BlockVisitor"/> object.
+        /// </summary>
         public BlockVisitor Visitor { get; init; }
+
+        public TypeCode ReturnType => _fcnDefinition.ReturnType;
+
+        public IList<FunctionArg> Args => _fcnDefinition.Args;
     }
 }

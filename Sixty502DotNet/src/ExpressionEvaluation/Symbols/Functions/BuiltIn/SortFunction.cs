@@ -11,8 +11,15 @@ using System.Linq;
 
 namespace Sixty502DotNet
 {
+    /// <summary>
+    /// Represents the implementation of a function that sorts elements of an array
+    /// or the characters of a string literal.
+    /// </summary>
     public class SortFunction : FunctionDefinitionBase
     {
+        /// <summary>
+        /// Construct a new instance of the <see cref="SortFunction"/> class.
+        /// </summary>
         public SortFunction()
             : base("sort", new List<FunctionArg> { new FunctionArg("array", variantType: true)} )
         {

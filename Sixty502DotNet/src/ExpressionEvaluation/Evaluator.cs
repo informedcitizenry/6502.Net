@@ -139,13 +139,14 @@ namespace Sixty502DotNet
             }
             if (context.lhs != null)
             {
-                var lhs = ResolveIdentifierSymbol(primaryScope, alternateScopes, context.lhs);
-                if (lhs is NamedMemberSymbol namedMemberSymbol)
+                var root = ResolveIdentifierSymbol(primaryScope, alternateScopes, context.lhs);
+                if (root is NamedMemberSymbol namedMemberSymbol)
                 {
                     return namedMemberSymbol.ResolveMember(context.rhs.Start.Text);
                 }
+                return root;
             }
-            return ResolveIdentifierSymbol(primaryScope, alternateScopes, context.identifier()[0]);
+            return ResolveIdentifierSymbol(primaryScope, alternateScopes, context.rhs);
         }
 
         /// <summary>
@@ -450,13 +451,13 @@ namespace Sixty502DotNet
                     }
                 }
             }
-            if (context.lparen != null)
-            {
-                return GetPrimaryExpression(context.expr()[0]);
-            }
             if (context.primaryExpr() != null)
             {
                 return GetPrimaryExpression(context.primaryExpr());
+            }
+            if (context.grouped() != null)
+            {
+                return GetPrimaryExpression(context.grouped().expr());
             }
             return Value.Undefined;
         }

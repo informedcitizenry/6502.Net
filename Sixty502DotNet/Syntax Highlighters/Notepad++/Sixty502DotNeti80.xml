@@ -26,9 +26,9 @@
             <Keywords name="Folders in comment, close"></Keywords>
             <Keywords name="Keywords1">aci adc add adi ana and ani call cc cm cma cmc cmp cnc cnz cp cpe cpi cpo cz daa dad dcr dcx di ei hlt in inr inx jc jm jmp jnc jnz jp jpe jpo jz lda ldax lhld lxi mov mvi nop ora ori out pchl pop push ral rar rc ret rlc rm rnc rnz rp rpe rpo rrc rst rz sbb sbi shld sphl sta stax stc sub sui xchg xra xri xthl</Keywords>
             <Keywords name="Keywords2">.assert .bank .binclude .break .case .comment .continue .cpu .default .dsection .echo .encoding .end .endrelocate .eor .error .errorif .equ .forcepass .format .global .goto .import .include .initmem .invoke .label .let .map .org .proff .pron .relocate .return .section .format .target .unmap .warn .warnif</Keywords>
-            <Keywords name="Keywords3">.addr .align .bankbytes .binary .bstring .byte .cbmflt .cbmfltp .char .cstring .dint .dword .fill .hibytes .hiwords .hstring .lobytes .lowords .lint .long .lstring .nstring .pstring .rta .sbyte .short .sint .string .word</Keywords>
+            <Keywords name="Keywords3">.addr .align .bankbytes .binary .bstring .byte .cbmflt .cbmfltp .char .cstring .dint .dword .fill .hibytes .hiwords .hstring .lobytes .lowords .lint .long .lstring .nstring .pstring .rta .sbyte .short .sint .string .stringify .word</Keywords>
             <Keywords name="Keywords4">.</Keywords>
-            <Keywords name="Keywords5">abs acos atan byte cbmflt cbmfltp cbrt ceil char cos cosh deg dword exp float floor format frac hypot int len ln log log10 long peek poke pow rad random round section sgn sin sinh sizeof sqrt tan tanh typeof word</Keywords>
+            <Keywords name="Keywords5">abs acos atan byte cbmflt cbmfltp cbrt ceil char concat cos cosh deg dword exp filter float floor format frac hypot int len ln log log10 long map peek poke pow rad random reduce round rta section sgn sin sinh sizeof sort sqrt tan tanh typeof word</Keywords>
             <Keywords name="Keywords6">\</Keywords>
             <Keywords name="Keywords7">a b c d e h l m psw false MATH_PI MATH_E MATH_TAU NaN INT8_MAX INT8_MIN INT16_MAX INT16_MIN INT32_MAX INT32_MIN true UINT8_MAX UINT8_MIN UINT16_MAX UINT16_MIN UINT32_MAX UINT32_MIN</Keywords>
             <Keywords name="Keywords8"></Keywords>

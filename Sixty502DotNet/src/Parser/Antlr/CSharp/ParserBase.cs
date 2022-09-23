@@ -20,7 +20,7 @@ namespace Sixty502DotNet
     {
         private int _breaks;
         private int _continues;
-        private bool _inFunction;
+        private int _functionNestingDepth;
 
         private readonly static Dictionary<int, int> s_endDirectives = new()
         {
@@ -65,7 +65,7 @@ namespace Sixty502DotNet
             : base(input, output, errorOutput)
         {
             _breaks = _continues = 0;
-            _inFunction = false;
+            _functionNestingDepth = 0;
             Symbols = new SymbolManager(false);
             LabelsAfterWhitespace = new List<IToken>();
         }
@@ -76,7 +76,7 @@ namespace Sixty502DotNet
         /// <param name="context">The parsed block of statements.</param>
         protected void SetScope(Sixty502DotNetParser.BlockContext context)
         {
-            if (!_inFunction)
+            if (_functionNestingDepth == 0)
             {
                 context.scope = Symbols.Scope;
             }
@@ -88,7 +88,7 @@ namespace Sixty502DotNet
         /// <param name="context">The parsed statement.</param>
         protected void SetAnnotations(Sixty502DotNetParser.StatContext context)
         {
-            if (!_inFunction &&
+            if (_functionNestingDepth == 0 &&
                 context.scope == null /* certain directives might have already set
                                          the scope before we arrived here, e.g. .for and .foreach
                                        */)
@@ -104,7 +104,7 @@ namespace Sixty502DotNet
         /// <param name="context">The parsed label context.</param>
         protected void CreateAnonymousLabel(Sixty502DotNetParser.LabelContext context)
         {
-            if (!_inFunction)
+            if (_functionNestingDepth == 0)
             {
                 var labelName = context.Start.Text;
                 if (labelName.Length == 1)
@@ -223,7 +223,7 @@ namespace Sixty502DotNet
         {
             if (symToken?.Type == Sixty502DotNetParser.Ident)
             {
-                if (_inFunction && type != Sixty502DotNetParser.Label && type != Sixty502DotNetParser.Equ)
+                if (_functionNestingDepth > 0 && type != Sixty502DotNetParser.Label && type != Sixty502DotNetParser.Equ)
                 {
                     NotifyErrorListeners(symToken, "Directive not valid in function call.", new CustomParseError());
                     return;
@@ -340,7 +340,7 @@ namespace Sixty502DotNet
         protected void EnterBlock(Sixty502DotNetParser.EnterBlockContext context)
         {
             var statContext = (Sixty502DotNetParser.StatContext)context.Parent.Parent;
-            if (context.directive.Type == Sixty502DotNetParser.Proc && _inFunction)
+            if (context.directive.Type == Sixty502DotNetParser.Proc && _functionNestingDepth > 0)
             {
                 NotifyErrorListeners(context.directive, "Cannot define a procedure inside a funciton definition.", new CustomParseError());
                 return;
@@ -349,7 +349,7 @@ namespace Sixty502DotNet
             {
                 if (context.directive.Type == Sixty502DotNetParser.Function)
                 {
-                    _inFunction = true;
+                    _functionNestingDepth++;
                 }
                 else
                 {
@@ -484,7 +484,7 @@ namespace Sixty502DotNet
             if (context.directive.Type == Sixty502DotNetParser.Endfunction)
             {
                 DeclareFunction((Sixty502DotNetParser.BlockStatContext)context.Parent);
-                _inFunction = false;
+                _functionNestingDepth--;
             }
             Symbols.PopScope();
             var current = Symbols.Scope as Namespace;
@@ -576,7 +576,7 @@ namespace Sixty502DotNet
         /// <param name="context">The parsed directive statement.</param>
         protected void CheckReturn(Sixty502DotNetParser.DirectiveStatContext context)
         {
-            if (!_inFunction)
+            if (_functionNestingDepth == 0)
             {
                 NotifyErrorListeners(context.control, "\".return\" only valid in functions.", new CustomParseError());
             }
@@ -609,7 +609,7 @@ namespace Sixty502DotNet
         /// <param name="context">The parsed assembly statement.</param>
         protected void CheckCodeGenInFunction(Sixty502DotNetParser.AsmStatContext context)
         {
-            if (_inFunction)
+            if (_functionNestingDepth > 0)
             {
                 if (context.pseudoOpStat() != null)
                     NotifyErrorListeners(context.pseudoOpStat().Start,
@@ -622,7 +622,7 @@ namespace Sixty502DotNet
 
         protected void BeginArrow()
         {
-            _inFunction = true;
+            _functionNestingDepth++;
         }
 
         protected void EndArrow()
@@ -631,7 +631,7 @@ namespace Sixty502DotNet
             if (lexer != null)
             {
                 lexer.ForceRecognizeNewline(false);
-                _inFunction = false;
+                _functionNestingDepth--;
             }
         }
 

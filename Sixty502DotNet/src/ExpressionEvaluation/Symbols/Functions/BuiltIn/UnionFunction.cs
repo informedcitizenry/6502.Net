@@ -11,8 +11,15 @@ using System.Linq;
 
 namespace Sixty502DotNet
 {
+    /// <summary>
+    /// Represents the implementation of a function that returns the union of
+    /// two separate array objects.
+    /// </summary>
     public class UnionFunction : FunctionDefinitionBase
     {
+        /// <summary>
+        /// Construct a new instance of the <see cref="UnionFunction"/> class.
+        /// </summary>
         public UnionFunction()
             : base("union", new List<FunctionArg>
             {

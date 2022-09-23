@@ -18,8 +18,8 @@ namespace Sixty502DotNet
     {
         private readonly Func<double[], double> _invocation;
 
-        private MathFunction(IList<FunctionArg> args, Func<double[], double> definition)
-            : base("math", args)
+        private MathFunction(string name, IList<FunctionArg> args, Func<double[], double> definition)
+            : base(name, args)
             => (_invocation, IsReferenced) = (definition, true);
 
         /// <summary>
@@ -27,12 +27,12 @@ namespace Sixty502DotNet
         /// single argument.
         /// </summary>
         /// <param name="definition">The function definition.</param>
-        /// <returns>A <see cref="MathFunction"/> thta accepts a single
+        /// <returns>A <see cref="MathFunction"/> that accepts a single
         /// argument.</returns>
-        public static MathFunction OneArg(Func<double[], double> definition)
+        public static MathFunction OneArg(string name, Func<double[], double> definition)
         {
             var singleArg = new List<FunctionArg> { new FunctionArg("", TypeCode.Double) };
-            return new MathFunction(singleArg, definition);
+            return new MathFunction(name, singleArg, definition);
         }
 
         /// <summary>
@@ -42,10 +42,10 @@ namespace Sixty502DotNet
         /// <param name="definition">The function definition.</param>
         /// <returns>A <see cref="MathFunction"/> that accepts two
         /// arguments.</returns>
-        public static MathFunction TwoArg(Func<double[], double> definition)
+        public static MathFunction TwoArg(string name, Func<double[], double> definition)
         {
             var arg = new FunctionArg("", TypeCode.Double);
-            return new MathFunction(new List<FunctionArg> { arg, arg }, definition);
+            return new MathFunction(name, new List<FunctionArg> { arg, arg }, definition);
         }
 
         protected override Value? OnInvoke(ArrayValue args)

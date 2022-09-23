@@ -50,6 +50,10 @@ namespace Sixty502DotNet
         {
             if (context != null)
             {
+                if (context.designator()?.arrowFunc() != null)
+                {
+                    return true;
+                }
                 foreach (var expr in context.expr())
                 {
                     if (ExpressionHasNonConstants(expr))
@@ -107,15 +111,15 @@ namespace Sixty502DotNet
 
         private Value ResolveValue(IFunction function, Sixty502DotNetParser.IdentifierContext context)
         {
-            if (context.LeftParen() == null || (function is UserFunctionDefinition userFunc && !userFunc.CanBeInvoked))
+            var isDefined = function is not UserFunctionDefinition userFunc || userFunc.CanBeInvoked;
+            if (context.LeftParen() == null)
             {
-                if (context.LeftParen() == null)
+                if (isDefined)
                 {
-                    _services.Log.LogEntry(context, "Function being used as a type.");
-                    return Value.Undefined;
+                    return new FunctionValue(function, _services);
                 }
-                _services.Log.LogEntry(context, "User function is called before it is defined.");
-                return new Value();
+                _services.Log.LogEntry(context, "User function is referenced before it is defined.");
+                return Value.Undefined;
             }
             ArrayValue? args = new();
             if (context.expressionList() != null)
@@ -131,7 +135,7 @@ namespace Sixty502DotNet
                 var returnVal = function.Invoke(args);
                 if (returnVal == null || (!returnVal.IsDefined && _services.State.CurrentPass > 0))
                 {
-                    _services.Log.LogEntry(context, $"The call to {context.name?.Text ?? context.lhs.GetText()}() did not return a value.");
+                    _services.Log.LogEntry(context, $"The call to {context.GetText()}() did not return a value.");
                     return Value.Undefined;
                 }
                 if (!returnVal.IsPrimitiveType)
@@ -147,30 +151,61 @@ namespace Sixty502DotNet
             }
         }
 
+        private Value InvokeFunctionValue(FunctionValue value, Sixty502DotNetParser.ExpressionListContext? expressionList)
+        {
+            Value parms = expressionList != null ?
+                VisitExpressionList(expressionList) : new ArrayValue();
+            Value? ret = value.Invoke((ArrayValue)parms);
+            if (ret == null || !ret.IsDefined)
+            {
+                throw new Error("Call to function expression did not return a value");
+            }
+            return ret;
+        }
+
         private Value ResolveValue(IValueResolver resolver, Sixty502DotNetParser.IdentifierContext context)
         {
-            if (context.range().Length > 0 || context.LeftParen() != null)
+            Value resolvedValue = resolver.Value;
+            var rhs = RightmostIdentifier(context);
+            if (rhs.range().Length > 0 || rhs.LeftParen() != null)
             {
-                if (context.range().Length > 0)
+                if (rhs.range().Length > 0)
                 {
-                    return GetSubsequence(resolver.Value, context.range()) ?? Value.Undefined;
+                    return GetSubsequence(resolver.Value, rhs.range()) ?? Value.Undefined;
                 }
-                _services.Log.LogEntry(context, Errors.TypeMismatchError);
-                return Value.Undefined;
+                if (resolvedValue is FunctionValue funcVal && rhs.LeftParen() != null)
+                {
+                    resolvedValue = InvokeFunctionValue(funcVal, rhs.expressionList());
+                }
+                else
+                {
+                    _services.Log.LogEntry(context, Errors.TypeMismatchError);
+                    return Value.Undefined;
+                }
             }
             if (resolver is Label || resolver is Constant)
             {
-                _services.State.PassNeeded |= !resolver.Value.IsDefined;
+                _services.State.PassNeeded |= !resolvedValue.IsDefined;
                 if (resolver is Label label && label.Bank >= 0 && label.Value.IsIntegral && label.Bank != _services.Output.CurrentBank)
                 {
                     return new Value((label.Bank * 0x10000) | label.Value.ToInt());
                 }
             }
-            return resolver.Value;
+            return resolvedValue;
+        }
+
+        private Sixty502DotNetParser.IdentifierContext RightmostIdentifier(Sixty502DotNetParser.IdentifierContext context)
+        {
+            if (context.rhs != null)
+            {
+                return RightmostIdentifier(context.rhs);
+            }
+            return context;
         }
 
         public override Value VisitIdentifier([NotNull] Sixty502DotNetParser.IdentifierContext context)
         {
+            var mike = context.GetText();
             var symbol = Evaluator.ResolveIdentifierSymbol(_services.Symbols.Scope, _services.Symbols.ImportedScopes, context);
             if (symbol == null)
             {
@@ -393,6 +428,9 @@ namespace Sixty502DotNet
             return subsequence;
         }
 
+        public override Value VisitGrouped([NotNull] Sixty502DotNetParser.GroupedContext context)
+            => Visit(context.expr());
+
         public override Value VisitArrowFunc([NotNull] Sixty502DotNetParser.ArrowFuncContext context)
             => new FunctionValue(context, _services);
 
@@ -413,14 +451,7 @@ namespace Sixty502DotNet
                 {
                     return arrow;
                 }
-                Value parms = context.expressionList() != null ?
-                    VisitExpressionList(context.expressionList())  : new ArrayValue();
-                Value? ret = ((FunctionValue)arrow).Invoke((ArrayValue)parms);
-                if (ret == null || !ret.IsDefined)
-                {
-                    throw new Error("Function did not return a value");
-                }
-                return ret;
+                return InvokeFunctionValue((FunctionValue)arrow, context.expressionList());
             }
             var ranges = context.range();
             if (context.designator()?.array() != null || context.designator()?.dictionary() != null || context.StringLiteral() != null)
@@ -461,7 +492,7 @@ namespace Sixty502DotNet
             if (context.identifier() != null)
             {
                 Value rhsCopy = rhs;
-                if (rhs is not ArrayValue)
+                if (rhs.IsPrimitiveType)
                 {
                     rhsCopy = new(rhs);
                 }
@@ -674,10 +705,6 @@ namespace Sixty502DotNet
                         return Evaluator.BinaryOp(lhs, op, rhs);
                     }
                     return Evaluator.UnaryOp(op, StringToInt(rhs));
-                }
-                if (context.lparen != null)
-                {
-                    return Visit(context.expr()[0]);
                 }
                 if (context.cond != null)
                 {

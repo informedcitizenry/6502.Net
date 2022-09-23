@@ -10,8 +10,15 @@ using System.Collections.Generic;
 
 namespace Sixty502DotNet
 {
+    /// <summary>
+    /// Represents the implementation of a function that reduces array elements
+    /// to a single value according to the algorithm of a given function.
+    /// </summary>
     public class ReduceFunction : FunctionDefinitionBase
     {
+        /// <summary>
+        /// Construct a new instance of the <see cref="ReduceFunction"/> class.
+        /// </summary>
         public ReduceFunction()
             : base("reduce", new List<FunctionArg>
             {

@@ -603,10 +603,10 @@ expr
     |   <assoc=right>cond=expr op=Query Newline? then=expr Colon Newline? els=expr
     |   <assoc=right>op=(LeftAngle|RightAngle|Ampersand|Caret)            rhs=expr
     |   assignExpr
-    |   designator
-    |   lparen=LeftParen expr RightParen
-    |   primaryExpr
     |   refExpr
+    |   designator
+    |   grouped
+    |   primaryExpr
     ;
 
 primaryExpr
@@ -639,10 +639,10 @@ postfixExpr
 
 designator
     :   designator (LeftSquare range RightSquare)+
-    |   StringLiteral LeftSquare range RightSquare
     |   arrowFunc (LeftParen expressionList? RightParen)?
     |   array
     |   dictionary
+    |   StringLiteral LeftSquare range RightSquare
     ;
 
 refExpr
@@ -652,8 +652,8 @@ refExpr
     ;
 
 identifier
-    :   identifier (op=LeftSquare range RightSquare)+
-    |   identifier op=LeftParen expressionList? RightParen
+    :   lhs=identifier (op=LeftSquare range RightSquare)+
+    |   lhs=identifier op=LeftParen expressionList? RightParen
     |   lhs=identifier op=Dot rhs=identifier
     |   name=Ident
     ;
@@ -675,6 +675,10 @@ array
 
 dictionary
     :   LeftCurly keyValuePair (Comma keyValuePair)* Comma? RightCurly
+    ;
+
+grouped
+    :   LeftParen expr RightParen
     ;
 
 keyValuePair

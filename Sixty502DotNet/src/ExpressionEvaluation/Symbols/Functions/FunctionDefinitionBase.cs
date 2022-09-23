@@ -93,6 +93,9 @@ namespace Sixty502DotNet
             return OnInvoke(args);
         }
 
+        public override string ToString()
+            => $"{Name}()";
+
         /// <summary>
         /// Gets the flag indicating the function accepts a variable number
         /// of arguments.

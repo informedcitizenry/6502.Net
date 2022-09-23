@@ -12,7 +12,7 @@ namespace Sixty502DotNet.Tests
             var tree = parse.source();
             Assert.IsFalse(Services.Log.HasErrors);
             _ = Visitor.Visit(tree);
-            Assert.IsFalse(Services.Log.HasErrors);
+            Assert.IsTrue(Services.Log.HasErrors);
         }
 
         [TestMethod]

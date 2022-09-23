@@ -11,8 +11,15 @@ using System.Text;
 
 namespace Sixty502DotNet
 {
+    /// <summary>
+    /// Represents the implementation of a function that transforms elements
+    /// of an array into a new array by calling a given transform function.
+    /// </summary>
     public class MapFunction : FunctionDefinitionBase
     {
+        /// <summary>
+        /// Construct a new instance of the <see cref="MapFunction"/> class.
+        /// </summary>
         public MapFunction()
             : base("map", new List<FunctionArg>
             {

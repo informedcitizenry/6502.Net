@@ -11,8 +11,15 @@ using System.Linq;
 
 namespace Sixty502DotNet
 {
+    /// <summary>
+    /// Represents an implementation of a function that concatenates two array
+    /// or string literal values.
+    /// </summary>
     public class ConcatFunction : FunctionDefinitionBase
     {
+        /// <summary>
+        /// Construct a new instance of the <see cref="ConcatFunction"/> class.
+        /// </summary>
         public ConcatFunction()
             : base("concat", new List<FunctionArg>
             {
