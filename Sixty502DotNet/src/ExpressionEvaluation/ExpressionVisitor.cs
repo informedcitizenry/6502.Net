@@ -205,7 +205,6 @@ namespace Sixty502DotNet
 
         public override Value VisitIdentifier([NotNull] Sixty502DotNetParser.IdentifierContext context)
         {
-            var mike = context.GetText();
             var symbol = Evaluator.ResolveIdentifierSymbol(_services.Symbols.Scope, _services.Symbols.ImportedScopes, context);
             if (symbol == null)
             {
