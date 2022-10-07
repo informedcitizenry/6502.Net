@@ -342,6 +342,9 @@ mnemonic
     |   LAS | LAX | RLA | RRA | SAX | SHA | SHX | SHY
     |   SLO | SRE | STP | TAS | TOP
 
+    /* 65C02 */
+    |   PHX | PHY | PLX | PLY | STZ | TRB | TSB
+
     /* 65816 */
     |   COP | JML | JSL | MVN | MVP | PEA | PEI | PHB 
     |   PHD | PHK | PLB | PLD | REP | RTL | SEP | TCD 
