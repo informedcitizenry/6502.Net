@@ -684,7 +684,7 @@ namespace Sixty502DotNet
                     if (context.rhs != null)
                     {
                         int op = context.op.Type;
-                        if (Evaluator.LogicalLhsOnly(op, lhs))
+                        if (Evaluator.EvaluateLhsOnly(op, lhs))
                         {
                             return lhs;
                         }
