@@ -44,7 +44,14 @@ namespace Sixty502DotNet
                     value = new Value(AutoValue);
                 }
                 var def = ResolveMember(name) as IValueResolver;
-                return def?.Value.SetAs(value) == true && _values.Add(value.ToLong());
+                if (def != null)
+                {
+                    if (def.Value.IsDefined)
+                    {
+                        _values.Remove(def.Value.ToLong());
+                    }
+                    return def.Value.SetAs(value) &&_values.Add(def.Value.ToLong());
+                }
             }
             return false;
         }

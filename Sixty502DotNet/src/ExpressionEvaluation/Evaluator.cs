@@ -150,6 +150,20 @@ namespace Sixty502DotNet
         }
 
         /// <summary>
+        /// Determine whether in a binary expression to stop evaluation at the left-hand side.
+        /// </summary>
+        /// <param name="op">The binary operator.</param>
+        /// <param name="lhs">The evaluated left-hand side expression.</param>
+        /// <returns><c>true</c> if the left-hand side of the expression should be considered
+        /// the value, <c>false</c> otherwise.</returns>
+        public static bool EvaluateLhsOnly(int op, Value lhs)
+        {
+            return lhs.DotNetType == TypeCode.Boolean &&
+                ((op == Sixty502DotNetParser.DoublePipe && lhs.ToBool()) ||
+                 (op == Sixty502DotNetParser.DoubleAmpersand && !lhs.ToBool()));
+        }
+
+        /// <summary>
         /// Perform a prefix unary operation.
         /// </summary>
         /// <param name="op">The unary operator type.</param>
@@ -300,18 +314,12 @@ namespace Sixty502DotNet
             }
             else if (lhs.DotNetType == TypeCode.Boolean && rhs.DotNetType == TypeCode.Boolean)
             {
-                var lhsBool = lhs.ToBool();
-                if ((op == Sixty502DotNetParser.DoublePipe && lhsBool) ||
-                    (op == Sixty502DotNetParser.DoubleAmpersand && !lhsBool))
-                {
-                    return new Value(lhsBool);
-                }
                 return op switch
                 {
-                    Sixty502DotNetParser.DoubleEqual        => new Value(lhsBool == rhs.ToBool()),
-                    Sixty502DotNetParser.BangEqual          => new Value(lhsBool != rhs.ToBool()),
-                    Sixty502DotNetParser.DoubleAmpersand    => new Value(lhsBool && rhs.ToBool()),
-                    Sixty502DotNetParser.DoublePipe         => new Value(lhsBool || rhs.ToBool()),
+                    Sixty502DotNetParser.DoubleEqual        => new Value(lhs.ToBool() == rhs.ToBool()),
+                    Sixty502DotNetParser.BangEqual          => new Value(lhs.ToBool() != rhs.ToBool()),
+                    Sixty502DotNetParser.DoubleAmpersand    => new Value(lhs.ToBool() && rhs.ToBool()),
+                    Sixty502DotNetParser.DoublePipe         => new Value(lhs.ToBool() || rhs.ToBool()),
                     _                                       => throw new InvalidOperationException(Errors.InvalidOperation)
                 };
             }
@@ -423,22 +431,25 @@ namespace Sixty502DotNet
         {
             if (context.op != null)
             {
-                if (context.rhs != null)
+                if (context.lhs != null)
                 {
-                    var rhs = GetPrimaryExpression(context.rhs);
-                    if (rhs.IsDefined)
+                    var lhs = GetPrimaryExpression(context.lhs);
+                    if (lhs.IsDefined)
                     {
-                        if (context.lhs != null)
+                        if (context.rhs != null)
                         {
-                            var lhs = GetPrimaryExpression(context.lhs);
-                            if (lhs.IsDefined)
+                            var rhs = GetPrimaryExpression(context.rhs);
+                            if (rhs.IsDefined)
                             {
+                                if (EvaluateLhsOnly(context.op.Type, lhs))
+                                {
+                                    return lhs;
+                                }
                                 return BinaryOp(lhs, context.op.Type, rhs);
                             }
+                            return UnaryOp(context.op.Type, lhs);
                         }
-                        return UnaryOp(context.op.Type, rhs);
                     }
-                    return Value.Undefined;
                 }
                 if (context.cond != null)
                 {

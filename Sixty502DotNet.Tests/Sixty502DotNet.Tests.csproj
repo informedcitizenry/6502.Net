@@ -4,7 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
-    <ReleaseVersion>3.2.2.0</ReleaseVersion>
+    <ReleaseVersion>3.2.2.1</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>

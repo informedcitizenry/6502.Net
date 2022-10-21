@@ -590,7 +590,7 @@ arrowFunc
     ;
 
 expr
-    :   op=(Plus|Hyphen|Bang|Tilde)                                       rhs=expr
+    :   op=(Plus|Hyphen|Bang|Tilde)                                       lhs=expr
     |   lhs=expr op=(Asterisk|Solidus|Percent) Newline?                   rhs=expr
     |   lhs=expr op=(Plus|Hyphen) Newline?                                rhs=expr
     |   lhs=expr op=(LeftShift|RightShift|RightSignShift) Newline?        rhs=expr
@@ -604,7 +604,7 @@ expr
     |   lhs=expr op=DoublePipe Newline?                                   rhs=expr
     |   lhs=expr op=DoubleCaret Newline?                                  rhs=expr
     |   <assoc=right>cond=expr op=Query Newline? then=expr Colon Newline? els=expr
-    |   <assoc=right>op=(LeftAngle|RightAngle|Ampersand|Caret)            rhs=expr
+    |   <assoc=right>op=(LeftAngle|RightAngle|Ampersand|Caret)            lhs=expr
     |   assignExpr
     |   refExpr
     |   designator

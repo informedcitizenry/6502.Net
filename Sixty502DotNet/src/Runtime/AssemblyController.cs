@@ -267,10 +267,12 @@ namespace Sixty502DotNet
             var currentPassVar = _services.Symbols.GlobalScope.Resolve("CURRENT_PASS") as Constant;
             currentPassVar!.Value.SetAs(new Value(_services.State.CurrentPass + 1));
             _codeGenVisitor?.Reset();
+            _services.Encoding.SelectDefaultEncoding();
             _services.Output.Reset();
             _services.StatementListings.Clear();
             _services.LabelListing.Clear();
             _services.Symbols.Reset();
+            _services.State.PrintOff = false;
             _services.State.PassNeeded = false;
             _ = _codeGenVisitor?.Visit(parse);
         }
@@ -460,8 +462,9 @@ namespace Sixty502DotNet
         /// <summary>
         /// Assemble the input source, generate output, and report any errors.
         /// </summary>
-        public void Assemble()
+        public byte[] Assemble()
         {
+            byte[] bytes = { };
             if (!_services.Options.NoStats && !_services.Options.PreprocessOnly)
             {
                 Console.WriteLine($"{Assembler.AssemblerName}");
@@ -473,13 +476,13 @@ namespace Sixty502DotNet
             if (_services.Log.HasErrors)
             {
                 _services.Log.DumpErrors(_services.Options.NoHighlighting);
-                return;
+                return bytes;
             }
             var parsedSource = ParseSource();
             if (_services.Log.HasErrors)
             {
                 _services.Log.DumpErrors(_services.Options.NoHighlighting);
-                return;
+                return bytes;
             }
 #if DEBUG
             Console.WriteLine($"[Debug]: Parse time: {totalAssemblyStopWatch.Elapsed.TotalSeconds}");
@@ -525,6 +528,7 @@ namespace Sixty502DotNet
                 Console.WriteLine($"{GetListingHeader()}// Pre-processed output\n");
                 Console.Write(_preprocessedSource);
             }
+            return _services.Output.GetCompilation().ToArray();
         }
     }
 }

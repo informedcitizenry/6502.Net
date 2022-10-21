@@ -677,16 +677,16 @@ namespace Sixty502DotNet
         {
             try
             {
-                if (context.rhs != null)
+                if (context.lhs != null)
                 {
-                    Value rhs = Visit(context.rhs);
-                    int op = context.op.Type;
-                    if (!rhs.IsDefined) return Value.Undefined;
-                    if (context.lhs != null)
+                    Value lhs = Visit(context.lhs);
+                    if (!lhs.IsDefined) return Value.Undefined;
+                    if (context.rhs != null)
                     {
-                        if (op == Sixty502DotNetParser.TripleEqual)
+                        int op = context.op.Type;
+                        if (Evaluator.LogicalLhsOnly(op, lhs))
                         {
-                            return Evaluator.IsIdentical(_services.Symbols.Scope, _services.Symbols.ImportedScopes, context.lhs, context.rhs);
+                            return lhs;
                         }
                         if (op == Sixty502DotNetParser.BangDoubleEqual)
                         {
@@ -694,7 +694,13 @@ namespace Sixty502DotNet
                                 _services.Symbols.ImportedScopes,
                                 context.lhs, context.rhs).ToBool() == false);
                         }
-                        var lhs = Visit(context.lhs); if (!lhs.IsDefined) return Value.Undefined;
+                        if (op == Sixty502DotNetParser.BangDoubleEqual)
+                        {
+                            return new Value(Evaluator.IsIdentical(_services.Symbols.Scope,
+                                _services.Symbols.ImportedScopes,
+                                context.lhs, context.rhs).ToBool() == false);
+                        }
+                        var rhs = Visit(context.rhs); if (!rhs.IsDefined) return Value.Undefined;
                         if (lhs.IsNumeric && (rhs.DotNetType == TypeCode.Char || rhs.IsString) ||
                             rhs.IsNumeric && (lhs.DotNetType == TypeCode.Char || lhs.IsString))
                         {
@@ -703,7 +709,7 @@ namespace Sixty502DotNet
                         }
                         return Evaluator.BinaryOp(lhs, op, rhs);
                     }
-                    return Evaluator.UnaryOp(op, StringToInt(rhs));
+                    return Evaluator.UnaryOp(context.op.Type, lhs);
                 }
                 if (context.cond != null)
                 {
