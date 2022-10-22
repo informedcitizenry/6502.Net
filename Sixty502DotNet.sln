@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29102.190
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32922.545
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{65F3CE0A-FDA5-438D-A105-AF3DE28915F5}"
 	ProjectSection(SolutionItems) = preProject
@@ -10,9 +10,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sixty502DotNet", "Sixty502DotNet\Sixty502DotNet.csproj", "{509AB312-9232-4063-B964-1E45DCDFCEDE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sixty502DotNet", "Sixty502DotNet\Sixty502DotNet.csproj", "{509AB312-9232-4063-B964-1E45DCDFCEDE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sixty502DotNet.Tests", "Sixty502DotNet.Tests\Sixty502DotNet.Tests.csproj", "{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sixty502DotNet.Tests", "Sixty502DotNet.Tests\Sixty502DotNet.Tests.csproj", "{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,10 +31,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{509AB312-9232-4063-B964-1E45DCDFCEDE} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
-		{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9BE7575F-6E99-4243-AEAA-4D1E1064DA97}
