@@ -5,10 +5,12 @@
 // 
 //-----------------------------------------------------------------------------
 
-using Antlr4.Runtime.Misc;
 using System;
 using System.Linq;
 using System.Text;
+using Antlr4.Runtime.Misc;
+using Sixty502DotNet.Runtime;
+
 namespace Sixty502DotNet
 {
     /// <summary>
@@ -926,6 +928,7 @@ namespace Sixty502DotNet
                 var pc = Services.Output.LogicalPC;
                 Services.StatementListings.Add($"{GenLineListing(Services)}.{pc,-42:x4}{context.label().GetText()}");
             }
+
             return BlockState.Evaluating;
         }
 
@@ -1020,32 +1023,43 @@ namespace Sixty502DotNet
         /// <returns>The generated listing as a string.</returns>
         public static string GenLineListing(AssemblyServices services, string disassembly)
         {
-            if (services.State.CurrentStatement != null &&
-                ListingReady(services))
+            if (services.State.CurrentStatement is not { } cs)
             {
-                var lineGen = services.Output.LogicalPC - services.State.LogicalPCOnAssemble > 0;
-                var sb = new StringBuilder(GenLineListing(services));
-                if (!services.Options.NoAssembly && lineGen)
-                {
-                    var byteString = services.Output.GetBytesFrom(services.State.LongLogicalPCOnAssemble).ToString(services.State.LogicalPCOnAssemble, '.');
-                    sb.Append(byteString.PadRight(25));
-                }
-                if (!services.Options.NoDisassembly && lineGen)
-                {
-                    if (sb.Length > 29)
-                    {
-                        sb.Append(' ');
-                    }
-                    sb.Append(disassembly.PadRight(18));
-                }
-                if (!services.Options.NoSource && (lineGen || services.Options.VerboseList) && services.State.CurrentStatement.blockStat() == null)
-                {
-                    sb.Append(services.State.CurrentStatement.GetSourceLine(services.Options.VerboseList));
-                }
-                services.StatementListings.Add(sb.ToString());
-                return sb.ToString();
+                return string.Empty;
             }
-            return string.Empty;
+
+            services.DebugInfo.Add(new DebugEntry(cs.Start.Line, services.State.LongLogicalPCOnAssemble, cs.GetSourceLine(true)));
+
+            if (!ListingReady(services))
+            {
+                return string.Empty;
+            }
+
+            var lineGen = services.Output.LogicalPC - services.State.LogicalPCOnAssemble > 0;
+            var sb = new StringBuilder(GenLineListing(services));
+            if (!services.Options.NoAssembly && lineGen)
+            {
+                var byteString = services.Output.GetBytesFrom(services.State.LongLogicalPCOnAssemble).ToString(services.State.LogicalPCOnAssemble, '.');
+                sb.Append(byteString.PadRight(25));
+            }
+
+            if (!services.Options.NoDisassembly && lineGen)
+            {
+                if (sb.Length > 29)
+                {
+                    sb.Append(' ');
+                }
+
+                sb.Append(disassembly.PadRight(18));
+            }
+
+            if (!services.Options.NoSource && (lineGen || services.Options.VerboseList) && cs.blockStat() == null)
+            {
+                sb.Append(cs.GetSourceLine(services.Options.VerboseList));
+            }
+
+            services.StatementListings.Add(sb.ToString());
+            return sb.ToString();
         }
 
         /// <summary>

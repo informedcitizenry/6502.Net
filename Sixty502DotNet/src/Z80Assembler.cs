@@ -10,15 +10,15 @@ namespace Sixty502DotNet;
 public class Z80Assembler
 {
     private CodeGenVisitor _codeGenVisitor;
-    private readonly AssemblyServices _services = new(Options.FromArgs(new[] { "-c", "z80" }));
+    private readonly AssemblyServices _services = new(Options.FromArgs(new[] { "-c", "z80", "--list", "fake.s" }));
 
-    public Result<byte[]> Assemble(string input)
+    public Result<AssemblyData> Assemble(string input)
     {
         var parsedSource = ParseSource(input);
         if (_services.Log.HasErrors)
         {
             _services.Log.DumpErrors(_services.Options.NoHighlighting);
-            return Result.Failure<byte[]>(_services.Log.ToString());
+            return Result.Failure<AssemblyData>(_services.Log.ToString());
         }
 
         var passNeeded = true;
@@ -35,7 +35,8 @@ public class Z80Assembler
             passNeeded = _services.State.PassNeeded;
         }
 
-        return _services.Output.GetCompilation().ToArray();
+        var debugInfo = _services.DebugInfo.Distinct().OrderBy(x => x.Line);
+        return new AssemblyData(_services.Output.GetCompilation().ToArray(), debugInfo);
     }
 
     private void DoPass(IParseTree parse)
