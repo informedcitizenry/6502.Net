@@ -382,6 +382,7 @@ namespace Sixty502DotNet
             {
                 while (src.LA(i) == '\n' || src.LA(i) == '\r')
                     i++;
+                i--;
             }
             var stop = stat.Stop.StopIndex + i - 1;
             if (src.LA(i) != TokenConstants.EOF)

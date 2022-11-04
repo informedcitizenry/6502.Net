@@ -73,7 +73,7 @@ namespace Sixty502DotNet
             var opc = Set[instr];
             if (Services.ExpressionVisitor.TryGetArithmeticExpr(context.expr(), short.MinValue, ushort.MaxValue, out var rel))
             {
-                var offs = Services.Output.GetRelativeOffset((int)rel, 1);
+                var offs = Services.Output.GetRelativeOffset((int)rel, 2);
                 if (offs >= sbyte.MinValue && offs <= sbyte.MaxValue)
                 {
                     Services.Output.Add(opc.code, opc.code.Size());
@@ -88,15 +88,14 @@ namespace Sixty502DotNet
                         BlockVisitor.GenLineListing(Services,
                         $"{context.Start.Text.ToLower()} ${(int)rel & 0xffff:x4}");
                     }
+                    return true;
                 }
-                else if (Services.State.PassNeeded)
+                if (Services.State.PassNeeded)
                 {
                     Services.Output.AddUninitialized(2);
+                    return true;
                 }
-                else
-                {
-                    Services.Log.LogEntry(context.expr(), $"Relative branch too far ({Math.Abs(offs)} bytes).");
-                }
+                Services.Log.LogEntry(context.expr(), $"Relative branch too far ({Math.Abs(offs)} bytes).");
                 return true;
             }
             if (Services.State.PassNeeded)
