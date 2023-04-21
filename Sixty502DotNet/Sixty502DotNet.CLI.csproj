@@ -60,13 +60,14 @@
     <None Remove="src\CodeGen\Assembler\" />
     <None Remove="..\.editorconfig" />
     <None Remove="src\CodeGen\Output\FormatProviders\" />
+    <None Remove="src\Parser\Antlr\.DS_Store" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.11.1" />
-    <PackageReference Include="Antlr4BuildTasks" Version="11.5.0">
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.12.0" />
+    <PackageReference Include="Antlr4BuildTasks" Version="12.2.0">
         <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
@@ -110,6 +111,14 @@
         <Visitor>true</Visitor>
         <CopyToOutputDirectory></CopyToOutputDirectory>
     </Antlr4>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="src\Options\JsonValidation\ConfigSchema.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="src\Options\JsonValidation\ConfigMin.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

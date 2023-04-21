@@ -1,9 +1,0 @@
-﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2022 informedcitizenry <informedcitizenry@gmail.com>
-//
-// Licensed under the MIT license. See LICENSE for full license information.
-// 
-//-----------------------------------------------------------------------------
-    .for level = 0, level <= 21, level++
-        .sbyte level
-    .next

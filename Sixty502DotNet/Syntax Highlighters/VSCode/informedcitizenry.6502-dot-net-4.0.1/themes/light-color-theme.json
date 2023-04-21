@@ -1,0 +1,102 @@
+{
+  "$schema": "vscode://schemas/color-theme",
+  "name": "Core 6502.Net Light",
+  "type": "light",
+  "colors": {
+    "editor.background": "#ffffff",
+    "editor.foreground": "#303030",
+    "editor.lineHighlightBackground": "#f5f5f5"
+  },
+  "tokenColors": [
+    {
+      "name": "Block Comment",
+      "scope": [
+        "comment.block",
+        "punctuation.definition.comment"
+      ],
+      "settings": {
+        "foreground": "#884",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Line Comment",
+      "scope": "comment.line",
+      "settings": {
+        "foreground": "#a52a2a",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "scope": "string",
+      "settings": {
+        "foreground": "#f80"
+      }
+    },
+    {
+      "scope": "keyword.control.directive",
+      "settings": {
+        "foreground": "#00f",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "keyword.other.mnemonic",
+      "settings": {
+        "foreground": "#000080",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "keyword.control.pseudoop",
+      "settings": {
+        "foreground": "#f80",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "keyword.define",
+      "settings": {
+        "foreground": "#008000"
+      }
+    },
+    {
+      "scope": "keyword.register",
+      "settings": {
+        "foreground": "#008000",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "scope": "keyword.operator",
+      "settings": {
+        "foreground": "#800"
+      }
+    },
+    {
+      "scope": "keyword.function",
+      "settings": {
+        "foreground": "#00f"
+      }
+    },
+    {
+      "scope": "keyword.method",
+      "settings": {
+        "foreground": "#00f"
+      }
+    },
+    {
+      "scope": "keyword.other.macro",
+      "settings": {
+        "foreground": "#0080c0",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "scope": "constant.numeric",
+      "settings": {
+        "foreground": "#f00"
+      }
+    }
+  ]
+}
