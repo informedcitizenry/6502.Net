@@ -207,7 +207,7 @@ The `.break` and `.continue` directive can appear within the code block of any l
         .next
 ```
 
-## Repeat Assembly and Labels
+## Loop Assembly and Labels
 
 Because labels might change address values between passes, and 6502.Net is a multi-pass assembler, this can cause an issue if a label is declared inside a loop assembly block.
 

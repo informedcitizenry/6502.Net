@@ -466,6 +466,7 @@ Likewise, such a key's value can be accessed through dot notation:
 |---------------|---------------------------------------------------|-----------------------------------------------|
 | `concat`      | Concatenate the dictionary with another           | `{"k1":1}.concat({"k2:2}) // {"k1":1,"k2":2}` |
 | `containsKey` | Test if the dictionary contains a given key       | `{"k1":1}.containsKey("k2") // false`         |
+| `keys`        | Get the dictionary keys as an array               | `{"k1":1,"k2":2}.keys() // ["k1","k2"]`       |
 | `len`         | Get the length of the dictionary                  | `{"k1":1,"k2":2}.len() // 2`                  |
 | `size`        | Get the size (in bytes) of the dictionary values  | `{"k1":u8"HELLO"}.size() // 5`                |
 | `toString`    | Get a string representation of the dictionary     | `{"k1":1}.toString() // "{"k1":1}"`           |
@@ -512,7 +513,7 @@ factorial   .function n
             .endfunction
 ```
 
-Another way to define a functtion is with arrow `=>` notation, a more compact and "modern" approach. The function can be an expression body or statement block.
+Another way to define a function is with arrow `=>` notation, a more compact and "modern" approach. The function can be an expression body or statement block.
 
 ```
 timestwo = (n) => n * 2 // single expression

@@ -57,7 +57,7 @@ basic .macro sob=2049, start="2061"
     * = \sob
     .word eob,10
     .byte $93
-    .cstring "@{start}"
+    .cstring $"{start}"
 eob .word 0
 
     .basic 
