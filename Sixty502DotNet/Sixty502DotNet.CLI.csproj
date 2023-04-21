@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <RollForward>Major</RollForward>
     <PackageId>6502.Net</PackageId>
     <Version>3.2.2.1</Version>
@@ -12,7 +13,6 @@
     <Description>6502.Net, A .Net Cross Assembler for Several 8-Bit Microprocessors.</Description>
     <Copyright>(C) Copyright 2017-2022 informedcitizenry</Copyright>
     <ReleaseVersion>4.0</ReleaseVersion>
-    <StartupObject>Sixty502DotNet.Program</StartupObject>
     <AssemblyName>6502.Net</AssemblyName>
     <AssemblyVersion>3.2.2.1</AssemblyVersion>
     <FileVersion>3.2.2.1</FileVersion>
@@ -55,6 +55,9 @@
 
   <ItemGroup>
     <Compile Remove="src\Utility\ConfigConstants.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sixty502DotNet.Shared\Sixty502DotNet.Shared.csproj" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

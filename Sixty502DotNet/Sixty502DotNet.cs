@@ -5,52 +5,13 @@
 // 
 //-----------------------------------------------------------------------------
 
-<<<<<<< HEAD
-using CommandLine;
-using CommandLine.Text;
 using Sixty502DotNet.CLI;
 using Sixty502DotNet.Shared;
 using System;
-using System.Reflection;
-
-var parser = new Parser(with => with.EnableDashDash = true);
-CommandLineOptions? cliOptions = null;
-var cliResult = parser.ParseArguments<CommandLineOptions>(args);
-cliResult.WithParsed(o => cliOptions = o)
-    .WithNotParsed(x =>
-    {
-        var helpText = HelpText.AutoBuild(cliResult, h =>
-        {
-            h.AdditionalNewLineAfterOption = false;
-            h.AutoHelp = false;     // hides --help
-            return HelpText.DefaultParsingErrorsHandler(cliResult, h);
-        }, e => e);
-        Console.WriteLine(helpText);
-    });
-
-/*
-
-static class Program
-{
-    static void Main(string[] args)
-    {
-        try
-        {
-            var assemblyController = new AssemblyController(args);
-            assemblyController.Assemble();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-
-    }
-}
-*/
-=======
-using Sixty502DotNet.CLI;
-using Sixty502DotNet.Shared;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 using AssemblerError = Sixty502DotNet.Shared.Error;
 
@@ -227,4 +188,3 @@ catch (Exception ex)
         Console.WriteLine(ex.Message);
     }
 }
->>>>>>> 01426fa (Version 4.0.1)
