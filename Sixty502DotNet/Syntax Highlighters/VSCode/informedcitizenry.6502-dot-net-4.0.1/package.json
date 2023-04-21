@@ -2,7 +2,11 @@
     "name": "6502-net",
     "displayName": "6502.Net",
     "description": "Extension for highlighting 65xx/68xx/z80 assembly",
+<<<<<<< HEAD
     "version": "3.2.1",
+=======
+    "version": "4.0.1",
+>>>>>>> 01426fa (Version 4.0.1)
     "engines": {
         "vscode": "^1.51.0"
     },

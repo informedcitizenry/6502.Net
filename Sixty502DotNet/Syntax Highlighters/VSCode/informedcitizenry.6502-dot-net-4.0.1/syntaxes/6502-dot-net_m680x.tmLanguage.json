@@ -52,7 +52,11 @@
         },
         {
           "name": "keyword.method.6502_net_m680x",
+<<<<<<< HEAD
           "match": "(?<=\\.\\s*)(concat|contains|containsKey|every|filter|indexOf|keys|len|map|reduce|size|skip|some|sort|take|toArray|toLower|toString|toTuple|toUpper|union)\\b"
+=======
+          "match": "(?<=\\.\\s*)(concat|contains|containsKey|every|filter|indexOf|intersect|keys|len|map|reduce|reverse|size|skip|some|sort|take|toArray|toCbmFltp?|toLower|toString|toTuple|toUpper|union)\\b"
+>>>>>>> 01426fa (Version 4.0.1)
         },
         {
           "name": "keyword.define",

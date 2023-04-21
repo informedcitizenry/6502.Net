@@ -5,7 +5,12 @@
     },
     "brackets": [
         [ "[", "]" ],
+<<<<<<< HEAD
         [ "(", ")" ]
+=======
+        [ "(", ")" ],
+        [ "{", "}" ]
+>>>>>>> 01426fa (Version 4.0.1)
     ],
     "autoClosingPairs": [
         {
@@ -17,6 +22,13 @@
             "close": ")"
         },
         {
+<<<<<<< HEAD
+=======
+            "open": "{",
+            "close": "}"
+        },
+        {
+>>>>>>> 01426fa (Version 4.0.1)
             "open": "'",
             "close": "'",
             "notIn": [ "string", "comment" ]

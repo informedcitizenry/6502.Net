@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ReleaseVersion>4.0</ReleaseVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4BuildTasks" Version="12.2.0">
+        <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.12.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Parser\" />
+    <None Remove="Parser\ANTLR\" />
+    <None Remove="Parser\ANTLR\Grammar\" />
+    <None Remove="Parser\ANTLR\CSharp\" />
+    <None Remove="Expressions\" />
+    <None Remove="Expressions\Symbols\" />
+    <None Remove="Errors\" />
+    <None Remove="Expressions\ValueTypes\" />
+    <None Remove="Expressions\BuiltInFunctions\" />
+    <None Remove="Runtime\" />
+    <None Remove="CodeGen\" />
+    <None Remove="CodeGen\FormatProviders.cs\" />
+    <None Remove="CodeGen\Encoders\" />
+    <None Remove="JSON\" />
+    <None Remove="Helpers\" />
+    <None Remove="Expressions\Converters\" />
+    <None Remove="Expressions\Symbols\Scopes\" />
+    <None Remove="Helpers\ResourceHandling\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Parser\" />
+    <Folder Include="Parser\ANTLR\" />
+    <Folder Include="Parser\ANTLR\Grammar\" />
+    <Folder Include="Parser\ANTLR\CSharp\" />
+    <Folder Include="Expressions\" />
+    <Folder Include="Expressions\Symbols\" />
+    <Folder Include="Errors\" />
+    <Folder Include="Expressions\ValueTypes\" />
+    <Folder Include="Expressions\BuiltInFunctions\" />
+    <Folder Include="Runtime\" />
+    <Folder Include="CodeGen\" />
+    <Folder Include="CodeGen\FormatProviders.cs\" />
+    <Folder Include="CodeGen\Encoders\" />
+    <Folder Include="JSON\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="Expressions\Converters\" />
+    <Folder Include="Expressions\Symbols\Scopes\" />
+    <Folder Include="Helpers\ResourceHandling\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Antlr4 Include="Parser\ANTLR\Grammar\SyntaxLexer.g4">
+        <Package>Sixty502DotNet.Shared</Package>
+        <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Antlr4>
+    <Antlr4 Include="Parser\ANTLR\Grammar\SyntaxParser.g4">
+        <Package>Sixty502DotNet.Shared</Package>
+        <Listener>true</Listener>
+        <Visitor>true</Visitor>
+        <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Antlr4>
+    <Antlr4 Include="Parser\ANTLR\Grammar\Json.g4">
+        <Package>Sixty502DotNet.Shared</Package>
+        <Listener>true</Listener>
+        <Visitor>true</Visitor>
+        <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Antlr4>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="JSON\ConfigSchema.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <DotNetNamingPolicy DirectoryNamespaceAssociation="None" ResourceNamePolicy="FileFormatDefault" />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
+</Project>

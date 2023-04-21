@@ -1,0 +1,289 @@
+﻿{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "allowOverflow": {
+            "type": "boolean"
+        },
+        "caseSensitive": {
+            "type": "boolean"
+        },
+        "defines": {
+            "$ref": "#/$defs/nonEmptySet"
+        },
+        "ignoreColons": {
+            "type": "boolean"
+        },
+        "includePath": {
+            "type": "string"
+        },
+        "listingOptions": {
+            "oneOf": [
+                {
+                    "allOf": [
+                        {
+                            "properties": {
+                                "labelPath": {
+                                    "type": "string"
+                                },
+                                "labelsAddressesOnly": {
+                                    "type": "boolean"
+                                },
+                                "listPath": {
+                                    "type": "string"
+                                },
+                                "noAssembly": {
+                                    "type": "boolean"
+                                },
+                                "noDisassembly": {
+                                    "type": "boolean"
+                                },
+                                "noSource": {
+                                    "type": "boolean"
+                                },
+                                "truncateAssembly": {
+                                    "type": "boolean"
+                                },
+                                "verbose": {
+                                    "type": "boolean"
+                                },
+                                "viceLabels": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        {
+                            "$ref": "#/$defs/nonEmptyObject"
+                        }
+                    ]
+                },
+                {
+                    "properties": {
+                        "disassemble": {
+                            "type": "boolean"
+                        },
+                        "disassemblyStart": {
+                            "$ref": "#/$defs/numericAddress"
+                        },
+                        "disassemblyOffset": {
+                            "$ref": "#/$defs/numericAddress"
+                        },
+                        "noAssembly": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [ "disassemble" ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "loggingOptions": {
+            "allOf": [
+                {
+                    "properties": {
+                        "checksum": {
+                            "type": "boolean"
+                        },
+                        "echoEachPass": {
+                            "type": "boolean"
+                        },
+                        "errorPath": {
+                            "type": "string"
+                        },
+                        "noHighlighting": {
+                            "type": "boolean"
+                        },
+                        "noStats": {
+                            "type": "boolean"
+                        },
+                        "noWarnings": {
+                            "type": "boolean"
+                        },
+                        "quietMode": {
+                            "type": "boolean"
+                        },
+                        "suppressUnusedSectionWarning": {
+                            "type": "boolean"
+                        },
+                        "warnAboutJumpBug": {
+                            "type": "boolean"
+                        },
+                        "WarnAboutUsingTextInNonTextPseudoOps": {
+                            "type": "boolean"
+                        },
+                        "warnCaseMismatch": {
+                            "type": "boolean"
+                        },
+                        "warningsAsErrors": {
+                            "type": "boolean"
+                        },
+                        "warnLeft": {
+                            "type": "boolean"
+                        },
+                        "warnSimplifyCallReturn": {
+                            "type": "boolean"
+                        },
+                        "warnUnreferencedSymbols": {
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                {
+                    "$ref": "#/$defs/nonEmptyObject"
+                }
+            ]
+        },
+        "outputFile": {
+            "type": "string"
+        },
+        "outputSection": {
+            "type": "string"
+        },
+        "patch": {
+            "type": "string"
+        },
+        "preprocessOnly": {
+            "type": "boolean"
+        },
+        "resetPCOnBank": {
+            "type": "boolean"
+        },
+        "sections": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {
+                "minLength": 1
+            },
+            "additionalProperties": {
+                "$ref": "#/$defs/section"
+            }
+        },
+        "sources": {
+            "$ref": "#/$defs/nonEmptySet"
+        },
+        "target": {
+            "type": "object",
+            "properties": {
+                "binaryFormat": {
+                    "type": "string",
+                    "enum": [
+                        "amsdos",
+                        "amstap",
+                        "apple2",
+                        "atari-xex",
+                        "bytesource",
+                        "cart",
+                        "cbm",
+                        "d64",
+                        "flat",
+                        "hex",
+                        "msx",
+                        "srec",
+                        "srecmos",
+                        "t64",
+                        "zx"
+                    ]
+                },
+                "cpu": {
+                    "type": "string",
+                    "enum": [
+                        "45GS02",
+                        "6502",
+                        "6502i",
+                        "65816",
+                        "65C02",
+                        "65CE02",
+                        "65CS02",
+                        "c64dtv2",
+                        "HuC6280",
+                        "i8080",
+                        "m65",
+                        "m6800",
+                        "m6809",
+                        "R65C02",
+                        "W65C02",
+                        "z80"
+                    ]
+                },
+                "autoSizeRegisters": {
+                    "type": "boolean"
+                },
+                "longAddressing": {
+                    "type": "boolean"
+                },
+                "branchAlways": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "binaryFormat",
+                "cpu"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "dependentSchemas": {
+        "patch": {
+            "properties": {
+                "target": {
+                    "properties": {
+                        "binaryFormat": false
+                    }
+                }
+            }
+        }
+    },
+    "required": [
+        "sources"
+    ],
+    "additionalProperties": false,
+    "unevaluatedProperties": false,
+    "$defs": {
+        "nonEmptyObject": {
+            "type": "object",
+            "minProperties": 1
+        },
+        "nonEmptySet": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "numericAddress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65536
+        },
+        "address": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "minLength": 1
+                },
+                {
+                    "$ref": "#/$defs/numericAddress"
+                }
+            ]
+        },
+        "section": {
+            "anchor": "section",
+            "type": "object",
+            "properties": {
+                "starts": {
+                    "$ref": "#/$defs/address"
+                },
+                "ends": {
+                    "$ref": "#/$defs/address"
+                }
+            },
+            "required": [
+                "starts"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

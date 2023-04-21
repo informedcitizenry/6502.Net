@@ -10,9 +10,55 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sixty502DotNet", "Sixty502DotNet\Sixty502DotNet.csproj", "{509AB312-9232-4063-B964-1E45DCDFCEDE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sixty502DotNet.CLI", "Sixty502DotNet\Sixty502DotNet.CLI.csproj", "{509AB312-9232-4063-B964-1E45DCDFCEDE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sixty502DotNet.Tests", "Sixty502DotNet.Tests\Sixty502DotNet.Tests.csproj", "{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sixty502DotNet.Shared", "Sixty502DotNet.Shared\Sixty502DotNet.Shared.csproj", "{3D3EFF4C-68A0-4B48-9AC5-241BD4D063F1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D20247E5-5A8F-433F-B4F6-28ACCBA8D12B}"
+	ProjectSection(SolutionItems) = preProject
+		Docs\BuiltInSymbols.md = Docs\BuiltInSymbols.md
+		Docs\CommandLineOptions.md = Docs\CommandLineOptions.md
+		Docs\ControlAssembly.md = Docs\ControlAssembly.md
+		Docs\CPUSpecificAssembly.md = Docs\CPUSpecificAssembly.md
+		Docs\DataGeneration.md = Docs\DataGeneration.md
+		Docs\Diagnostics.md = Docs\Diagnostics.md
+		Docs\Expressions.md = Docs\Expressions.md
+		Docs\FileInclusions.md = Docs\FileInclusions.md
+		Docs\Macros.md = Docs\Macros.md
+		Docs\MemoryAndAddressing.md = Docs\MemoryAndAddressing.md
+		Docs\OutputAndListings.md = Docs\OutputAndListings.md
+		Docs\SymbolsAndScopes.md = Docs\SymbolsAndScopes.md
+		Docs\GettingStarted.md = Docs\GettingStarted.md
+		Docs\Disassembler.md = Docs\Disassembler.md
+		Docs\TechnicalInfo.md = Docs\TechnicalInfo.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{34D37917-2E96-42D8-B037-BEBDE1777601}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "General", "General", "{0785CD68-9AA1-49F6-9F2D-192875A8325C}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\General\while.a65 = Tests\General\while.a65
+		Tests\General\array.a65 = Tests\General\array.a65
+		Tests\General\dictionary.a65 = Tests\General\dictionary.a65
+		Tests\General\evaluation.a65 = Tests\General\evaluation.a65
+		Tests\General\fibonacci.a65 = Tests\General\fibonacci.a65
+		Tests\General\fornext.a65 = Tests\General\fornext.a65
+		Tests\General\macro.a65 = Tests\General\macro.a65
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "6502", "6502", "{AEAFB70E-F0D5-455F-9250-D78C2B103690}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\6502\corners.a65 = Tests\6502\corners.a65
+		Tests\6502\helloworld.a65 = Tests\6502\helloworld.a65
+		Tests\6502\sinewave.a65 = Tests\6502\sinewave.a65
+		Tests\6502\wc65816.a65 = Tests\6502\wc65816.a65
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Z80", "Z80", "{DEE9B314-1F62-44E3-BC9B-C70FE7B94E81}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\Z80\helloworld.z80 = Tests\Z80\helloworld.z80
+		Tests\Z80\memcpy.s = Tests\Z80\memcpy.s
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,23 +70,28 @@ Global
 		{509AB312-9232-4063-B964-1E45DCDFCEDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{509AB312-9232-4063-B964-1E45DCDFCEDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{509AB312-9232-4063-B964-1E45DCDFCEDE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D3EFF4C-68A0-4B48-9AC5-241BD4D063F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D3EFF4C-68A0-4B48-9AC5-241BD4D063F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D3EFF4C-68A0-4B48-9AC5-241BD4D063F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D3EFF4C-68A0-4B48-9AC5-241BD4D063F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{509AB312-9232-4063-B964-1E45DCDFCEDE} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
-		{5BFBE0FC-D784-4D6F-91CA-FC6E1FF4FB2A} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
+		{3D3EFF4C-68A0-4B48-9AC5-241BD4D063F1} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
+		{D20247E5-5A8F-433F-B4F6-28ACCBA8D12B} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
+		{0785CD68-9AA1-49F6-9F2D-192875A8325C} = {34D37917-2E96-42D8-B037-BEBDE1777601}
+		{AEAFB70E-F0D5-455F-9250-D78C2B103690} = {34D37917-2E96-42D8-B037-BEBDE1777601}
+		{DEE9B314-1F62-44E3-BC9B-C70FE7B94E81} = {34D37917-2E96-42D8-B037-BEBDE1777601}
+		{34D37917-2E96-42D8-B037-BEBDE1777601} = {65F3CE0A-FDA5-438D-A105-AF3DE28915F5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9BE7575F-6E99-4243-AEAA-4D1E1064DA97}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		version = 3.2.2.1
+		version = 4.0
 		Policies = $0
 		$0.VersionControlPolicy = $1
 		$1.CommitMessageStyle = $2
@@ -49,8 +100,30 @@ Global
 		$2.LastFilePostfix = @:\n
 		$2.LineAlign = 0
 		$0.DotNetNamingPolicy = $3
-		$3.DirectoryNamespaceAssociation = PrefixedHierarchical
 		$0.StandardHeader = $4
+		$0.TextStylePolicy = $5
+		$5.inheritsSet = null
+		$5.scope = text/x-csharp
+		$0.CSharpFormattingPolicy = $6
+		$6.scope = text/x-csharp
+		$0.TextStylePolicy = $7
+		$7.FileWidth = 80
+		$7.TabsToSpaces = True
+		$7.scope = text/plain
+		$0.TextStylePolicy = $8
+		$8.inheritsSet = null
+		$8.scope = text/x-asm
+		$0.TextStylePolicy = $9
+		$9.inheritsSet = null
+		$9.scope = application/xml
+		$0.XmlFormattingPolicy = $10
+		$10.scope = application/xml
+		$0.TextStylePolicy = $11
+		$11.inheritsSet = null
+		$11.scope = text/x-web
+		$0.TextStylePolicy = $12
+		$12.inheritsSet = null
+		$12.scope = text/x-vs
 		description = A cross-assembler targeting several CPUs from the 8-bit era of computing including the MOS 6502 and its variants, the Motorola M6800 and M6809, the Intel i8080, and the Zilog Z80.
 	EndGlobalSection
 EndGlobal
