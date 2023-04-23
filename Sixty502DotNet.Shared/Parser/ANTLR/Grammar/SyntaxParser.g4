@@ -367,7 +367,14 @@ dictionary
     ;
 
 keyValuePair
-    :   (expr | identifierPart) NL* ':' NL* val=expr NL*
+    :   key NL* ':' NL* val=expr NL*
+    ;
+
+key
+    :   primaryExpr
+    |   identifierPart
+    |   StringLiteral
+    |   UnicodeStringLiteral
     ;
 
 tuple
