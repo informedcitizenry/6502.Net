@@ -66,7 +66,7 @@ eob .word 0
     * = 2049
     .word eob,10
     .byte $93
-    .cstring "2061"
+    .cstring $"{2061}"
 eob .word 0
 */
 ```
