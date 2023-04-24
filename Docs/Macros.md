@@ -53,7 +53,7 @@ mymacro .macro
 Parameters can be given default values to make them optional upon invocation.
 
 ```
-basic .macro sob=2049, start="2061"
+basic .macro sob=2049, start=2061
     * = \sob
     .word eob,10
     .byte $93
