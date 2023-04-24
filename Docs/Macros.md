@@ -73,7 +73,7 @@ eob .word 0
 An example of the above with passed parameters would be:
 
 ```
-   .basic $1000, "4108"
+   .basic $1000, 4108
 ```
 
 All symbols in the macro definition are local, because when expanded they are placed in their own scope blocks, so macros can be re-used with no symbol clashes.
