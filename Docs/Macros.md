@@ -59,6 +59,7 @@ basic .macro sob=2049, start=2061
     .byte $93
     .cstring $"{\start}"
 eob .word 0
+    .endmacro
 
     .basic 
 /* expands to:
