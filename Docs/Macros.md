@@ -82,9 +82,9 @@ All symbols in the macro definition are local, because when expanded they are pl
 If a label precedes a macro invocation, all constants expanded inside the macro are part of that label's scope. In this way, macros can be used like C structs.
 
 ```
-point   .macro x=0, y=0
-x_coord .char \x
-y_coord .char \y
+point   .macro xc=0, yc=0
+x_coord .char \xc
+y_coord .char \yc
         .endmacro
 
 player_pos .point 
