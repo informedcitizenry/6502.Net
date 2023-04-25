@@ -95,7 +95,7 @@ public abstract class ParserBase : Parser
     /// Parse the token list into macro parameters. The parsing tracks nesting
     /// symbols (grouping symbols) for nested expressions and function calls so
     /// a comma will be properly be understood to be a part of the parameter,
-    /// rather than an parameter separator.
+    /// rather than a parameter separator.
     /// </summary>
     /// <param name="unparsedTokens">The token list.</param>
     /// <returns>The parsed parameters.</returns>

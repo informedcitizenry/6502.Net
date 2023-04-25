@@ -145,6 +145,7 @@ public abstract class LexerBase : Lexer
                                            SyntaxLexer.DoubleHyphen,
                                            SyntaxLexer.HexLiteral,
                                            SyntaxLexer.Identifier,
+                                           SyntaxParser.MDoubleQuote,
                                            SyntaxLexer.MultiPlus,
                                            SyntaxLexer.MultiHyphen,
                                            SyntaxParser.NaN,
