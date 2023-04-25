@@ -121,8 +121,9 @@ program_end .endrelocate  // program_end is set to the "real" program end
             .0815 e8                    inx
             .0816 d0 f7                 bne -
             .0818 4c 00 c0              jmp $c000
-            .c000.            highcode
-            .c000 a2 00                 ldx #$00
+            .081b             highcode
+            .c000                       .relocate $c000
+            .c000 a2 00                 ldx #0
             .c002 bd 0f c0    printloop lda message,x
             .c005 f0 07                 beq done
             .c007 20 d2 ff              jsr $ffd2
@@ -132,8 +133,9 @@ program_end .endrelocate  // program_end is set to the "real" program end
             ;; message
             >c00f 48 45 4c 4c 4f 2c 20 48
             >c017 49 47 48 20 43 4f 44 45
-            >c01f 21 00  
-	    .083b ea                    nop
+            >c01f 21 00
+            .c021             program_end
+	        .083c ea                    nop
             */
 ```
 
