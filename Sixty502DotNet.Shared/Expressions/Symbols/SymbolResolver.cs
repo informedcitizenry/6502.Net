@@ -103,7 +103,9 @@ public class SymbolResolver : SyntaxParserBaseVisitor<SymbolBase?>
 
     public override SymbolBase? VisitExpressionGrouped([NotNull] SyntaxParser.ExpressionGroupedContext context)
     {
-        return Visit(context.expr());
+        ValueBase target = _services.Evaluator.Eval(context.expr());
+        _services.Evaluator.CachedEvaluations.Push(target);
+        return target.Prototype;
     }
 
     public override SymbolBase? VisitExpressionSubscript([NotNull] SyntaxParser.ExpressionSubscriptContext context)

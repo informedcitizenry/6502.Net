@@ -827,6 +827,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             if (!CachedEvaluations.TryPop(out ValueBase? thisObj))
             {
                 thisObj = Eval(member.target);
+                if (!thisObj.IsDefined)
+                {
+                    return thisObj;
+                }
             }
             parms.Insert(0, thisObj);
         }
