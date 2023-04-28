@@ -81,17 +81,17 @@ public sealed class AssemblyState
     /// <summary>
     /// Get the symbol manager responsible for resolving all symbols.
     /// </summary>
-    public SymbolManager Symbols { get; init; }
+    public SymbolManager Symbols { get; }
 
     /// <summary>
     /// Get the <see cref="CodeOutput"/> object managing all output of assembly.
     /// </summary
-    public CodeOutput Output { get; init; }
+    public CodeOutput Output { get; }
 
     /// <summary>
     /// Get the statement listings as a list of strings.
     /// </summary>
-    public IList<string> StatementListings { get; init; }
+    public IList<string> StatementListings { get; }
 
     /// <summary>
     /// Get or set the index of the current statement being executed. 
@@ -101,10 +101,10 @@ public sealed class AssemblyState
     /// <summary>
     /// Get all errors that occurred during assembly.
     /// </summary>
-    public List<Error> Errors { get; init; }
+    public List<Error> Errors { get; }
 
     /// <summary>
     /// Get all warnings that occurred during assembly.
     /// </summary>
-    public List<Warning> Warnings { get; init; }
+    public List<Warning> Warnings { get; }
 }

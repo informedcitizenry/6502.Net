@@ -495,7 +495,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             if (err.Token == null)
             {
-                throw new Error(callSite.Start, err.Message);
+                throw new Error(callSite, err.Message);
             }
             throw err;
         }
@@ -1333,8 +1333,8 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 throw why switch
                 {
                     DictionaryValue.AddStatus.DuplicateKey      => new Error(context, "Duplicate key"),
-                    DictionaryValue.AddStatus.KeyTypeInvalid    => new Error(members[i].key(), "Invalid key type"),
-                    DictionaryValue.AddStatus.KeyTypeMismatch   => new Error(members[i].key(), "Key type mismatch"),
+                    DictionaryValue.AddStatus.KeyTypeInvalid    => new Error(keyContext, "Invalid key type"),
+                    DictionaryValue.AddStatus.KeyTypeMismatch   => new Error(keyContext, "Key type mismatch"),
                     _                                           => new Error(members[i].val, "Value type mismatch"),
                 };
             }

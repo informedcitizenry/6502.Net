@@ -28,14 +28,11 @@ public abstract class ParserBase : Parser
 
     protected bool StartsAtNewline()
     {
-        try
+        if (TokenStream.LT(-1) is IToken previous)
         {
-            return TokenStream.LT(-1).Type == SyntaxParser.NL;
+            return previous.Type == SyntaxParser.NL;
         }
-        catch (NullReferenceException)
-        {
-            return true;
-        }
+        return true;
     }
 
     public static IList<IToken> ParseMacroArguments(IList<IToken> unparsedTokens, out int parsedCount)
@@ -54,7 +51,6 @@ public abstract class ParserBase : Parser
             {
                 break;
             }
-            //parsedCount = p + 1;
             args.Add(param[0]);
         }
         return args;

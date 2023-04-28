@@ -18,7 +18,7 @@ Most expressions in 6502.Net source code are numeric, that is they evaluate to n
 | Binary Integer    | `%00101010`, `0b00101010` |
 | Binary Float      | `%01e-12`, `0b10.10`      |
 | Octal Integer     | `052`, `0o77`             |
-| Octal Float       | `07.201`, `0o1.p+4`       |
+| Octal Float       | `07.201`, `0o1p+4`        |
 | Hexadecimal       | `$ffd2`, `0x2a`           |
 | Hexadecimal Float | `0x23.80`, `$1.ffa4p+15`  |
 

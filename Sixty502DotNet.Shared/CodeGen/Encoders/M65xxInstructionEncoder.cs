@@ -908,7 +908,11 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
             case SyntaxParser.X16:
                 if (!Cpuid.Equals("65816"))
                 {
-                    Services.State.Warnings.Add(new Warning(directive.Start, "Directive ignored for non-65816 CPU"));
+                    if (Services.DiagnosticOptions.WarningsAsErrors)
+                    {
+                        return false;
+                    }
+                    Services.State.Warnings.Add(new Warning(directive, "Directive ignored for non-65816 CPU"));
                     return true;
                 }
                 switch (directive.Start.Type)

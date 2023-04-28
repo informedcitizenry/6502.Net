@@ -135,7 +135,7 @@ program_end .endrelocate  // program_end is set to the "real" program end
             >c017 49 47 48 20 43 4f 44 45
             >c01f 21 00
             .c021             program_end
-	        .083c ea                    nop
+            .083c ea                    nop
             */
 ```
 

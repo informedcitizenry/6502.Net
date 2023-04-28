@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RollForward>Major</RollForward>
     <PackageId>6502.Net</PackageId>
-    <Version>4.0.1.1</Version>
+    <Version>4.0.2.1</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
@@ -14,8 +14,8 @@
     <Copyright>(C) Copyright 2017-2023 informedcitizenry</Copyright>
     <ReleaseVersion>4.0</ReleaseVersion>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>4.0.1.1</AssemblyVersion>
-    <FileVersion>4.0.1.1</FileVersion>
+    <AssemblyVersion>4.0.2.1</AssemblyVersion>
+    <FileVersion>4.0.2.1</FileVersion>
     <SignAssembly>false</SignAssembly>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
