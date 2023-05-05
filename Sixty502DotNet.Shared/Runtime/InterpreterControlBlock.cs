@@ -68,7 +68,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 break;
             }
         }
-        if (selected >= 0)
+        if (selected >= 0 && ifBlocks[selected] != null)
         {
             return Visit(ifBlocks[selected]);
         }
@@ -129,10 +129,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             {
                 SyntaxParser.CaseBlockContext selectedBlock = caseBlocks[i];
                 try { Visit(selectedBlock.block()); }
-                catch (Break)
-                {
-                    break;
-                }
+                catch (Break) { break; }
             }
         }
         return 0;
@@ -144,6 +141,10 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         try
         {
             int repeat = Services.Evaluator.SafeEvalNumber(context.expr(), 0, int.MaxValue, 0);
+            if (context.block() == null)
+            {
+                return 0;
+            }
             while (repeat-- > 0)
             {
                 try
@@ -215,15 +216,24 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         ValueBase cond = context.Do() != null
            ? new BoolValue(true)
            : Services.Evaluator.Eval(context.@while);
-        PushAnonymousScope(context.block().Start.TokenIndex);
+        PushAnonymousScope(context.Start.TokenIndex);
         try
         {
-            while (cond.IsDefined && cond.AsBool() && Services.State.Errors.Count == 0)
+            while (cond.IsDefined &&
+                   cond.AsBool() &&
+                   Services.State.Errors.Count == 0)
             {
-                try { Visit(context.block()); }
-                catch (Break) { break; }
-                catch (Continue) { }
+                if (context.block() != null)
+                {
+                    try { Visit(context.block()); }
+                    catch (Break) { break; }
+                    catch (Continue) { }
+                }
                 cond = Services.Evaluator.Eval(context.@while);
+                if (cond.IsDefined && cond.AsBool() && context.block() == null)
+                {
+                    throw new Error(context.expr(), "True condition with an empty block results in an infinite loop");
+                }
             }
             if (context.label() != null)
             {
@@ -250,17 +260,20 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         }
         try
         {
-            PushAnonymousScope(context.block().Start.Type);
+            PushAnonymousScope(context.Start.TokenIndex);
             if (collection is DictionaryValue dict)
             {
                 ScopedSymbol dictIterator = new(context.Identifier().Symbol, Services.State.Symbols.ActiveScope);
                 Services.State.Symbols.Define(dictIterator);
 
+                if (context.block() == null)
+                {
+                    return 0;
+                }
                 Constant key = new("key", dictIterator);
                 Constant value = new("value", dictIterator);
                 dictIterator.Define("key", key);
                 dictIterator.Define("value", value);
-
                 foreach (KeyValuePair<ValueBase, ValueBase> kvp in dict)
                 {
                     key.Value = kvp.Key.IsObject ? kvp.Key : kvp.Key.AsCopy();
@@ -274,6 +287,10 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             Variable iterator = new(context.Identifier().Symbol, Services.State.Symbols.ActiveScope);
             Services.State.Symbols.Define(iterator);
+            if (context.block() == null)
+            {
+                return 0;
+            }
             for (int i = 0; i < collection.Count; i++)
             {
                 iterator.Value = collection[i].IsObject ? collection[i] : collection[i].AsCopy();
@@ -296,7 +313,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     public override int VisitInstructionFor([NotNull] SyntaxParser.InstructionForContext context)
     {
-        PushAnonymousScope(context.block().Start.TokenIndex);
+        PushAnonymousScope(context.Start.TokenIndex);
         if (context.init != null)
         {
             if (!Evaluator.ExpressionIsAssignmentType(context.init))
@@ -329,6 +346,10 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 if (context.cond != null)
                 {
                     condition = Services.Evaluator.Eval(context.cond);
+                }
+                else if (context.block() == null)
+                {
+                    throw new Error(context.Start, "For loop with no condition and an empty block results in an infinite loop");
                 }
             }
             if (context.label() != null)

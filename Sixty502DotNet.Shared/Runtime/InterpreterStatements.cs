@@ -55,11 +55,22 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         if (Services.State.InFirstPass || !val.IsDefined)
         {
             val = Services.Evaluator.Eval(rvalue);
+            if (val is TypeMethodBase)
+            {
+                throw new Error(rvalue, "Right-hand side expression is a method and cannot be assigned");
+            }
             if (Services.State.InFirstPass)
             {
                 IScope scope = context.equ.Type == SyntaxParser.Global ?
                 Services.State.Symbols.GlobalScope : Services.State.Symbols.ActiveScope;
-                Services.State.Symbols.Define(new Constant(context.Start, val, scope));
+                try
+                {
+                    Services.State.Symbols.Define(new Constant(context.Start, val, scope));
+                }
+                catch
+                {
+                    throw new SymbolRedefinitionError(context.Start, context.Start);
+                }
             }
             else
             {
@@ -120,6 +131,10 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         }
         try
         {
+            if (context.block() == null)
+            {
+                return 0;
+            }
             int result = Visit(context.block());
             if (context.end != null)
             {

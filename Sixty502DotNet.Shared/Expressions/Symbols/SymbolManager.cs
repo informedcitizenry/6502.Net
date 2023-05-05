@@ -152,6 +152,10 @@ public sealed class SymbolManager
             scope = scope.LocalLabel;
             symbol.EnclosingScope = scope;
         }
+        else if (scope is IValueResolver resolver && resolver.Value.Prototype?.Lookup(symbol.Name) != null)
+        {
+            scope = resolver.Value.Prototype;
+        }
         scope.Define(symbol.Name, symbol);
         if (symbol is Label localLabel && !localLabel.DefinesScope && !isCheapLocal)
         {

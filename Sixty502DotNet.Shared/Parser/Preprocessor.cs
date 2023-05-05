@@ -89,7 +89,7 @@ public sealed partial class Preprocessor : SyntaxParserBaseVisitor<IList<IToken>
         }
         try
         {
-            include.AddRange(Preprocess(fileName, _errorListener));
+            include.AddRange(Preprocess(fileName, false, _errorListener));
             if (include[^1].Type == SyntaxLexer.Eof)
             {
                 include.RemoveAt(include.Count - 1);
@@ -361,11 +361,12 @@ public sealed partial class Preprocessor : SyntaxParserBaseVisitor<IList<IToken>
     /// all macros.
     /// </summary>
     /// <param name="source">The source code.</param>
+    /// <param name="appendNewLine">Append a newline token to the preprocessed token list.</param>
     /// <param name="errorListener">The <see cref="BaseErrorListener"/> that will capture
     /// all syntax errors encountered during parsing.</param>
     /// <returns>A list of <see cref="IToken"/> objects representing the scanned
     /// valid source.</returns>
-    public IList<IToken> Preprocess(string source, BaseErrorListener? errorListener)
+    public IList<IToken> Preprocess(string source, bool appendNewLine, BaseErrorListener? errorListener)
     {
         _errorListener = errorListener;
         try
@@ -393,6 +394,10 @@ public sealed partial class Preprocessor : SyntaxParserBaseVisitor<IList<IToken>
         {
             parser.Interpreter.PredictionMode = PredictionMode.SLL;
             IList<IToken> preprocessed = VisitPreprocess(parser.preprocess());
+            if (appendNewLine)
+            {
+                preprocessed.Add(preprocessed[^1].ToNew(SyntaxParser.NL, "\n"));
+            }
             return preprocessed;
         }
         catch (Error err)
@@ -410,10 +415,14 @@ public sealed partial class Preprocessor : SyntaxParserBaseVisitor<IList<IToken>
         }
     }
 
+    /// <summary>
+    /// Get the list of uninvoked macros.
+    /// </summary>
     public IList<KeyValuePair<string, Macro>> UninvokedMacros =>
         _macroDefinitions.Where(m => !m.Value.IsInvoked).ToList();
 
-    public IList<IToken> Preprocess(string source) => Preprocess(source, null);
-
+    /// <summary>
+    /// Get the preprocessor's current stream.
+    /// </summary>
     public CommonTokenStream CurrentStream => _tokenStreams.Peek();
 }

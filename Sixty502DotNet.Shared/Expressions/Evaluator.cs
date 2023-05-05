@@ -5,11 +5,12 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System.Text;
-using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+using System;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Sixty502DotNet.Shared;
 
@@ -365,30 +366,30 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         return value;
     }
 
-    private void SetupFrame(FunctionScope frame, SyntaxParser.ExpressionCallContext callSite, SyntaxParser.ArgListContext argList, ArrayValue parameters)
+    private void SetupFrame(FunctionScope frame, SyntaxParser.ExpressionCallContext callSite, SyntaxParser.ArgListContext? argList, ArrayValue parameters)
     {
         int paramIndex = 0;
         ITerminalNode[] args;
-        if (argList.argList() != null)
+        if (argList?.argList() != null)
         {
             args = argList.argList().Identifier();
         }
         else
         {
-            args = argList.Identifier();
+            args = argList?.Identifier() ?? Array.Empty<ITerminalNode>();
         }
         for (int i = 0; i < args.Length; i++)
         {
             if (paramIndex >= parameters.Count)
             {
-                throw new Error(callSite.expr(), "Too few parameters for function");
+                throw new Error(callSite, "Too few parameters for function");
             }
             ValueBase paramVal = parameters[paramIndex++];
             Variable paramVar = new(args[i].GetText(), paramVal, frame);
             frame.Define(paramVar.Name, paramVar);
         }
-        ITerminalNode[]? defaultArgs = argList.defaultArgList()?.Identifier();
-        SyntaxParser.ExprContext[]? defaultVals = argList.defaultArgList()?.expr();
+        ITerminalNode[]? defaultArgs = argList?.defaultArgList()?.Identifier();
+        SyntaxParser.ExprContext[]? defaultVals = argList?.defaultArgList()?.expr();
         for (int i = 0; i < defaultArgs?.Length; i++)
         {
             ValueBase paramVal;
@@ -468,15 +469,13 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             FunctionScope frame = new(function.Name,
                 userFunc.Closure ?? Services.State.Symbols.GlobalScope);
             Services.State.Symbols.CallStack.Push(frame);
-            if (callSite.exprList() != null)
+            if (callSite.exprList()?.expr().Length > userFunc.Arity)
             {
-                if (callSite.exprList().expr().Length > userFunc.Arity)
-                {
-                    throw new Error(callSite.exprList().expr()[userFunc.Arity],
-                        "Too many parameters for function");
-                }
-                SetupFrame(frame, callSite, userFunc.Arguments!, parameters);
+                throw new Error(callSite.exprList().expr()[userFunc.Arity],
+                    "Too many parameters for function");
             }
+            SetupFrame(frame, callSite, userFunc.Arguments, parameters);
+
             if (userFunc.SingleExpression != null)
             {
                 return Eval(userFunc.SingleExpression);
@@ -490,14 +489,6 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 return ret.ReturnValue;
             }
             return null;
-        }
-        catch (Error err)
-        {
-            if (err.Token == null)
-            {
-                throw new Error(callSite, err.Message);
-            }
-            throw err;
         }
         finally
         {
@@ -794,7 +785,8 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             // (x) => {.return x*3}(3) not allowed
             throw new Error(context.expr(), "Invalid call expression");
         }
-        if (Eval(context.expr()) is not FunctionObject callee)
+        ValueBase callable = Eval(context.expr());
+        if (callable is not FunctionObject callee)
         {
             if (Services == null || _symbolResolver == null || Services.State.InFirstPass)
             {
@@ -804,16 +796,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 }
                 return new UndefinedValue();
             }
-            if (context.expr() is SyntaxParser.ExpressionSimpleIdentifierContext)
-            {
-                throw new Error(context.expr(), "Function not defined");
-            }
-            if (context.expr() is SyntaxParser.ExpressionDotMemberContext dotMember)
-            {
-                throw new Error(dotMember.target,
-                    $"Target does not contain member method named '{dotMember.identifierPart().NamePart()}'");
-            }
-            throw new Error(context, "Invalid call expression");
+            throw new Error(context.expr(), "Expression is not callable");
         }
         ArrayValue parms = context.exprList() != null
                     ? (ArrayValue)Visit(context.exprList())
@@ -878,15 +861,15 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         bool isConst = context.expr().IsConstant();
         val = context.unary_op.Type switch
         {
-            SyntaxParser.Hyphen => val.Negative(),
-            SyntaxParser.Tilde => val.Complement(),
-            SyntaxParser.Bang => val.Not(),
-            SyntaxParser.LeftAngle => val.LSB(),
-            SyntaxParser.RightAngle => val.MSB(),
-            SyntaxParser.Ampersand => val.Word(),
-            SyntaxParser.Caret => val.Bank(),
+            SyntaxParser.Hyphen      => val.Negative(),
+            SyntaxParser.Tilde       => val.Complement(),
+            SyntaxParser.Bang        => val.Not(),
+            SyntaxParser.LeftAngle   => val.LSB(),
+            SyntaxParser.RightAngle  => val.MSB(),
+            SyntaxParser.Ampersand   => val.Word(),
+            SyntaxParser.Caret       => val.Bank(),
             SyntaxParser.DoubleCaret => val.HigherWord(),
-            _ => val
+            _                        => val
         };
         if (isConst)
         {
@@ -1047,6 +1030,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         ValueBase selector = Eval(lhsSubscript.ix);
 
         ValueBase subValue = subResolver.Value;
+
         while (lhsSubscript.target is SyntaxParser.ExpressionSubscriptContext sub)
         {
             if (sub.ix == null)
@@ -1081,6 +1065,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
 
     private ValueBase BindAssignment(SyntaxParser.ExprContext lvalue, IToken assign, ValueBase value, bool asConstant)
     {
+        if (value is TypeMethodBase)
+        {
+            throw new Error(value.Expression ?? lvalue, "Right-hand side expression is a method and cannot be assigned");
+        }
         if (lvalue is not SyntaxParser.ExpressionDotMemberContext &&
             lvalue is not SyntaxParser.ExpressionSimpleIdentifierContext)
         {
@@ -1139,7 +1127,14 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             lresolver = asConstant
                     ? new Constant(lvalue.Start, value, Services!.State.Symbols.ActiveScope)
                     : new Variable(lvalue.Start, value, Services!.State.Symbols.ActiveScope);
-            Services.State.Symbols.Define((SymbolBase)lresolver);
+            try
+            {
+                Services.State.Symbols.Define((SymbolBase)lresolver);
+            }
+            catch
+            {
+                throw new SymbolRedefinitionError(lvalue.Start, lvalue.Start);
+            }
             return value;
         }
         lresolver.Value = AssignOperation(lvalue, lvalue.Start, lresolver.Value, assign, value);
@@ -1387,16 +1382,15 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         SymbolBase? sym = _symbolResolver.Resolve(context);
         if (sym == null && errorIfRootNotFound)
         {
-            string error = $"Symbol '{context.Start.Text}' not found";
             if (context is SyntaxParser.ExpressionDotMemberContext dotMember)
             {
                 if (_symbolResolver.Visit(dotMember.expr()) != null)
                 {
-                    error = $"Target does not contain member named '{dotMember.identifierPart().NamePart()}'";
-                    context = dotMember.target;
+                    throw new Error(dotMember.identifierPart().Start,
+                        $"Target does not contain member named '{dotMember.identifierPart().NamePart()}'");
                 }
             }
-            throw new Error(context, error);
+            throw new Error(context, $"Symbol '{context.Start.Text}' not found");
         }
         return sym;
     }

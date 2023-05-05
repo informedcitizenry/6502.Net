@@ -17,7 +17,14 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         if (Services.Evaluator.Resolve(context) is not Label label)
         {
             label = new(context.Start, Services.State.Symbols.ActiveScope);
-            Services.State.Symbols.Define(label);
+            try
+            {
+                Services.State.Symbols.Define(label);
+            }
+            catch
+            {
+                throw new SymbolRedefinitionError(context.Start, context.Start);
+            }
             label.Value = pc;
             label.Bank = Services.State.Output.CurrentBank;
             context.visited = true;

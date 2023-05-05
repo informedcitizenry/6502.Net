@@ -190,14 +190,14 @@ public class Error : Exception, IEquatable<Error>
                 {
                     highlightLen = errorLine.Length;
                 }
-                string highlight;
-                if (startToken.Column == 0)
+                string highlight = "^";
+                if (highlightLen > 1)
                 {
-                    highlight = new string('~', highlightLen);
+                    highlight = $"{highlight}{new string('~', highlightLen - 1)}";
                 }
-                else
+                if (startToken.Column > 0)
                 {
-                    highlight = $"{" ".PadLeft(startToken.Column)}{new string('~', highlightLen)}";
+                    highlight = $"{" ".PadLeft(startToken.Column)}{highlight}";
                 }
                 return new string[] { errorLine, highlight };
             }

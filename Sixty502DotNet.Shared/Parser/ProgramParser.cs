@@ -77,7 +77,8 @@ public static class ProgramParser
 
         for (int i = 0; i < sources.Count; i++)
         {
-            preprocessedTokens.AddRange(preprocessor.Preprocess(sources[i], syntaxErrors));
+            bool appendNewLine = i < sources.Count - 1;
+            preprocessedTokens.AddRange(preprocessor.Preprocess(sources[i], appendNewLine, syntaxErrors));
         }
         CommonTokenStream tokenStream = new(new ListTokenSource(preprocessedTokens));
         SyntaxParser parser = new(tokenStream);

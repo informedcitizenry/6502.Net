@@ -87,25 +87,24 @@ public class SymbolResolver : SyntaxParserBaseVisitor<SymbolBase?>
     public override SymbolBase? VisitExpressionDotMember([NotNull] SyntaxParser.ExpressionDotMemberContext context)
     {
         SymbolBase? parentSymbol = Visit(context.expr());
-        IScope? parent = parentSymbol as IScope;
         string memberName = context.identifierPart().NamePart();
         SymbolBase? memberSym = null;
-        if (parent is ScopedSymbol scopedsymbol)
+        if (parentSymbol is IValueResolver resolver)
+        {
+            memberSym = resolver.Value.Prototype?.Lookup(memberName);
+        }
+        if (memberSym == null && parentSymbol is ScopedSymbol scopedsymbol)
         {
             memberSym = scopedsymbol.ResolveMember(memberName);
-        }
-        if (memberSym == null && parentSymbol is IValueResolver resolver)
-        {
-            return resolver.Value.Prototype?.Lookup(memberName);
         }
         return memberSym;
     }
 
     public override SymbolBase? VisitExpressionGrouped([NotNull] SyntaxParser.ExpressionGroupedContext context)
     {
-        ValueBase target = _services.Evaluator.Eval(context.expr());
-        _services.Evaluator.CachedEvaluations.Push(target);
-        return target.Prototype;
+        ValueBase grouped = _services.Evaluator.Eval(context.expr());
+        _services.Evaluator.CachedEvaluations.Push(grouped);
+        return grouped.Prototype;
     }
 
     public override SymbolBase? VisitExpressionSubscript([NotNull] SyntaxParser.ExpressionSubscriptContext context)

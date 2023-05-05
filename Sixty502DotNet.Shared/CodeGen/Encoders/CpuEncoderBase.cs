@@ -117,34 +117,32 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
                         sb.AppendLine($"{disasm} // ${linePc:x4}");
                     }
                     linePc = pc;
+                    continue;
                 }
-                else
+                int bytesOnLine = 0;
+                while (offset < code.Length && size == 0)
                 {
-                    int bytesOnLine = 0;
-                    while (offset < code.Length && size == 0)
+                    if (bytesOnLine > 0)
                     {
-                        if (bytesOnLine > 0)
-                        {
-                            sb.Append(',');
-                        }
-                        else
-                        {
-                            sb.Append($".{linePc:x4} .byte");
-                        }
-                        sb.Append($" ${code[offset++]:x2}");
-                        pc++;
-                        if (++bytesOnLine == 8)
-                        {
-                            sb.AppendLine();
-                            bytesOnLine = 0;
-                            linePc = pc;
-                        }
-                        if (offset == code.Length) break;
-                        (disasm, size) = OnDecode(code, false, offset, pc);
+                        sb.Append(',');
                     }
-                    sb.AppendLine();
-                    linePc = pc;
+                    else
+                    {
+                        sb.Append($".{linePc:x4} .byte");
+                    }
+                    sb.Append($" ${code[offset++]:x2}");
+                    pc++;
+                    if (++bytesOnLine == 8)
+                    {
+                        sb.AppendLine();
+                        bytesOnLine = 0;
+                        linePc = pc;
+                    }
+                    if (offset == code.Length) break;
+                    (disasm, size) = OnDecode(code, false, offset, pc);
                 }
+                sb.AppendLine();
+                linePc = pc;
             }
             return sb.ToString();
         }
