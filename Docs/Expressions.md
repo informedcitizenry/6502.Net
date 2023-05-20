@@ -128,11 +128,13 @@ Similar care is needed for using anonymous labels in compound expressions, which
 | `&&`                      | Logical AND   | `true && false`                       |
 | `\|\|`                    | Logical OR    | `false \|\| true`                     |
 
-The `===` and `!==` operators perform identity comparisons. The left hand of the expression is only considered identical to the right hand side if both refer to the same object. For instance
+The `===` and `!==` operators perform identity comparisons. The left hand of the expression is only considered identical to the right hand side if both refer to the same non-primitive object, such as a string or array. For instance
 
 ```
-3 == 3 // true
-3 === 3 // false
+val1 = 3
+val2 = val1
+val1 == val2 // true
+val2 === val1 // false
 arr1 = [1,2]
 arr2 = arr1
 arr1 == arr2 // true

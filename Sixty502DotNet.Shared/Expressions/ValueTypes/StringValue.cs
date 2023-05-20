@@ -129,6 +129,10 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
 
     public override bool Contains(ValueBase value)
     {
+        if (value.ValueType == ValueType.String)
+        {
+            return _value.Contains(value.AsString());
+        }
         return _value.Contains(value.AsChar());
     }
 
