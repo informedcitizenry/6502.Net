@@ -423,7 +423,7 @@ In the examples above, each parameter of the range is optional. The end position
 
 | Operator          | Type                          | Example                                       |
 |-------------------|-------------------------------|-----------------------------------------------|
-| `+`               | Concatenate                   | `[1,2] + [3,4] ([1,2,3,4])`                   |
+| `+`               | Concatenate                   | `[1,2] + [3,4] // [1,2,3,4]`                  |
 
 #### Tuple Operations 
 
@@ -476,7 +476,7 @@ Likewise, such a key's value can be accessed through dot notation:
 
 | Method name   | Purpose                                           | Example                                       |
 |---------------|---------------------------------------------------|-----------------------------------------------|
-| `concat`      | Concatenate the dictionary with another           | `{"k1":1}.concat({"k2:2}) // {"k1":1,"k2":2}` |
+| `concat`      | Concatenate the dictionary with another           | `{"k1":1}.concat({"k2":2}) // {"k1":1,"k2":2}`|
 | `containsKey` | Test if the dictionary contains a given key       | `{"k1":1}.containsKey("k2") // false`         |
 | `keys`        | Get the dictionary keys as an array               | `{"k1":1,"k2":2}.keys() // ["k1","k2"]`       |
 | `len`         | Get the length of the dictionary                  | `{"k1":1,"k2":2}.len() // 2`                  |
@@ -487,7 +487,7 @@ Likewise, such a key's value can be accessed through dot notation:
 
 | Operator          | Type                          | Example                                       |
 |-------------------|-------------------------------|-----------------------------------------------|
-| `+`               | Concatenate                   | `{"1":1}+{"2":2} ({"1":1,"2":2})`             |
+| `+`               | Concatenate                   | `{"1":1}+{"2":2} // {"1":1,"2":2}`            |
 
 ### Functions
 
@@ -531,7 +531,7 @@ Another way to define a function is with arrow `=>` notation, a more compact and
 timestwo = (n) => n * 2 // single expression
 
 // a compare function as a block
-compare = (n1, n2) {
+compare = (n1, n2) => {
     .if n2 < n1
         .return -1
     .elseif n2 > n1
