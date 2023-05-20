@@ -54,7 +54,7 @@ SUPPORTS_HIGH_SCORES = true
 | `size`      | Get the size (in bytes) of the number value         | `65490.size() // 2`       |
 | `toString`  | Get the value as a string                           | `true.toString()`         |
 
-Note the `toCbmFlt`, `toCbmFltp`, and the `size` methods are not available to boolean values.
+Note only the `toString` method is available to boolean types.
 
 #### Numeric Unary Operations
 
@@ -84,11 +84,12 @@ The math operations below evaluate in the order listed.
 | `*`,`/`,`%`       | Multiplicative                | `8 * 5`, `256 % 16`, `8 / 2`                  |
 | `+`, `-`          | Additive                      | `5 + 1`, `7 - 32.5`                           |
 | `<<`,`>>`,`>>>`   | Shifts                        | `2 << 3`, `-4 >> 1` (`-2`), `-4 >>> 1` (`2`)  |
+| `<=>`             | Relational                    | `6 <=> 2` (`1`), `3 <=> 5` (`-1`)             |
 | `&`               | Bitwise AND                   | `2323 & $0f`                                  |
 | `^`               | Bitwise XOR                   | `255 ^ 1`                                     |
 | `\|`              | Bitwise OR                    | `127` \| `0x80`                               |
 
-The right shift operator `>>` preserves the sign during shift while `>>>` does not.
+The `<=>` operator is the signum, where `6 <=> 2` is `1` while `2 <=> 6` is `-1`, and `6 <=> 6` is `0`. The right shift operator `>>` preserves the sign during shift while `>>>` does not.
 
 #### Arithmetic Operations and Special Symbols
 
@@ -105,7 +106,7 @@ This would raise a syntax error because the `*` is interpreted as the multiply o
         sta * % 10 // even better
 ```
 
-A similar caution is needed for anonymous labels, which can erroneously be interpreted as operators:
+Similar care is needed for using anonymous labels in compound expressions, which can erroneously be interpreted as operators:
 
 ```
         lda -+3 // this is negative 3
@@ -122,12 +123,21 @@ A similar caution is needed for anonymous labels, which can erroneously be inter
 
 | Operator                  | Type          | Example                               |
 |---------------------------|---------------|---------------------------------------|
-| `<`,`<=`,'`>`,`>=`, `<=>` | Relational    | `5 < 8`, `9 >= 3`, `6 <=> 2` (`1`)    |
+| `<`,`<=`,'`>`,`>=`        | Relational    | `5 < 8`, `9 >= 3`                     |
 | `==`,`!=`,`===`,`!==`     | Equality      | `9 == 3`, `arr1 === arr2` (`false`)   |
 | `&&`                      | Logical AND   | `true && false`                       |
 | `\|\|`                    | Logical OR    | `false \|\| true`                     |
 
-The `<=>` operator is the signum, where `6 <=> 2` is `1` while `2 <=> 6` is `-1`, and `6 <=> 6` is '0'. The `===` and `!==` operators perform identity comparisons. The left hand of the expression is only considered identical to the right hand side if it was assigned, and the right hand side is complex. 
+The `===` and `!==` operators perform identity comparisons. The left hand of the expression is only considered identical to the right hand side if both refer to the same object. For instance
+
+```
+3 == 3 // true
+3 === 3 // false
+arr1 = [1,2]
+arr2 = arr1
+arr1 == arr2 // true
+arr1 === arr2 // also true
+```
 
 #### Boolean Ternary Operations
 
