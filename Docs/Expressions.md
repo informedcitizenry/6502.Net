@@ -123,7 +123,7 @@ Similar care is needed for using anonymous labels in compound expressions, which
 
 | Operator                  | Type          | Example                               |
 |---------------------------|---------------|---------------------------------------|
-| `<`,`<=`,'`>`,`>=`        | Relational    | `5 < 8`, `9 >= 3`                     |
+| `<`,`<=`,`>`,`>=`        | Relational    | `5 < 8`, `9 >= 3`                     |
 | `==`,`!=`,`===`,`!==`     | Equality      | `9 == 3`, `arr1 === arr2` (`false`)   |
 | `&&`                      | Logical AND   | `true && false`                       |
 | `\|\|`                    | Logical OR    | `false \|\| true`                     |
