@@ -1,6 +1,6 @@
 ﻿# Technical Info About the Core Assembler Functionality
 
-Previous version of 6502.Net were implemented as a unified project, with both the command-line executable and the assembler functionality in one .Net assembly. As of Version 4, the core assembler functionality is now packaged in its own .Net library, called `Sixty502DotNet.Shared`. The rationale is for developers to further extend this project or integrate into their own solutions.
+Previous versions of 6502.Net were implemented as a unified project, with both the command-line executable and the assembler functionality in one .Net assembly. As of Version 4, the core assembler functionality is now packaged in its own .Net library, called `Sixty502DotNet.Shared`. The rationale is for developers to further extend this project or integrate into their own solutions.
 
 The library is organized in such a way that it is easy not only to build a different front-end from the one provided with this solution, but also to easily add support for other CPUs. The library is organized generally in this way:
 
