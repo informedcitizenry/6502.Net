@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
@@ -135,25 +135,31 @@ public abstract class LexerBase : Lexer
     protected bool PreviousIsExpr()
     {
         return _previousToken != null &&
-               _previousToken.Type.IsOneOf(SyntaxLexer.BinLiteral,
+               _previousToken.Type.IsOneOf(SyntaxLexer.AltBinLiteral,
+                                           SyntaxLexer.BinLiteral,
                                            SyntaxLexer.BinFloatLiteral,
                                            SyntaxLexer.CharLiteral,
                                            SyntaxLexer.DecLiteral,
-                                           SyntaxParser.False,
+                                           SyntaxLexer.DecFloatLiteral,
+                                           SyntaxLexer.False,
+                                           SyntaxLexer.DotIdentifier,
                                            SyntaxLexer.DoubleQuote,
                                            SyntaxLexer.DoublePlus,
                                            SyntaxLexer.DoubleHyphen,
                                            SyntaxLexer.HexLiteral,
+                                           SyntaxLexer.HexFloatLiteral,
                                            SyntaxLexer.Identifier,
-                                           SyntaxParser.MDoubleQuote,
+                                           SyntaxLexer.MDoubleQuote,
                                            SyntaxLexer.MultiPlus,
                                            SyntaxLexer.MultiHyphen,
-                                           SyntaxParser.NaN,
+                                           SyntaxLexer.NaN,
+                                           SyntaxLexer.OctLiteral,
+                                           SyntaxLexer.OctFloatLiteral,
                                            SyntaxLexer.RightParen,
                                            SyntaxLexer.RightSquare,
                                            SyntaxLexer.RightCurly,
                                            SyntaxLexer.StringLiteral,
-                                           SyntaxParser.True,
+                                           SyntaxLexer.True,
                                            SyntaxLexer.UnicodeStringLiteral);
     }
 
@@ -161,4 +167,3 @@ public abstract class LexerBase : Lexer
 
     public IDictionary<string, int> ReservedWords { get; set; }
 }
-
