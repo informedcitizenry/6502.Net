@@ -27,8 +27,6 @@
 
 ## Functions
 
-Several built-in functions are available to the programmer.
-
 ### **`abs(`** *`value`* **`)`**
 
 The absolute value of a number.
