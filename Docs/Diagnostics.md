@@ -17,7 +17,7 @@ When an error or warning is reported to the standard output, typically the sourc
 ```
 -$ dotnet 6502.net.dll x86code.s
 
-bugs.s(1:12): error: Unexpected: 'eax'
+x86code.s(1:12): error: Unexpected: 'eax'
         mov eax,ebx
             ^--
 ```
