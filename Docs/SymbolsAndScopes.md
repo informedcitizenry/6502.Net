@@ -250,7 +250,7 @@ begin   nop
         jsr more.complex.begin
 ```
 
-Note that, unlock a `.block` or `.proc` symbol, a namespace symbol can be appear multiple times in its scope. Also, unlike the `.blcok`/`.proc` root name, a namespace cannot be used as a label; it does not represent an address.
+Note that, unlock a `.block` or `.proc` symbol, a namespace symbol can be appear multiple times in its scope. Also, unlike the `.block`/`.proc` root name, a namespace cannot be used as a label; it does not represent an address.
 
 ```
 myblock .block
