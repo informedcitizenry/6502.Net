@@ -1,7 +1,7 @@
 ﻿
 # Expressions
 
-As a cross-assembler, 6502.Net offers a powerful expression engine, allowing complex expressions similar to those found in higher level languages.
+As a cross-assembler, 6502.Net offers a powerful expression engine, allowing complex data structures and expressions similar to those found in higher level languages.
 
 ## Data Types and Methods
 
@@ -54,7 +54,7 @@ SUPPORTS_HIGH_SCORES = true
 | `size`      | Get the size (in bytes) of the number value         | `65490.size() // 2`       |
 | `toString`  | Get the value as a string                           | `true.toString()`         |
 
-Note only the `toString` method is available to boolean types.
+While all the above methods can be called on number values, only the `toString` method is available to boolean types.
 
 #### Numeric Unary Operations
 
@@ -128,7 +128,7 @@ Similar care is needed for using anonymous labels in compound expressions, which
 | `&&`                      | Logical AND   | `true && false`                       |
 | `\|\|`                    | Logical OR    | `false \|\| true`                     |
 
-The `===` and `!==` operators perform identity comparisons. The left hand of the expression is only considered identical to the right hand side if both refer to the same non-primitive object, such as a string or array. For instance
+The `===` and `!==` operators perform identity comparisons. The left hand of the expression is only considered identical to the right hand side if both refer to the same non-primitive object, such as a string or array. For instance:
 
 ```
 val1 = 3
@@ -155,7 +155,7 @@ Character literals are expressed in single quotes, i.e. `'H'`, while strings are
     .string "HELLO, WORLD"
 ```
 
-Multiline strings begin and end with three consecutive quotation marks, and can contain carriage returns and line feeds:
+Multi-line strings begin and end with three consecutive quotation marks, and can contain carriage returns and line feeds:
 
 ```
     .string """
@@ -272,7 +272,7 @@ String literals can also be interpolated with expressions whose result is string
         .string $"Start address: {START}" // Becomes "Start address: 49152"
 ```
 
-In the above example, the expression can be formatted with format specifiers:
+In the above example, the expression can be transformed with format specifiers:
 
 ```
         .string $"Start address: ${START:X4}" // Becomes "Start address: $C000"
@@ -302,7 +302,7 @@ In the above example, the expression can be formatted with format specifiers:
 
 #### Character and String Operations
 
-Characters and strings can play a dual role in expressions. Generally they are converted to their numeric equivalent (encoded value) in unary expressions and in binary expressions with numbers.
+Characters and strings can play a dual role. Generally they are converted to their numeric equivalent (encoded value) in unary expressions and in binary expressions with numbers.
 
 ```
     -'I' // -73
