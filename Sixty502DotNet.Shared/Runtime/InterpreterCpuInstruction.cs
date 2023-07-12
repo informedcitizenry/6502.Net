@@ -26,7 +26,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         }
         catch (Warning w)
         {
-            throw w;
+            AddWarning(w);
         }
         Services.State.Output.Add(context.cpuInstruction().opcode, context.cpuInstruction().opcodeSize);
         if (context.cpuInstruction().operandSize > 0)
