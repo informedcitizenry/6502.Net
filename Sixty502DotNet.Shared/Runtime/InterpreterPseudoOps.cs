@@ -126,6 +126,11 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             if (gen < minValue || gen > maxValue)
             {
+                if (Services.State.PassNeeded)
+                {
+                    Services.State.Output.AddUninitialized(size);
+                    continue;
+                }
                 throw new Error(val.Expression!, "Illegal quantity");
             }
             Services.State.Output.Add(gen, size);
