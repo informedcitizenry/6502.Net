@@ -313,6 +313,18 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         Services.State.Symbols.PushScope(scope);
     }
 
+    private void AddWarning(Warning w)
+    {
+        if (Services.DiagnosticOptions.WarningsAsErrors)
+        {
+            Services.State.Errors.Add(new Error(w));
+        }
+        else
+        {
+            Services.State.Warnings.Add(w);
+        }
+    }
+
     private void AddWarning(IToken? token, string message)
     {
         if (Services.DiagnosticOptions.WarningsAsErrors)
