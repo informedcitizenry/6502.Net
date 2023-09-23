@@ -167,22 +167,7 @@ public struct M6xxOpcode
     {
 
     }
-    /*
-     * int implied,
-                    int accumulator,
-                    int zeroPage,
-                    int relative,
-                    int absolute,
-                    int immediate,
-                    int zeroPageX,
-                    int zeroPageY,
-                    int absoluteX,
-                    int absoluteY,
-                    int indirect,
-                    int indirectIndexed,
-                    int indexedIndirect,
-                    int indirectZeroPage,
-     */
+
     public M6xxOpcode(int implied,
                     int zeroPage,
                     int relative,
