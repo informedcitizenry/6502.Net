@@ -271,7 +271,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         double minValue = Services?.ArchitectureOptions.LongAddressing == true ? Int24.MinValue : short.MinValue;
         double maxValue = Services?.ArchitectureOptions.LongAddressing == true ? UInt24.MaxValue : ushort.MaxValue;
         double address = SafeEvalNumber(expression, minValue, maxValue, truncateToPage, pageValue);
-        if (((long)address & 0xffff0000) == Services?.State.Output.CurrentBank * 0x10000)
+        if (((int)(address / 0x10000) & 0xff) == Services?.State.Output.CurrentBank)
         {
             return (int)address & 0xffff;
         }
