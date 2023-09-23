@@ -7,11 +7,7 @@
 
 using Sixty502DotNet.CLI;
 using Sixty502DotNet.Shared;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 
 using AssemblerError = Sixty502DotNet.Shared.Error;
 

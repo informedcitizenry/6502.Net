@@ -8,6 +8,7 @@
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+using SharpCompress.Common;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -1004,116 +1005,109 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         return cond.AsBool() ? Eval(context.then) : Eval(context.els);
     }
 
-    private ValueBase BindSubscriptAssignment(SyntaxParser.ExprContext lhsExpr, IToken assign, ValueBase rhsValue, bool asConstant)
+    private ValueBase BindSubscriptAssignment(SyntaxParser.ExpressionSubscriptContext subscript, IToken assign, ValueBase rvalue)
     {
-        if (lhsExpr is not SyntaxParser.ExpressionSubscriptContext lhsSubscript)
+        if (subscript.ix == null)
         {
-            throw new Error(lhsExpr, "Invalid left-hand side expression");
+            throw new Error(subscript, "Not a valid lvalue expression");
         }
-        if (Resolve(lhsSubscript.target, false, true) is not IValueResolver subResolver)
+        if (assign.Type == SyntaxParser.Equal)
         {
-            throw new InvalidOperationError(lhsExpr.Start);
+            throw new Error(subscript, "Invalid operator syntax for assignment");
         }
-        if (subResolver.IsConstant)
+        ValueBase callee = Eval(subscript.target);
+        if (!callee.IsDefined)
         {
-            throw new Error(lhsExpr, "Left-hand side expression is constant and cannot be modified");
+            return callee;
         }
-        if (asConstant)
+        if (!callee.IsObject)
         {
-            throw new InvalidOperationError(assign);
+            throw new InvalidOperationError(subscript.Start);
         }
-        if (lhsSubscript.ix == null)
-        {
-            throw new Error(lhsSubscript.range(), "Range not valid");
-        }
-        ValueBase selector = Eval(lhsSubscript.ix);
+        ValueBase index = Eval(subscript.ix);
 
-        ValueBase subValue = subResolver.Value;
+        if (callee is ArrayValue)
+        {
+            if (index.IsDefined && !index.IsNumeric)
+            {
+                throw new Error(subscript.ix, "Invalid index expression");
+            }
+            int ix = index.AsInt();
+            if (ix < 0)
+            {
+                ix += callee.Count;
+            }
+            if (callee.Count <= ix)
+            {
+                throw new Error(subscript.ix, "Index out of range");
+            }
+        }
+        if (callee is DictionaryValue dict && index.IsDefined && !dict.ContainsKey(index))
+        {
+            throw new Error(subscript.ix, "Key not found");
+        }
+        if (!callee[index].TypeCompatible(rvalue))
+        {
+            throw new TypeMismatchError(subscript);
+        }
+        return callee.UpdateMember(index, AssignOperation(subscript, subscript.target.Start, callee[index], assign, rvalue));//  rvalue);
+    }
 
-        while (lhsSubscript.target is SyntaxParser.ExpressionSubscriptContext sub)
+    private ValueBase BindTupleAssignment(SyntaxParser.ExpressionCollectionContext coll, IToken assign, ValueBase rvalue, bool asConstant)
+    {
+        ArrayValue result = new()
         {
-            if (sub.ix == null)
-            {
-                throw new Error(sub.range(), "Range not valid");
-            }
-            ValueBase leftMostSelector = Eval(sub.ix);
-            if (subValue is DictionaryValue dict)
-            {
-                subValue = dict[leftMostSelector];
-            }
-            else
-            {
-                subValue = subValue[leftMostSelector.AsInt()];
-            }
-            lhsSubscript = sub;
+            IsTuple = true
+        };
+        if (coll.tuple().expr().Length != rvalue.Count ||
+            rvalue is not ArrayValue rhsArray
+            || !rhsArray.IsTuple)
+        {
+            throw new TypeMismatchError(rvalue.Expression ?? coll);
         }
-        ValueBase result;
-        if (subValue is DictionaryValue)
+        for (int i = 0; i < coll.tuple().expr().Length; i++)
         {
-            subValue[selector] = AssignOperation(lhsSubscript, lhsSubscript.ix.Start, subValue[selector], assign, rhsValue);
-            result = subValue[selector];
-        }
-        else
-        {
-            subValue[selector.AsInt()] = AssignOperation(lhsSubscript, lhsSubscript.ix.Start, subValue[selector.AsInt()], assign, rhsValue);
-            result = subValue[selector.AsInt()];
+            result.Add(BindAssignment(coll.tuple().expr()[i], assign, rhsArray[i], asConstant));
         }
         return result;
     }
 
-
-    private ValueBase BindAssignment(SyntaxParser.ExprContext lvalue, IToken assign, ValueBase value, bool asConstant)
+    private ValueBase BindAssignment(SyntaxParser.ExprContext lexpr, IToken assign, ValueBase rvalue, bool asConstant)
     {
-        if (value is TypeMethodBase)
+        if (rvalue is TypeMethodBase)
         {
-            throw new Error(value.Expression ?? lvalue, "Right-hand side expression is a method and cannot be assigned");
+            throw new Error(rvalue.Expression ?? lexpr, "Right-hand side expression is a method and cannot be assigned");
         }
-        if (lvalue is not SyntaxParser.ExpressionDotMemberContext &&
-            lvalue is not SyntaxParser.ExpressionSimpleIdentifierContext)
+        if (lexpr is SyntaxParser.ExpressionGroupedContext grouped)
         {
-            if (lvalue is SyntaxParser.ExpressionGroupedContext lvalueGrouped)
-            {
-                // '(' Identifier ')' '=' expr
-                return BindAssignment(lvalueGrouped.expr(), assign, value, asConstant);
-            }
-            if (lvalue is SyntaxParser.ExpressionCollectionContext coll && coll.tuple() != null)
-            {
-                // tuple = expr
-                ArrayValue result = new()
-                {
-                    IsTuple = true
-                };
-                if (coll.tuple().expr().Length != value.Count ||
-                    value is not ArrayValue rhsArray
-                    || !rhsArray.IsTuple)
-                {
-                    throw new TypeMismatchError(value.Expression ?? lvalue);
-                }
-                for (int i = 0; i < coll.tuple().expr().Length; i++)
-                {
-                    result.Add(BindAssignment(coll.tuple().expr()[i], assign, rhsArray[i], asConstant));
-                }
-                return result;
-            }
-            _ = Eval(lvalue); // capture pre/post increments
-            if (!ExpressionIsAssignmentType(lvalue))
-            {
-                return BindSubscriptAssignment(lvalue, assign, value, asConstant);
-            }
+            return BindAssignment(grouped, assign, rvalue, asConstant);
         }
-        SymbolBase? lsym = Resolve(lvalue, asConstant, false);
+        if (lexpr is SyntaxParser.ExpressionSubscriptContext subscript)
+        {
+            return BindSubscriptAssignment(subscript, assign, rvalue);
+        }
+        if (lexpr is SyntaxParser.ExpressionCollectionContext coll && coll.tuple() != null)
+        {
+            return BindTupleAssignment(coll, assign, rvalue, asConstant);
+        }
+        if (lexpr is not SyntaxParser.ExpressionDotMemberContext &&
+            lexpr is not SyntaxParser.ExpressionSimpleIdentifierContext)
+        {
+            throw new Error(lexpr, "Not a valid lvalue expression");
+        }
+        SymbolBase? lsym = Resolve(lexpr, asConstant, false);
         IValueResolver? lresolver;
         if (lsym != null)
         {
             if (lsym is not IValueResolver resolver)
             {
-                throw new TypeMismatchError(lvalue.Start);
+                throw new TypeMismatchError(lexpr.Start);
             }
             if (resolver is not Variable &&
                 (resolver is not Constant ||
                 (resolver is Constant && (assign.Type != SyntaxParser.Equal || Services!.State.InFirstPass))))
             {
-                throw new SymbolRedefinitionError(lvalue.Start, lsym.Token);
+                throw new SymbolRedefinitionError(lexpr.Start, lsym.Token);
             }
             lresolver = resolver;
         }
@@ -1121,22 +1115,22 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             if (!assign.Type.IsOneOf(SyntaxParser.Equal, SyntaxParser.ColonEqual))
             {
-                throw new Error(lvalue, "Invalid assignment operation on undefined symbol");
+                throw new Error(lexpr, "Invalid assignment operation on undefined symbol");
             }
             lresolver = asConstant
-                    ? new Constant(lvalue.Start, value, Services!.State.Symbols.ActiveScope)
-                    : new Variable(lvalue.Start, value, Services!.State.Symbols.ActiveScope);
+                    ? new Constant(lexpr.Start, rvalue, Services!.State.Symbols.ActiveScope)
+                    : new Variable(lexpr.Start, rvalue, Services!.State.Symbols.ActiveScope);
             try
             {
                 Services.State.Symbols.Define((SymbolBase)lresolver);
             }
             catch
             {
-                throw new SymbolRedefinitionError(lvalue.Start, lvalue.Start);
+                throw new SymbolRedefinitionError(lexpr.Start, lexpr.Start);
             }
-            return value;
+            return rvalue;
         }
-        lresolver.Value = AssignOperation(lvalue, lvalue.Start, lresolver.Value, assign, value);
+        lresolver.Value = AssignOperation(lexpr, lexpr.Start, lresolver.Value, assign, rvalue);
         return lresolver.Value;
     }
 

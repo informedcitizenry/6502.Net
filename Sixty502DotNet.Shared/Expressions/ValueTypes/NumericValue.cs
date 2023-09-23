@@ -126,6 +126,10 @@ public sealed class NumericValue : ValueBase
 
     public override ValueBase Mod(ValueBase rhs)
     {
+        if (rhs.AsInt() == 0)
+        {
+            throw new DivideByZeroException("Attempted to divide by zero");
+        }
         unchecked
         {
             int longVal = _intValue;

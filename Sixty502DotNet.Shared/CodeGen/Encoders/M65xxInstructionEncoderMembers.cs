@@ -9,173 +9,15 @@ namespace Sixty502DotNet.Shared;
 
 public sealed partial class M65xxInstructionEncoder
 {
-    // s_6502
-
-    private static readonly Dictionary<int, Instruction> s_6502Absolute = new()
+    private static readonly HashSet<int> s_accumulators = new()
     {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x4}", 0x0d, 3) },
-        { SyntaxParser.ASL, new Instruction("asl ${0:x4}", 0x0e, 3) },
-        { SyntaxParser.JSR, new Instruction("jsr ${0:x4}", 0x20, 3) },
-        { SyntaxParser.BIT, new Instruction("bit ${0:x4}", 0x2c, 3) },
-        { SyntaxParser.AND, new Instruction("and ${0:x4}", 0x2d, 3) },
-        { SyntaxParser.ROL, new Instruction("rol ${0:x4}", 0x2e, 3) },
-        { SyntaxParser.JMP, new Instruction("jmp ${0:x4}", 0x4c, 3) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x4}", 0x4d, 3) },
-        { SyntaxParser.LSR, new Instruction("lsr ${0:x4}", 0x4e, 3) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x4}", 0x6d, 3) },
-        { SyntaxParser.ROR, new Instruction("ror ${0:x4}", 0x6e, 3) },
-        { SyntaxParser.STY, new Instruction("sty ${0:x4}", 0x8c, 3) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x4}", 0x8d, 3) },
-        { SyntaxParser.STX, new Instruction("stx ${0:x4}", 0x8e, 3) },
-        { SyntaxParser.LDY, new Instruction("ldy ${0:x4}", 0xac, 3) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x4}", 0xad, 3) },
-        { SyntaxParser.LDX, new Instruction("ldx ${0:x4}", 0xae, 3) },
-        { SyntaxParser.CPY, new Instruction("cpy ${0:x4}", 0xcc, 3) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x4}", 0xcd, 3) },
-        { SyntaxParser.DEC, new Instruction("dec ${0:x4}", 0xce, 3) },
-        { SyntaxParser.CPX, new Instruction("cpx ${0:x4}", 0xec, 3) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x4}", 0xed, 3) },
-        { SyntaxParser.INC, new Instruction("inc ${0:x4}", 0xee, 3) },
+        SyntaxParser.ADC, SyntaxParser.AND, SyntaxParser.CMP, SyntaxParser.EOR,
+        SyntaxParser.LDA, SyntaxParser.ORA, SyntaxParser.SBC
     };
 
-    private static readonly Dictionary<int, Instruction> s_6502AbsoluteX = new()
+    private static readonly HashSet<int> s_indexes = new()
     {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x4},x", 0x1d, 3) },
-        { SyntaxParser.ASL, new Instruction("asl ${0:x4},x", 0x1e, 3) },
-        { SyntaxParser.AND, new Instruction("and ${0:x4},x", 0x3d, 3) },
-        { SyntaxParser.ROL, new Instruction("rol ${0:x4},x", 0x3e, 3) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x4},x", 0x5d, 3) },
-        { SyntaxParser.LSR, new Instruction("lsr ${0:x4},x", 0x5e, 3) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x4},x", 0x7d, 3) },
-        { SyntaxParser.ROR, new Instruction("ror ${0:x4},x", 0x7e, 3) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x4},x", 0x9d, 3) },
-        { SyntaxParser.LDY, new Instruction("ldy ${0:x4},x", 0xbc, 3) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x4},x", 0xbd, 3) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x4},x", 0xdd, 3) },
-        { SyntaxParser.DEC, new Instruction("dec ${0:x4},x", 0xde, 3) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x4},x", 0xfd, 3) },
-        { SyntaxParser.INC, new Instruction("inc ${0:x4},x", 0xfe, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502AbsoluteY = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x4},y", 0x19, 3) },
-        { SyntaxParser.AND, new Instruction("and ${0:x4},y", 0x39, 3) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x4},y", 0x59, 3) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x4},y", 0x79, 3) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x4},y", 0x99, 3) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x4},y", 0xb9, 3) },
-        { SyntaxParser.LDX, new Instruction("ldx ${0:x4},y", 0xbe, 3) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x4},y", 0xd9, 3) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x4},y", 0xf9, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m6502Accumulators = new()
-    {
-        { SyntaxParser.ASL, new Instruction(0x0a, 1) },
-        { SyntaxParser.LSR, new Instruction(0x4a, 1) },
-        { SyntaxParser.ROL, new Instruction(0x2a, 1) },
-        { SyntaxParser.ROR, new Instruction(0x6a, 1) }
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502Immediate = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora #${0:x2}", 0x09, 2) },
-        { SyntaxParser.AND, new Instruction("and #${0:x2}", 0x29, 2) },
-        { SyntaxParser.EOR, new Instruction("eor #${0:x2}", 0x49, 2) },
-        { SyntaxParser.ADC, new Instruction("adc #${0:x2}", 0x69, 2) },
-        { SyntaxParser.LDY, new Instruction("ldy #${0:x2}", 0xa0, 2) },
-        { SyntaxParser.LDX, new Instruction("ldx #${0:x2}", 0xa2, 2) },
-        { SyntaxParser.LDA, new Instruction("lda #${0:x2}", 0xa9, 2) },
-        { SyntaxParser.CPY, new Instruction("cpy #${0:x2}", 0xc0, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp #${0:x2}", 0xc9, 2) },
-        { SyntaxParser.CPX, new Instruction("cpx #${0:x2}", 0xe0, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc #${0:x2}", 0xe9, 2) },
-    };
-    private static readonly Dictionary<int, Instruction> s_6502Implied = new()
-    {
-        { SyntaxParser.BRK, new Instruction("brk", 0x00) },
-        { SyntaxParser.PHP, new Instruction("php", 0x08) },
-        { SyntaxParser.ASL, new Instruction("asl", 0x0a) },
-        { SyntaxParser.CLC, new Instruction("clc", 0x18) },
-        { SyntaxParser.PLP, new Instruction("plp", 0x28) },
-        { SyntaxParser.ROL, new Instruction("rol", 0x2a) },
-        { SyntaxParser.SEC, new Instruction("sec", 0x38) },
-        { SyntaxParser.RTI, new Instruction("rti", 0x40) },
-        { SyntaxParser.PHA, new Instruction("pha", 0x48) },
-        { SyntaxParser.LSR, new Instruction("lsr", 0x4a) },
-        { SyntaxParser.CLI, new Instruction("cli", 0x58) },
-        { SyntaxParser.RTS, new Instruction("rts", 0x60) },
-        { SyntaxParser.PLA, new Instruction("pla", 0x68) },
-        { SyntaxParser.ROR, new Instruction("ror", 0x6a) },
-        { SyntaxParser.SEI, new Instruction("sei", 0x78) },
-        { SyntaxParser.DEY, new Instruction("dey", 0x88) },
-        { SyntaxParser.TXA, new Instruction("txa", 0x8a) },
-        { SyntaxParser.TYA, new Instruction("tya", 0x98) },
-        { SyntaxParser.TXS, new Instruction("txs", 0x9a) },
-        { SyntaxParser.TAY, new Instruction("tay", 0xa8) },
-        { SyntaxParser.TAX, new Instruction("tax", 0xaa) },
-        { SyntaxParser.CLV, new Instruction("clv", 0xb8) },
-        { SyntaxParser.TSX, new Instruction("tsx", 0xba) },
-        { SyntaxParser.INY, new Instruction("iny", 0xc8) },
-        { SyntaxParser.DEX, new Instruction("dex", 0xca) },
-        { SyntaxParser.CLD, new Instruction("cld", 0xd8) },
-        { SyntaxParser.INX, new Instruction("inx", 0xe8) },
-        { SyntaxParser.NOP, new Instruction("nop", 0xea) },
-        { SyntaxParser.SED, new Instruction("sed", 0xf8) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502IndAbs = new()
-    {
-        { SyntaxParser.JMP, new Instruction("jmp (${0:x4})", 0x6c, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502IndX = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora (${0:x2},x)", 0x01, 2) },
-        { SyntaxParser.AND, new Instruction("and (${0:x2},x)", 0x21, 2) },
-        { SyntaxParser.EOR, new Instruction("eor (${0:x2},x)", 0x41, 2) },
-        { SyntaxParser.ADC, new Instruction("adc (${0:x2},x)", 0x61, 2) },
-        { SyntaxParser.STA, new Instruction("sta (${0:x2},x)", 0x81, 2) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x2},x)", 0xa1, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp (${0:x2},x)", 0xc1, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc (${0:x2},x)", 0xe1, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502IndY = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora (${0:x2}),y", 0x11, 2) },
-        { SyntaxParser.AND, new Instruction("and (${0:x2}),y", 0x31, 2) },
-        { SyntaxParser.EOR, new Instruction("eor (${0:x2}),y", 0x51, 2) },
-        { SyntaxParser.ADC, new Instruction("adc (${0:x2}),y", 0x71, 2) },
-        { SyntaxParser.STA, new Instruction("sta (${0:x2}),y", 0x91, 2) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x2}),y", 0xb1, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp (${0:x2}),y", 0xd1, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc (${0:x2}),y", 0xf1, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502Relative = new()
-    {
-        { SyntaxParser.BPL, new Instruction("bpl ${0:x4}", 0x10, 2, true) },
-        { SyntaxParser.BMI, new Instruction("bmi ${0:x4}", 0x30, 2, true) },
-        { SyntaxParser.BVC, new Instruction("bvc ${0:x4}", 0x50, 2, true) },
-        { SyntaxParser.BVS, new Instruction("bvs ${0:x4}", 0x70, 2, true) },
-        { SyntaxParser.BCC, new Instruction("bcc ${0:x4}", 0x90, 2, true) },
-        { SyntaxParser.BCS, new Instruction("bcs ${0:x4}", 0xb0, 2, true) },
-        { SyntaxParser.BNE, new Instruction("bne ${0:x4}", 0xd0, 2, true) },
-        { SyntaxParser.BEQ, new Instruction("beq ${0:x4}", 0xf0, 2, true) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502PseudoRelative = new()
-    {
-        { SyntaxParser.JPL, new Instruction("bpl ${0:x4}", 0x10, 2, true) },
-        { SyntaxParser.JMI, new Instruction("bmi ${0:x4}", 0x30, 2, true) },
-        { SyntaxParser.JVC, new Instruction("bvc ${0:x4}", 0x50, 2, true) },
-        { SyntaxParser.JVS, new Instruction("bvs ${0:x4}", 0x70, 2, true) },
-        { SyntaxParser.JCC, new Instruction("bcc ${0:x4}", 0x90, 2, true) },
-        { SyntaxParser.JCS, new Instruction("bcs ${0:x4}", 0xb0, 2, true) },
-        { SyntaxParser.JNE, new Instruction("bne ${0:x4}", 0xd0, 2, true) },
-        { SyntaxParser.JEQ, new Instruction("beq ${0:x4}", 0xf0, 2, true) }
+        SyntaxParser.CPX, SyntaxParser.CPY, SyntaxParser.LDX, SyntaxParser.LDY
     };
 
     private static readonly Dictionary<int, int> s_6502PseudoToReal = new()
@@ -190,63 +32,987 @@ public sealed partial class M65xxInstructionEncoder
         { SyntaxParser.JNE, 0xf0 }
     };
 
-    private static readonly Dictionary<int, Instruction> s_6502BranchAlways = new()
+    private static readonly Dictionary<int, int> s_6502PseudoRelative = new()
     {
-        { SyntaxParser.BRA, new Instruction("bvc ${0:x4}", 0x50, 2, true) },
+        { SyntaxParser.JMI, 0x30 },
+        { SyntaxParser.JPL, 0x10 },
+        { SyntaxParser.JVS, 0x70 },
+        { SyntaxParser.JVC, 0x50 },
+        { SyntaxParser.JCS, 0xb0 },
+        { SyntaxParser.JCC, 0x90 },
+        { SyntaxParser.JEQ, 0xf0 },
+        { SyntaxParser.JNE, 0xd0 }
     };
 
-    private static readonly Dictionary<int, Instruction> s_6502ZeroPage = new()
+    private static readonly Dictionary<int, M6xxOpcode> s_45gs02Opcodes = new()
     {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x2}", 0x05, 2) },
-        { SyntaxParser.ASL, new Instruction("asl ${0:x2}", 0x06, 2) },
-        { SyntaxParser.BIT, new Instruction("bit ${0:x2}", 0x24, 2) },
-        { SyntaxParser.AND, new Instruction("and ${0:x2}", 0x25, 2) },
-        { SyntaxParser.ROL, new Instruction("rol ${0:x2}", 0x26, 2) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x2}", 0x45, 2) },
-        { SyntaxParser.LSR, new Instruction("lsr ${0:x2}", 0x46, 2) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x2}", 0x65, 2) },
-        { SyntaxParser.ROR, new Instruction("ror ${0:x2}", 0x66, 2) },
-        { SyntaxParser.STY, new Instruction("sty ${0:x2}", 0x84, 2) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x2}", 0x85, 2) },
-        { SyntaxParser.STX, new Instruction("stx ${0:x2}", 0x86, 2) },
-        { SyntaxParser.LDY, new Instruction("ldy ${0:x2}", 0xa4, 2) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x2}", 0xa5, 2) },
-        { SyntaxParser.LDX, new Instruction("ldx ${0:x2}", 0xa6, 2) },
-        { SyntaxParser.CPY, new Instruction("cpy ${0:x2}", 0xc4, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x2}", 0xc5, 2) },
-        { SyntaxParser.DEC, new Instruction("dec ${0:x2}", 0xc6, 2) },
-        { SyntaxParser.CPX, new Instruction("cpx ${0:x2}", 0xe4, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x2}", 0xe5, 2) },
-        { SyntaxParser.INC, new Instruction("inc ${0:x2}", 0xe6, 2) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.EOM, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.MAP, new M6xxOpcode( 0x5C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61, 0x72,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21, 0x32,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xb3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xf3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C, 0x89, 0x34,  Bad, 0x3C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x33,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xd3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },{ SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1, 0xD2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3A,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41, 0x52,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1A,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x7C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad, 0x22,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x23,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1, 0xB2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xE2,  Bad,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01, 0x12,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad, 0x62,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1, 0xF2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81, 0x92,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x82,  Bad,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad, 0x9B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad, 0x8B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xDA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xFA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9C,  Bad, 0x74,  Bad, 0x9E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xCB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BGE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BLT, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x63,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLE, new M6xxOpcode( 0x02,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPZ, new M6xxOpcode(  Bad,  Bad, 0xD4,  Bad, 0xDC, 0xC2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEZ, new M6xxOpcode( 0x3B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEW, new M6xxOpcode(  Bad,  Bad, 0xC3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xE3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INZ, new M6xxOpcode( 0x1B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDZ, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xAB, 0xA3,  Bad,  Bad, 0xBB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHZ, new M6xxOpcode( 0xDB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLZ, new M6xxOpcode( 0xFB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xEB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTN, new M6xxOpcode( 0x63,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEE, new M6xxOpcode( 0x03,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAB, new M6xxOpcode( 0x5B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAZ, new M6xxOpcode( 0x4B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.TBA, new M6xxOpcode( 0x7B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSY, new M6xxOpcode( 0x0B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYS, new M6xxOpcode( 0x2B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TZA, new M6xxOpcode( 0x6B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JCC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JCS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xB3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JEQ, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xF3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMI, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x33,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JNE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xD3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JPL, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JVC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JVS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BBR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x0f) },
+        { SyntaxParser.BBS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x8f) },
+        { SyntaxParser.RMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x07,  Bad) },
+        { SyntaxParser.SMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x87,  Bad) }
     };
 
-    private static readonly Dictionary<int, Instruction> s_6502ZeroPageX = new()
+    private static readonly Dictionary<int, M6xxOpcode> s_6502Opcodes = new()
     {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x2},x", 0x15, 2) },
-        { SyntaxParser.ASL, new Instruction("asl ${0:x2},x", 0x16, 2) },
-        { SyntaxParser.AND, new Instruction("and ${0:x2},x", 0x35, 2) },
-        { SyntaxParser.ROL, new Instruction("rol ${0:x2},x", 0x36, 2) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x2},x", 0x55, 2) },
-        { SyntaxParser.LSR, new Instruction("lsr ${0:x2},x", 0x56, 2) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x2},x", 0x75, 2) },
-        { SyntaxParser.ROR, new Instruction("ror ${0:x2},x", 0x76, 2) },
-        { SyntaxParser.STY, new Instruction("sty ${0:x2},x", 0x94, 2) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x2},x", 0x95, 2) },
-        { SyntaxParser.LDY, new Instruction("ldy ${0:x2},x", 0xb4, 2) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x2},x", 0xb5, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x2},x", 0xd5, 2) },
-        { SyntaxParser.DEC, new Instruction("dec ${0:x2},x", 0xd6, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x2},x", 0xf5, 2) },
-        { SyntaxParser.INC, new Instruction("inc ${0:x2},x", 0xf6, 2) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX  
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6d, 0x69, 0x75,  Bad, 0x7d, 0x79,  Bad, 0x71, 0x61) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2d, 0x29, 0x35,  Bad, 0x3d, 0x39,  Bad, 0x31, 0x21) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0a, 0x0a, 0x06,  Bad, 0x0e,  Bad, 0x16,  Bad, 0x1e,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xb0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xf0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xd0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xd8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xb8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xc5,  Bad, 0xcd, 0xc9, 0xd5,  Bad, 0xdd, 0xd9,  Bad, 0xd1, 0xc1) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xe4,  Bad, 0xec, 0xe0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xc4,  Bad, 0xcc, 0xc0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX 
+        { SyntaxParser.DEC, new M6xxOpcode(  Bad,  Bad, 0xc6,  Bad, 0xce,  Bad, 0xd6,  Bad, 0xde,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xca,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4d, 0x49, 0x55,  Bad, 0x5d, 0x59,  Bad, 0x51, 0x41) },
+        { SyntaxParser.INC, new M6xxOpcode(  Bad,  Bad, 0xe6,  Bad, 0xee,  Bad, 0xf6,  Bad, 0xfe,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xe8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xc8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4c,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6c,  Bad,  Bad) },
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xa5,  Bad, 0xad, 0xa9, 0xb5,  Bad, 0xbd, 0xb9,  Bad, 0xb1, 0xa1) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xa6,  Bad, 0xae, 0xa2,  Bad, 0xb6,  Bad, 0xbe,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xa4,  Bad, 0xac, 0xa0, 0xb4,  Bad, 0xbc,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4a, 0x4a, 0x46,  Bad, 0x4e,  Bad, 0x56,  Bad, 0x5e,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xea,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0d, 0x09, 0x15,  Bad, 0x1d, 0x19,  Bad, 0x11, 0x01) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2a, 0x2a, 0x26,  Bad, 0x2e,  Bad, 0x36,  Bad, 0x3e,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX 
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6a, 0x6a, 0x66,  Bad, 0x6e,  Bad, 0x76,  Bad, 0x7e,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xe5,  Bad, 0xed, 0xe9, 0xf5,  Bad, 0xfd, 0xf9,  Bad, 0xf1, 0xe1) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xf8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8d,  Bad, 0x95,  Bad, 0x9d, 0x99,  Bad, 0x91, 0x81) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8e,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8c,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xaa,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xa8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xba,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) }
     };
 
-    private static readonly Dictionary<int, Instruction> s_6502ZeroPageY = new()
+
+    private static readonly Dictionary<int, M6xxOpcode> s_6502iOpcodes = new()
     {
-        { SyntaxParser.STX, new Instruction("stx ${0:x2},y", 0x96, 2) },
-        { SyntaxParser.LDX, new Instruction("ldx ${0:x2},y", 0xb6, 2) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode(  Bad,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41) },
+        { SyntaxParser.INC, new M6xxOpcode(  Bad,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX
+        { SyntaxParser.ANC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x2B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ANE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x8B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ARR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x6B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x4B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DCP, new M6xxOpcode(  Bad,  Bad, 0xC7,  Bad, 0xCF,  Bad, 0xD7,  Bad, 0xDF, 0xDB,  Bad, 0xD3, 0xC3) },
+        { SyntaxParser.DOP, new M6xxOpcode( 0x80,  Bad, 0x04,  Bad,  Bad, 0x80, 0x14,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ISB, new M6xxOpcode(  Bad,  Bad, 0xE7,  Bad, 0xEF,  Bad, 0xF7,  Bad, 0xFF, 0xFB,  Bad, 0xF3, 0xE3) },
+        { SyntaxParser.JAM, new M6xxOpcode( 0x03,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LAS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xBB,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LAX, new M6xxOpcode(  Bad,  Bad, 0xA7,  Bad, 0xAF,  Bad,  Bad, 0xB7,  Bad, 0xBF,  Bad, 0xB3, 0xA3) },
+        { SyntaxParser.SAX, new M6xxOpcode(  Bad,  Bad, 0x87,  Bad, 0x8F, 0xCB,  Bad, 0x97,  Bad,  Bad,  Bad,  Bad, 0x83) },
+        { SyntaxParser.SHA, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x9F,  Bad, 0x93,  Bad) },
+        { SyntaxParser.SHX, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x9E,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SHY, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x9C,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SLO, new M6xxOpcode(  Bad,  Bad, 0x07,  Bad, 0x0F,  Bad, 0x17,  Bad, 0x1F, 0x1B,  Bad, 0x13, 0x03) },
+        { SyntaxParser.SRE, new M6xxOpcode(  Bad,  Bad, 0x47,  Bad, 0x4F,  Bad, 0x57,  Bad, 0x5F, 0x5B,  Bad, 0x53, 0x43) },
+        { SyntaxParser.STP, new M6xxOpcode( 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x9B,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TOP, new M6xxOpcode( 0x0C,  Bad,  Bad,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RLA, new M6xxOpcode(  Bad,  Bad, 0x27,  Bad, 0x2F,  Bad, 0x37,  Bad, 0x3F, 0x3B,  Bad, 0x33, 0x23) },
+        { SyntaxParser.RRA, new M6xxOpcode(  Bad,  Bad, 0x67,  Bad, 0x6F,  Bad, 0x77,  Bad, 0x7F, 0x7B,  Bad, 0x73, 0x63) }
     };
 
-    private static readonly Dictionary<int, Instruction> s_6502AllOpcodes = new()
+    private static readonly Dictionary<int, M6xxOpcode> s_65ce02Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61, 0x72,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21, 0x32,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xb3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xf3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C, 0x89, 0x34,  Bad, 0x3C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x33,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xd3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },{ SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1, 0xD2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3A,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41, 0x52,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1A,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x7C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad, 0x22,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x23,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1, 0xB2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xE2,  Bad,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01, 0x12,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad, 0x62,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1, 0xF2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81, 0x92,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x82,  Bad,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad, 0x9B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad, 0x8B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xDA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xFA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9C,  Bad, 0x74,  Bad, 0x9E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xCB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BGE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BLT, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x63,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLE, new M6xxOpcode( 0x02,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPZ, new M6xxOpcode(  Bad,  Bad, 0xD4,  Bad, 0xDC, 0xC2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEZ, new M6xxOpcode( 0x3B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEW, new M6xxOpcode(  Bad,  Bad, 0xC3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xE3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INZ, new M6xxOpcode( 0x1B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDZ, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xAB, 0xA3,  Bad,  Bad, 0xBB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHZ, new M6xxOpcode( 0xDB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLZ, new M6xxOpcode( 0xFB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xEB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTN, new M6xxOpcode( 0x63,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEE, new M6xxOpcode( 0x03,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAB, new M6xxOpcode( 0x5B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAZ, new M6xxOpcode( 0x4B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TBA, new M6xxOpcode( 0x7B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSY, new M6xxOpcode( 0x0B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.TYS, new M6xxOpcode( 0x2B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TZA, new M6xxOpcode( 0x6B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JCC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JCS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xB3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JEQ, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xF3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMI, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x33,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JNE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xD3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JPL, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JVC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JVS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA BitSt  BtBr
+        { SyntaxParser.BBR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x0f) },
+        { SyntaxParser.BBS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x8f) },
+        { SyntaxParser.RMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x07,  Bad) },
+        { SyntaxParser.SMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x87,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_65c02Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA  
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6d, 0x69, 0x75,  Bad, 0x7d, 0x79,  Bad, 0x71, 0x61, 0x72,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2d, 0x29, 0x35,  Bad, 0x3d, 0x39,  Bad, 0x31, 0x21, 0x32,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0a, 0x0a, 0x06,  Bad, 0x0e,  Bad, 0x16,  Bad, 0x1e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },  
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xb0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xf0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2c, 0x89, 0x34,  Bad, 0x3c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xd0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xd8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xb8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xc5,  Bad, 0xcd, 0xc9, 0xd5,  Bad, 0xdd, 0xd9,  Bad, 0xd1, 0xc1, 0xd2,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xe4,  Bad, 0xec, 0xe0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xc4,  Bad, 0xcc, 0xc0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3a, 0x3a, 0xc6,  Bad, 0xce,  Bad, 0xd6,  Bad, 0xde,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xca,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4d, 0x49, 0x55,  Bad, 0x5d, 0x59,  Bad, 0x51, 0x41, 0x52,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1a, 0x1a, 0xe6,  Bad, 0xee,  Bad, 0xf6,  Bad, 0xfe,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xe8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xc8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4c,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6c,  Bad,  Bad,  Bad, 0x7c) },
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xa5,  Bad, 0xad, 0xa9, 0xb5,  Bad, 0xbd, 0xb9,  Bad, 0xb1, 0xa1, 0xb2,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xa6,  Bad, 0xae, 0xa2,  Bad, 0xb6,  Bad, 0xbe,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xa4,  Bad, 0xac, 0xa0, 0xb4,  Bad, 0xbc,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4a, 0x4a, 0x46,  Bad, 0x4e,  Bad, 0x56,  Bad, 0x5e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xea,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0d, 0x09, 0x15,  Bad, 0x1d, 0x19,  Bad, 0x11, 0x01, 0x12,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xda,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xfa,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2a, 0x2a, 0x26,  Bad, 0x2e,  Bad, 0x36,  Bad, 0x3e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6a, 0x6a, 0x66,  Bad, 0x6e,  Bad, 0x76,  Bad, 0x7e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xe5,  Bad, 0xed, 0xe9, 0xf5,  Bad, 0xfd, 0xf9,  Bad, 0xf1, 0xe1, 0xf2,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xf8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8d,  Bad, 0x95,  Bad, 0x9d, 0x99,  Bad, 0x91, 0x81, 0x92,  Bad) },
+        { SyntaxParser.STP, new M6xxOpcode( 0xdb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8e,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8c,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9c,  Bad, 0x74,  Bad, 0x9e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xaa,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xa8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xba,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.WAI, new M6xxOpcode( 0xcb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_65816Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6d, 0x69, 0x75,  Bad, 0x7d, 0x79,  Bad, 0x71, 0x61, 0x72, 0x6f, 0x7f,  Bad,  Bad, 0x63, 0x73,  Bad,  Bad, 0x77, 0x67,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2d, 0x29, 0x35,  Bad, 0x3d, 0x39,  Bad, 0x31, 0x21, 0x32, 0x2f, 0x3f,  Bad,  Bad, 0x23, 0x33,  Bad,  Bad, 0x37, 0x27,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0a, 0x0a, 0x06,  Bad, 0x0e,  Bad, 0x16,  Bad, 0x1e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xb0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xf0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2c, 0x89, 0x34,  Bad, 0x3c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xd0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0xf0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRL, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x82,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xd8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xb8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xc5,  Bad, 0xcd, 0xc9, 0xd5,  Bad, 0xdd, 0xd9,  Bad, 0xd1, 0xc1, 0xd2, 0xcf, 0xdf,  Bad,  Bad, 0xc3, 0xd3,  Bad,  Bad, 0xd7, 0xc7,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.COP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x02,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xe4,  Bad, 0xec, 0xe0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xc4,  Bad, 0xcc, 0xc0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3a, 0x3a, 0xc6,  Bad, 0xce,  Bad, 0xd6,  Bad, 0xde,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xca,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4d, 0x49, 0x55,  Bad, 0x5d, 0x59,  Bad, 0x51, 0x41, 0x52, 0x4f, 0x5f,  Bad,  Bad, 0x43, 0x53,  Bad,  Bad, 0x57, 0x47,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1a, 0x1a, 0xe6,  Bad, 0xee,  Bad, 0xf6,  Bad, 0xfe,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xe8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xc8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JML, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x5c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xdc,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4c,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6c,  Bad,  Bad,  Bad, 0x5c,  Bad,  Bad,  Bad,  Bad,  Bad, 0x7c,  Bad,  Bad,  Bad, 0xdc,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JSL, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x22,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x22,  Bad,  Bad,  Bad,  Bad,  Bad, 0xfc,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xa5,  Bad, 0xad, 0xa9, 0xb5,  Bad, 0xbd, 0xb9,  Bad, 0xb1, 0xa1, 0xb2, 0xaf, 0xbf,  Bad,  Bad, 0xa3, 0xb3,  Bad,  Bad, 0xb7, 0xa7,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xa6,  Bad, 0xae, 0xa2,  Bad, 0xb6,  Bad, 0xbe,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xa4,  Bad, 0xac, 0xa0, 0xb4,  Bad, 0xbc,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4a, 0x4a, 0x46,  Bad, 0x4e,  Bad, 0x56,  Bad, 0x5e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.MVN, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x54,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.MVP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x44,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xea,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0d, 0x09, 0x15,  Bad, 0x1d, 0x19,  Bad, 0x11, 0x01, 0x12, 0x0f, 0x1f,  Bad,  Bad, 0x03, 0x13,  Bad,  Bad, 0x17, 0x07,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PEA, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0xf4,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PEI, new M6xxOpcode(  Bad,  Bad, 0xd4,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PER, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x62,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHB, new M6xxOpcode( 0x8b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHD, new M6xxOpcode( 0x0b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHK, new M6xxOpcode( 0x4b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xda,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLB, new M6xxOpcode( 0xab,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLD, new M6xxOpcode( 0x2b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xfa,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.REP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0xc2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2a, 0x2a, 0x26,  Bad, 0x2e,  Bad, 0x36,  Bad, 0x3e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6a, 0x6a, 0x66,  Bad, 0x6e,  Bad, 0x76,  Bad, 0x7e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTL, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xe5,  Bad, 0xed, 0xe9, 0xf5,  Bad, 0xfd, 0xf9,  Bad, 0xf1, 0xe1, 0xf2, 0xef, 0xff,  Bad,  Bad, 0xe3, 0xf3,  Bad,  Bad, 0xf7, 0xe7,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xf8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0xe2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8d,  Bad, 0x95,  Bad, 0x9d, 0x99,  Bad, 0x91, 0x81, 0x92, 0x8f, 0x9f,  Bad,  Bad, 0x83, 0x93,  Bad,  Bad, 0x97, 0x87,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STP, new M6xxOpcode( 0xdb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8e,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8c,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9c,  Bad, 0x74,  Bad, 0x9e,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xaa,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xa8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TCD, new M6xxOpcode( 0x5b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TCS, new M6xxOpcode( 0x1b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TDC, new M6xxOpcode( 0x7b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSC, new M6xxOpcode( 0x3b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xba,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXY, new M6xxOpcode( 0x9b,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYX, new M6xxOpcode( 0xbb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.WAI, new M6xxOpcode( 0xcb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.WDM, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x42,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.XBA, new M6xxOpcode( 0xeb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.XCE, new M6xxOpcode( 0xfb,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_c64dtvOpcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode(  Bad,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41) },
+        { SyntaxParser.INC, new M6xxOpcode(  Bad,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX
+        { SyntaxParser.SAC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x32,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SIR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x42,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_huc6280Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79, 0x72, 0x71, 0x61, 0x72,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39, 0x32, 0x31, 0x21, 0x32,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C, 0x89, 0x34,  Bad, 0x3C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9, 0xD2, 0xD1, 0xC1, 0xD2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3A,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59, 0x52, 0x51, 0x41, 0x52,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1A,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x7C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9, 0xB2, 0xB1, 0xA1, 0xB2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19, 0x12, 0x11, 0x01, 0x12,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9, 0xF2, 0xF1, 0xE1, 0xF2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99, 0x92, 0x91, 0x81, 0x92,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xDA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xFA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9C,  Bad, 0x74,  Bad, 0x9E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLA, new M6xxOpcode( 0x62,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLX, new M6xxOpcode( 0x82,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLY, new M6xxOpcode( 0xC2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CSH, new M6xxOpcode( 0xD4,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CSL, new M6xxOpcode( 0x54,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SAY, new M6xxOpcode( 0x43,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ST1, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ST2, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x23,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SXY, new M6xxOpcode( 0x03,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAI, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xF3,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAM, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TDD, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xC3,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TIA, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xE3,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TII, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TIN, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xD3,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TMA, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad, 0x43,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TST, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x83,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad, 0xB3,  Bad,  Bad,  Bad,  Bad,  Bad, 0xA3) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA BitSt  BtBr
+        { SyntaxParser.BBR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x0f) },
+        { SyntaxParser.BBS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x8f) },
+        { SyntaxParser.RMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x07,  Bad) },
+        { SyntaxParser.SMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x87,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_m65Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.EOM, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.MAP, new M6xxOpcode( 0x5C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61, 0x72,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x72EA,  Bad,  Bad,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21, 0x32,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x32EA,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xb3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xf3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C, 0x89, 0x34,  Bad, 0x3C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x33,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xd3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1, 0xD2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xD2EA,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3A,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41, 0x52,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x52EA,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1A,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x7C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad, 0x22,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x23,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1, 0xB2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xB2EA, 0xE2,  Bad,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01, 0x12,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x12EA,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad, 0x62,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1, 0xF2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xF2EA,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81, 0x92,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x92EA, 0x82,  Bad,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad, 0x9B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad, 0x8B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xDA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xFA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9C,  Bad, 0x74,  Bad, 0x9E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xCB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BGE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BLT, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x63,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLE, new M6xxOpcode( 0x02,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPZ, new M6xxOpcode(  Bad,  Bad, 0xD4,  Bad, 0xDC, 0xC2,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEZ, new M6xxOpcode( 0x3B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEW, new M6xxOpcode(  Bad,  Bad, 0xC3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xE3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INZ, new M6xxOpcode( 0x1B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDZ, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xAB, 0xA3,  Bad,  Bad, 0xBB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHZ, new M6xxOpcode( 0xDB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLZ, new M6xxOpcode( 0xFB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROW, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0xEB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTN, new M6xxOpcode( 0x63,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEE, new M6xxOpcode( 0x03,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAB, new M6xxOpcode( 0x5B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAZ, new M6xxOpcode( 0x4B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp  Long LongX   Bit Block   ZpS  IndS IndIA  Rsvd  DirY   Dir DirAb RelAb BitAX Three  IndZ  DirZ IndSp ImmAb BitZX
+        { SyntaxParser.TBA, new M6xxOpcode( 0x7B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSY, new M6xxOpcode( 0x0B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYS, new M6xxOpcode( 0x2B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TZA, new M6xxOpcode( 0x6B,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JCC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x93,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JCS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xB3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JEQ, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xF3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMI, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x33,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JNE, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0xD3,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JPL, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x13,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JVC, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x53,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JVS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x73,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ADCQ, new M6xxOpcode(       Bad,  Bad,  0x654242,   Bad,   0x6D4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0x724242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad, 0x72EA4242,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ANDQ, new M6xxOpcode(       Bad,  Bad, 0x254242,    Bad,   0x2D4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0x324242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad, 0x32EA4242,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASLQ, new M6xxOpcode(   0xA4242,  Bad,  0x64242,    Bad,    0xF4242,  Bad, 0x164242,  Bad, 0x1E4242,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ASRQ, new M6xxOpcode(  0x434242,  Bad, 0x444242,    Bad,        Bad,  Bad, 0x544242,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BITQ, new M6xxOpcode(       Bad,  Bad, 0x244242,    Bad,   0x2C4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPQ, new M6xxOpcode(        Bad,  Bad, 0xC54242,    Bad,   0xCD4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0xD24242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad, -756399550,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEQ, new M6xxOpcode(   0x3A4242,  Bad, 0xC64242,    Bad,   0xCE4242,  Bad, 0xD64242,  Bad, 0xDE4242,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EORQ, new M6xxOpcode(       Bad,  Bad, 0x454242,    Bad,   0x4D4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0x524242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad, 0x52EA4242,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INQ, new M6xxOpcode(   0x1A4242,  Bad, 0xE64242,    Bad,   0xEE4242,  Bad, 0xF64242,  Bad, 0xFE4242,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDQ, new M6xxOpcode(        Bad,  Bad, 0xA54242,    Bad,   0xAD4242,  Bad, 0xB54242,  Bad, 0xBD4242, 0xB94242,  Bad, 0xB14242,  Bad, 0xB24242,  Bad,  Bad,  Bad,  Bad,  Bad, 0xE24242,  Bad,  Bad,  Bad,-1293270462,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSRQ, new M6xxOpcode(  0x4A4242,  Bad, 0x464242,    Bad,   0x4E4242,  Bad, 0x564242,  Bad, 0x5E4242,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORQ, new M6xxOpcode(        Bad,  Bad,  0x54242,    Bad,    0xD4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0x124242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad, 0x12EA4242,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROLQ, new M6xxOpcode(  0x2A4242,  Bad, 0x264242,    Bad,   0x2E4242,  Bad,      Bad,  Bad, 0x3E4242,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RORQ, new M6xxOpcode(  0x6A4242,  Bad, 0x664242,    Bad,   0x6E4242,  Bad, 0x764242,  Bad, 0x7E4242,      Bad,  Bad,      Bad,  Bad,      Bad,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,        Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBCQ, new M6xxOpcode(       Bad,  Bad, 0xE54242,    Bad,   0xED4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0xF24242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad, -219528638,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STQ, new M6xxOpcode(        Bad,  Bad, 0x854242,    Bad,   0x8D4242,  Bad,      Bad,  Bad,      Bad,      Bad,  Bad,      Bad,  Bad, 0x924242,  Bad,  Bad,  Bad,  Bad,  Bad,      Bad,  Bad,  Bad,  Bad,-1830141374,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA BitSt  BtBr
+        { SyntaxParser.BBR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x0f) },
+        { SyntaxParser.BBS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x8f) },
+        { SyntaxParser.RMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x07,  Bad) },
+        { SyntaxParser.SMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x87,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_r65c02Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61, 0x72,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21, 0x32,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C, 0x89, 0x34,  Bad, 0x3C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1, 0xD2,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3A,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41, 0x52,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1A,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad,  Bad, 0x7C) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1, 0xB2,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01, 0x12,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1, 0xF2,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81, 0x92,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xDA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xFA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9C,  Bad, 0x74,  Bad, 0x9E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA BitSt  BtBr
+        { SyntaxParser.BBR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x0f) },
+        { SyntaxParser.BBS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x8f) },
+        { SyntaxParser.RMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x07,  Bad) },
+        { SyntaxParser.SMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x87,  Bad) }
+    };
+
+    private static readonly Dictionary<int, M6xxOpcode> s_w65c02Opcodes = new()
+    {
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.ADC, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6D, 0x69, 0x75,  Bad, 0x7D, 0x79,  Bad, 0x71, 0x61, 0x72,  Bad) },
+        { SyntaxParser.AND, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2D, 0x29, 0x35,  Bad, 0x3D, 0x39,  Bad, 0x31, 0x21, 0x32,  Bad) },
+        { SyntaxParser.ASL, new M6xxOpcode( 0x0A, 0x0A, 0x06,  Bad, 0x0E,  Bad, 0x16,  Bad, 0x1E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BCS, new M6xxOpcode(  Bad,  Bad,  Bad, 0xB0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BEQ, new M6xxOpcode(  Bad,  Bad,  Bad, 0xF0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BIT, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2C, 0x89, 0x34,  Bad, 0x3C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLD, new M6xxOpcode( 0xD8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLI, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CLV, new M6xxOpcode( 0xB8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CMP, new M6xxOpcode(  Bad,  Bad, 0xC5,  Bad, 0xCD, 0xC9, 0xD5,  Bad, 0xDD, 0xD9,  Bad, 0xD1, 0xC1, 0xD2,  Bad) },
+        { SyntaxParser.CPX, new M6xxOpcode(  Bad,  Bad, 0xE4,  Bad, 0xEC, 0xE0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.CPY, new M6xxOpcode(  Bad,  Bad, 0xC4,  Bad, 0xCC, 0xC0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEC, new M6xxOpcode( 0x3A,  Bad, 0xC6,  Bad, 0xCE,  Bad, 0xD6,  Bad, 0xDE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEX, new M6xxOpcode( 0xCA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.DEY, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.EOR, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4D, 0x49, 0x55,  Bad, 0x5D, 0x59,  Bad, 0x51, 0x41, 0x52,  Bad) },
+        { SyntaxParser.INC, new M6xxOpcode( 0x1A,  Bad, 0xE6,  Bad, 0xEE,  Bad, 0xF6,  Bad, 0xFE,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INX, new M6xxOpcode( 0xE8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.INY, new M6xxOpcode( 0xC8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.JMP, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4C,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6C,  Bad,  Bad,  Bad, 0x7C) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.JSR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDA, new M6xxOpcode(  Bad,  Bad, 0xA5,  Bad, 0xAD, 0xA9, 0xB5,  Bad, 0xBD, 0xB9,  Bad, 0xB1, 0xA1, 0xB2,  Bad) },
+        { SyntaxParser.LDX, new M6xxOpcode(  Bad,  Bad, 0xA6,  Bad, 0xAE, 0xA2,  Bad, 0xB6,  Bad, 0xBE,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LDY, new M6xxOpcode(  Bad,  Bad, 0xA4,  Bad, 0xAC, 0xA0, 0xB4,  Bad, 0xBC,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.LSR, new M6xxOpcode( 0x4A, 0x4A, 0x46,  Bad, 0x4E,  Bad, 0x56,  Bad, 0x5E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.NOP, new M6xxOpcode( 0xEA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ORA, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0D, 0x09, 0x15,  Bad, 0x1D, 0x19,  Bad, 0x11, 0x01, 0x12,  Bad) },
+        { SyntaxParser.PHA, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHP, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLA, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLP, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROL, new M6xxOpcode( 0x2A, 0x2A, 0x26,  Bad, 0x2E,  Bad, 0x36,  Bad, 0x3E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.ROR, new M6xxOpcode( 0x6A, 0x6A, 0x66,  Bad, 0x6E,  Bad, 0x76,  Bad, 0x7E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTI, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.RTS, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SBC, new M6xxOpcode(  Bad,  Bad, 0xE5,  Bad, 0xED, 0xE9, 0xF5,  Bad, 0xFD, 0xF9,  Bad, 0xF1, 0xE1, 0xF2,  Bad) },
+        { SyntaxParser.SEC, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SED, new M6xxOpcode( 0xF8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.SEI, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STA, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8D,  Bad, 0x95,  Bad, 0x9D, 0x99,  Bad, 0x91, 0x81, 0x92,  Bad) },
+        { SyntaxParser.STX, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8E,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STY, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8C,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAX, new M6xxOpcode( 0xAA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TAY, new M6xxOpcode( 0xA8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSX, new M6xxOpcode( 0xBA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXA, new M6xxOpcode( 0x8A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TXS, new M6xxOpcode( 0x9A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TYA, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA
+        { SyntaxParser.STP, new M6xxOpcode( 0xDB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHX, new M6xxOpcode( 0xDA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PHY, new M6xxOpcode( 0x5A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLX, new M6xxOpcode( 0xFA,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.PLY, new M6xxOpcode( 0x7A,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.STZ, new M6xxOpcode(  Bad,  Bad, 0x64,  Bad, 0x9C,  Bad, 0x74,  Bad, 0x9E,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TRB, new M6xxOpcode(  Bad,  Bad, 0x14,  Bad, 0x1C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.TSB, new M6xxOpcode(  Bad,  Bad, 0x04,  Bad, 0x0C,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.WAI, new M6xxOpcode( 0xCB,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        //                                       Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX IndZp IndIA BitSt  BtBr
+        { SyntaxParser.BBR, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x0f) },
+        { SyntaxParser.BBS, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x8f) },
+        { SyntaxParser.RMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x07,  Bad) },
+        { SyntaxParser.SMB, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad, 0x87,  Bad) }
+    };
+
+    private static readonly Dictionary<int, Instruction> s_6502Disassembly = new()
     {
         { 0x00, new Instruction("brk", 0x00) },
         { 0x01, new Instruction("ora (${0:x2},x)", 0x01, 2) },
@@ -401,119 +1167,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xfe, new Instruction("inc ${0:x4},x", 0xfe, 3) },
     };
 
-    // s_6502i
-    private static readonly Dictionary<int, Instruction> s_6502iAbsolute = new()
-    {
-        { SyntaxParser.TOP, new Instruction("top ${0:x4}", 0x0c, 3) },
-        { SyntaxParser.SLO, new Instruction("slo ${0:x4}", 0x0f, 3) },
-        { SyntaxParser.RLA, new Instruction("rla ${0:x4}", 0x2f, 3) },
-        { SyntaxParser.SRE, new Instruction("sre ${0:x4}", 0x4f, 3) },
-        { SyntaxParser.RRA, new Instruction("rra ${0:x4}", 0x6f, 3) },
-        { SyntaxParser.SAX, new Instruction("sax ${0:x4}", 0x8f, 3) },
-        { SyntaxParser.LAX, new Instruction("lax ${0:x4}", 0xaf, 3) },
-        { SyntaxParser.DCP, new Instruction("dcp ${0:x4}", 0xcf, 3) },
-        { SyntaxParser.ISB, new Instruction("isb ${0:x4}", 0xef, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iAbsoluteX = new()
-    {
-        { SyntaxParser.SLO, new Instruction("slo ${0:x4},x", 0x1f, 3) },
-        { SyntaxParser.RLA, new Instruction("rla ${0:x4},x", 0x3f, 3) },
-        { SyntaxParser.SRE, new Instruction("sre ${0:x4},x", 0x5f, 3) },
-        { SyntaxParser.RRA, new Instruction("rra ${0:x4},x", 0x7f, 3) },
-        { SyntaxParser.SHY, new Instruction("shy ${0:x4},x", 0x9c, 3) },
-        { SyntaxParser.DCP, new Instruction("dcp ${0:x4},x", 0xdf, 3) },
-        { SyntaxParser.ISB, new Instruction("isb ${0:x4},x", 0xff, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iAbsoluteY = new()
-    {
-        { SyntaxParser.SLO, new Instruction("slo ${0:x4},y", 0x1b, 3) },
-        { SyntaxParser.RLA, new Instruction("rla ${0:x4},y", 0x3b, 3) },
-        { SyntaxParser.SRE, new Instruction("sre ${0:x4},y", 0x5b, 3) },
-        { SyntaxParser.RRA, new Instruction("rra ${0:x4},y", 0x7b, 3) },
-        { SyntaxParser.TAS, new Instruction("tas ${0:x4},y", 0x9b, 3) },
-        { SyntaxParser.SHX, new Instruction("shx ${0:x4},y", 0x9e, 3) },
-        { SyntaxParser.SHA, new Instruction("sha ${0:x4},y", 0x9f, 3) },
-        { SyntaxParser.LAS, new Instruction("las ${0:x4},y", 0xbb, 3) },
-        { SyntaxParser.LAX, new Instruction("lax ${0:x4},y", 0xbf, 3) },
-        { SyntaxParser.DCP, new Instruction("dcp ${0:x4},y", 0xdb, 3) },
-        { SyntaxParser.ISB, new Instruction("isb ${0:x4},y", 0xfb, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iImmediate = new()
-    {
-        { SyntaxParser.ANC, new Instruction("anc #${0:x2}", 0x2b, 2) },
-        { SyntaxParser.ASR, new Instruction("asr #${0:x2}", 0x4b, 2) },
-        { SyntaxParser.ARR, new Instruction("arr #${0:x2}", 0x6b, 2) },
-        { SyntaxParser.DOP, new Instruction("dop #${0:x2}", 0x80, 2) },
-        { SyntaxParser.ANE, new Instruction("ane #${0:x2}", 0x8b, 2) },
-        { SyntaxParser.SAX, new Instruction("sax #${0:x2}", 0xcb, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iImplied = new()
-    {
-        { SyntaxParser.JAM, new Instruction("jam", 0x03) },
-        { SyntaxParser.TOP, new Instruction("top", 0x0c) },
-        { SyntaxParser.STP, new Instruction("stp", 0x13) },
-        { SyntaxParser.DOP, new Instruction("dop", 0x80) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iIndX = new()
-    {
-        { SyntaxParser.SLO, new Instruction("slo (${0:x2},x)", 0x03, 2) },
-        { SyntaxParser.RLA, new Instruction("rla (${0:x2},x)", 0x23, 2) },
-        { SyntaxParser.SRE, new Instruction("sre (${0:x2},x)", 0x43, 2) },
-        { SyntaxParser.RRA, new Instruction("rra (${0:x2},x)", 0x63, 2) },
-        { SyntaxParser.SAX, new Instruction("sax (${0:x2},x)", 0x83, 2) },
-        { SyntaxParser.LAX, new Instruction("lax (${0:x2},x)", 0xa3, 2) },
-        { SyntaxParser.DCP, new Instruction("dcp (${0:x2},x)", 0xc3, 2) },
-        { SyntaxParser.ISB, new Instruction("isb (${0:x2},x)", 0xe3, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iIndY = new()
-    {
-        { SyntaxParser.SLO, new Instruction("slo (${0:x2}),y", 0x13, 2) },
-        { SyntaxParser.RLA, new Instruction("rla (${0:x2}),y", 0x33, 2) },
-        { SyntaxParser.SRE, new Instruction("sre (${0:x2}),y", 0x53, 2) },
-        { SyntaxParser.RRA, new Instruction("rra (${0:x2}),y", 0x73, 2) },
-        { SyntaxParser.SHA, new Instruction("sha (${0:x2}),y", 0x93, 2) },
-        { SyntaxParser.LAX, new Instruction("lax (${0:x2}),y", 0xb3, 2) },
-        { SyntaxParser.DCP, new Instruction("dcp (${0:x2}),y", 0xd3, 2) },
-        { SyntaxParser.ISB, new Instruction("isb (${0:x2}),y", 0xf3, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iZeroPage = new()
-    {
-        { SyntaxParser.DOP, new Instruction("dop ${0:x2}", 0x04, 2) },
-        { SyntaxParser.SLO, new Instruction("slo ${0:x2}", 0x07, 2) },
-        { SyntaxParser.RLA, new Instruction("rla ${0:x2}", 0x27, 2) },
-        { SyntaxParser.SRE, new Instruction("sre ${0:x2}", 0x47, 2) },
-        { SyntaxParser.RRA, new Instruction("rra ${0:x2}", 0x67, 2) },
-        { SyntaxParser.SAX, new Instruction("sax ${0:x2}", 0x87, 2) },
-        { SyntaxParser.LAX, new Instruction("lax ${0:x2}", 0xa7, 2) },
-        { SyntaxParser.DCP, new Instruction("dcp ${0:x2}", 0xc7, 2) },
-        { SyntaxParser.ISB, new Instruction("isb ${0:x2}", 0xe7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iZeroPageX = new()
-    {
-        { SyntaxParser.DOP, new Instruction("dop ${0:x2},x", 0x14, 2) },
-        { SyntaxParser.SLO, new Instruction("slo ${0:x2},x", 0x17, 2) },
-        { SyntaxParser.RLA, new Instruction("rla ${0:x2},x", 0x37, 2) },
-        { SyntaxParser.SRE, new Instruction("sre ${0:x2},x", 0x57, 2) },
-        { SyntaxParser.RRA, new Instruction("rra ${0:x2},x", 0x77, 2) },
-        { SyntaxParser.DCP, new Instruction("dcp ${0:x2},x", 0xd7, 2) },
-        { SyntaxParser.ISB, new Instruction("isb ${0:x2},x", 0xf7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iZeroPageY = new()
-    {
-        { SyntaxParser.SAX, new Instruction("sax ${0:x2},y", 0x97, 2) },
-        { SyntaxParser.LAX, new Instruction("lax ${0:x2},y", 0xb7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_6502iAllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_6502iDisassembly = new()
     {
         { 0x03, new Instruction("slo (${0:x2},x)", 0x03, 2) },
         { 0x04, new Instruction("dop ${0:x2}", 0x04, 2) },
@@ -584,146 +1238,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xff, new Instruction("isb ${0:x4},x", 0xff, 3) },
     };
 
-    // s_65816
-    private static readonly Dictionary<int, Instruction> s_65816Absolute = new()
-    {
-        { SyntaxParser.PEA, new Instruction("pea ${0:x4}", 0xf4, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816Dir = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora [${0:x2}]", 0x07, 2) },
-        { SyntaxParser.AND, new Instruction("and [${0:x2}]", 0x27, 2) },
-        { SyntaxParser.EOR, new Instruction("eor [${0:x2}]", 0x47, 2) },
-        { SyntaxParser.ADC, new Instruction("adc [${0:x2}]", 0x67, 2) },
-        { SyntaxParser.STA, new Instruction("sta [${0:x2}]", 0x87, 2) },
-        { SyntaxParser.LDA, new Instruction("lda [${0:x2}]", 0xa7, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp [${0:x2}]", 0xc7, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc [${0:x2}]", 0xe7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816DirAbs = new()
-    {
-        { SyntaxParser.JMP, new Instruction("jmp [${0:x4}]", 0xdc, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816DirY = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora [${0:x2}],y", 0x17, 2) },
-        { SyntaxParser.AND, new Instruction("and [${0:x2}],y", 0x37, 2) },
-        { SyntaxParser.EOR, new Instruction("eor [${0:x2}],y", 0x57, 2) },
-        { SyntaxParser.ADC, new Instruction("adc [${0:x2}],y", 0x77, 2) },
-        { SyntaxParser.STA, new Instruction("sta [${0:x2}],y", 0x97, 2) },
-        { SyntaxParser.LDA, new Instruction("lda [${0:x2}],y", 0xb7, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp [${0:x2}],y", 0xd7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816ImmAbs = new()
-    {
-        { SyntaxParser.PEA, new Instruction("pea #${0:x4}", 0xf4, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816Immediate = new()
-    {
-        { SyntaxParser.COP, new Instruction("cop #${0:x2}", 0x02, 2) },
-        { SyntaxParser.REP, new Instruction("rep #${0:x2}", 0xc2, 2) },
-        { SyntaxParser.SEP, new Instruction("sep #${0:x2}", 0xe2, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816Implied = new()
-    {
-        { SyntaxParser.PHD, new Instruction("phd", 0x0b) },
-        { SyntaxParser.TCS, new Instruction("tcs", 0x1b) },
-        { SyntaxParser.PLD, new Instruction("pld", 0x2b) },
-        { SyntaxParser.TSC, new Instruction("tsc", 0x3b) },
-        { SyntaxParser.WDM, new Instruction("wdm", 0x42) },
-        { SyntaxParser.PHK, new Instruction("phk", 0x4b) },
-        { SyntaxParser.TCD, new Instruction("tcd", 0x5b) },
-        { SyntaxParser.RTL, new Instruction("rtl", 0x6b) },
-        { SyntaxParser.TDC, new Instruction("tdc", 0x7b) },
-        { SyntaxParser.PHB, new Instruction("phb", 0x8b) },
-        { SyntaxParser.TXY, new Instruction("txy", 0x9b) },
-        { SyntaxParser.PLB, new Instruction("plb", 0xab) },
-        { SyntaxParser.TYX, new Instruction("tyx", 0xbb) },
-        { SyntaxParser.XBA, new Instruction("xba", 0xeb) },
-        { SyntaxParser.XCE, new Instruction("xce", 0xfb) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816IndAbsX = new()
-    {
-        { SyntaxParser.JSR, new Instruction("jsr (${0:x4},x)", 0xfc, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816IndS = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora (${0:x2},s),y", 0x13, 2) },
-        { SyntaxParser.AND, new Instruction("and (${0:x2},s),y", 0x33, 2) },
-        { SyntaxParser.EOR, new Instruction("eor (${0:x2},s),y", 0x53, 2) },
-        { SyntaxParser.ADC, new Instruction("adc (${0:x2},s),y", 0x73, 2) },
-        { SyntaxParser.STA, new Instruction("sta (${0:x2},s),y", 0x93, 2) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x2},s),y", 0xb3, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp (${0:x2},s),y", 0xd3, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc (${0:x2},s),y", 0xf3, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816IndZp = new()
-    {
-        { SyntaxParser.PEI, new Instruction("pei (${0:x2})", 0xd4, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816Long = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x6}", 0x0f, 4) },
-        { SyntaxParser.JSL, new Instruction("jsl ${0:x6}", 0x22, 4) },
-        { SyntaxParser.JSR, new Instruction("jsr ${0:x6}", 0x22, 4) },
-        { SyntaxParser.AND, new Instruction("and ${0:x6}", 0x2f, 4) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x6}", 0x4f, 4) },
-        { SyntaxParser.JML, new Instruction("jml ${0:x6}", 0x5c, 4) },
-        { SyntaxParser.JMP, new Instruction("jmp ${0:x6}", 0x5c, 4) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x6}", 0x6f, 4) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x6}", 0x8f, 4) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x6}", 0xaf, 4) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x6}", 0xcf, 4) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x6}", 0xef, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816LongX = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x6},x", 0x1f, 4) },
-        { SyntaxParser.AND, new Instruction("and ${0:x6},x", 0x3f, 4) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x6},x", 0x5f, 4) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x6},x", 0x7f, 4) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x6},x", 0x9f, 4) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x6},x", 0xbf, 4) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x6},x", 0xdf, 4) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x6},x", 0xff, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816RelativeAbs = new()
-    {
-        { SyntaxParser.PER, new Instruction("per ${0:x4}", 0x62, 3, true, true) },
-        { SyntaxParser.BRL, new Instruction("brl ${0:x4}", 0x82, 3, true, true) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816TwoOperand = new()
-    {
-        { SyntaxParser.MVP, new Instruction("mvp ${1:x2},${0:x2}", 0x44, 1,1) },
-        { SyntaxParser.MVN, new Instruction("mvn ${1:x2},${0:x2}", 0x54, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816ZeroPageS = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora ${0:x2},s", 0x03, 2) },
-        { SyntaxParser.AND, new Instruction("and ${0:x2},s", 0x23, 2) },
-        { SyntaxParser.EOR, new Instruction("eor ${0:x2},s", 0x43, 2) },
-        { SyntaxParser.ADC, new Instruction("adc ${0:x2},s", 0x63, 2) },
-        { SyntaxParser.STA, new Instruction("sta ${0:x2},s", 0x83, 2) },
-        { SyntaxParser.LDA, new Instruction("lda ${0:x2},s", 0xa3, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp ${0:x2},s", 0xc3, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc ${0:x2},s", 0xe3, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65816AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_65816Disassembly = new()
     {
         { 0x02, new Instruction("cop #${0:x2}", 0x02, 2) },
         { 0x03, new Instruction("ora ${0:x2},s", 0x03, 2) },
@@ -802,78 +1317,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xff, new Instruction("sbc ${0:x6},x", 0xff, 4) },
     };
 
-    // s_65c02
-
-    private static readonly Dictionary<int, Instruction> s_65c02Absolute = new()
-    {
-        { SyntaxParser.TSB, new Instruction("tsb ${0:x4}", 0x0c, 3) },
-        { SyntaxParser.TRB, new Instruction("trb ${0:x4}", 0x1c, 3) },
-        { SyntaxParser.STZ, new Instruction("stz ${0:x4}", 0x9c, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02AbsoluteX = new()
-    {
-        { SyntaxParser.BIT, new Instruction("bit ${0:x4},x", 0x3c, 3) },
-        { SyntaxParser.STZ, new Instruction("stz ${0:x4},x", 0x9e, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02Immediate = new()
-    {
-        { SyntaxParser.BIT, new Instruction("bit #${0:x2}", 0x89, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02Implied = new()
-    {
-        { SyntaxParser.INC, new Instruction("inc", 0x1a) },
-        { SyntaxParser.DEC, new Instruction("dec", 0x3a) },
-        { SyntaxParser.PHY, new Instruction("phy", 0x5a) },
-        { SyntaxParser.PLY, new Instruction("ply", 0x7a) },
-        { SyntaxParser.PHX, new Instruction("phx", 0xda) },
-        { SyntaxParser.PLX, new Instruction("plx", 0xfa) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02Accumulator = new()
-    {
-        { SyntaxParser.INC, new Instruction("inc", 0x1a) },
-        { SyntaxParser.DEC, new Instruction("dec", 0x3a) }
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02IndAbsX = new()
-    {
-        { SyntaxParser.JMP, new Instruction("jmp (${0:x4},x)", 0x7c, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02IndZp = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora (${0:x2})", 0x12, 2) },
-        { SyntaxParser.AND, new Instruction("and (${0:x2})", 0x32, 2) },
-        { SyntaxParser.EOR, new Instruction("eor (${0:x2})", 0x52, 2) },
-        { SyntaxParser.ADC, new Instruction("adc (${0:x2})", 0x72, 2) },
-        { SyntaxParser.STA, new Instruction("sta (${0:x2})", 0x92, 2) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x2})", 0xb2, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp (${0:x2})", 0xd2, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc (${0:x2})", 0xf2, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02Relative = new()
-    {
-        { SyntaxParser.BRA, new Instruction("bra ${0:x4}", 0x80, 2, true) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02ZeroPage = new()
-    {
-        { SyntaxParser.TSB, new Instruction("tsb ${0:x2}", 0x04, 2) },
-        { SyntaxParser.TRB, new Instruction("trb ${0:x2}", 0x14, 2) },
-        { SyntaxParser.STZ, new Instruction("stz ${0:x2}", 0x64, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02ZeroPageX = new()
-    {
-        { SyntaxParser.BIT, new Instruction("bit ${0:x2},x", 0x34, 2) },
-        { SyntaxParser.STZ, new Instruction("stz ${0:x2},x", 0x74, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65c02AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_65c02Disassembly = new()
     {
         { 0x04, new Instruction("tsb ${0:x2}", 0x04, 2) },
         { 0x0c, new Instruction("tsb ${0:x4}", 0x0c, 3) },
@@ -904,125 +1348,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xfa, new Instruction("plx", 0xfa) },
     };
 
-    // s_65ce02
-
-    private static readonly Dictionary<int, Instruction> s_65ce02Absolute = new()
-    {
-        { SyntaxParser.BSR, new Instruction("bsr ${0:x4}", 0x63, 3) },
-        { SyntaxParser.LDZ, new Instruction("ldz ${0:x4}", 0xab, 3) },
-        { SyntaxParser.ASW, new Instruction("asw ${0:x4}", 0xcb, 3) },
-        { SyntaxParser.CPZ, new Instruction("cpz ${0:x4}", 0xdc, 3) },
-        { SyntaxParser.INW, new Instruction("inw ${0:x4}", 0xe3, 3) },
-        { SyntaxParser.ROW, new Instruction("row ${0:x4}", 0xeb, 3) },
-        { SyntaxParser.PHW, new Instruction("phw ${0:x4}", 0xfc, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02AbsoluteX = new()
-    {
-        { SyntaxParser.STY, new Instruction("sty ${0:x4},x", 0x8b, 3) },
-        { SyntaxParser.LDZ, new Instruction("ldz ${0:x4},x", 0xbb, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02AbsoluteY = new()
-    {
-        { SyntaxParser.STX, new Instruction("stx ${0:x4},y", 0x9b, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02ImmAbs = new()
-    {
-        { SyntaxParser.PHW, new Instruction("phw #${0:x4}", 0xf4, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02Immediate = new()
-    {
-        { SyntaxParser.RTS, new Instruction("rts #${0:x2}", 0x62, 2) },
-        { SyntaxParser.LDZ, new Instruction("ldz #${0:x2}", 0xa3, 2) },
-        { SyntaxParser.CPZ, new Instruction("cpz #${0:x2}", 0xc2, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02Implied = new()
-    {
-        { SyntaxParser.CLE, new Instruction("cle", 0x02) },
-        { SyntaxParser.SEE, new Instruction("see", 0x03) },
-        { SyntaxParser.TSY, new Instruction("tsy", 0x0b) },
-        { SyntaxParser.INZ, new Instruction("inz", 0x1b) },
-        { SyntaxParser.TYS, new Instruction("tys", 0x2b) },
-        { SyntaxParser.DEZ, new Instruction("dez", 0x3b) },
-        { SyntaxParser.NEG, new Instruction("neg", 0x42) },
-        { SyntaxParser.ASR, new Instruction("asr", 0x43) },
-        { SyntaxParser.TAZ, new Instruction("taz", 0x4b) },
-        { SyntaxParser.TAB, new Instruction("tab", 0x5b) },
-        { SyntaxParser.RTN, new Instruction("rtn", 0x63) },
-        { SyntaxParser.TZA, new Instruction("tza", 0x6b) },
-        { SyntaxParser.TBA, new Instruction("tba", 0x7b) },
-        { SyntaxParser.PHZ, new Instruction("phz", 0xdb) },
-        { SyntaxParser.PLZ, new Instruction("plz", 0xfb) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02IndAbs = new()
-    {
-        { SyntaxParser.JSR, new Instruction("jsr (${0:x4})", 0x22, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02IndAbsX = new()
-    {
-        { SyntaxParser.JSR, new Instruction("jsr (${0:x4},x)", 0x23, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02IndSp = new()
-    {
-        { SyntaxParser.STA, new Instruction("sta (${0:x2},sp),y", 0x82, 2) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x2},sp),y", 0xe2, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02IndZ = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora (${0:x2}),z", 0x12, 2) },
-        { SyntaxParser.AND, new Instruction("and (${0:x2}),z", 0x32, 2) },
-        { SyntaxParser.EOR, new Instruction("eor (${0:x2}),z", 0x52, 2) },
-        { SyntaxParser.ADC, new Instruction("adc (${0:x2}),z", 0x72, 2) },
-        { SyntaxParser.STA, new Instruction("sta (${0:x2}),z", 0x92, 2) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x2}),z", 0xb2, 2) },
-        { SyntaxParser.CMP, new Instruction("cmp (${0:x2}),z", 0xd2, 2) },
-        { SyntaxParser.SBC, new Instruction("sbc (${0:x2}),z", 0xf2, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02RelativeAbs = new()
-    {
-        { SyntaxParser.BPL, new Instruction("bpl ${0:x4}", 0x13, 3, true, true) },
-        { SyntaxParser.BMI, new Instruction("bmi ${0:x4}", 0x33, 3, true, true) },
-        { SyntaxParser.BVC, new Instruction("bvc ${0:x4}", 0x53, 3, true, true) },
-        { SyntaxParser.BVS, new Instruction("bvs ${0:x4}", 0x73, 3, true, true) },
-        { SyntaxParser.BRA, new Instruction("bra ${0:x4}", 0x83, 3, true, true) },
-        { SyntaxParser.BCC, new Instruction("bcc ${0:x4}", 0x93, 3, true, true) },
-        { SyntaxParser.BLT, new Instruction("blt ${0:x4}", 0x93, 3, true, true) },
-        { SyntaxParser.BCS, new Instruction("bcs ${0:x4}", 0xb3, 3, true, true) },
-        { SyntaxParser.BGE, new Instruction("bge ${0:x4}", 0xb3, 3, true, true) },
-        { SyntaxParser.BNE, new Instruction("bne ${0:x4}", 0xd3, 3, true, true) },
-        { SyntaxParser.BEQ, new Instruction("beq ${0:x4}", 0xf3, 3, true, true) },
-        { SyntaxParser.JPL, new Instruction("bpl ${0:x4}", 0x13, 3, true, true) },
-        { SyntaxParser.JMI, new Instruction("bmi ${0:x4}", 0x33, 3, true, true) },
-        { SyntaxParser.JVC, new Instruction("bvc ${0:x4}", 0x53, 3, true, true) },
-        { SyntaxParser.JVS, new Instruction("bvs ${0:x4}", 0x73, 3, true, true) },
-        { SyntaxParser.JCC, new Instruction("bcc ${0:x4}", 0x93, 3, true, true) },
-        { SyntaxParser.JCS, new Instruction("bcs ${0:x4}", 0xb3, 3, true, true) },
-        { SyntaxParser.JNE, new Instruction("bne ${0:x4}", 0xd3, 3, true, true) },
-        { SyntaxParser.JEQ, new Instruction("jne ${0:x4}", 0xf3, 3, true, true) }
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02ZeroPage = new()
-    {
-        { SyntaxParser.ASR, new Instruction("asr ${0:x2}", 0x44, 2) },
-        { SyntaxParser.DEW, new Instruction("dew ${0:x2}", 0xc3, 2) },
-        { SyntaxParser.CPZ, new Instruction("cpz ${0:x2}", 0xd4, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02ZeroPageX = new()
-    {
-        { SyntaxParser.ASR, new Instruction("asr ${0:x2},x", 0x54, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_65ce02AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_65ce02Disassembly = new()
     {
         { 0x02, new Instruction("cle", 0x02) },
         { 0x03, new Instruction("see", 0x03) },
@@ -1079,91 +1405,14 @@ public sealed partial class M65xxInstructionEncoder
         { 0xfc, new Instruction("phw ${0:x4}", 0xfc, 3) },
     };
 
-    // s_c64dtv2
-
-    private static readonly Dictionary<int, Instruction> s_c64dtv2Immediate = new()
-    {
-        { SyntaxParser.SAC, new Instruction("sac #${0:x2}", 0x32, 2) },
-        { SyntaxParser.SIR, new Instruction("sir #${0:x2}", 0x42, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_c64dtv2Relative = new()
-    {
-        { SyntaxParser.BRA, new Instruction("bra ${0:x4}", 0x12, 2, true) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_c64dtv2AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_c64dtvDisassembly = new()
     {
         { 0x12, new Instruction("bra ${0:x4}", 0x12, 2) },
         { 0x32, new Instruction("sac #${0:x2}", 0x32, 2) },
         { 0x42, new Instruction("sir #${0:x2}", 0x42, 2) },
     };
 
-    // s_huC6280
-
-    private static readonly Dictionary<int, Instruction> s_huC6280Immediate = new()
-    {
-        { SyntaxParser.ST1, new Instruction("st1 #${0:x2}", 0x13, 2) },
-        { SyntaxParser.ST2, new Instruction("st2 #${0:x2}", 0x23, 2) },
-        { SyntaxParser.TMA, new Instruction("tma #${0:x2}", 0x43, 2) },
-        { SyntaxParser.TAM, new Instruction("tam #${0:x2}", 0x53, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280Implied = new()
-    {
-        { SyntaxParser.SXY, new Instruction("sxy", 0x03) },
-        { SyntaxParser.SAX, new Instruction("sax", 0x23) },
-        { SyntaxParser.SAY, new Instruction("say", 0x43) },
-        { SyntaxParser.CSL, new Instruction("csl", 0x54) },
-        { SyntaxParser.CLA, new Instruction("cla", 0x62) },
-        { SyntaxParser.CLX, new Instruction("clx", 0x82) },
-        { SyntaxParser.CLY, new Instruction("cly", 0xc2) },
-        { SyntaxParser.CSH, new Instruction("csh", 0xd4) },
-        { SyntaxParser.SET, new Instruction("set", 0xf4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280IndAbs = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora (${0:x4})", 0x12, 3) },
-        { SyntaxParser.AND, new Instruction("and (${0:x4})", 0x32, 3) },
-        { SyntaxParser.EOR, new Instruction("eor (${0:x4})", 0x52, 3) },
-        { SyntaxParser.ADC, new Instruction("adc (${0:x4})", 0x72, 3) },
-        { SyntaxParser.STA, new Instruction("sta (${0:x4})", 0x92, 3) },
-        { SyntaxParser.LDA, new Instruction("lda (${0:x4})", 0xb2, 3) },
-        { SyntaxParser.CMP, new Instruction("cmp (${0:x4})", 0xd2, 3) },
-        { SyntaxParser.SBC, new Instruction("sbc (${0:x4})", 0xf2, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280TestBitAbs = new()
-    {
-        { SyntaxParser.TST, new Instruction("tst #${0:x2},${1:x4}", 0x93, 1,2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280TestBitAbsX = new()
-    {
-        { SyntaxParser.TST, new Instruction("tst #${0:x2},${1:x4},x", 0xb3, 1,2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280TestBitZp = new()
-    {
-        { SyntaxParser.TST, new Instruction("tst #${0:x2},${1:x2}", 0x83, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280TestBitZpX = new()
-    {
-        { SyntaxParser.TST, new Instruction("tst #${0:x2},${1:x2},x", 0xa3, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280ThreeOpAbs = new()
-    {
-        { SyntaxParser.TII, new Instruction("tii ${0:x4},${1:x4},${2:x4}", 0x73, 2,2,2) },
-        { SyntaxParser.TDD, new Instruction("tdd ${0:x4},${1:x4},${2:x4}", 0xc3, 2,2,2) },
-        { SyntaxParser.TIN, new Instruction("tin ${0:x4},${1:x4},${2:x4}", 0xd3, 2,2,2) },
-        { SyntaxParser.TIA, new Instruction("tia ${0:x4},${1:x4},${2:x4}", 0xe3, 2,2,2) },
-        { SyntaxParser.TAI, new Instruction("tai ${0:x4},${1:x4},${2:x4}", 0xf3, 2,2,2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_huC6280AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_huc6280Disassembly = new()
     {
         { 0x03, new Instruction("sxy", 0x03) },
         { 0x12, new Instruction("ora (${0:x4})", 0x12, 3) },
@@ -1195,134 +1444,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xf4, new Instruction("set", 0xf4) },
     };
 
-    // s_m65
-
-    private static readonly Dictionary<int, Instruction> s_m65Absolute = new()
-    {
-        { SyntaxParser.ORQ, new Instruction("orq ${0:x4}", 0x0d4242, 5) },
-        { SyntaxParser.ASLQ, new Instruction("aslq ${0:x4}", 0x0f4242, 5) },
-        { SyntaxParser.BITQ, new Instruction("bitq ${0:x4}", 0x2c4242, 5) },
-        { SyntaxParser.ANDQ, new Instruction("andq ${0:x4}", 0x2d4242, 5) },
-        { SyntaxParser.ROLQ, new Instruction("rolq ${0:x4}", 0x2e4242, 5) },
-        { SyntaxParser.EORQ, new Instruction("eorq ${0:x4}", 0x4d4242, 5) },
-        { SyntaxParser.LSRQ, new Instruction("lsrq ${0:x4}", 0x4e4242, 5) },
-        { SyntaxParser.ADCQ, new Instruction("adcq ${0:x4}", 0x6d4242, 5) },
-        { SyntaxParser.RORQ, new Instruction("rorq ${0:x4}", 0x6e4242, 5) },
-        { SyntaxParser.STQ, new Instruction("stq ${0:x4}", 0x8d4242, 5) },
-        { SyntaxParser.LDQ, new Instruction("ldq ${0:x4}", 0xad4242, 5) },
-        { SyntaxParser.CPQ, new Instruction("cpq ${0:x4}", 0xcd4242, 5) },
-        { SyntaxParser.DEQ, new Instruction("deq ${0:x4}", 0xce4242, 5) },
-        { SyntaxParser.SBCQ, new Instruction("sbcq ${0:x4}", 0xed4242, 5) },
-        { SyntaxParser.INQ, new Instruction("inq ${0:x4}", 0xee4242, 5) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65AbsoluteX = new()
-    {
-        { SyntaxParser.ASLQ, new Instruction("aslq ${0:x4},x", 0x1e4242, 5) },
-        { SyntaxParser.ROLQ, new Instruction("rolq ${0:x4},x", 0x3e4242, 5) },
-        { SyntaxParser.LSRQ, new Instruction("lsrq ${0:x4},x", 0x5e4242, 5) },
-        { SyntaxParser.RORQ, new Instruction("rorq ${0:x4},x", 0x7e4242, 5) },
-        { SyntaxParser.LDQ, new Instruction("ldq ${0:x4},x", 0xbd4242, 5) },
-        { SyntaxParser.DEQ, new Instruction("deq ${0:x4},x", 0xde4242, 5) },
-        { SyntaxParser.INQ, new Instruction("inq ${0:x4},x", 0xfe4242, 5) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65AbsoluteY = new()
-    {
-        { SyntaxParser.LDQ, new Instruction("ldq ${0:x4},y", 0xb94242, 5) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65Dir = new()
-    {
-        { SyntaxParser.ORQ, new Instruction("orq [${0:x2}]", 0x12ea4242, 5) },
-        { SyntaxParser.ANDQ, new Instruction("andq [${0:x2}]", 0x32ea4242, 5) },
-        { SyntaxParser.EORQ, new Instruction("eorq [${0:x2}]", 0x52ea4242, 5) },
-        { SyntaxParser.ADCQ, new Instruction("adcq [${0:x2}]", 0x72ea4242, 5) },
-        { SyntaxParser.STQ, new Instruction("stq [${0:x2}]", -1830141374, 5) },
-        { SyntaxParser.LDQ, new Instruction("ldq [${0:x2}]", -1293270462, 5) },
-        { SyntaxParser.CPQ, new Instruction("cpq [${0:x2}]", -756399550, 5) },
-        { SyntaxParser.SBCQ, new Instruction("sbcq [${0:x2}]", -219528638, 5) }
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65DirZ = new()
-    {
-        { SyntaxParser.ORA, new Instruction("ora [${0:x2}],z", 0x12ea, 3) },
-        { SyntaxParser.AND, new Instruction("and [${0:x2}],z", 0x32ea, 3) },
-        { SyntaxParser.EOR, new Instruction("eor [${0:x2}],z", 0x52ea, 3) },
-        { SyntaxParser.ADC, new Instruction("adc [${0:x2}],z", 0x72ea, 3) },
-        { SyntaxParser.STA, new Instruction("sta [${0:x2}],z", 0x92ea, 3) },
-        { SyntaxParser.LDA, new Instruction("lda [${0:x2}],z", 0xb2ea, 3) },
-        { SyntaxParser.CMP, new Instruction("cmp [${0:x2}],z", 0xd2ea, 3) },
-        { SyntaxParser.SBC, new Instruction("sbc [${0:x2}],z", 0xf2ea, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65Implied = new()
-    {
-        { SyntaxParser.MAP, new Instruction("map", 0x5c, 1) },
-        { SyntaxParser.EOM, new Instruction("eom", 0xea, 1) },
-        { SyntaxParser.ASLQ, new Instruction("aslq", 0x0a4242, 3) },
-        { SyntaxParser.INQ, new Instruction("inq", 0x1a4242, 3) },
-        { SyntaxParser.ROLQ, new Instruction("rolq", 0x2a4242, 3) },
-        { SyntaxParser.DEQ, new Instruction("deq", 0x3a4242, 3) },
-        { SyntaxParser.ASRQ, new Instruction("asrq", 0x434242, 3) },
-        { SyntaxParser.LSRQ, new Instruction("lsrq", 0x4a4242, 3) },
-        { SyntaxParser.RORQ, new Instruction("rorq", 0x6a4242, 3) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65IndS = new()
-    {
-        { SyntaxParser.LDQ, new Instruction("ldq (${0:x2},s),y", 0xe24242, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65IndY = new()
-    {
-        { SyntaxParser.LDQ, new Instruction("ldq (${0:x2}),y", 0xb14242, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65IndZp = new()
-    {
-        { SyntaxParser.ORQ, new Instruction("orq (${0:x2})", 0x124242, 4) },
-        { SyntaxParser.ANDQ, new Instruction("andq (${0:x2})", 0x324242, 4) },
-        { SyntaxParser.EORQ, new Instruction("eorq (${0:x2})", 0x524242, 4) },
-        { SyntaxParser.ADCQ, new Instruction("adcq (${0:x2})", 0x724242, 4) },
-        { SyntaxParser.STQ, new Instruction("stq (${0:x2})", 0x924242, 4) },
-        { SyntaxParser.LDQ, new Instruction("ldq (${0:x2})", 0xb24242, 4) },
-        { SyntaxParser.CPQ, new Instruction("cpq (${0:x2})", 0xd24242, 4) },
-        { SyntaxParser.SBCQ, new Instruction("sbcq (${0:x2})", 0xf24242, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65ZeroPage = new()
-    {
-        { SyntaxParser.ORQ, new Instruction("orq ${0:x2}", 0x054242, 4) },
-        { SyntaxParser.ASLQ, new Instruction("aslq ${0:x2}", 0x064242, 4) },
-        { SyntaxParser.BITQ, new Instruction("bitq ${0:x2}", 0x244242, 4) },
-        { SyntaxParser.ANDQ, new Instruction("andq ${0:x2}", 0x254242, 4) },
-        { SyntaxParser.ROLQ, new Instruction("rolq ${0:x2}", 0x264242, 4) },
-        { SyntaxParser.ASRQ, new Instruction("asrq ${0:x2}", 0x444242, 4) },
-        { SyntaxParser.EORQ, new Instruction("eorq ${0:x2}", 0x454242, 4) },
-        { SyntaxParser.LSRQ, new Instruction("lsrq ${0:x2}", 0x464242, 4) },
-        { SyntaxParser.ADCQ, new Instruction("adcq ${0:x2}", 0x654242, 4) },
-        { SyntaxParser.RORQ, new Instruction("rorq ${0:x2}", 0x664242, 4) },
-        { SyntaxParser.STQ, new Instruction("stq ${0:x2}", 0x854242, 4) },
-        { SyntaxParser.LDQ, new Instruction("ldq ${0:x2}", 0xa54242, 4) },
-        { SyntaxParser.CPQ, new Instruction("cpq ${0:x2}", 0xc54242, 4) },
-        { SyntaxParser.DEQ, new Instruction("deq ${0:x2}", 0xc64242, 4) },
-        { SyntaxParser.SBCQ, new Instruction("sbcq ${0:x2}", 0xe54242, 4) },
-        { SyntaxParser.INQ, new Instruction("inq ${0:x2}", 0xe64242, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65ZeroPageX = new()
-    {
-        { SyntaxParser.ASLQ, new Instruction("aslq ${0:x2},x", 0x164242, 4) },
-        { SyntaxParser.ASRQ, new Instruction("asrq ${0:x2},x", 0x544242, 4) },
-        { SyntaxParser.LSRQ, new Instruction("lsrq ${0:x2},x", 0x564242, 4) },
-        { SyntaxParser.RORQ, new Instruction("rorq ${0:x2},x", 0x764242, 4) },
-        { SyntaxParser.LDQ, new Instruction("ldq ${0:x2},x", 0xb54242, 4) },
-        { SyntaxParser.DEQ, new Instruction("deq ${0:x2},x", 0xd64242, 4) },
-        { SyntaxParser.INQ, new Instruction("inq ${0:x2},x", 0xf64242, 4) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_m65AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_m65Disassembly = new()
     {
         { 0x054242, new Instruction("orq ${0:x2}", 0x054242, 4) },
         { 0x064242, new Instruction("aslq ${0:x2}", 0x064242, 4) },
@@ -1405,105 +1527,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xfe4242, new Instruction("inq ${0:x4},x", 0xfe4242, 5) }
     };
 
-    // s_r65c02
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel0 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 0,${0:x2},${1:x4}", 0x0f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 0,${0:x2},${1:x4}", 0x8f, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel1 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 1,${0:x2},${1:x4}", 0x1f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 1,${0:x2},${1:x4}", 0x9f, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel2 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 2,${0:x2},${1:x4}", 0x2f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 2,${0:x2},${1:x4}", 0xaf, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel3 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 3,${0:x2},${1:x4}", 0x3f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 3,${0:x2},${1:x4}", 0xbf, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel4 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 4,${0:x2},${1:x4}", 0x4f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 4,${0:x2},${1:x4}", 0xcf, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel5 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 5,${0:x2},${1:x4}", 0x5f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 5,${0:x2},${1:x4}", 0xdf, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel6 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 6,${0:x2},${1:x4}", 0x6f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 6,${0:x2},${1:x4}", 0xef, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02ThreeOpRel7 = new()
-    {
-        { SyntaxParser.BBR, new Instruction("bbr 7,${0:x2},${1:x4}", 0x7f, true, 1,1) },
-        { SyntaxParser.BBS, new Instruction("bbs 7,${0:x2},${1:x4}", 0xff, true, 1,1) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp0 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 0,${0:x2}", 0x07, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 0,${0:x2}", 0x87, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp1 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 1,${0:x2}", 0x17, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 1,${0:x2}", 0x97, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp2 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 2,${0:x2}", 0x27, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 2,${0:x2}", 0xa7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp3 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 3,${0:x2}", 0x37, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 3,${0:x2}", 0xb7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp4 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 4,${0:x2}", 0x47, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 4,${0:x2}", 0xc7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp5 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 5,${0:x2}", 0x57, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 5,${0:x2}", 0xd7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp6 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 6,${0:x2}", 0x67, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 6,${0:x2}", 0xe7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02Zp7 = new()
-    {
-        { SyntaxParser.RMB, new Instruction("rmb 7,${0:x2}", 0x77, 2) },
-        { SyntaxParser.SMB, new Instruction("smb 7,${0:x2}", 0xf7, 2) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_r65c02AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_rc6502Diassembly = new()
     {
         { 0x07, new Instruction("rmb 0,${0:x2}", 0x07, 2) },
         { 0x0f, new Instruction("bbr 0,${0:x2},${1:x4}", 0x0f, true, 1,1) },
@@ -1539,15 +1563,7 @@ public sealed partial class M65xxInstructionEncoder
         { 0xff, new Instruction("bbs 7,${0:x2},${1:x4}", 0xff, true, 1,1) },
     };
 
-    // s_w65c02
-
-    private static readonly Dictionary<int, Instruction> s_w65c02Implied = new()
-    {
-        { SyntaxParser.WAI, new Instruction("wai", 0xcb) },
-        { SyntaxParser.STP, new Instruction("stp", 0xdb) },
-    };
-
-    private static readonly Dictionary<int, Instruction> s_w65c02AllOpcodes = new()
+    private static readonly Dictionary<int, Instruction> s_w65c02Disassembly = new()
     {
         { 0xcb, new Instruction("wai", 0xcb) },
         { 0xdb, new Instruction("stp", 0xdb) },

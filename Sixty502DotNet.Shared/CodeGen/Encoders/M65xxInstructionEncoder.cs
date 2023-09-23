@@ -17,22 +17,12 @@ namespace Sixty502DotNet.Shared;
 public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
 {
     private readonly bool _enable6502BranchAlways;
-    private List<Dictionary<int, Instruction>> _opcodes;
-
-    private List<Dictionary<int, Instruction>> _implied, _immediate, _accumulator,
-                                _zeroPage, _zeroPageX, _zeroPageY,
-                                _absolute, _absoluteX, _absoluteY,
-                                _indirectX, _indirectY,
-                                _indirectAbsolute;
-    private List<Dictionary<int, Instruction>>? _indirectZeroPage, _indirectS, _indirectSP,
-                                    _immediateAbs, _indirectZ, _twoOperand,
-                                     _long, _longX, _directAbs, _direct, _directY, _directZ,
-                                     _indirectAbsX, _bitOperand, _bitOperand2,
-                                    _threeOperand, _test, _testX, _testAbs, _testAbsX, _zeroPageS;
-
-    private int _dp;
-    private bool _truncateToDp;
+    private List<Dictionary<int, Instruction>> _disassembly;
     private bool _auto;
+    private bool _a16;
+    private bool _x16;
+
+    private Dictionary<int, M6xxOpcode> _opcodes;
 
     /// <summary>
     /// Construct a new instance of the <see cref="M65xxInstructionEncoder"/>
@@ -44,20 +34,9 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
     public M65xxInstructionEncoder(string cpuid, AssemblyServices services)
         : base(cpuid, services)
     {
-        _enable6502BranchAlways = services.ArchitectureOptions.BranchAlways;
-        _implied = null!;
-        _accumulator = null!;
-        _immediate = null!;
-        _absolute = null!;
-        _absoluteX = null!;
-        _absoluteY = null!;
-        _zeroPage = null!;
-        _zeroPageX = null!;
-        _zeroPageY = null!;
-        _indirectAbsolute = null!;
-        _indirectX = null!;
-        _indirectY = null!;
         _opcodes = null!;
+        _enable6502BranchAlways = services.ArchitectureOptions.BranchAlways;
+        _disassembly = null!;
         _truncateToDp = false;
         _dp = 0;
     }
@@ -76,7 +55,11 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
 
     private static Instruction? LookupOpcode(int key, List<Dictionary<int, Instruction>>? lookups)
     {
-        for (int i = 0; i < lookups?.Count; i++)
+        if (lookups == null)
+        {
+            return null;
+        }
+        for (int i = lookups.Count - 1; i >= 0; i--)
         {
             if (lookups[i].TryGetValue(key, out Instruction? opcode))
             {
@@ -85,7 +68,6 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         }
         return null;
     }
-
 
     private bool IsPrefix(int code)
     {
@@ -113,7 +95,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
                 }
             }
         }
-        return LookupOpcode(code, _opcodes);
+        return LookupOpcode(code, _disassembly);
     }
 
     private Instruction? FetchOpcode(byte[] bytes)
@@ -190,267 +172,150 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         {
             return false;
         }
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
         SyntaxParser.ExprContext[] operands = context.expr();
-        List<Dictionary<int, Instruction>>? lookup;
+        int opcodeHex;
+        int bitOpcodeSize;
         if (operands.Length == 1)
         {
-            lookup = _bitOperand;
+            opcodeHex = opcode.bitTest;
+            bitOpcodeSize = 1;
         }
         else
         {
-            lookup = _bitOperand2;
+            opcodeHex = opcode.bitTestAbs;
+            bitOpcodeSize = 2;
         }
-        Instruction? bitOpcode = LookupOpcode(context.Start.Type, lookup);
-        if (bitOpcode != null)
+        if (opcodeHex == Bad)
         {
-            int operandValues = 0;
-            for (int i = 0; i < operands.Length; i++)
-            {
-                int operandValue;
-                if (i == 1)
-                {
-                    operandValue = Services.Evaluator.SafeEvalAddress(operands[i], _truncateToDp, _dp);
-                    if (bitOpcode.IsRelative)
-                    {
-                        operandValue = Services.State.Output.GetRelativeOffset(operandValue, bitOpcode.Size);
-                    }
-                }
-                else
-                {
-                    operandValue = Services.Evaluator.SafeEvalNumber(operands[i], sbyte.MinValue, byte.MaxValue, _truncateToDp, _dp);
-                }
-                operandValues += operandValue << (i * 8);
-            }
-            int bitValue = Evaluator.EvalIntegerLiteral(context.DecLiteral(), "Valid bit constant [0-7] expected", 0, 8) * 0x10;
-            context.opcodeSize = bitOpcode.Opcode.Size();
-            context.opcode = bitOpcode.Opcode | bitValue;
-            context.operand = operandValues;
-            context.operandSize = bitOpcode.Size - context.opcodeSize;
-            return true;
+            return false;
         }
-        return false;
+        int operandValues = 0;
+
+        for (int i = 0; i < operands.Length; i++)
+        {
+            int operandValue;
+            if (i == 1)
+            {
+                operandValue = Services.Evaluator.SafeEvalAddress(operands[i], _truncateToDp, _dp);
+                operandValue = Services.State.Output.GetRelativeOffset(operandValue, bitOpcodeSize + 1);
+            }
+            else
+            {
+                operandValue = Services.Evaluator.SafeEvalNumber(operands[i], sbyte.MinValue, byte.MaxValue, _truncateToDp, _dp);
+            }
+            operandValues += operandValue << (i * 8);
+        }
+        int bitValue = Evaluator.EvalIntegerLiteral(context.DecLiteral(), "Valid bit constant [0-7] expected", 0, 8) * 0x10;
+        context.opcodeSize = 1;
+        context.opcode = opcodeHex | bitValue;
+        context.operand = operandValues;
+        context.operandSize = bitOpcodeSize;
+        return true;
     }
 
     public override bool VisitCpuInstructionDirect([NotNull] SyntaxParser.CpuInstructionDirectContext context)
     {
-        List<List<Dictionary<int, Instruction>>?> lookups = new()
-        {
-            _direct,
-            _directAbs
-        };
-        return VisitVariableLength(lookups, context.mnemonic(), context, context.expr(), null);
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
+        return EmitOpcodeVariant(opcode.direct, opcode.directAbs, Bad, context, null, context.expr());
     }
 
     public override bool VisitCpuInstructionDirectIndex([NotNull] SyntaxParser.CpuInstructionDirectIndexContext context)
     {
-        Instruction? opcode;
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
         if (context.Y() != null)
         {
-            opcode = LookupOpcode(context.Start.Type, _directY);
+            return EmitOpcode(opcode.directIndexed, context, null, context.expr(), 1);
         }
-        else
-        {
-            opcode = LookupOpcode(context.Start.Type, _directZ);
-        }
-        if (opcode == null)
-        {
-            return false;
-        }
-        context.operand = Services.Evaluator.SafeEvalNumber(context.expr(), sbyte.MinValue, byte.MaxValue, _truncateToDp, _dp);
-        context.opcode = opcode.Opcode;
-        context.opcodeSize = opcode.Opcode.Size();
-        context.operandSize = 1;
-        return true;
+        return EmitOpcode(opcode.directZ, context, null, context.expr(), 1);
     }
 
-    private bool VisitVariableLength(
-        List<List<Dictionary<int, Instruction>>?> lookups,
-        SyntaxParser.MnemonicContext mnemonic,
-        SyntaxParser.CpuInstructionContext instructionContext,
-        SyntaxParser.ExprContext expression,
-        SyntaxParser.BitwidthModifierContext? bitwidthModifier)
+    private bool EmitPseudoRelative(int mnemonic, int pseudo, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand)
     {
-        bool evalAsAddress = instructionContext is SyntaxParser.CpuInstructionZPAbsoluteContext ||
-                            instructionContext is SyntaxParser.CpuInstructionIndexContext;
-        int exprVal;
-        if (evalAsAddress)
+        if (_opcodes.TryGetValue(mnemonic, out M6xxOpcode opcode))
         {
-            exprVal = Services.Evaluator.SafeEvalAddress(expression, _truncateToDp, _dp);
+            return EmitRelative(opcode, context, operand);
+        }
+        int operandSize = 1;
+        int address = Services.Evaluator.SafeEvalAddress(operand, _truncateToDp, _dp);
+        int offs = address - (Services.State.Output.LogicalPC + 2);
+        if (offs < sbyte.MinValue || offs > sbyte.MaxValue)
+        {
+            int jmp = 0x4c;
+            mnemonic = s_6502PseudoToReal[mnemonic] + 256 * 3;
+            offs = address.AsPositive() * 256 + jmp;
+            operandSize = 3;
         }
         else
         {
-            exprVal = Services.Evaluator.SafeEvalNumber(expression, short.MinValue, ushort.MaxValue, 0, _truncateToDp, _dp);
+            mnemonic = pseudo;
         }
-        int exprSize = exprVal.Size();
-        if (bitwidthModifier != null)
-        {
-            int bwSize = BitwidthSize(bitwidthModifier);
-            if (bwSize < exprSize && !Services.State.PassNeeded)
-            {
-                throw new Error(mnemonic, "Expression is greater than specified size");
-            }
-            exprSize = bwSize;
-            for (int i = 0; i < bwSize - 1; i++)
-            {
-                lookups[i] = null;
-            }
-            for (int i = bwSize; i < lookups.Count; i++)
-            {
-                lookups[i] = null;
-            }
-        }
-        Instruction? instruction = null;
-        for (int i = exprSize - 1; i < lookups.Count && instruction == null; i++)
-        {
-            instruction = LookupOpcode(mnemonic.Start.Type, lookups[i]);
-        }
-        if (instruction == null)
-        {
-            if (Services.State.PassNeeded && evalAsAddress)
-            {
-                instructionContext.opcodeSize = 1;
-                instructionContext.operandSize = 2;
-                return true;
-            }
-            return false;
-        }
-        int opcode = instruction.Opcode;
-        int size = instruction.Size;
-        if (instruction.IsRelative)
-        {
-            int offset = Services.State.Output.GetRelativeOffset(exprVal, size);
-            exprSize = instruction.Is16BitRelative ? 2 : 1;
-            double minVal = instruction.Is16BitRelative ? short.MinValue : sbyte.MinValue;
-            double maxVal = instruction.Is16BitRelative ? short.MaxValue : sbyte.MaxValue;
-            if (!Services.State.PassNeeded && (offset < minVal || offset > maxVal))
-            {
-                if (!mnemonic.Start.Type.IsOneOf(SyntaxParser.JCC,
-                                                SyntaxParser.JCS,
-                                                SyntaxParser.JEQ,
-                                                SyntaxParser.JMI,
-                                                SyntaxParser.JNE,
-                                                SyntaxParser.JPL,
-                                                SyntaxParser.JVC,
-                                                SyntaxParser.JVS))
-                {
-                    throw new Error(expression, "Relative offset too far");
-                }
-                opcode = s_6502PseudoToReal[mnemonic.Start.Type] + 256 * 3;
-                int jmp = instruction.Is16BitRelative ? 0x5c : 0x4c;
-                exprVal = exprVal.AsPositive() * 256 + jmp;
-                exprSize++;
-                size = 5;
-            }
-            else
-            {
-                exprVal = offset;
-            }
-        }
-        if (exprSize < size - opcode.Size())
-        {
-            exprSize = size - opcode.Size();
-        }
-        if (size - exprSize < 0)
-        {
-            return false;
-        }
-        instructionContext.opcode = opcode;
-        instructionContext.opcodeSize = size - exprSize;
-        instructionContext.operand = exprVal.AsPositive();
-        instructionContext.operandSize = exprSize;
+        context.opcode = mnemonic;
+        context.opcodeSize = mnemonic.Size();
+        context.operand = offs;
+        context.operandSize = operandSize;
         return true;
     }
 
     public override bool VisitCpuInstructionExpressionList([NotNull] SyntaxParser.CpuInstructionExpressionListContext context)
     {
+        int mnemonic = context.Start.Type;
         SyntaxParser.ExprContext[] exprs = context.exprList().expr();
+
+        if (s_6502PseudoRelative.TryGetValue(mnemonic, out int pseudo))
+        {
+            if (exprs.Length != 1)
+            {
+                return false;
+            }
+            return EmitPseudoRelative(mnemonic, pseudo, context, exprs[0]);
+        }
+        M6xxOpcode opcode = _opcodes[mnemonic];
         if (exprs.Length == 1)
         {
-            List<List<Dictionary<int, Instruction>>?> lookups;
+            if (opcode.relative != Bad || opcode.relativeAbs != Bad)
+            {
+                return EmitRelative(opcode, context, exprs[0]);
+            }
             if (exprs[0] is SyntaxParser.ExpressionGroupedContext)
             {
-                lookups = new()
-                {
-                    _indirectZeroPage,
-                    _indirectAbsolute
-                };
+                return EmitOpcodeVariant(opcode.indirectZeroPage, opcode.indirect, Bad, context, null, exprs[0]);
             }
-            else
+            return EmitOpcodeVariant(opcode.zeroPage, opcode.absolute, opcode.longAddress, context, null, exprs[0]);
+        }
+        else if (exprs.Length == 2)
+        {
+            return EmitOpcode(opcode.blockMove, context, null, exprs.Reverse().ToArray(), 1, 1);
+        }
+        else
+        {
+            if (exprs.Length > 3)
             {
-                lookups = new()
-                {
-                    _zeroPage,
-                    _absolute,
-                    _long
-                };
-            }
-            return VisitVariableLength(lookups, context.mnemonic(), context, exprs[0], null);
-        }
-        double minValue = sbyte.MinValue, maxValue = byte.MaxValue;
-        List<Dictionary<int, Instruction>>? lookup;
-        int step;
-        int i;
-        switch (exprs.Length)
-        {
-            case 2:
-                lookup = _twoOperand;
-                step = -1;
-                i = exprs.Length - 1;
-                break;
-            case 3:
-                lookup = _threeOperand;
-                minValue = short.MinValue;
-                maxValue = ushort.MaxValue;
-                step = 1;
-                i = 0;
-                break;
-            default:
                 return false;
+            }
+            return EmitOpcode(opcode.threeOperand, context, null, exprs, 2, 2, 2);
         }
-        Instruction? opcode = LookupOpcode(context.Start.Type, lookup);
-        if (opcode == null)
-        {
-            return false;
-        }
-        long value = 0;
-        int size = maxValue.Size();
-        int shiftSize = 8 * size;
-        for (int s = 0; s < exprs.Length; i += step, s++)
-        {
-            int shift = shiftSize * s;
-            value |= (long)Services.Evaluator.SafeEvalNumber(exprs[i], minValue, maxValue, _truncateToDp, _dp) << shift;
-        }
-        int totalSize = size * exprs.Length;
-        if (opcode.Size - opcode.Opcode.Size() - totalSize < 0)
-        {
-            throw new Error(context.Start, "Addressing mode not supported");
-        }
-        context.operand = value;
-        context.operandSize = opcode.Size - opcode.Opcode.Size();
-        context.opcodeSize = opcode.Opcode.Size();
-        context.opcode = opcode.Opcode;
-        return true;
     }
 
     public override bool VisitCpuInstructionImmmediate([NotNull] SyntaxParser.CpuInstructionImmmediateContext context)
     {
+        int mnemonic = context.mnemonic().Start.Type;
+        var opcode = _opcodes[mnemonic];
+        int size = 1;
         if (context.expr().Length == 1)
         {
-            if (!VisitVariableLength(new List<List<Dictionary<int, Instruction>>?>
-                {
-                    _immediate,
-                    _immediateAbs
-                },
-                context.mnemonic(),
-                context,
-                context.imm,
-                context.bitwidthModifier()))
+            if ((s_accumulators.Contains(mnemonic) && _a16) || (s_indexes.Contains(mnemonic) && _x16))
+            {
+                size = 2;
+            }
+            bool emitted = EmitOpcode(opcode.immediate, context, context.bitwidthModifier(), context.imm, size);
+            if (!emitted)
             {
                 return false;
             }
             if (_auto && context.Start.Type.IsOneOf(SyntaxParser.REP, SyntaxParser.SEP))
             {
-                int size = context.Start.Type == SyntaxParser.REP ? 2 : 1;
+                size = context.Start.Type == SyntaxParser.REP ? 2 : 1;
                 if ((context.operand & 0b0010_0000) != 0)
                 {
                     M(size);
@@ -462,435 +327,176 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
             }
             return true;
         }
-        SyntaxParser.ExprContext[] operands = context.expr();
-        List<Dictionary<int, Instruction>>? lookup = context.X() != null ? _testX : _test;
-
-        int testImm = Services.Evaluator.SafeEvalNumber(context.imm, sbyte.MinValue, byte.MaxValue);
-        int jump = Services.Evaluator.SafeEvalAddress(operands[1], _truncateToDp, _dp);
-        if (jump.Size() > 1)
+        size = Services.Evaluator.SafeEvalAddress(context.expr()[1]).Size();
+        if (size == 1)
         {
-            lookup = ReferenceEquals(lookup, _test) ? _testAbs : _testAbsX;
-        };
-        Instruction? opcode = LookupOpcode(context.Start.Type, lookup);
-        if (opcode == null)
-        {
-            if (ReferenceEquals(lookup, _test))
-            {
-                lookup = _testAbs;
-            }
-            if (ReferenceEquals(lookup, _testX))
-            {
-                lookup = _testAbsX;
-            }
-            opcode = LookupOpcode(context.Start.Type, lookup);
-            if (opcode == null)
-            {
-                return false;
-            }
+            return EmitOpcode(context.X() != null ? opcode.bitTestZpX : opcode.bitTest, context, null, context.expr(), 1, 1);
         }
-        context.operand = testImm + jump * 256;
-        context.operandSize = opcode.Size - opcode.Opcode.Size();
-        context.opcode = opcode.Opcode;
-        context.opcodeSize = opcode.Opcode.Size();
-        return true;
+        return EmitOpcode(context.X() != null ? opcode.bitTestAbsX : opcode.bitTestAbs, context, null, context.expr(), 1, 2);
     }
 
     public override bool VisitCpuInstructionImplied([NotNull] SyntaxParser.CpuInstructionImpliedContext context)
     {
-        Instruction? opcode = LookupOpcode(context.Start.Type, _implied);
-        if (opcode == null)
-        {
-            return false;
-        }
-        context.opcode = opcode.Opcode;
-        context.opcodeSize = opcode.Size;
-        context.operandSize = 0;
-        return true;
+        return EmitOpcode(_opcodes[context.Start.Type].implied, context);
     }
 
     public override bool VisitCpuInstructionIndex([NotNull] SyntaxParser.CpuInstructionIndexContext context)
     {
-        List<Dictionary<int, Instruction>>? zp, abs, lng = null;
+        int mnemonic = context.Start.Type;
+        int zeroPageHex = Bad, absoluteHex = Bad, longHex = Bad;
+
         switch (context.register().Start.Type)
         {
             case SyntaxParser.S:
-                zp = _zeroPageS;
-                abs = null;
-                break;
+                return EmitOpcode(_opcodes[mnemonic].zeroPageS, context, context.expr());
             case SyntaxParser.X:
-                zp = _zeroPageX;
-                abs = _absoluteX;
-                lng = _longX;
+                zeroPageHex = _opcodes[mnemonic].zeroPageX;
+                absoluteHex = _opcodes[mnemonic].absoluteX;
+                longHex = _opcodes[mnemonic].longX;
                 break;
             case SyntaxParser.Y:
-                zp = _zeroPageY;
-                abs = _absoluteY;
+                zeroPageHex = _opcodes[mnemonic].zeroPageY;
+                absoluteHex = _opcodes[mnemonic].absoluteY;
                 break;
-            default:
-                return false;
+            default: break;
         }
-        List<List<Dictionary<int, Instruction>>?> lookups = new()
-        {
-            zp,abs,lng
-        };
-        return VisitVariableLength(lookups, context.mnemonic(), context, context.expr(), context.bitwidthModifier());
+        return EmitOpcodeVariant(zeroPageHex, absoluteHex, longHex, context, context.bitwidthModifier(), context.expr());
     }
 
     public override bool VisitCpuInstructionIndexedIndirect([NotNull] SyntaxParser.CpuInstructionIndexedIndirectContext context)
     {
-        int indirectVal = Services.Evaluator.SafeEvalAddress(context.expr(), _truncateToDp, _dp);
-        List<Dictionary<int, Instruction>>? lookup;
-        if (indirectVal.Size() == 2 && !Services.State.PassNeeded)
-        {
-            lookup = _indirectAbsX;
-        }
-        else
-        {
-            lookup = _indirectX;
-        }
-        Instruction? instruction = LookupOpcode(context.Start.Type, lookup);
-        if (instruction == null)
-        {
-            return false;
-        }
-        context.opcode = instruction.Opcode;
-        context.opcodeSize = instruction.Opcode.Size();
-        context.operand = indirectVal;
-        context.operandSize = instruction.Size - context.opcodeSize;
-        return true;
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
+        return EmitOpcodeVariant(opcode.indexedIndirect, opcode.indexedIndirectAbs, Bad, context, context.bitwidthModifier(), context.expr());
     }
 
     public override bool VisitCpuInstructionIndirectIndexed([NotNull] SyntaxParser.CpuInstructionIndirectIndexedContext context)
     {
-        List<Dictionary<int, Instruction>>? lookup = _indirectY;
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
         if (context.S() != null)
         {
-            lookup = _indirectS;
+            return EmitOpcode(opcode.indirectS, context, context.expr());
         }
-        else if (context.SP() != null)
+        if (context.SP() != null)
         {
-            lookup = _indirectSP;
+            return EmitOpcode(opcode.indirectSp, context, context.expr());
         }
-        else if (context.Z() != null)
+        if (context.Z() != null)
         {
-            if (context.ix0 != null)
-            {
-                return false;
-            }
-            lookup = _indirectZ;
+            return EmitOpcode(opcode.indirectZ, context, context.expr());
         }
-        Instruction? instruction = LookupOpcode(context.Start.Type, lookup);
-        if (instruction == null)
-        {
-            return false;
-        }
-        context.opcode = instruction.Opcode;
-        context.opcodeSize = instruction.Size - 1;
-        context.operand = Services.Evaluator.SafeEvalNumber(context.expr(), sbyte.MinValue, byte.MaxValue, _truncateToDp, _dp);
-        context.operandSize = 1;
-        return true;
+        return EmitOpcode(opcode.indirectIndexed, context, context.expr());
     }
 
     public override bool VisitCpuInstructionRegisterList([NotNull] SyntaxParser.CpuInstructionRegisterListContext context)
     {
-        List<Dictionary<int, Instruction>>? lookup = null;
         if (context.register().Length == 1 &&
             context.register()[0].Start.Type == SyntaxParser.A)
         {
-            lookup = _accumulator;
+            return EmitOpcode(_opcodes[context.Start.Type].accumulator, context);
         }
-        Instruction? opcode = LookupOpcode(context.Start.Type, lookup);
-        if (opcode == null)
-        {
-            return false;
-        }
-        context.opcode = opcode.Opcode;
-        context.opcodeSize = opcode.Size;
-        return true;
+        return false;
     }
 
     public override bool VisitCpuInstructionZPAbsolute([NotNull] SyntaxParser.CpuInstructionZPAbsoluteContext context)
     {
-        List<List<Dictionary<int, Instruction>>?> lookups;
-        if (context.expr() is SyntaxParser.ExpressionGroupedContext)
+        int mnemonic = context.Start.Type;
+        if (s_6502PseudoRelative.TryGetValue(mnemonic, out int pseudo))
         {
-            lookups = new()
+            if (context.bitwidthModifier() != null)
             {
-                _indirectZeroPage,
-                _indirectAbsolute
-            };
+                return false;
+            }
+            return EmitPseudoRelative(mnemonic, pseudo, context, context.expr());
         }
-        else
+        M6xxOpcode opcode = _opcodes[mnemonic];
+        if (opcode.relative != Bad || opcode.relativeAbs != Bad)
         {
-            lookups = new()
-            {
-                _zeroPage,
-                _absolute,
-                _long
-            };
+            return EmitRelative(opcode, context, context.expr());
         }
-        return VisitVariableLength(lookups, context.mnemonic(), context, context.expr(), context.bitwidthModifier());
+        return EmitOpcodeVariant(opcode.zeroPage, opcode.absolute, opcode.longAddress, context, context.bitwidthModifier(), context.expr());
     }
 
     protected override void OnSetCpu(string cpuid)
     {
-        _implied = new List<Dictionary<int, Instruction>>() { s_6502Implied };
-        _accumulator = new List<Dictionary<int, Instruction>>() { s_m6502Accumulators };
-        _immediate = new List<Dictionary<int, Instruction>>() { new Dictionary<int, Instruction>(s_6502Immediate) };
-        _absolute = new List<Dictionary<int, Instruction>>
-        {
-            s_6502Absolute,
-            s_6502Relative,
-            s_6502PseudoRelative
-
-        };
-        if (_enable6502BranchAlways && cpuid.Equals("6502"))
-        {
-            _absolute.Add(s_6502BranchAlways);
-        }
-        _absoluteX = new List<Dictionary<int, Instruction>> { s_6502AbsoluteX };
-        _absoluteY = new List<Dictionary<int, Instruction>> { s_6502AbsoluteY };
-        _zeroPage = new List<Dictionary<int, Instruction>>()
-        {
-            s_6502ZeroPage,
-            s_6502Relative,
-        };
-        if (!cpuid.Equals("45GS02") && !cpuid.Equals("65CE02") && !cpuid.Equals("m65"))
-        {
-            _zeroPage.Add(s_6502PseudoRelative);
-        }
-        _zeroPageX = new List<Dictionary<int, Instruction>>() { s_6502ZeroPageX };
-        _zeroPageY = new List<Dictionary<int, Instruction>>() { s_6502ZeroPageY };
-        _indirectAbsolute = new List<Dictionary<int, Instruction>>() { s_6502IndAbs };
-        _indirectX = new List<Dictionary<int, Instruction>>() { s_6502IndX };
-        _indirectY = new List<Dictionary<int, Instruction>>() { s_6502IndY };
-        _opcodes = new List<Dictionary<int, Instruction>>() { new Dictionary<int, Instruction>(s_6502AllOpcodes) };
-        _dp = -1;
-        _direct =
-        _directAbs =
-        _directY =
-        _directZ =
-        _immediateAbs =
-        _indirectZeroPage =
-        _indirectS =
-        _indirectSP =
-        _indirectZ =
-        _indirectAbsX =
-        _test = _testX =
-        _testAbs = _testAbsX =
-        _zeroPageS =
-        _long = _longX =
-        _twoOperand =
-        _threeOperand =
-        _bitOperand =
-        _bitOperand2 = null;
+        _disassembly = new List<Dictionary<int, Instruction>>() { new Dictionary<int, Instruction>(s_6502Disassembly) };
         switch (cpuid)
         {
-            case "6502i":
-                _implied.Add(s_6502iImplied);
-                _immediate.Add(s_6502iImmediate);
-                _absolute.Add(s_6502iAbsolute);
-                _absoluteX.Add(s_6502iAbsoluteX);
-                _absoluteY.Add(s_6502iAbsoluteY);
-                _zeroPage.Add(s_6502iZeroPage);
-                _zeroPageX.Add(s_6502iZeroPageX);
-                _zeroPageY.Add(s_6502iZeroPageY);
-                _indirectX.Add(s_6502iIndX);
-                _indirectY.Add(s_6502iIndY);
-                _opcodes.Add(s_6502iAllOpcodes);
-                break;
-            case "c64dtv2":
-                _immediate.Add(s_c64dtv2Immediate);
-                _absolute.Add(s_c64dtv2Relative);
-                _opcodes.Add(s_c64dtv2AllOpcodes);
-                break;
             case "45GS02":
+                _opcodes = s_45gs02Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_rc6502Diassembly);
+                _disassembly.Add(s_65ce02Disassembly);
+                break;
+            case "6502":
+                _opcodes = new Dictionary<int, M6xxOpcode>(s_6502Opcodes);
+                break;
+            case "6502i":
+                _opcodes = s_6502iOpcodes;
+                _disassembly.Add(s_6502iDisassembly);
+                break;
             case "65816":
+                _opcodes = s_65816Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_65816Disassembly);
+                _disassembly.Add(s_w65c02Disassembly);
+                break;
             case "65C02":
+                _opcodes = s_65c02Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                break;
             case "65CE02":
-            case "65CS02":
+                _opcodes = s_65ce02Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_rc6502Diassembly);
+                _disassembly.Add(s_65ce02Disassembly);
+                break;
+            case "c64dtv":
+                _opcodes = s_c64dtvOpcodes;
+                _disassembly.Add(s_c64dtvDisassembly);
+                break;
             case "HuC6280":
+                _opcodes = s_huc6280Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_rc6502Diassembly);
+                _disassembly.Add(s_w65c02Disassembly);
+                _disassembly.Add(s_huc6280Disassembly);
+                break;
             case "m65":
+                _opcodes = s_m65Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_rc6502Diassembly);
+                _disassembly.Add(s_65ce02Disassembly);
+                _disassembly.Add(s_m65Disassembly);
+                break;
             case "R65C02":
+                _opcodes = s_r65c02Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_rc6502Diassembly);
+                break;
             case "W65C02":
-                _implied.Add(s_65c02Implied);
-                _immediate.Add(s_65c02Immediate);
-                _absolute.Add(s_65c02Absolute);
-                _absolute.Add(s_65c02Relative);
-                _absoluteX.Add(s_65c02AbsoluteX);
-                _accumulator.Add(s_65c02Accumulator);
-                _zeroPage.Add(s_65c02ZeroPage);
-                _zeroPageX.Add(s_65c02ZeroPageX);
-                _indirectAbsX = new() { s_65c02IndAbsX };
-                _indirectZeroPage = new() { s_65c02IndZp };
-                _opcodes.Add(s_65c02AllOpcodes);
-                switch (cpuid)
-                {
-                    case "65816":
-                    case "65CS02":
-                    case "HuC6280":
-                    case "W65C02":
-                        _implied.Add(s_w65c02Implied);
-                        _opcodes.Add(s_w65c02AllOpcodes);
-                        switch (cpuid)
-                        {
-                            case "65816":
-                                _implied.Add(s_65816Implied);
-                                _immediate.Add(s_65816Immediate);
-                                _immediateAbs = new() { new Dictionary<int, Instruction>(s_65816ImmAbs) };
-                                _indirectAbsX.Add(s_65816IndAbsX);
-                                _indirectZeroPage.Add(s_65816IndZp);
-                                _absolute.Add(s_65816Absolute);
-                                _absolute.Add(s_65816RelativeAbs);
-                                _opcodes.Add(s_65816AllOpcodes);
-                                _direct = new() { s_65816Dir };
-                                _directY = new() { s_65816DirY };
-                                _directAbs = new() { s_65816DirAbs };
-                                _indirectS = new() { s_65816IndS };
-                                _long = new() { s_65816Long };
-                                _longX = new() { s_65816LongX };
-                                _zeroPageS = new() { s_65816ZeroPageS };
-                                _twoOperand = new() { s_65816TwoOperand };
-                                _dp = 0;
-                                break;
-                            case "HuC6280":
-                                _implied.Add(s_huC6280Implied);
-                                _immediate.Add(s_huC6280Immediate);
-                                _indirectAbsolute.Add(s_huC6280IndAbs);
-                                _opcodes.Add(s_huC6280AllOpcodes);
-                                _test = new() { s_huC6280TestBitZp };
-                                _testAbs = new() { s_huC6280TestBitAbs };
-                                _testX = new() { s_huC6280TestBitZpX };
-                                _testAbsX = new() { s_huC6280TestBitAbsX };
-                                _threeOperand = new() { s_huC6280ThreeOpAbs };
-                                break;
-                        }
-                        break;
-                }
-                switch (cpuid)
-                {
-                    case "45GS02":
-                    case "65CE02":
-                    case "HuC6280":
-                    case "m65":
-                    case "R65C02":
-                    case "W65C02":
-                        _opcodes.Add(s_r65c02AllOpcodes);
-                        _bitOperand2 = new()
-                        {
-                            s_r65c02ThreeOpRel0,
-                            s_r65c02ThreeOpRel1,
-                            s_r65c02ThreeOpRel2,
-                            s_r65c02ThreeOpRel3,
-                            s_r65c02ThreeOpRel4,
-                            s_r65c02ThreeOpRel5,
-                            s_r65c02ThreeOpRel6,
-                            s_r65c02ThreeOpRel7
-                        };
-                        _bitOperand = new()
-                        {
-                            s_r65c02Zp0,
-                            s_r65c02Zp1,
-                            s_r65c02Zp2,
-                            s_r65c02Zp3,
-                            s_r65c02Zp4,
-                            s_r65c02Zp5,
-                            s_r65c02Zp6,
-                            s_r65c02Zp7
-                        };
-
-                        switch (cpuid)
-                        {
-                            case "45GS02":
-                            case "65CE02":
-                            case "m65":
-                                _immediate.Add(s_65ce02Immediate);
-                                _implied.Add(s_65ce02Implied);
-                                _absolute = new()
-                                {
-                                    s_6502Absolute,
-                                    s_65c02Absolute,
-                                    s_65ce02Absolute,
-                                    s_65ce02RelativeAbs
-                                };
-                                _absoluteX.Add(s_65ce02AbsoluteX);
-                                _absoluteY.Add(s_65ce02AbsoluteY);
-                                _zeroPage = new()
-                                {
-                                    // remove the 6502 relative branches
-                                    s_6502ZeroPage,
-                                    s_65c02ZeroPage
-                                };
-                                _indirectAbsolute.Add(s_65ce02IndAbs);
-                                _indirectAbsX.Add(s_65ce02IndAbsX);
-                                _zeroPage.Add(s_65ce02ZeroPage);
-                                _zeroPageX.Add(s_65ce02ZeroPageX);
-                                _opcodes.Add(s_65ce02AllOpcodes);
-                                _immediateAbs = new() { s_65ce02ImmAbs };
-                                _indirectSP = new() { s_65ce02IndSp };
-                                _indirectZ = new() { s_65ce02IndZ };
-                                if (cpuid[0] != '6')
-                                {
-                                    // remove default 'NOP' instruction
-                                    _implied[0].Remove(SyntaxParser.NOP);
-                                    _implied.Add(s_m65Implied);
-                                    _absolute.Add(s_m65Absolute);
-                                    _absoluteX.Add(s_m65AbsoluteX);
-                                    _absoluteY.Add(s_m65AbsoluteY);
-                                    _zeroPage.Add(s_m65ZeroPage);
-                                    _zeroPageX.Add(s_m65ZeroPageX);
-                                    _indirectZeroPage.Add(s_m65IndZp);
-                                    _indirectY.Add(s_m65IndY);
-                                    _indirectS = new() { s_m65IndS };
-                                    _direct = new() { s_m65Dir };
-                                    _directZ = new() { s_m65DirZ };
-                                    _opcodes.Add(s_m65AllOpcodes);
-                                }
-                                break;
-                        }
-                        break;
-                }
+                _opcodes = s_w65c02Opcodes;
+                _disassembly.Add(s_65c02Disassembly);
+                _disassembly.Add(s_rc6502Diassembly);
+                _disassembly.Add(s_w65c02Disassembly);
                 break;
-            default:
-                if (!cpuid.Equals("6502"))
-                    throw new ArgumentException("Invalid cpuid", nameof(cpuid));
-                break;
+            default: throw new ArgumentException("Invalid cpuid", nameof(cpuid));
         }
-    }
-
-    private void MX(int size, Func<int, bool> selector)
-    {
-        char oldformat = size == 1 ? '4' : '2';
-        char newformat = size == 1 ? '2' : '4';
-        foreach (KeyValuePair<int, Instruction> instr in s_6502Immediate)
+        if ((cpuid.StartsWith("6502", StringComparison.Ordinal) || cpuid.Equals("c64dtv")) && _enable6502BranchAlways)
         {
-            string format = instr.Value.DisassemblyFormat.Replace(oldformat, newformat);
-            Instruction instruction = new(format, instr.Value.Opcode, size + 1);
-            if (selector(instr.Value.Opcode & 0xf))
-            {
-                _opcodes[0][instr.Value.Opcode] = instruction;
-                if (size == 1)
-                {
-                    _immediate[0][instr.Key] = instruction;
-                    _immediateAbs![0].Remove(instr.Key);
-                }
-                else
-                {
-                    _immediate[0].Remove(instr.Key);
-                    _immediateAbs![0][instr.Key] = instruction;
-                }
-            }
+            _opcodes.Add(SyntaxParser.BRA, new M6xxOpcode(Bad, Bad, Bad, 0x50, Bad, Bad, Bad, Bad, Bad, Bad, Bad, Bad, Bad));
         }
+
+        _dp = -1;
     }
 
     private void M(int size)
     {
-        MX(size, o => o == 9);
+        _a16 = size == 2;
     }
 
     private void X(int size)
     {
-        MX(size, o => o != 9);
+        _x16 = size == 2;
     }
 
     public override bool HandleDirective(SyntaxParser.DirectiveContext directive, SyntaxParser.ExprListContext? operands)
@@ -958,6 +564,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
 
     protected override void OnReset()
     {
+        _a16 = _x16 = false;
         _truncateToDp = Cpuid.Equals("65816");
         _dp = 0;
         _auto = Services.ArchitectureOptions.AutosizeRegisters;

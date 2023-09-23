@@ -757,6 +757,15 @@ public abstract class ValueBase :
     public virtual bool ContainsKey(ValueBase value) => throw new InvalidOperationError(Expression?.Start);
 
     /// <summary>
+    /// Update a member value at the specified index/location.
+    /// </summary>
+    /// <param name="atIndex">The index or location of the member.</param>
+    /// <param name="value">The value of the member.</param>
+    /// <returns>The updated value.</returns>
+    /// <exception cref="InvalidOperationError"></exception>
+    public virtual ValueBase UpdateMember(ValueBase atIndex, ValueBase value) => throw new InvalidOperationError(Expression?.Start);
+
+    /// <summary>
     /// Returns whether this value is identical to the object being compared with.
     /// </summary>
     /// <param name="other">The other value to compare.</param>

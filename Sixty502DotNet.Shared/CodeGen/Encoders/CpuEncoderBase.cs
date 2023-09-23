@@ -153,6 +153,133 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         }
     }
 
+    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand)
+    {
+        return EmitOpcode(opcodeHex, context, null, new SyntaxParser.ExprContext[] { operand }, 1);
+    }
+
+    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.BitwidthModifierContext? bitwidth, SyntaxParser.ExprContext operand, int operandSize)
+    {
+        return EmitOpcode(opcodeHex, context, bitwidth, new SyntaxParser.ExprContext[] { operand }, operandSize);
+    }
+
+    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context)
+    {
+        return EmitOpcode(opcodeHex, context, null, Array.Empty<SyntaxParser.ExprContext>());
+    }
+
+    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.BitwidthModifierContext? bitwidth, SyntaxParser.ExprContext[] operands, params int[] sizes)
+    {
+        if (opcodeHex == Bad)
+        {
+            return false;
+        }
+        context.opcode = opcodeHex;
+        context.opcodeSize = opcodeHex.Size();
+        int operandSize = 0;
+        long operandValue = 0;
+        for (int i = operands.Length - 1; i >= 0; i--)
+        {
+            double minValue, maxValue;
+            int size = sizes[i];
+            if (bitwidth != null)
+            {
+                size = BitwidthSize(bitwidth);
+            }
+            operandSize += size;
+            switch (size)
+            {
+                case 2: minValue = short.MinValue; maxValue = ushort.MaxValue; break;
+                case 3: minValue = Int24.MinValue; maxValue = UInt24.MaxValue; break;
+                default: minValue = sbyte.MinValue; maxValue = byte.MaxValue; break;
+            }
+            operandValue <<= size * 8;
+            operandValue |= (long)Services.Evaluator.SafeEvalNumber(operands[i], minValue, maxValue, _truncateToDp, _dp);
+        }
+        context.operand = operandValue;
+        context.operandSize = operandSize;
+        return true;
+    }
+
+    protected bool EmitOpcodeVariant(int zeroPageHex, int absoluteHex, int longHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.BitwidthModifierContext? bitwidth, SyntaxParser.ExprContext operand)
+    {
+        int operandValue;
+        bool evalAsAddress = context is not SyntaxParser.CpuInstructionImmmediateContext;
+        if (evalAsAddress)
+        {
+            operandValue = Services.Evaluator.SafeEvalAddress(operand, _truncateToDp, _dp);
+        }
+        else
+        {
+            operandValue = Services.Evaluator.SafeEvalNumber(operand, short.MinValue, ushort.MaxValue);
+        }
+        if (Services.State.PassNeeded && absoluteHex == Bad)
+        {
+            context.operandSize =
+            context.opcodeSize = 1;
+            return true;
+        }
+        int bitwidthSize = BitwidthSize(bitwidth);
+        int operandSize = operandValue.Size();
+        if (bitwidthSize > 0)
+        {
+            if (operandSize > bitwidthSize)
+            {
+                return Services.State.PassNeeded;
+            }
+            operandSize = bitwidthSize;
+        }
+
+        if (operandSize > 1 || zeroPageHex == Bad)
+        {
+            if (operandSize == 1) operandSize = 2;
+            if (operandSize > 2 || absoluteHex == Bad)
+            {
+                if (operandSize > 3)
+                {
+                    return Services.State.PassNeeded;
+                }
+                operandSize = 3;
+            }
+        }
+        int opcodeHex = operandSize switch
+        {
+            2 => absoluteHex,
+            3 => longHex,
+            _ => zeroPageHex,
+        };
+        if (opcodeHex == Bad)
+        {
+            return false;
+        }
+        context.opcode = opcodeHex;
+        context.opcodeSize = opcodeHex.Size();
+        context.operand = operandValue;
+        context.operandSize = operandSize;
+        return true;
+    }
+
+    protected bool EmitRelative(M6xxOpcode opcode, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext expr)
+    {
+        int opcodeHex = opcode.relative != Bad ? opcode.relative : opcode.relativeAbs;
+        int operand = Services.Evaluator.SafeEvalNumber(expr, short.MinValue, ushort.MaxValue, _truncateToDp, _dp);
+        int operandSize = opcodeHex == opcode.relative ? 1 : 2;
+        int offs = operand - (Services.State.Output.LogicalPC + opcodeHex.Size() + operandSize);
+        if ((opcodeHex == opcode.relative && (offs < sbyte.MinValue || offs > sbyte.MaxValue)) ||
+            (opcodeHex == opcode.relativeAbs && (offs < short.MinValue || offs > short.MaxValue)))
+        {
+            if (!Services.State.PassNeeded)
+            {
+                throw new Error(expr, "Relative offset too far");
+            }
+        }
+        context.opcode = opcodeHex;
+        context.opcodeSize = opcodeHex.Size();
+        context.operand = offs;
+        context.operandSize = operandSize;
+        return true;
+    }
+
     /// <summary>
     /// Perform analysis on successive instructions for call/return operations,
     /// and note where they can be simplified.
@@ -238,5 +365,10 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
     /// Get the current cpuid for the configured encoder.
     /// </summary>
     public string Cpuid { get; private set; }
+
+    protected int _dp;
+    protected bool _truncateToDp;
+
+    public const int Bad = -1;
 }
 

@@ -5,8 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
-
 namespace Sixty502DotNet.Shared;
 
 /// <summary>
@@ -15,339 +13,339 @@ namespace Sixty502DotNet.Shared;
 /// </summary>
 public static class Z80Modes
 {
-    public const int
-            Implied            = 0b0000000000000000,
-            A0                 = 0b0000000000000001,
-            B0                 = 0b0000000000000010,
-            C0                 = 0b0000000000000011,
-            D0                 = 0b0000000000000100,
-            E0                 = 0b0000000000000101,
-            H0                 = 0b0000000000000110,
-            L0                 = 0b0000000000000111,
-            M0                 = 0b0000000000001000,
-            I0                 = 0b0000000000001001,
-            IXH0               = 0b0000000000001010,
-            IXL0               = 0b0000000000001011,
-            IYH0               = 0b0000000000001100,
-            IYL0               = 0b0000000000001101,
-            PSW0               = 0b0000000000001110,
-            R0                 = 0b0000000000001111,
-            AF0                = 0b0000000000010000,
-            ShadowAF0          = 0b0000000000010001,
-            BC0                = 0b0000000000010010,
-            DE0                = 0b0000000000010011,
-            HL0                = 0b0000000000010100,
-            IX0                = 0b0000000000010101,
-            IY0                = 0b0000000000010110,
-            SP0                = 0b0000000000010111,
-            N80                = 0b0000000000011000,
-            N160               = 0b0000000000011001,
-            N                  = 0b0000000000011011,
-            NC                 = 0b0000000000011100,
-            NZ                 = 0b0000000000011101,
-            P                  = 0b0000000000011110,
-            PO                 = 0b0000000000011111,
-            PE                 = 0b0000000000100000,
-            Z                  = 0b0000000000100001,
-            Ix0Flag            = 0b0000000001000000,
-            Ind0Flag           = 0b0000000010000000,
-            IndC0              = Ind0Flag | C0,
-            IndBC0             = Ind0Flag | BC0,
-            IndDE0             = Ind0Flag | DE0,
-            IndHL0             = Ind0Flag | HL0,
-            IndIX0             = Ind0Flag | IX0,
-            IndIY0             = Ind0Flag | IY0,
-            IndSP0             = Ind0Flag | SP0,
-            IndIX0Offs         = Ind0Flag | Ix0Flag | IX0,
-            IndIY0Offs         = Ind0Flag | Ix0Flag | IY0,
-            IndN80             = Ind0Flag | N80,
-            IndN160            = Ind0Flag | N160,
-            SecondPosShift     = 0b0000000100000000,
-            A1                 = 0b0000000100000000,
-            B1                 = 0b0000001000000000,
-            C1                 = 0b0000001100000000,
-            D1                 = 0b0000010000000000,
-            E1                 = 0b0000010100000000,
-            H1                 = 0b0000011000000000,
-            L1                 = 0b0000011100000000,
-            M1                 = 0b0000100000000000,
-            I1                 = 0b0000100100000000,
-            IXH1               = 0b0000101000000000,
-            IXL1               = 0b0000101100000000,
-            IYH1               = 0b0000110000000000,
-            IYL1               = 0b0000110100000000,
-            R1                 = 0b0000111100000000,
-            ShadowAF1          = 0b0001000100000000,
-            BC1                = 0b0001001000000000,
-            DE1                = 0b0001001100000000,
-            HL1                = 0b0001010000000000,
-            IX1                = 0b0001010100000000,
-            IY1                = 0b0001011000000000,
-            SP1                = 0b0001011100000000,
-            N81                = 0b0001100000000000,
-            N161               = 0b0001100100000000,
-            Ix1Flag            = 0b0100000000000000,
-            Ind1Flag           = 0b1000_0000_0000_0000,
-            IndC1              = Ind1Flag  | C1,
-            IndBC1             = Ind1Flag  | BC1,
-            IndDE1             = Ind1Flag  | DE1,
-            IndHL1             = Ind1Flag  | HL1,
-            IndIX1Offs         = Ind1Flag  | Ix1Flag | IX1,
-            IndIY1Offs         = Ind1Flag  | Ix1Flag | IY1,
-            IndN81             = Ind1Flag  | N81,
-            IndN161            = Ind1Flag  | N161,
-            A0A1               = A0        | A1,
-            A0B1               = A0        | B1,
-            A0C1               = A0        | C1,
-            A0D1               = A0        | D1,
-            A0E1               = A0        | E1,
-            A0H1               = A0        | H1,
-            A0L1               = A0        | L1,
-            A0M1               = A0        | M1,
-            A0IXH1             = A0        | IXH1,
-            A0IXL1             = A0        | IXL1,
-            A0IYH1             = A0        | IYH1,
-            A0IYL1             = A0        | IYL1,
-            A0IndC1            = A0        | IndC1,
-            A0IndBC1           = A0        | IndBC1,
-            A0IndDE1           = A0        | IndDE1,
-            A0IndHL1           = A0        | IndHL1,
-            A0IndIX1Offs       = A0        | IndIX1Offs,
-            A0IndIY1Offs       = A0        | IndIY1Offs,
-            A0IndN81           = A0        | IndN81,
-            A0IndN161          = A0        | IndN161,
-            A0N81              = A0        | N81,
-            A0I1               = A0        | I1,
-            A0R1               = A0        | R1,
-            B0A1               = B0        | A1,
-            B0B1               = B0        | B1,
-            B0C1               = B0        | C1,
-            B0D1               = B0        | D1,
-            B0E1               = B0        | E1,
-            B0H1               = B0        | H1,
-            B0L1               = B0        | L1,
-            B0M1               = B0        | M1,
-            B0IXH1             = B0        | IXH1,
-            B0IXL1             = B0        | IXL1,
-            B0IYH1             = B0        | IYH1,
-            B0IYL1             = B0        | IYL1,
-            B0IndC1            = B0        | IndC1,
-            B0IndHL1           = B0        | IndHL1,
-            B0IndIX1Offs       = B0        | IndIX1Offs,
-            B0IndIY1Offs       = B0        | IndIY1Offs,
-            B0N81              = B0        | N81,
-            C0A1               = C0        | A1,
-            C0B1               = C0        | B1,
-            C0C1               = C0        | C1,
-            C0D1               = C0        | D1,
-            C0E1               = C0        | E1,
-            C0H1               = C0        | H1,
-            C0L1               = C0        | L1,
-            C0M1               = C0        | M1,
-            C0IXH1             = C0        | IXH1,
-            C0IXL1             = C0        | IXL1,
-            C0IYH1             = C0        | IYH1,
-            C0IYL1             = C0        | IYL1,
-            C0IndC1            = C0        | IndC1,
-            C0IndHL1           = C0        | IndHL1,
-            C0IndIX1Offs       = C0        | IndIX1Offs,
-            C0IndIY1Offs       = C0        | IndIY1Offs,
-            C0N81              = C0        | N81,
-            D0A1               = D0        | A1,
-            D0B1               = D0        | B1,
-            D0C1               = D0        | C1,
-            D0D1               = D0        | D1,
-            D0E1               = D0        | E1,
-            D0H1               = D0        | H1,
-            D0L1               = D0        | L1,
-            D0M1               = D0        | M1,
-            D0IXH1             = D0        | IXH1,
-            D0IXL1             = D0        | IXL1,
-            D0IYH1             = D0        | IYH1,
-            D0IYL1             = D0        | IYL1,
-            D0IndC1            = D0        | IndC1,
-            D0IndHL1           = D0        | IndHL1,
-            D0IndIX1Offs       = D0        | IndIX1Offs,
-            D0IndIY1Offs       = D0        | IndIY1Offs,
-            D0N81              = D0        | N81,
-            E0A1               = E0        | A1,
-            E0B1               = E0        | B1,
-            E0C1               = E0        | C1,
-            E0D1               = E0        | D1,
-            E0E1               = E0        | E1,
-            E0H1               = E0        | H1,
-            E0L1               = E0        | L1,
-            E0M1               = E0        | M1,
-            E0IXH1             = E0        | IXH1,
-            E0IXL1             = E0        | IXL1,
-            E0IYH1             = E0        | IYH1,
-            E0IYL1             = E0        | IYL1,
-            E0IndC1            = E0        | IndC1,
-            E0IndHL1           = E0        | IndHL1,
-            E0IndIX1Offs       = E0        | IndIX1Offs,
-            E0IndIY1Offs       = E0        | IndIY1Offs,
-            E0N81              = E0        | N81,
-            H0A1               = H0        | A1,
-            H0B1               = H0        | B1,
-            H0C1               = H0        | C1,
-            H0D1               = H0        | D1,
-            H0E1               = H0        | E1,
-            H0H1               = H0        | H1,
-            H0L1               = H0        | L1,
-            H0M1               = H0        | M1,
-            H0IndC1            = H0        | IndC1,
-            H0IndHL1           = H0        | IndHL1,
-            H0IndIX1Offs       = H0        | IndIX1Offs,
-            H0IndIY1Offs       = H0        | IndIY1Offs,
-            H0N81              = H0        | N81,
-            L0A1               = L0        | A1,
-            L0B1               = L0        | B1,
-            L0C1               = L0        | C1,
-            L0D1               = L0        | D1,
-            L0E1               = L0        | E1,
-            L0H1               = L0        | H1,
-            L0L1               = L0        | L1,
-            L0M1               = L0        | M1,
-            L0IndC1            = L0        | IndC1,
-            L0IndHL1           = L0        | IndHL1,
-            L0IndIX1Offs       = L0        | IndIX1Offs,
-            L0IndIY1Offs       = L0        | IndIY1Offs,
-            L0N81              = L0        | N81,
-            M0A1               = M0        | A1,
-            M0B1               = M0        | B1,
-            M0C1               = M0        | C1,
-            M0D1               = M0        | D1,
-            M0E1               = M0        | E1,
-            M0H1               = M0        | H1,
-            M0L1               = M0        | L1,
-            M0N81              = M0        | N81,
-            IXH0A1             = IXH0      | A1,
-            IXH0B1             = IXH0      | B1,
-            IXH0C1             = IXH0      | C1,
-            IXH0D1             = IXH0      | D1,
-            IXH0E1             = IXH0      | E1,
-            IXH0IXH1           = IXH0      | IXH1,
-            IXH0IXL1           = IXH0      | IXL1,
-            IXH0N81            = IXH0      | N81,
-            IXL0A1             = IXL0      | A1,
-            IXL0B1             = IXL0      | B1,
-            IXL0C1             = IXL0      | C1,
-            IXL0D1             = IXL0      | D1,
-            IXL0E1             = IXL0      | E1,
-            IXL0IXH1           = IXL0      | IXH1,
-            IXL0IXL1           = IXL0      | IXL1,
-            IXL0N81            = IXL0      | N81,
-            IYH0A1             = IYH0      | A1,
-            IYH0B1             = IYH0      | B1,
-            IYH0C1             = IYH0      | C1,
-            IYH0D1             = IYH0      | D1,
-            IYH0E1             = IYH0      | E1,
-            IYH0IYH1           = IYH0      | IYH1,
-            IYH0IYL1           = IYH0      | IYL1,
-            IYH0N81            = IYH0      | N81,
-            IYL0A1             = IYL0      | A1,
-            IYL0B1             = IYL0      | B1,
-            IYL0C1             = IYL0      | C1,
-            IYL0D1             = IYL0      | D1,
-            IYL0E1             = IYL0      | E1,
-            IYL0IYH1           = IYL0      | IYH1,
-            IYL0IYL1           = IYL0      | IYL1,
-            IYL0N81            = IYL0      | N81,
-            I0A1               = I0        | A1,
-            R0A1               = R0        | A1,
-            AF0ShadowAF1       = AF0       | ShadowAF1,
-            BC0IndN161         = BC0       | IndN161,
-            BC0N161            = BC0       | N161,
-            DE0HL1             = DE0       | HL1,
-            DE0IndN161         = DE0       | IndN161,
-            DE0N161            = DE0       | N161,
-            HL0BC1             = HL0       | BC1,
-            HL0DE1             = HL0       | DE1,
-            HL0HL1             = HL0       | HL1,
-            HL0SP1             = HL0       | SP1,
-            HL0IndN161         = HL0       | IndN161,
-            HL0N161            = HL0       | N161,
-            IX0BC1             = IX0       | BC1,
-            IX0DE1             = IX0       | DE1,
-            IX0IX1             = IX0       | IX1,
-            IX0SP1             = IX0       | SP1,
-            IX0IndN161         = IX0       | IndN161,
-            IX0N161            = IX0       | N161,
-            IY0BC1             = IY0       | BC1,
-            IY0DE1             = IY0       | DE1,
-            IY0IY1             = IY0       | IY1,
-            IY0SP1             = IY0       | SP1,
-            IY0IndN161         = IY0       | IndN161,
-            IY0N161            = IY0       | N161,
-            SP0HL1             = SP0       | HL1,
-            SP0IX1             = SP0       | IX1,
-            SP0IY1             = SP0       | IY1,
-            SP0IndN161         = SP0       | IndN161,
-            SP0N161            = SP0       | N161,
-            IndC0A1            = IndC0     | A1,
-            IndC0B1            = IndC0     | B1,
-            IndC0C1            = IndC0     | C1,
-            IndC0D1            = IndC0     | D1,
-            IndC0E1            = IndC0     | E1,
-            IndC0H1            = IndC0     | H1,
-            IndC0L1            = IndC0     | L1,
-            IndC0N81           = IndC0     | N81,
-            IndBC0A1           = IndBC0    | A1,
-            IndDE0A1           = IndDE0    | A1,
-            IndHL0A1           = IndHL0    | A1,
-            IndHL0B1           = IndHL0    | B1,
-            IndHL0C1           = IndHL0    | C1,
-            IndHL0D1           = IndHL0    | D1,
-            IndHL0E1           = IndHL0    | E1,
-            IndHL0H1           = IndHL0    | H1,
-            IndHL0L1           = IndHL0    | L1,
-            IndHL0N81          = IndHL0    | N81,
-            IndIX0OffsA1       = IndIX0Offs| A1,
-            IndIX0OffsB1       = IndIX0Offs| B1,
-            IndIX0OffsC1       = IndIX0Offs| C1,
-            IndIX0OffsD1       = IndIX0Offs| D1,
-            IndIX0OffsE1       = IndIX0Offs| E1,
-            IndIX0OffsH1       = IndIX0Offs| H1,
-            IndIX0OffsL1       = IndIX0Offs| L1,
-            IndIX0OffsN81      = IndIX0Offs| N81,
-            IndIY0OffsA1       = IndIY0Offs| A1,
-            IndIY0OffsB1       = IndIY0Offs| B1,
-            IndIY0OffsC1       = IndIY0Offs| C1,
-            IndIY0OffsD1       = IndIY0Offs| D1,
-            IndIY0OffsE1       = IndIY0Offs| E1,
-            IndIY0OffsH1       = IndIY0Offs| H1,
-            IndIY0OffsL1       = IndIY0Offs| L1,
-            IndIY0OffsN81      = IndIY0Offs| N81,
-            IndSP0HL1          = IndSP0    | HL1,
-            IndSP0IX1          = IndSP0    | IX1,
-            IndSP0IY1          = IndSP0    | IY1,
-            IndN80A1           = IndN80    | A1,
-            IndN160A1          = IndN160   | A1,
-            IndN160BC1         = IndN160   | BC1,
-            IndN160DE1         = IndN160   | DE1,
-            IndN160HL1         = IndN160   | HL1,
-            IndN160IX1         = IndN160   | IX1,
-            IndN160IY1         = IndN160   | IY1,
-            IndN160SP1         = IndN160   | SP1,
-            NC0N81             = NC        | N81,
-            NZ0N81             = NZ        | N81,
-            P0N81              = P         | N81,
-            PE0N81             = PE        | N81,
-            PO0N81             = PO        | N81,
-            Z0N81              = Z         | N81,
-            C0N161             = C0        | N161,
-            M0N161             = M0        | N161,
-            NC0N161            = NC        | N161,
-            NZ0N161            = NZ        | N161,
-            P0N161             = P         | N161,
-            PE0N161            = PE        | N161,
-            PO0N161            = PO        | N161,
-            Z0N161             = Z         | N161;
+    public const uint
+            Implied = 0b0000000000000000,
+            A0 = 0b0000000000000001,
+            B0 = 0b0000000000000010,
+            C0 = 0b0000000000000011,
+            D0 = 0b0000000000000100,
+            E0 = 0b0000000000000101,
+            H0 = 0b0000000000000110,
+            L0 = 0b0000000000000111,
+            M0 = 0b0000000000001000,
+            I0 = 0b0000000000001001,
+            IXH0 = 0b0000000000001010,
+            IXL0 = 0b0000000000001011,
+            IYH0 = 0b0000000000001100,
+            IYL0 = 0b0000000000001101,
+            PSW0 = 0b0000000000001110,
+            R0 = 0b0000000000001111,
+            AF0 = 0b0000000000010000,
+            ShadowAF0 = 0b0000000000010001,
+            BC0 = 0b0000000000010010,
+            DE0 = 0b0000000000010011,
+            HL0 = 0b0000000000010100,
+            IX0 = 0b0000000000010101,
+            IY0 = 0b0000000000010110,
+            SP0 = 0b0000000000010111,
+            N80 = 0b0000000000011000,
+            N160 = 0b0000000000011001,
+            N = 0b0000000000011011,
+            NC = 0b0000000000011100,
+            NZ = 0b0000000000011101,
+            P = 0b0000000000011110,
+            PO = 0b0000000000011111,
+            PE = 0b0000000000100000,
+            Z = 0b0000000000100001,
+            Ix0Flag = 0b0000000001000000,
+            Ind0Flag = 0b0000000010000000,
+            IndC0 = Ind0Flag | C0,
+            IndBC0 = Ind0Flag | BC0,
+            IndDE0 = Ind0Flag | DE0,
+            IndHL0 = Ind0Flag | HL0,
+            IndIX0 = Ind0Flag | IX0,
+            IndIY0 = Ind0Flag | IY0,
+            IndSP0 = Ind0Flag | SP0,
+            IndIX0Offs = Ind0Flag | Ix0Flag | IX0,
+            IndIY0Offs = Ind0Flag | Ix0Flag | IY0,
+            IndN80 = Ind0Flag | N80,
+            IndN160 = Ind0Flag | N160,
+            SecondPosShift = 0b0000000100000000,
+            A1   = 0b0000000100000000,
+            B1   = 0b0000001000000000,
+            C1   = 0b0000001100000000,
+            D1   = 0b0000010000000000,
+            E1   = 0b0000010100000000,
+            H1   = 0b0000011000000000,
+            L1   = 0b0000011100000000,
+            M1   = 0b0000100000000000,
+            I1   = 0b0000100100000000,
+            IXH1 = 0b0000101000000000,
+            IXL1 = 0b0000101100000000,
+            IYH1 = 0b0000110000000000,
+            IYL1 = 0b0000110100000000,
+            R1   = 0b0000111100000000,
+            ShadowAF1 = 0b0001000100000000,
+            BC1  = 0b0001001000000000,
+            DE1  = 0b0001001100000000,
+            HL1  = 0b0001010000000000,
+            IX1  = 0b0001010100000000,
+            IY1  = 0b0001011000000000,
+            SP1  = 0b0001011100000000,
+            N81  = 0b0001100000000000,
+            N161 = 0b0001100100000000,
+            Ix1Flag = 0b0100000000000000,
+            Ind1Flag = 0b1000_0000_0000_0000,
+            IndC1 = Ind1Flag | C1,
+            IndBC1 = Ind1Flag | BC1,
+            IndDE1 = Ind1Flag | DE1,
+            IndHL1 = Ind1Flag | HL1,
+            IndIX1Offs = Ind1Flag | Ix1Flag | IX1,
+            IndIY1Offs = Ind1Flag | Ix1Flag | IY1,
+            IndN81 = Ind1Flag | N81,
+            IndN161 = Ind1Flag | N161,
+            A0A1 = A0 | A1,
+            A0B1 = A0 | B1,
+            A0C1 = A0 | C1,
+            A0D1 = A0 | D1,
+            A0E1 = A0 | E1,
+            A0H1 = A0 | H1,
+            A0L1 = A0 | L1,
+            A0M1 = A0 | M1,
+            A0IXH1 = A0 | IXH1,
+            A0IXL1 = A0 | IXL1,
+            A0IYH1 = A0 | IYH1,
+            A0IYL1 = A0 | IYL1,
+            A0IndC1 = A0 | IndC1,
+            A0IndBC1 = A0 | IndBC1,
+            A0IndDE1 = A0 | IndDE1,
+            A0IndHL1 = A0 | IndHL1,
+            A0IndIX1Offs = A0 | IndIX1Offs,
+            A0IndIY1Offs = A0 | IndIY1Offs,
+            A0IndN81 = A0 | IndN81,
+            A0IndN161 = A0 | IndN161,
+            A0N81 = A0 | N81,
+            A0I1 = A0 | I1,
+            A0R1 = A0 | R1,
+            B0A1 = B0 | A1,
+            B0B1 = B0 | B1,
+            B0C1 = B0 | C1,
+            B0D1 = B0 | D1,
+            B0E1 = B0 | E1,
+            B0H1 = B0 | H1,
+            B0L1 = B0 | L1,
+            B0M1 = B0 | M1,
+            B0IXH1 = B0 | IXH1,
+            B0IXL1 = B0 | IXL1,
+            B0IYH1 = B0 | IYH1,
+            B0IYL1 = B0 | IYL1,
+            B0IndC1 = B0 | IndC1,
+            B0IndHL1 = B0 | IndHL1,
+            B0IndIX1Offs = B0 | IndIX1Offs,
+            B0IndIY1Offs = B0 | IndIY1Offs,
+            B0N81 = B0 | N81,
+            C0A1 = C0 | A1,
+            C0B1 = C0 | B1,
+            C0C1 = C0 | C1,
+            C0D1 = C0 | D1,
+            C0E1 = C0 | E1,
+            C0H1 = C0 | H1,
+            C0L1 = C0 | L1,
+            C0M1 = C0 | M1,
+            C0IXH1 = C0 | IXH1,
+            C0IXL1 = C0 | IXL1,
+            C0IYH1 = C0 | IYH1,
+            C0IYL1 = C0 | IYL1,
+            C0IndC1 = C0 | IndC1,
+            C0IndHL1 = C0 | IndHL1,
+            C0IndIX1Offs = C0 | IndIX1Offs,
+            C0IndIY1Offs = C0 | IndIY1Offs,
+            C0N81 = C0 | N81,
+            D0A1 = D0 | A1,
+            D0B1 = D0 | B1,
+            D0C1 = D0 | C1,
+            D0D1 = D0 | D1,
+            D0E1 = D0 | E1,
+            D0H1 = D0 | H1,
+            D0L1 = D0 | L1,
+            D0M1 = D0 | M1,
+            D0IXH1 = D0 | IXH1,
+            D0IXL1 = D0 | IXL1,
+            D0IYH1 = D0 | IYH1,
+            D0IYL1 = D0 | IYL1,
+            D0IndC1 = D0 | IndC1,
+            D0IndHL1 = D0 | IndHL1,
+            D0IndIX1Offs = D0 | IndIX1Offs,
+            D0IndIY1Offs = D0 | IndIY1Offs,
+            D0N81 = D0 | N81,
+            E0A1 = E0 | A1,
+            E0B1 = E0 | B1,
+            E0C1 = E0 | C1,
+            E0D1 = E0 | D1,
+            E0E1 = E0 | E1,
+            E0H1 = E0 | H1,
+            E0L1 = E0 | L1,
+            E0M1 = E0 | M1,
+            E0IXH1 = E0 | IXH1,
+            E0IXL1 = E0 | IXL1,
+            E0IYH1 = E0 | IYH1,
+            E0IYL1 = E0 | IYL1,
+            E0IndC1 = E0 | IndC1,
+            E0IndHL1 = E0 | IndHL1,
+            E0IndIX1Offs = E0 | IndIX1Offs,
+            E0IndIY1Offs = E0 | IndIY1Offs,
+            E0N81 = E0 | N81,
+            H0A1 = H0 | A1,
+            H0B1 = H0 | B1,
+            H0C1 = H0 | C1,
+            H0D1 = H0 | D1,
+            H0E1 = H0 | E1,
+            H0H1 = H0 | H1,
+            H0L1 = H0 | L1,
+            H0M1 = H0 | M1,
+            H0IndC1 = H0 | IndC1,
+            H0IndHL1 = H0 | IndHL1,
+            H0IndIX1Offs = H0 | IndIX1Offs,
+            H0IndIY1Offs = H0 | IndIY1Offs,
+            H0N81 = H0 | N81,
+            L0A1 = L0 | A1,
+            L0B1 = L0 | B1,
+            L0C1 = L0 | C1,
+            L0D1 = L0 | D1,
+            L0E1 = L0 | E1,
+            L0H1 = L0 | H1,
+            L0L1 = L0 | L1,
+            L0M1 = L0 | M1,
+            L0IndC1 = L0 | IndC1,
+            L0IndHL1 = L0 | IndHL1,
+            L0IndIX1Offs = L0 | IndIX1Offs,
+            L0IndIY1Offs = L0 | IndIY1Offs,
+            L0N81 = L0 | N81,
+            M0A1 = M0 | A1,
+            M0B1 = M0 | B1,
+            M0C1 = M0 | C1,
+            M0D1 = M0 | D1,
+            M0E1 = M0 | E1,
+            M0H1 = M0 | H1,
+            M0L1 = M0 | L1,
+            M0N81 = M0 | N81,
+            IXH0A1 = IXH0 | A1,
+            IXH0B1 = IXH0 | B1,
+            IXH0C1 = IXH0 | C1,
+            IXH0D1 = IXH0 | D1,
+            IXH0E1 = IXH0 | E1,
+            IXH0IXH1 = IXH0 | IXH1,
+            IXH0IXL1 = IXH0 | IXL1,
+            IXH0N81 = IXH0 | N81,
+            IXL0A1 = IXL0 | A1,
+            IXL0B1 = IXL0 | B1,
+            IXL0C1 = IXL0 | C1,
+            IXL0D1 = IXL0 | D1,
+            IXL0E1 = IXL0 | E1,
+            IXL0IXH1 = IXL0 | IXH1,
+            IXL0IXL1 = IXL0 | IXL1,
+            IXL0N81 = IXL0 | N81,
+            IYH0A1 = IYH0 | A1,
+            IYH0B1 = IYH0 | B1,
+            IYH0C1 = IYH0 | C1,
+            IYH0D1 = IYH0 | D1,
+            IYH0E1 = IYH0 | E1,
+            IYH0IYH1 = IYH0 | IYH1,
+            IYH0IYL1 = IYH0 | IYL1,
+            IYH0N81 = IYH0 | N81,
+            IYL0A1 = IYL0 | A1,
+            IYL0B1 = IYL0 | B1,
+            IYL0C1 = IYL0 | C1,
+            IYL0D1 = IYL0 | D1,
+            IYL0E1 = IYL0 | E1,
+            IYL0IYH1 = IYL0 | IYH1,
+            IYL0IYL1 = IYL0 | IYL1,
+            IYL0N81 = IYL0 | N81,
+            I0A1 = I0 | A1,
+            R0A1 = R0 | A1,
+            AF0ShadowAF1 = AF0 | ShadowAF1,
+            BC0IndN161 = BC0 | IndN161,
+            BC0N161 = BC0 | N161,
+            DE0HL1 = DE0 | HL1,
+            DE0IndN161 = DE0 | IndN161,
+            DE0N161 = DE0 | N161,
+            HL0BC1 = HL0 | BC1,
+            HL0DE1 = HL0 | DE1,
+            HL0HL1 = HL0 | HL1,
+            HL0SP1 = HL0 | SP1,
+            HL0IndN161 = HL0 | IndN161,
+            HL0N161 = HL0 | N161,
+            IX0BC1 = IX0 | BC1,
+            IX0DE1 = IX0 | DE1,
+            IX0IX1 = IX0 | IX1,
+            IX0SP1 = IX0 | SP1,
+            IX0IndN161 = IX0 | IndN161,
+            IX0N161 = IX0 | N161,
+            IY0BC1 = IY0 | BC1,
+            IY0DE1 = IY0 | DE1,
+            IY0IY1 = IY0 | IY1,
+            IY0SP1 = IY0 | SP1,
+            IY0IndN161 = IY0 | IndN161,
+            IY0N161 = IY0 | N161,
+            SP0HL1 = SP0 | HL1,
+            SP0IX1 = SP0 | IX1,
+            SP0IY1 = SP0 | IY1,
+            SP0IndN161 = SP0 | IndN161,
+            SP0N161 = SP0 | N161,
+            IndC0A1 = IndC0 | A1,
+            IndC0B1 = IndC0 | B1,
+            IndC0C1 = IndC0 | C1,
+            IndC0D1 = IndC0 | D1,
+            IndC0E1 = IndC0 | E1,
+            IndC0H1 = IndC0 | H1,
+            IndC0L1 = IndC0 | L1,
+            IndC0N81 = IndC0 | N81,
+            IndBC0A1 = IndBC0 | A1,
+            IndDE0A1 = IndDE0 | A1,
+            IndHL0A1 = IndHL0 | A1,
+            IndHL0B1 = IndHL0 | B1,
+            IndHL0C1 = IndHL0 | C1,
+            IndHL0D1 = IndHL0 | D1,
+            IndHL0E1 = IndHL0 | E1,
+            IndHL0H1 = IndHL0 | H1,
+            IndHL0L1 = IndHL0 | L1,
+            IndHL0N81 = IndHL0 | N81,
+            IndIX0OffsA1 = IndIX0Offs | A1,
+            IndIX0OffsB1 = IndIX0Offs | B1,
+            IndIX0OffsC1 = IndIX0Offs | C1,
+            IndIX0OffsD1 = IndIX0Offs | D1,
+            IndIX0OffsE1 = IndIX0Offs | E1,
+            IndIX0OffsH1 = IndIX0Offs | H1,
+            IndIX0OffsL1 = IndIX0Offs | L1,
+            IndIX0OffsN81 = IndIX0Offs | N81,
+            IndIY0OffsA1 = IndIY0Offs | A1,
+            IndIY0OffsB1 = IndIY0Offs | B1,
+            IndIY0OffsC1 = IndIY0Offs | C1,
+            IndIY0OffsD1 = IndIY0Offs | D1,
+            IndIY0OffsE1 = IndIY0Offs | E1,
+            IndIY0OffsH1 = IndIY0Offs | H1,
+            IndIY0OffsL1 = IndIY0Offs | L1,
+            IndIY0OffsN81 = IndIY0Offs | N81,
+            IndSP0HL1 = IndSP0 | HL1,
+            IndSP0IX1 = IndSP0 | IX1,
+            IndSP0IY1 = IndSP0 | IY1,
+            IndN80A1 = IndN80 | A1,
+            IndN160A1 = IndN160 | A1,
+            IndN160BC1 = IndN160 | BC1,
+            IndN160DE1 = IndN160 | DE1,
+            IndN160HL1 = IndN160 | HL1,
+            IndN160IX1 = IndN160 | IX1,
+            IndN160IY1 = IndN160 | IY1,
+            IndN160SP1 = IndN160 | SP1,
+            NC0N81 = NC | N81,
+            NZ0N81 = NZ | N81,
+            P0N81 = P | N81,
+            PE0N81 = PE | N81,
+            PO0N81 = PO | N81,
+            Z0N81 = Z | N81,
+            C0N161 = C0 | N161,
+            M0N161 = M0 | N161,
+            NC0N161 = NC | N161,
+            NZ0N161 = NZ | N161,
+            P0N161 = P | N161,
+            PE0N161 = PE | N161,
+            PO0N161 = PO | N161,
+            Z0N161 = Z | N161;
 };
 
 public sealed partial class Z80InstructionEncoder
 {
-    private static readonly Dictionary<int, int> s_firstPositionRegToMode = new()
+    private static readonly Dictionary<int, uint> s_firstPositionRegToMode = new()
     {
         { SyntaxParser.A,   Z80Modes.A0 },
         { SyntaxParser.B,   Z80Modes.B0 },
@@ -403,1482 +401,743 @@ public sealed partial class Z80InstructionEncoder
         SyntaxParser.CALL, SyntaxParser.JP, SyntaxParser.JR, SyntaxParser.RET
     };
 
-    // s_z80
-    private static readonly Dictionary<int, Dictionary<int, Instruction>> s_z80 = new()
+    private static readonly Dictionary<ulong, int> s_z80 = new()
     {
-        {
-            Z80Modes.A0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.DAA, new Instruction("daa", 0x27, 1) },
-                { SyntaxParser.CPL, new Instruction("cpl", 0x2f, 1) },
-                { SyntaxParser.INC, new Instruction("inc a", 0x3c, 1) },
-                { SyntaxParser.DEC, new Instruction("dec a", 0x3d, 1) },
-                { SyntaxParser.ADD, new Instruction("add a", 0x87, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a", 0x8f, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a", 0x97, 1) },
-                { SyntaxParser.AND, new Instruction("and a", 0xa7, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a", 0xaf, 1) },
-                { SyntaxParser.OR,  new Instruction("or a", 0xb7, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a", 0xbf, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc a", 0x07cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc a", 0x0fcb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl a", 0x17cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr a", 0x1fcb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla a", 0x27cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra a", 0x2fcb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll a", 0x37cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl a", 0x3fcb, 2) }
-            }
-        },
-        {
-            Z80Modes.A0A1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,a", 0x7f, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,a", 0x87, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,a", 0x8f, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,a", 0x97, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,a", 0x9f, 1) },
-                { SyntaxParser.AND, new Instruction("and a,a", 0xa7, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,a", 0xaf, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,a", 0xb7, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,a", 0xbf, 1) }
-            }
-        },
-        {
-            Z80Modes.A0B1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,b", 0x78, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,b", 0x80, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,b", 0x88, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,b", 0x90, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,b", 0x98, 1) },
-                { SyntaxParser.AND, new Instruction("and a,b", 0xa0, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,b", 0xa8, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,b", 0xb0, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,b", 0xb8, 1) }
-            }
-        },
-        {
-            Z80Modes.A0C1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,c", 0x79, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,c", 0x81, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,c", 0x89, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,c", 0x91, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,c", 0x99, 1) },
-                { SyntaxParser.AND, new Instruction("and a,c", 0xa1, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,c", 0xa9, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,c", 0xb1, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,c", 0xb9, 1) }
-            }
-        },
-        {
-            Z80Modes.A0D1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,d", 0x7a, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,d", 0x82, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,d", 0x8a, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,d", 0x92, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,d", 0x9a, 1) },
-                { SyntaxParser.AND, new Instruction("and a,d", 0xa2, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,d", 0xaa, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,d", 0xb2, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,d", 0xba, 1) }
-            }
-        },
-        {
-            Z80Modes.A0E1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,e", 0x7b, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,e", 0x83, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,e", 0x8b, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,e", 0x93, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,e", 0x9b, 1) },
-                { SyntaxParser.AND, new Instruction("and a,e", 0xa3, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,e", 0xab, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,e", 0xb3, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,e", 0xbb, 1) }
-            }
-        },
-        {
-            Z80Modes.A0H1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,h", 0x7c, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,h", 0x84, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,h", 0x8c, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,h", 0x94, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,h", 0x9c, 1) },
-                { SyntaxParser.AND, new Instruction("and a,h", 0xa4, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,h", 0xac, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,h", 0xb4, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,h", 0xbc, 1) }
-            }
-        },
-        {
-            Z80Modes.A0I1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld a,i", 0x57ed, 2) } }
-        },
-        {
-            Z80Modes.A0IXH1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,ixh", 0x7cdd, 2) },
-                { SyntaxParser.ADD, new Instruction("add a,ixh", 0x84dd, 2) },
-                { SyntaxParser.ADC, new Instruction("adc a,ixh", 0x8cdd, 2) },
-                { SyntaxParser.SBC, new Instruction("sbc a,ixh", 0x9cdd, 2) }
-            }
-        },
-        {
-            Z80Modes.A0IXL1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,ixl", 0x7ddd, 2) },
-                { SyntaxParser.ADD, new Instruction("add a,ixl", 0x85dd, 2) },
-                { SyntaxParser.ADC, new Instruction("adc a,ixl", 0x8ddd, 2) },
-                { SyntaxParser.SBC, new Instruction("sbc a,ixl", 0x9ddd, 2) }
-            }
-        },
-        {
-            Z80Modes.A0IYH1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,iyh", 0x7cfd, 2) },
-                { SyntaxParser.ADD, new Instruction("add a,iyh", 0x84fd, 2) },
-                { SyntaxParser.ADC, new Instruction("adc a,iyh", 0x8cfd, 2) },
-                { SyntaxParser.SBC, new Instruction("sbc a,iyh", 0x9cfd, 2) }
-            }
-        },
-        {
-            Z80Modes.A0IYL1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,iyl", 0x7dfd, 2) },
-                { SyntaxParser.ADD, new Instruction("add a,iyl", 0x85fd, 2) },
-                { SyntaxParser.ADC, new Instruction("adc a,iyl", 0x8dfd, 2) },
-                { SyntaxParser.SBC, new Instruction("sbc a,iyl", 0x9dfd, 2) }
-            }
-        },
-        {
-            Z80Modes.A0IndBC1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld a,(bc)", 0x0a, 1) } }
-        },
-        {
-            Z80Modes.A0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in a,(c)", 0x78ed, 2) } }
-        },
-        {
-            Z80Modes.A0IndDE1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld a,(de)", 0x1a, 1) } }
-        },
-        {
-            Z80Modes.A0IndHL1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,(hl)", 0x7e, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,(hl)", 0x86, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,(hl)", 0x8e, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,(hl)", 0x96, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,(hl)", 0x9e, 1) },
-                { SyntaxParser.AND, new Instruction("and a,(hl)", 0xa6, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,(hl)", 0xae, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,(hl)", 0xb6, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,(hl)", 0xbe, 1) }
-            }
-        },
-        {
-            Z80Modes.A0IndIX1Offs, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,(ix+${0:x2})", 0x7edd, 3) },
-                { SyntaxParser.ADD, new Instruction("add a,(ix+${0:x2})", 0x86dd, 3) },
-                { SyntaxParser.ADC, new Instruction("adc a,(ix+${0:x2})", 0x8edd, 3) },
-                { SyntaxParser.SBC, new Instruction("sbc a,(ix+${0:x2})", 0x9edd, 3) }
-            }
-        },
-        {
-            Z80Modes.A0IndIY1Offs, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,(iy+${0:x2})", 0x7efd, 3) },
-                { SyntaxParser.ADD, new Instruction("add a,(iy+${0:x2})", 0x86fd, 3) },
-                { SyntaxParser.ADC, new Instruction("adc a,(iy+${0:x2})", 0x8efd, 3) },
-                { SyntaxParser.SBC, new Instruction("sbc a,(iy+${0:x2})", 0x9efd, 3) }
-            }
-        },
-        {
-            Z80Modes.A0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld a,(${0:x4})", 0x3a, 3) } }
-        },
-        {
-            Z80Modes.A0IndN81, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in a,(${0:x2})", 0xdb, 2) } }
-        },
-        {
-            Z80Modes.A0L1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,l", 0x7d, 1) },
-                { SyntaxParser.ADD, new Instruction("add a,l", 0x85, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a,l", 0x8d, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a,l", 0x95, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc a,l", 0x9d, 1) },
-                { SyntaxParser.AND, new Instruction("and a,l", 0xa5, 1) },
-                { SyntaxParser.XOR, new Instruction("xor a,l", 0xad, 1) },
-                { SyntaxParser.OR,  new Instruction("or a,l", 0xb5, 1) },
-                { SyntaxParser.CP,  new Instruction("cp a,l", 0xbd, 1) }
-            }
-        },
-        {
-            Z80Modes.A0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,  new Instruction("ld a,${0:x2}", 0x3e, 2) },
-                { SyntaxParser.ADD, new Instruction("add a,${0:x2}", 0xc6, 2) },
-                { SyntaxParser.ADC, new Instruction("adc a,${0:x2}", 0xce, 2) },
-                { SyntaxParser.SBC, new Instruction("sbc a,${0:x2}", 0xde, 2) }
-            }
-        },
-        {
-            Z80Modes.A0R1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld a,r", 0x5fed, 2) } }
-        },
-        {
-            Z80Modes.AF0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.POP,  new Instruction("pop af", 0xf1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push af", 0xf5, 1) }
-            }
-        },
-        {
-            Z80Modes.AF0ShadowAF1, new Dictionary<int, Instruction>() { { SyntaxParser.EX, new Instruction("ex af,af'", 0x08, 1) } }
-        },
-        {
-            Z80Modes.B0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc b", 0x04, 1) },
-                { SyntaxParser.DEC, new Instruction("dec b", 0x05, 1) },
-                { SyntaxParser.ADD, new Instruction("add b", 0x80, 1) },
-                { SyntaxParser.ADC, new Instruction("adc b", 0x88, 1) },
-                { SyntaxParser.SUB, new Instruction("sub b", 0x90, 1) },
-                { SyntaxParser.AND, new Instruction("and b", 0xa0, 1) },
-                { SyntaxParser.XOR, new Instruction("xor b", 0xa8, 1) },
-                { SyntaxParser.OR,  new Instruction("or b", 0xb0, 1) },
-                { SyntaxParser.CP,  new Instruction("cp b", 0xb8, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc b", 0x00cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc b", 0x08cb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl b", 0x10cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr b", 0x18cb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla b", 0x20cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra b", 0x28cb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll b", 0x30cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl b", 0x38cb, 2) }
-            }
-        },
-        {
-            Z80Modes.B0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,a", 0x47, 1) } }
-        },
-        {
-            Z80Modes.B0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,b", 0x40, 1) } }
-        },
-        {
-            Z80Modes.B0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,c", 0x41, 1) } }
-        },
-        {
-            Z80Modes.B0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,d", 0x42, 1) } }
-        },
-        {
-            Z80Modes.B0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,e", 0x43, 1) } }
-        },
-        {
-            Z80Modes.B0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,h", 0x44, 1) } }
-        },
-        {
-            Z80Modes.B0IXH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,ixh", 0x44dd, 2) } }
-        },
-        {
-            Z80Modes.B0IXL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,ixl", 0x45dd, 2) } }
-        },
-        {
-            Z80Modes.B0IYH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,iyh", 0x44fd, 2) } }
-        },
-        {
-            Z80Modes.B0IYL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,iyl", 0x45fd, 2) } }
-        },
-        {
-            Z80Modes.B0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in b,(c)", 0x40ed, 2) } }
-        },
-        {
-            Z80Modes.B0IndHL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,(hl)", 0x46, 1) } }
-        },
-        {
-            Z80Modes.B0IndIX1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,(ix+${0:x2})", 0x46dd, 3) } }
-        },
-        {
-            Z80Modes.B0IndIY1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,(iy+${0:x2})", 0x46fd, 3) } }
-        },
-        {
-            Z80Modes.B0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,l", 0x45, 1) } }
-        },
-        {
-            Z80Modes.B0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld b,${0:x2}", 0x06, 2) } }
-        },
-        {
-            Z80Modes.BC0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC,  new Instruction("inc bc", 0x03, 1) },
-                { SyntaxParser.DEC,  new Instruction("dec bc", 0x0b, 1) },
-                { SyntaxParser.POP,  new Instruction("pop bc", 0xc1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push bc", 0xc5, 1) }
-            }
-        },
-        {
-            Z80Modes.BC0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld bc,(${0:x4})", 0x4bed, 4) } }
-        },
-        {
-            Z80Modes.BC0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld bc,${0:x4}", 0x01, 3) } }
-        },
-        {
-            Z80Modes.C0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc c", 0x0c, 1) },
-                { SyntaxParser.DEC, new Instruction("dec c", 0x0d, 1) },
-                { SyntaxParser.ADD, new Instruction("add c", 0x81, 1) },
-                { SyntaxParser.ADC, new Instruction("adc c", 0x89, 1) },
-                { SyntaxParser.SUB, new Instruction("sub c", 0x91, 1) },
-                { SyntaxParser.AND, new Instruction("and c", 0xa1, 1) },
-                { SyntaxParser.XOR, new Instruction("xor c", 0xa9, 1) },
-                { SyntaxParser.OR,  new Instruction("or c", 0xb1, 1) },
-                { SyntaxParser.CP,  new Instruction("cp c", 0xb9, 1) },
-                { SyntaxParser.RET, new Instruction("ret c", 0xd8, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc c", 0x01cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc c", 0x09cb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl c", 0x11cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr c", 0x19cb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla c", 0x21cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra c", 0x29cb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll c", 0x31cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl c", 0x39cb, 2) }
-            }
-        },
-        {
-            Z80Modes.C0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,a", 0x4f, 1) } }
-        },
-        {
-            Z80Modes.C0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,b", 0x48, 1) } }
-        },
-        {
-            Z80Modes.C0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,c", 0x49, 1) } }
-        },
-        {
-            Z80Modes.C0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,d", 0x4a, 1) } }
-        },
-        {
-            Z80Modes.C0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,e", 0x4b, 1) } }
-        },
-        {
-            Z80Modes.C0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,h", 0x4c, 1) } }
-        },
-        {
-            Z80Modes.C0IXH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,ixh", 0x4cdd, 2) } }
-        },
-        {
-            Z80Modes.C0IXL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,ixl", 0x4ddd, 2) } }
-        },
-        {
-            Z80Modes.C0IYH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,iyh", 0x4cfd, 2) } }
-        },
-        {
-            Z80Modes.C0IYL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,iyl", 0x4dfd, 2) } }
-        },
-        {
-            Z80Modes.C0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in c,(c)", 0x48ed, 2) } }
-        },
-        {
-            Z80Modes.C0IndHL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,(hl)", 0x4e, 1) } }
-        },
-        {
-            Z80Modes.C0IndIX1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,(ix+${0:x2})", 0x4edd, 3) } }
-        },
-        {
-            Z80Modes.C0IndIY1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,(iy+${0:x2})", 0x4efd, 3) } }
-        },
-        {
-            Z80Modes.C0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld c,l", 0x4d, 1) } }
-        },
-        {
-            Z80Modes.C0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JR, new Instruction("jr c,${0:x4}", 0x38, 2, true) },
-                { SyntaxParser.JP, new Instruction("jp c,${0:x4}", 0xda, 3) },
-                { SyntaxParser.CALL, new Instruction("call c,${0:x4}", 0xdc, 3) }
-            }
-        },
-        {
-            Z80Modes.C0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LD,   new Instruction("ld c,${0:x2}", 0x0e, 2) },
-                { SyntaxParser.JR,   new Instruction("jr c,${0:x4}", 0x38, 2, true) },
-                { SyntaxParser.JP,   new Instruction("jp c,${0:x4}", 0xda, 3) },
-                { SyntaxParser.CALL, new Instruction("call c,${0:x4}", 0xdc, 3) }
-            }
-        },
-        {
-            Z80Modes.D0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc d", 0x14, 1) },
-                { SyntaxParser.DEC, new Instruction("dec d", 0x15, 1) },
-                { SyntaxParser.ADD, new Instruction("add d", 0x82, 1) },
-                { SyntaxParser.ADC, new Instruction("adc d", 0x8a, 1) },
-                { SyntaxParser.SUB, new Instruction("sub d", 0x92, 1) },
-                { SyntaxParser.AND, new Instruction("and d", 0xa2, 1) },
-                { SyntaxParser.XOR, new Instruction("xor d", 0xaa, 1) },
-                { SyntaxParser.OR,  new Instruction("or d", 0xb2, 1) },
-                { SyntaxParser.CP,  new Instruction("cp d", 0xba, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc d", 0x02cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc d", 0x0acb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl d", 0x12cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr d", 0x1acb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla d", 0x22cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra d", 0x2acb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll d", 0x32cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl d", 0x3acb, 2) }
-            }
-        },
-        {
-            Z80Modes.D0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,a", 0x57, 1) } }
-        },
-        {
-            Z80Modes.D0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,b", 0x50, 1) } }
-        },
-        {
-            Z80Modes.D0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,c", 0x51, 1) } }
-        },
-        {
-            Z80Modes.D0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,d", 0x52, 1) } }
-        },
-        {
-            Z80Modes.D0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,e", 0x53, 1) } }
-        },
-        {
-            Z80Modes.D0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,h", 0x54, 1) } }
-        },
-        {
-            Z80Modes.D0IXH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,ixh", 0x54dd, 2) } }
-        },
-        {
-            Z80Modes.D0IXL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,ixl", 0x55dd, 2) } }
-        },
-        {
-            Z80Modes.D0IYH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,iyh", 0x54fd, 2) } }
-        },
-        {
-            Z80Modes.D0IYL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,iyl", 0x55fd, 2) } }
-        },
-        {
-            Z80Modes.D0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in d,(c)", 0x50ed, 2) } }
-        },
-        {
-            Z80Modes.D0IndHL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,(hl)", 0x56, 1) } }
-        },
-        {
-            Z80Modes.D0IndIX1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,(ix+${0:x2})", 0x56dd, 3) } }
-        },
-        {
-            Z80Modes.D0IndIY1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,(iy+${0:x2})", 0x56fd, 3) } }
-        },
-        {
-            Z80Modes.D0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,l", 0x55, 1) } }
-        },
-        {
-            Z80Modes.D0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld d,${0:x2}", 0x16, 2) } }
-        },
-        {
-            Z80Modes.DE0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC,  new Instruction("inc de", 0x13, 1) },
-                { SyntaxParser.DEC,  new Instruction("dec de", 0x1b, 1) },
-                { SyntaxParser.POP,  new Instruction("pop de", 0xd1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push de", 0xd5, 1) }
-            }
-        },
-        {
-            Z80Modes.DE0HL1, new Dictionary<int, Instruction>() { { SyntaxParser.EX, new Instruction("ex de,hl", 0xeb, 1) } }
-        },
-        {
-            Z80Modes.DE0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld de,(${0:x4})", 0x5bed, 4) } }
-        },
-        {
-            Z80Modes.DE0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld de,${0:x4}", 0x11, 3) } }
-        },
-        {
-            Z80Modes.E0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc e", 0x1c, 1) },
-                { SyntaxParser.DEC, new Instruction("dec e", 0x1d, 1) },
-                { SyntaxParser.ADD, new Instruction("add e", 0x83, 1) },
-                { SyntaxParser.ADC, new Instruction("adc e", 0x8b, 1) },
-                { SyntaxParser.SUB, new Instruction("sub e", 0x93, 1) },
-                { SyntaxParser.AND, new Instruction("and e", 0xa3, 1) },
-                { SyntaxParser.XOR, new Instruction("xor e", 0xab, 1) },
-                { SyntaxParser.OR,  new Instruction("or e", 0xb3, 1) },
-                { SyntaxParser.CP,  new Instruction("cp e", 0xbb, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc e", 0x03cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc e", 0x0bcb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl e", 0x13cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr e", 0x1bcb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla e", 0x23cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra e", 0x2bcb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll e", 0x33cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl e", 0x3bcb, 2) }
-            }
-        },
-        {
-            Z80Modes.E0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,a", 0x5f, 1) } }
-        },
-        {
-            Z80Modes.E0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,b", 0x58, 1) } }
-        },
-        {
-            Z80Modes.E0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,c", 0x59, 1) } }
-        },
-        {
-            Z80Modes.E0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,d", 0x5a, 1) } }
-        },
-        {
-            Z80Modes.E0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,e", 0x5b, 1) } }
-        },
-        {
-            Z80Modes.E0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,h", 0x5c, 1) } }
-        },
-        {
-            Z80Modes.E0IXH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,ixh", 0x5cdd, 2) } }
-        },
-        {
-            Z80Modes.E0IXL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,ixl", 0x5ddd, 2) } }
-        },
-        {
-            Z80Modes.E0IYH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,iyh", 0x5cfd, 2) } }
-        },
-        {
-            Z80Modes.E0IYL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,iyl", 0x5dfd, 2) } }
-        },
-        {
-            Z80Modes.E0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in e,(c)", 0x58ed, 2) } }
-        },
-        {
-            Z80Modes.E0IndHL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,(hl)", 0x5e, 1) } }
-        },
-        {
-            Z80Modes.E0IndIX1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,(ix+${0:x2})", 0x5edd, 3) } }
-        },
-        {
-            Z80Modes.E0IndIY1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,(iy+${0:x2})", 0x5efd, 3) } }
-        },
-        {
-            Z80Modes.E0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,l", 0x5d, 1) } }
-        },
-        {
-            Z80Modes.E0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld e,${0:x2}", 0x1e, 2) } }
-        },
-        {
-            Z80Modes.H0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc h", 0x24, 1) },
-                { SyntaxParser.DEC, new Instruction("dec h", 0x25, 1) },
-                { SyntaxParser.ADD, new Instruction("add h", 0x84, 1) },
-                { SyntaxParser.ADC, new Instruction("adc h", 0x8c, 1) },
-                { SyntaxParser.SUB, new Instruction("sub h", 0x94, 1) },
-                { SyntaxParser.AND, new Instruction("and h", 0xa4, 1) },
-                { SyntaxParser.XOR, new Instruction("xor h", 0xac, 1) },
-                { SyntaxParser.OR,  new Instruction("or h", 0xb4, 1) },
-                { SyntaxParser.CP,  new Instruction("cp h", 0xbc, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc h", 0x04cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc h", 0x0ccb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl h", 0x14cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr h", 0x1ccb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla h", 0x24cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra h", 0x2ccb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll h", 0x34cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl h", 0x3ccb, 2) }
-            }
-        },
-        {
-            Z80Modes.H0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,a", 0x67, 1) } }
-        },
-        {
-            Z80Modes.H0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,b", 0x60, 1) } }
-        },
-        {
-            Z80Modes.H0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,c", 0x61, 1) } }
-        },
-        {
-            Z80Modes.H0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,d", 0x62, 1) } }
-        },
-        {
-            Z80Modes.H0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,e", 0x63, 1) } }
-        },
-        {
-            Z80Modes.H0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,h", 0x64, 1) } }
-        },
-        {
-            Z80Modes.H0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in h,(c)", 0x60ed, 2) } }
-        },
-        {
-            Z80Modes.H0IndHL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,(hl)", 0x66, 1) } }
-        },
-        {
-            Z80Modes.H0IndIX1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,(ix+${0:x2})", 0x66dd, 3) } }
-        },
-        {
-            Z80Modes.H0IndIY1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,(iy+${0:x2})", 0x66fd, 3) } }
-        },
-        {
-            Z80Modes.H0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,l", 0x65, 1) } }
-        },
-        {
-            Z80Modes.H0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld h,${0:x2}", 0x26, 2) } }
-        },
-        {
-            Z80Modes.HL0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC,  new Instruction("inc hl", 0x23, 1) },
-                { SyntaxParser.DEC,  new Instruction("dec hl", 0x2b, 1) },
-                { SyntaxParser.POP,  new Instruction("pop hl", 0xe1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push hl", 0xe5, 1) }
-            }
-        },
-        {
-            Z80Modes.HL0BC1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.ADD, new Instruction("add hl,bc", 0x09, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc hl,bc", 0x42ed, 2) },
-                { SyntaxParser.ADC, new Instruction("adc hl,bc", 0x4aed, 2) }
-            }
-        },
-        {
-            Z80Modes.HL0DE1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.ADD, new Instruction("add hl,de", 0x19, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc hl,de", 0x52ed, 2) },
-                { SyntaxParser.ADC, new Instruction("adc hl,de", 0x5aed, 2) }
-            }
-        },
-        {
-            Z80Modes.HL0HL1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.ADD, new Instruction("add hl,hl", 0x29, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc hl,hl", 0x62ed, 2) },
-                { SyntaxParser.ADC, new Instruction("adc hl,hl", 0x6aed, 2) }
-            }
-        },
-        {
-            Z80Modes.HL0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld hl,(${0:x4})", 0x2a, 3) } }
-        },
-        {
-            Z80Modes.HL0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld hl,${0:x4}", 0x21, 3) } }
-        },
-        {
-            Z80Modes.HL0SP1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.ADD, new Instruction("add hl,sp", 0x39, 1) },
-                { SyntaxParser.SBC, new Instruction("sbc hl,sp", 0x72ed, 2) },
-                { SyntaxParser.ADC, new Instruction("adc hl,sp", 0x7aed, 2) }
-            }
-        },
-        {
-            Z80Modes.I0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld i,a", 0x47ed, 2) } }
-        },
-        {
-            Z80Modes.IX0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC,  new Instruction("inc ix", 0x23dd, 2) },
-                { SyntaxParser.DEC,  new Instruction("dec ix", 0x2bdd, 2) },
-                { SyntaxParser.POP,  new Instruction("pop ix", 0xe1dd, 2) },
-                { SyntaxParser.PUSH, new Instruction("push ix", 0xe5dd, 2) }
-            }
-        },
-        {
-            Z80Modes.IX0BC1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add ix,bc", 0x09dd, 2) } }
-        },
-        {
-            Z80Modes.IX0DE1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add ix,de", 0x19dd, 2) } }
-        },
-        {
-            Z80Modes.IX0IX1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add ix,ix", 0x29dd, 2) } }
-        },
-        {
-            Z80Modes.IX0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ix,(${0:x4})", 0x2add, 4) } }
-        },
-        {
-            Z80Modes.IX0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ix,${0:x4}", 0x21dd, 4) } }
-        },
-        {
-            Z80Modes.IX0SP1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add ix,sp", 0x39dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc ixh", 0x24dd, 2) },
-                { SyntaxParser.DEC, new Instruction("dec ixh", 0x25dd, 2) },
-                { SyntaxParser.SUB, new Instruction("sub ixh", 0x94dd, 2) },
-                { SyntaxParser.AND, new Instruction("and ixh", 0xa4dd, 2) },
-                { SyntaxParser.XOR, new Instruction("xor ixh", 0xacdd, 2) },
-                { SyntaxParser.OR,  new Instruction("or ixh", 0xb4dd, 2) },
-                { SyntaxParser.CP,  new Instruction("cp ixh", 0xbcdd, 2) }
-            }
-        },
-        {
-            Z80Modes.IXH0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,a", 0x67dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,b", 0x60dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,c", 0x61dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,d", 0x62dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,e", 0x63dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0IXH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,ixh", 0x64dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0IXL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,ixl", 0x65dd, 2) } }
-        },
-        {
-            Z80Modes.IXH0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixh,${0:x2}", 0x26dd, 3) } }
-        },
-        {
-            Z80Modes.IXL0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc ixl", 0x2cdd, 2) },
-                { SyntaxParser.DEC, new Instruction("dec ixl", 0x2ddd, 2) },
-                { SyntaxParser.SUB, new Instruction("sub ixl", 0x95dd, 2) },
-                { SyntaxParser.AND, new Instruction("and ixl", 0xa5dd, 2) },
-                { SyntaxParser.XOR, new Instruction("xor ixl", 0xaddd, 2) },
-                { SyntaxParser.OR,  new Instruction("or ixl", 0xb5dd, 2) },
-                { SyntaxParser.CP,  new Instruction("cp ixl", 0xbddd, 2) }
-            }
-        },
-        {
-            Z80Modes.IXL0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,a", 0x6fdd, 2) } }
-        },
-        {
-            Z80Modes.IXL0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,b", 0x68dd, 2) } }
-        },
-        {
-            Z80Modes.IXL0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,c", 0x69dd, 2) } }
-        },
-        {
-            Z80Modes.IXL0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,d", 0x6add, 2) } }
-        },
-        {
-            Z80Modes.IXL0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,e", 0x6bdd, 2) } }
-        },
-        {
-            Z80Modes.IXL0IXH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,ixh", 0x6cdd, 2) } }
-        },
-        {
-            Z80Modes.IXL0IXL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,ixl", 0x6ddd, 2) } }
-        },
-        {
-            Z80Modes.IXL0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld ixl,${0:x2}", 0x2edd, 3) } }
-        },
-        {
-            Z80Modes.IY0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC,  new Instruction("inc iy", 0x23fd, 2) },
-                { SyntaxParser.DEC,  new Instruction("dec iy", 0x2bfd, 2) },
-                { SyntaxParser.POP,  new Instruction("pop iy", 0xe1fd, 2) },
-                { SyntaxParser.PUSH, new Instruction("push iy", 0xe5fd, 2) }
-            }
-        },
-        {
-            Z80Modes.IY0BC1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add iy,bc", 0x09fd, 2) } }
-        },
-        {
-            Z80Modes.IY0DE1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add iy,de", 0x19fd, 2) } }
-        },
-        {
-            Z80Modes.IY0IY1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add iy,iy", 0x29fd, 2) } }
-        },
-        {
-            Z80Modes.IY0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iy,(${0:x4})", 0x2afd, 4) } }
-        },
-        {
-            Z80Modes.IY0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iy,${0:x4}", 0x21fd, 4) } }
-        },
-        {
-            Z80Modes.IY0SP1, new Dictionary<int, Instruction>() { { SyntaxParser.ADD, new Instruction("add iy,sp", 0x39fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc iyh", 0x24fd, 2) },
-                { SyntaxParser.DEC, new Instruction("dec iyh", 0x25fd, 2) },
-                { SyntaxParser.SUB, new Instruction("sub iyh", 0x94fd, 2) },
-                { SyntaxParser.AND, new Instruction("and iyh", 0xa4fd, 2) },
-                { SyntaxParser.XOR, new Instruction("xor iyh", 0xacfd, 2) },
-                { SyntaxParser.OR,  new Instruction("or iyh", 0xb4fd, 2) },
-                { SyntaxParser.CP,  new Instruction("cp iyh", 0xbcfd, 2) }
-            }
-        },
-        {
-            Z80Modes.IYH0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,a", 0x67fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,b", 0x60fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,c", 0x61fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,d", 0x62fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,e", 0x63fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0IYH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,iyh", 0x64fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0IYL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,iyl", 0x65fd, 2) } }
-        },
-        {
-            Z80Modes.IYH0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyh,${0:x2}", 0x26fd, 3) } }
-        },
-        {
-            Z80Modes.IYL0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc iyl", 0x2cfd, 2) },
-                { SyntaxParser.DEC, new Instruction("dec iyl", 0x2dfd, 2) },
-                { SyntaxParser.SUB, new Instruction("sub iyl", 0x95fd, 2) },
-                { SyntaxParser.AND, new Instruction("and iyl", 0xa5fd, 2) },
-                { SyntaxParser.XOR, new Instruction("xor iyl", 0xadfd, 2) },
-                { SyntaxParser.OR,  new Instruction("or iyl", 0xb5fd, 2) },
-                { SyntaxParser.CP,  new Instruction("cp iyl", 0xbdfd, 2) }
-            }
-        },
-        {
-            Z80Modes.IYL0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,a", 0x6ffd, 2) } }
-        },
-        {
-            Z80Modes.IYL0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,b", 0x68fd, 2) } }
-        },
-        {
-            Z80Modes.IYL0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,c", 0x69fd, 2) } }
-        },
-        {
-            Z80Modes.IYL0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,d", 0x6afd, 2) } }
-        },
-        {
-            Z80Modes.IYL0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,e", 0x6bfd, 2) } }
-        },
-        {
-            Z80Modes.IYL0IYH1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,iyh", 0x6cfd, 2) } }
-        },
-        {
-            Z80Modes.IYL0IYL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,iyl", 0x6dfd, 2) } }
-        },
-        {
-            Z80Modes.IYL0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld iyl,${0:x2}", 0x2efd, 3) } }
-        },
-        {
-            Z80Modes.Implied, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.NOP,  new Instruction("nop", 0x00, 1) },
-                { SyntaxParser.RLCA, new Instruction("rlca", 0x07, 1) },
-                { SyntaxParser.RRCA, new Instruction("rrca", 0x0f, 1) },
-                { SyntaxParser.RLA,  new Instruction("rla", 0x17, 1) },
-                { SyntaxParser.RRA,  new Instruction("rra", 0x1f, 1) },
-                { SyntaxParser.DAA,  new Instruction("daa", 0x27, 1) },
-                { SyntaxParser.CPL,  new Instruction("cpl", 0x2f, 1) },
-                { SyntaxParser.SCF,  new Instruction("scf", 0x37, 1) },
-                { SyntaxParser.CCF,  new Instruction("ccf", 0x3f, 1) },
-                { SyntaxParser.HALT, new Instruction("halt", 0x76, 1) },
-                { SyntaxParser.RET,  new Instruction("ret", 0xc9, 1) },
-                { SyntaxParser.EXX,  new Instruction("exx", 0xd9, 1) },
-                { SyntaxParser.DI,   new Instruction("di", 0xf3, 1) },
-                { SyntaxParser.EI,   new Instruction("ei", 0xfb, 1) },
-                { SyntaxParser.NEG,  new Instruction("neg", 0x44ed, 2) },
-                { SyntaxParser.RETN, new Instruction("retn", 0x45ed, 2) },
-                { SyntaxParser.RETI, new Instruction("reti", 0x4ded, 2) },
-                { SyntaxParser.RRD,  new Instruction("rrd", 0x67ed, 2) },
-                { SyntaxParser.RLD,  new Instruction("rld", 0x6fed, 2) },
-                { SyntaxParser.LDI,  new Instruction("ldi", 0xa0ed, 2) },
-                { SyntaxParser.CPI,  new Instruction("cpi", 0xa1ed, 2) },
-                { SyntaxParser.INI,  new Instruction("ini", 0xa2ed, 2) },
-                { SyntaxParser.OUTI, new Instruction("outi", 0xa3ed, 2) },
-                { SyntaxParser.LDD,  new Instruction("ldd", 0xa8ed, 2) },
-                { SyntaxParser.CPD,  new Instruction("cpd", 0xa9ed, 2) },
-                { SyntaxParser.IND,  new Instruction("ind", 0xaaed, 2) },
-                { SyntaxParser.OUTD, new Instruction("outd", 0xabed, 2) },
-                { SyntaxParser.LDIR, new Instruction("ldir", 0xb0ed, 2) },
-                { SyntaxParser.CPIR, new Instruction("cpir", 0xb1ed, 2) },
-                { SyntaxParser.INIR, new Instruction("inir", 0xb2ed, 2) },
-                { SyntaxParser.OTIR, new Instruction("otir", 0xb3ed, 2) },
-                { SyntaxParser.LDDR, new Instruction("lddr", 0xb8ed, 2) },
-                { SyntaxParser.CPDR, new Instruction("cpdr", 0xb9ed, 2) },
-                { SyntaxParser.INDR, new Instruction("indr", 0xbaed, 2) },
-                { SyntaxParser.OTDR, new Instruction("otdr", 0xbbed, 2) }
-            }
-        },
-        {
-            Z80Modes.IndBC0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (bc),a", 0x02, 1) } }
-        },
-        {
-            Z80Modes.IndC0, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in (c)", 0x70ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0A1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),a", 0x79ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0B1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),b", 0x41ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0C1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),c", 0x49ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0D1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),d", 0x51ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0E1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),e", 0x59ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0H1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),h", 0x61ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0L1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),l", 0x69ed, 2) } }
-        },
-        {
-            Z80Modes.IndC0N81, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (c),0", 0x71ed, 2) } }
-        },
-        {
-            Z80Modes.IndDE0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (de),a", 0x12, 1) } }
-        },
-        {
-            Z80Modes.IndHL0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc (hl)", 0x34, 1) },
-                { SyntaxParser.DEC, new Instruction("dec (hl)", 0x35, 1) },
-                { SyntaxParser.ADD, new Instruction("add (hl)", 0x86, 1) },
-                { SyntaxParser.ADC, new Instruction("adc (hl)", 0x8e, 1) },
-                { SyntaxParser.SUB, new Instruction("sub (hl)", 0x96, 1) },
-                { SyntaxParser.AND, new Instruction("and (hl)", 0xa6, 1) },
-                { SyntaxParser.XOR, new Instruction("xor (hl)", 0xae, 1) },
-                { SyntaxParser.OR,  new Instruction("or (hl)", 0xb6, 1) },
-                { SyntaxParser.CP,  new Instruction("cp (hl)", 0xbe, 1) },
-                { SyntaxParser.JP,  new Instruction("jp (hl)", 0xe9, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc (hl)", 0x06cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc (hl)", 0x0ecb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl (hl)", 0x16cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr (hl)", 0x1ecb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla (hl)", 0x26cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra (hl)", 0x2ecb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll (hl)", 0x36cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl (hl)", 0x3ecb, 2) }
-            }
-        },
-        {
-            Z80Modes.IndHL0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),a", 0x77, 1) } }
-        },
-        {
-            Z80Modes.IndHL0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),b", 0x70, 1) } }
-        },
-        {
-            Z80Modes.IndHL0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),c", 0x71, 1) } }
-        },
-        {
-            Z80Modes.IndHL0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),d", 0x72, 1) } }
-        },
-        {
-            Z80Modes.IndHL0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),e", 0x73, 1) } }
-        },
-        {
-            Z80Modes.IndHL0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),h", 0x74, 1) } }
-        },
-        {
-            Z80Modes.IndHL0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),l", 0x75, 1) } }
-        },
-        {
-            Z80Modes.IndHL0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (hl),${0:x2}", 0x36, 2) } }
-        },
-        {
-            Z80Modes.IndIX0, new Dictionary<int, Instruction>() { { SyntaxParser.JP, new Instruction("jp (ix+${0:x2})", 0xe9dd, 2) } }
-        },
-        {
-            Z80Modes.IndIX0Offs, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2})", 0x06cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2})", 0x0ecbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2})", 0x16cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2})", 0x1ecbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2})", 0x26cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2})", 0x2ecbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2})", 0x36cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2})", 0x3ecbdd, 4) },
-                { SyntaxParser.INC, new Instruction("inc (ix+${0:x2})", 0x34dd, 3) },
-                { SyntaxParser.DEC, new Instruction("dec (ix+${0:x2})", 0x35dd, 3) },
-                { SyntaxParser.SUB, new Instruction("sub (ix+${0:x2})", 0x96dd, 3) },
-                { SyntaxParser.AND, new Instruction("and (ix+${0:x2})", 0xa6dd, 3) },
-                { SyntaxParser.XOR, new Instruction("xor (ix+${0:x2})", 0xaedd, 3) },
-                { SyntaxParser.OR,  new Instruction("or (ix+${0:x2})", 0xb6dd, 3) },
-                { SyntaxParser.CP,  new Instruction("cp (ix+${0:x2})", 0xbedd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsA1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),a", 0x07cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),a", 0x0fcbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),a", 0x17cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),a", 0x1fcbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),a", 0x27cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),a", 0x2fcbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),a", 0x37cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),a", 0x3fcbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),a", 0x77dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsB1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),b", 0x00cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),b", 0x08cbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),b", 0x10cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),b", 0x18cbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),b", 0x20cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),b", 0x28cbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),b", 0x30cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),b", 0x38cbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),b", 0x70dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsC1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),c", 0x01cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),c", 0x09cbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),c", 0x11cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),c", 0x19cbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),c", 0x21cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),c", 0x29cbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),c", 0x31cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),c", 0x39cbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),c", 0x71dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsD1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),d", 0x02cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),d", 0x0acbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),d", 0x12cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),d", 0x1acbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),d", 0x22cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),d", 0x2acbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),d", 0x32cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),d", 0x3acbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),d", 0x72dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsE1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),e", 0x03cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),e", 0x0bcbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),e", 0x13cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),e", 0x1bcbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),e", 0x23cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),e", 0x2bcbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),e", 0x33cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),e", 0x3bcbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),e", 0x73dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsH1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),h", 0x04cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),h", 0x0ccbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),h", 0x14cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),h", 0x1ccbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),h", 0x24cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),h", 0x2ccbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),h", 0x34cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),h", 0x3ccbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),h", 0x74dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsL1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (ix+${0:x2}),l", 0x05cbdd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (ix+${0:x2}),l", 0x0dcbdd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (ix+${0:x2}),l", 0x15cbdd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (ix+${0:x2}),l", 0x1dcbdd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (ix+${0:x2}),l", 0x25cbdd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (ix+${0:x2}),l", 0x2dcbdd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (ix+${0:x2}),l", 0x35cbdd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (ix+${0:x2}),l", 0x3dcbdd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (ix+${0:x2}),l", 0x75dd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIX0OffsN81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (ix+${0:x2}),${1:x2}", 0x36dd, 4) } }
-        },
-        {
-            Z80Modes.IndIY0, new Dictionary<int, Instruction>() { { SyntaxParser.JP, new Instruction("jp (iy)", 0xe9fd, 2) } }
-        },
-        {
-            Z80Modes.IndIY0Offs, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2})", 0x06cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2})", 0x0ecbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2})", 0x16cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2})", 0x1ecbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2})", 0x26cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2})", 0x2ecbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2})", 0x36cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2})", 0x3ecbfd, 4) },
-                { SyntaxParser.INC, new Instruction("inc (iy+${0:x2})", 0x34fd, 3) },
-                { SyntaxParser.DEC, new Instruction("dec (iy+${0:x2})", 0x35fd, 3) },
-                { SyntaxParser.SUB, new Instruction("sub (iy+${0:x2})", 0x96fd, 3) },
-                { SyntaxParser.AND, new Instruction("and (iy+${0:x2})", 0xa6fd, 3) },
-                { SyntaxParser.XOR, new Instruction("xor (iy+${0:x2})", 0xaefd, 3) },
-                { SyntaxParser.OR,  new Instruction("or (iy+${0:x2})", 0xb6fd, 3) },
-                { SyntaxParser.CP,  new Instruction("cp (iy+${0:x2})", 0xbefd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsA1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),a", 0x07cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),a", 0x0fcbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),a", 0x17cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),a", 0x1fcbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),a", 0x27cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),a", 0x2fcbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),a", 0x37cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),a", 0x3fcbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),a", 0x77fd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsB1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),b", 0x00cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),b", 0x08cbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),b", 0x10cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),b", 0x18cbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),b", 0x20cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),b", 0x28cbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),b", 0x30cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),b", 0x38cbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),b", 0x70fd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsC1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),c", 0x01cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),c", 0x09cbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),c", 0x11cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),c", 0x19cbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),c", 0x21cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),c", 0x29cbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),c", 0x31cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),c", 0x39cbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),c", 0x71fd, 3) }
-            } 
-        },
-        {
-            Z80Modes.IndIY0OffsD1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),d", 0x02cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),d", 0x0acbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),d", 0x12cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),d", 0x1acbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),d", 0x22cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),d", 0x2acbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),d", 0x32cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),d", 0x3acbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),d", 0x72fd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsE1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),e", 0x03cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),e", 0x0bcbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),e", 0x13cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),e", 0x1bcbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),e", 0x23cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),e", 0x2bcbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),e", 0x33cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),e", 0x3bcbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),e", 0x73fd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsH1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),h", 0x04cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),h", 0x0ccbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),h", 0x14cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),h", 0x1ccbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),h", 0x24cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),h", 0x2ccbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),h", 0x34cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),h", 0x3ccbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),h", 0x74fd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsL1, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.RLC, new Instruction("rlc (iy+${0:x2}),l", 0x05cbfd, 4) },
-                { SyntaxParser.RRC, new Instruction("rrc (iy+${0:x2}),l", 0x0dcbfd, 4) },
-                { SyntaxParser.RL,  new Instruction("rl (iy+${0:x2}),l", 0x15cbfd, 4) },
-                { SyntaxParser.RR,  new Instruction("rr (iy+${0:x2}),l", 0x1dcbfd, 4) },
-                { SyntaxParser.SLA, new Instruction("sla (iy+${0:x2}),l", 0x25cbfd, 4) },
-                { SyntaxParser.SRA, new Instruction("sra (iy+${0:x2}),l", 0x2dcbfd, 4) },
-                { SyntaxParser.SLL, new Instruction("sll (iy+${0:x2}),l", 0x35cbfd, 4) },
-                { SyntaxParser.SRL, new Instruction("srl (iy+${0:x2}),l", 0x3dcbfd, 4) },
-                { SyntaxParser.LD,  new Instruction("ld (iy+${0:x2}),l", 0x75fd, 3) }
-            }
-        },
-        {
-            Z80Modes.IndIY0OffsN81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (iy+${0:x2}),${1:x2}", 0x36fd, 4) } }
-        },
-        {
-            Z80Modes.IndN160A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),a", 0x32, 3) } }
-        },
-        {
-            Z80Modes.IndN160BC1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),bc", 0x43ed, 4) } }
-        },
-        {
-            Z80Modes.IndN160DE1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),de", 0x53ed, 4) } }
-        },
-        {
-            Z80Modes.IndN160HL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),hl", 0x22, 3) } }
-        },
-        {
-            Z80Modes.IndN160IX1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),ix", 0x22dd, 4) } }
-        },
-        {
-            Z80Modes.IndN160IY1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),iy", 0x22fd, 4) } }
-        },
-        {
-            Z80Modes.IndN160SP1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld (${0:x4}),sp", 0x73ed, 4) } }
-        },
-        {
-            Z80Modes.IndN80A1, new Dictionary<int, Instruction>() { { SyntaxParser.OUT, new Instruction("out (${0:x2}),a", 0xd3, 2) } }
-        },
-        {
-            Z80Modes.IndSP0HL1, new Dictionary<int, Instruction>() { { SyntaxParser.EX, new Instruction("ex (sp),hl", 0xe3, 1) } }
-        },
-        {
-            Z80Modes.IndSP0IX1, new Dictionary<int, Instruction>() { { SyntaxParser.EX, new Instruction("ex (sp),ix", 0xe3dd, 2) } }
-        },
-        {
-            Z80Modes.IndSP0IY1, new Dictionary<int, Instruction>() { { SyntaxParser.EX, new Instruction("ex (sp),iy", 0xe3fd, 2) } }
-        },
-        {
-            Z80Modes.L0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc l", 0x2c, 1) },
-                { SyntaxParser.DEC, new Instruction("dec l", 0x2d, 1) },
-                { SyntaxParser.ADD, new Instruction("add l", 0x85, 1) },
-                { SyntaxParser.ADC, new Instruction("adc l", 0x8d, 1) },
-                { SyntaxParser.SUB, new Instruction("sub l", 0x95, 1) },
-                { SyntaxParser.AND, new Instruction("and l", 0xa5, 1) },
-                { SyntaxParser.XOR, new Instruction("xor l", 0xad, 1) },
-                { SyntaxParser.OR,  new Instruction("or l", 0xb5, 1) },
-                { SyntaxParser.CP,  new Instruction("cp l", 0xbd, 1) },
-                { SyntaxParser.RLC, new Instruction("rlc l", 0x05cb, 2) },
-                { SyntaxParser.RRC, new Instruction("rrc l", 0x0dcb, 2) },
-                { SyntaxParser.RL,  new Instruction("rl l", 0x15cb, 2) },
-                { SyntaxParser.RR,  new Instruction("rr l", 0x1dcb, 2) },
-                { SyntaxParser.SLA, new Instruction("sla l", 0x25cb, 2) },
-                { SyntaxParser.SRA, new Instruction("sra l", 0x2dcb, 2) },
-                { SyntaxParser.SLL, new Instruction("sll l", 0x35cb, 2) },
-                { SyntaxParser.SRL, new Instruction("srl l", 0x3dcb, 2) }
-            }
-        },
-        {
-            Z80Modes.L0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,a", 0x6f, 1) } }
-        },
-        {
-            Z80Modes.L0B1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,b", 0x68, 1) } }
-        },
-        {
-            Z80Modes.L0C1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,c", 0x69, 1) } }
-        },
-        {
-            Z80Modes.L0D1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,d", 0x6a, 1) } }
-        },
-        {
-            Z80Modes.L0E1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,e", 0x6b, 1) } }
-        },
-        {
-            Z80Modes.L0H1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,h", 0x6c, 1) } }
-        },
-        {
-            Z80Modes.L0IndC1, new Dictionary<int, Instruction>() { { SyntaxParser.IN, new Instruction("in l,(c)", 0x68ed, 2) } }
-        },
-        {
-            Z80Modes.L0IndHL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,(hl)", 0x6e, 1) } }
-        },
-        {
-            Z80Modes.L0IndIX1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,(ix+${0:x2})", 0x6edd, 3) } }
-        },
-        {
-            Z80Modes.L0IndIY1Offs, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,(iy+${0:x2})", 0x6efd, 3) } }
-        },
-        {
-            Z80Modes.L0L1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,l", 0x6d, 1) } }
-        },
-        {
-            Z80Modes.L0N81, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld l,${0:x2}", 0x2e, 2) } }
-        },
-        {
-            Z80Modes.M0, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret m", 0xf8, 1) } }
-        },
-        {
-            Z80Modes.M0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp m,${0:x4}", 0xfa, 3) },
-                { SyntaxParser.CALL, new Instruction("call m,${0:x4}", 0xfc, 3) }
-            }
-        },
-        {
-            Z80Modes.M0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp m,${0:x4}", 0xfa, 3) },
-                { SyntaxParser.CALL, new Instruction("call m,${0:x4}", 0xfc, 3) }
-            }
-        },
-        {
-            Z80Modes.N160, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.DJNZ, new Instruction("djnz ${0:x4}", 0x10, 2, true) },
-                { SyntaxParser.JR,   new Instruction("jr ${0:x4}", 0x18, 2, true) },
-                { SyntaxParser.JP,   new Instruction("jp ${0:x4}", 0xc3, 3) },
-                { SyntaxParser.CALL, new Instruction("call ${0:x4}", 0xcd, 3) }
-            }
-        },
-        {
-            Z80Modes.N80, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.SUB,  new Instruction("sub ${0:x2}", 0xd6, 2) },
-                { SyntaxParser.RST,  new Instruction("rst ${0:x2}", 0xdf, 1) },
-                { SyntaxParser.AND,  new Instruction("and ${0:x2}", 0xe6, 2) },
-                { SyntaxParser.XOR,  new Instruction("xor ${0:x2}", 0xee, 2) },
-                { SyntaxParser.OR,   new Instruction("or ${0:x2}", 0xf6, 2) },
-                { SyntaxParser.CP,   new Instruction("cp ${0:x2}", 0xfe, 2) },
-                { SyntaxParser.DJNZ, new Instruction("djnz ${0:x4}", 0x10, 2, true) },
-                { SyntaxParser.JR,   new Instruction("jr ${0:x4}", 0x18, 2, true) },
-                { SyntaxParser.JP,   new Instruction("jp ${0:x4}", 0xc3, 3) },
-                { SyntaxParser.CALL, new Instruction("call ${0:x4}", 0xcd, 3) }
-            }
-        },
-        {
-            Z80Modes.NC, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret nc", 0xd0, 1) } }
-        },
-        {
-            Z80Modes.NC0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JR,   new Instruction("jr nc,${0:x4}", 0x30, 2, true) },
-                { SyntaxParser.JP,   new Instruction("jp nc,${0:x4}", 0xd2, 3) },
-                { SyntaxParser.CALL, new Instruction("call nc,${0:x4}", 0xd4, 3) }
-            }
-        },
-        {
-            Z80Modes.NZ, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret nz", 0xc0, 1) } }
-        },
-        {
-            Z80Modes.NZ0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JR,   new Instruction("jr nz,${0:x4}", 0x20, 2, true) },
-                { SyntaxParser.JP,   new Instruction("jp nz,${0:x4}", 0xc2, 3) },
-                { SyntaxParser.CALL, new Instruction("call nz,${0:x4}", 0xc4, 3) }
-            }
-        },
-        {
-            Z80Modes.P, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret p", 0xf0, 1) } }
-        },
-        {
-            Z80Modes.P0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp p,${0:x4}", 0xf2, 3) },
-                { SyntaxParser.CALL, new Instruction("call p,${0:x4}", 0xf4, 3) }
-            }
-        },
-        {
-            Z80Modes.P0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp p,${0:x4}", 0xf2, 3) },
-                { SyntaxParser.CALL, new Instruction("call p,${0:x4}", 0xf4, 3) }
-            }
-        },
-        {
-            Z80Modes.PE, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret pe", 0xe8, 1) } }
-        },
-        {
-            Z80Modes.PE0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp pe,${0:x4}", 0xea, 3) },
-                { SyntaxParser.CALL, new Instruction("call pe,${0:x4}", 0xec, 3) }
-            }
-        },
-        {
-            Z80Modes.PE0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp pe,${0:x4}", 0xea, 3) },
-                { SyntaxParser.CALL, new Instruction("call pe,${0:x4}", 0xec, 3) }
-            }
-        },
-        {
-            Z80Modes.PO, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret po", 0xe0, 1) } }
-        },
-         {
-            Z80Modes.PO0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp po,${0:x4}", 0xe2, 3) },
-                { SyntaxParser.CALL, new Instruction("call po,${0:x4}", 0xe4, 3) }
-            }
-        },
-        {
-            Z80Modes.PO0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JP,   new Instruction("jp po,${0:x4}", 0xe2, 3) },
-                { SyntaxParser.CALL, new Instruction("call po,${0:x4}", 0xe4, 3) }
-            }
-        },
-        {
-            Z80Modes.R0A1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld r,a", 0x4fed, 2) } }
-        },
-        {
-            Z80Modes.SP0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INC, new Instruction("inc sp", 0x33, 1) },
-                { SyntaxParser.DEC, new Instruction("dec sp", 0x3b, 1) }
-            }
-        },
-        {
-            Z80Modes.SP0HL1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld sp,hl", 0xf9, 1) } }
-        },
-        {
-            Z80Modes.SP0IX1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld sp,ix", 0xf9dd, 2) } }
-        },
-        {
-            Z80Modes.SP0IY1, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld sp,iy", 0xf9fd, 2) } }
-        },
-        {
-            Z80Modes.SP0IndN161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld sp,(${0:x4})", 0x7bed, 4) } }
-        },
-        {
-            Z80Modes.SP0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LD, new Instruction("ld sp,${0:x4}", 0x31, 3) } }
-        },
-        {
-            Z80Modes.Z, new Dictionary<int, Instruction>() { { SyntaxParser.RET, new Instruction("ret z", 0xc8, 1) } }
-        },
-        {
-            Z80Modes.Z0N161, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.JR, new Instruction("jr z,${0:x4}", 0x28, 2, true) },
-                { SyntaxParser.JP, new Instruction("jp z,${0:x4}", 0xca, 3) },
-                { SyntaxParser.CALL, new Instruction("call z,${0:x4}", 0xcc, 3) }
-            }
-        },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0, 0x8f },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0A1, 0x8f },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0B1, 0x88 },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0C1, 0x89 },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0D1, 0x8a },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0E1, 0x8b },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0H1, 0x8c },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IndHL1, 0x8e },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IndIX1Offs, 0x8edd },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IndIY1Offs, 0x8efd },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IXH1, 0x8cdd },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IXL1, 0x8ddd },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IYH1, 0x8cfd },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0IYL1, 0x8dfd },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0L1, 0x8d },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0N81, 0xce },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.B0, 0x88 },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.C0, 0x89 },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.D0, 0x8a },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.E0, 0x8b },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.H0, 0x8c },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.HL0BC1, 0x4aed },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.HL0DE1, 0x5aed },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.HL0HL1, 0x6aed },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.HL0SP1, 0x7aed },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.IndHL0, 0x8e },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.L0, 0x8d },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0, 0x87 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0A1, 0x87 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0B1, 0x80 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0C1, 0x81 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0D1, 0x82 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0E1, 0x83 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0H1, 0x84 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IndHL1, 0x86 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IndIX1Offs, 0x86dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IndIY1Offs, 0x86fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IXH1, 0x84dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IXL1, 0x85dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IYH1, 0x84fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0IYL1, 0x85fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0L1, 0x85 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0N81, 0xc6 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.B0, 0x80 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.C0, 0x81 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.D0, 0x82 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.E0, 0x83 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.H0, 0x84 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.HL0BC1, 0x09 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.HL0DE1, 0x19 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.HL0HL1, 0x29 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.HL0SP1, 0x39 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IndHL0, 0x86 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IX0BC1, 0x9dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IX0DE1, 0x19dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IX0IX1, 0x29dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IX0SP1, 0x39dd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IY0BC1, 0x9fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IY0DE1, 0x19fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IY0IY1, 0x29fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.IY0SP1, 0x39fd },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.L0, 0x85 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0, 0xa7 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0A1, 0xa7 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0B1, 0xa0 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0C1, 0xa1 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0D1, 0xa2 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0E1, 0xa3 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0H1, 0xa4 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0IndHL1, 0xa6 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.A0L1, 0xa5 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.B0, 0xa0 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.C0, 0xa1 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.D0, 0xa2 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.E0, 0xa3 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.H0, 0xa4 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IndHL0, 0xa6 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IndIX0Offs, 0xa6dd },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IndIY0Offs, 0xa6fd },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IXH0, 0xa4dd },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IXL0, 0xa5dd },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IYH0, 0xa4fd },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.IYL0, 0xa5fd },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.L0, 0xa5 },
+         { (ulong)SyntaxParser.AND << 32 | Z80Modes.N80, 0xe6 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.C0N161, 0xdc },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.C0N81, 0xdc },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.M0N161, 0xfc },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.M0N81, 0xfc },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.N160, 0xcd },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.N80, 0xcd },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.NC0N161, 0xd4 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.NZ0N161, 0xc4 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.P0N161, 0xf4 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.P0N81, 0xf4 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.PE0N161, 0xec },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.PE0N81, 0xec },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.PO0N161, 0xe4 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.PO0N81, 0xe4 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.Z0N161, 0xcc },
+         { (ulong)SyntaxParser.CCF << 32 | Z80Modes.Implied, 0x3f },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0, 0xbf },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0A1, 0xbf },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0B1, 0xb8 },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0C1, 0xb9 },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0D1, 0xba },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0E1, 0xbb },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0H1, 0xbc },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0IndHL1, 0xbe },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.A0L1, 0xbd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.B0, 0xb8 },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.C0, 0xb9 },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.D0, 0xba },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.E0, 0xbb },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.H0, 0xbc },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IndHL0, 0xbe },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IndIX0Offs, 0xbedd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IndIY0Offs, 0xbefd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IXH0, 0xbcdd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IXL0, 0xbddd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IYH0, 0xbcfd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.IYL0, 0xbdfd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.L0, 0xbd },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.N80, 0xfe },
+         { (ulong)SyntaxParser.CPD << 32 | Z80Modes.Implied, 0xa9ed },
+         { (ulong)SyntaxParser.CPDR << 32 | Z80Modes.Implied, 0xb9ed },
+         { (ulong)SyntaxParser.CPI << 32 | Z80Modes.Implied, 0xa1ed },
+         { (ulong)SyntaxParser.CPIR << 32 | Z80Modes.Implied, 0xb1ed },
+         { (ulong)SyntaxParser.CPL << 32 | Z80Modes.A0, 0x2f },
+         { (ulong)SyntaxParser.CPL << 32 | Z80Modes.Implied, 0x2f },
+         { (ulong)SyntaxParser.DAA << 32 | Z80Modes.A0, 0x27 },
+         { (ulong)SyntaxParser.DAA << 32 | Z80Modes.Implied, 0x27 },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.A0, 0x3d },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.B0, 0x05 },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.BC0, 0x0b },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.C0, 0x0d },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.D0, 0x15 },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.DE0, 0x1b },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.E0, 0x1d },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.H0, 0x25 },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.HL0, 0x2b },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IndHL0, 0x35 },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IndIX0Offs, 0x35dd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IndIY0Offs, 0x35fd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IX0, 0x2bdd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IXH0, 0x25dd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IXL0, 0x2ddd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IY0, 0x2bfd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IYH0, 0x25fd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.IYL0, 0x2dfd },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.L0, 0x2d },
+         { (ulong)SyntaxParser.DEC << 32 | Z80Modes.SP0, 0x3b },
+         { (ulong)SyntaxParser.DI << 32 | Z80Modes.Implied, 0xf3 },
+         { (ulong)SyntaxParser.DJNZ << 32 | Z80Modes.N160, 0x10 },
+         { (ulong)SyntaxParser.DJNZ << 32 | Z80Modes.N80, 0x10 },
+         { (ulong)SyntaxParser.EI << 32 | Z80Modes.Implied, 0xfb },
+         { (ulong)SyntaxParser.EX << 32 | Z80Modes.AF0ShadowAF1, 0x08 },
+         { (ulong)SyntaxParser.EX << 32 | Z80Modes.DE0HL1, 0xeb },
+         { (ulong)SyntaxParser.EX << 32 | Z80Modes.IndSP0HL1, 0xe3 },
+         { (ulong)SyntaxParser.EX << 32 | Z80Modes.IndSP0IX1, 0xe3dd },
+         { (ulong)SyntaxParser.EX << 32 | Z80Modes.IndSP0IY1, 0xe3fd },
+         { (ulong)SyntaxParser.EXX << 32 | Z80Modes.Implied, 0xd9 },
+         { (ulong)SyntaxParser.HALT << 32 | Z80Modes.Implied, 0x76 },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.A0IndC1, 0x78ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.A0IndN81, 0xdb },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.B0IndC1, 0x40ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.C0IndC1, 0x48ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.D0IndC1, 0x50ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.E0IndC1, 0x58ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.H0IndC1, 0x60ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.IndC0, 0x70ed },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.L0IndC1, 0x68ed },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.A0, 0x3c },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.B0, 0x04 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.BC0, 0x03 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.C0, 0x0c },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.D0, 0x14 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.DE0, 0x13 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.E0, 0x1c },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.H0, 0x24 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.HL0, 0x23 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IndHL0, 0x34 },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IndIX0Offs, 0x34dd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IndIY0Offs, 0x34fd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IX0, 0x23dd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IXH0, 0x24dd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IXL0, 0x2cdd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IY0, 0x23fd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IYH0, 0x24fd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.IYL0, 0x2cfd },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.L0, 0x2c },
+         { (ulong)SyntaxParser.INC << 32 | Z80Modes.SP0, 0x33 },
+         { (ulong)SyntaxParser.IND << 32 | Z80Modes.Implied, 0xaaed },
+         { (ulong)SyntaxParser.INDR << 32 | Z80Modes.Implied, 0xbaed },
+         { (ulong)SyntaxParser.INI << 32 | Z80Modes.Implied, 0xa2ed },
+         { (ulong)SyntaxParser.INIR << 32 | Z80Modes.Implied, 0xb2ed },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.C0N161, 0xda },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.C0N81, 0xda },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.IndHL0, 0xe9 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.IndIX0, 0xe9dd },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.IndIY0, 0xe9fd },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.M0N161, 0xfa },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.M0N81, 0xfa },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.N160, 0xc3 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.N80, 0xc3 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.NC0N161, 0xd2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.NZ0N161, 0xc2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.P0N161, 0xf2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.P0N81, 0xf2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.PE0N161, 0xea },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.PE0N81, 0xea },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.PO0N161, 0xe2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.PO0N81, 0xe2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.Z0N161, 0xca },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.C0N161, 0x38 },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.C0N81, 0x38 },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.N160, 0x18 },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.N80, 0x18 },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.NC0N161, 0x30 },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.NZ0N161, 0x20 },
+         { (ulong)SyntaxParser.JR << 32 | Z80Modes.Z0N161, 0x28 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0A1, 0x7f },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0B1, 0x78 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0C1, 0x79 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0D1, 0x7a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0E1, 0x7b },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0H1, 0x7c },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0I1, 0x57ed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IndBC1, 0x0a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IndDE1, 0x1a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IndHL1, 0x7e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IndIX1Offs, 0x7edd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IndIY1Offs, 0x7efd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IndN161, 0x3a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IXH1, 0x7cdd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IXL1, 0x7ddd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IYH1, 0x7cfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0IYL1, 0x7dfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0L1, 0x7d },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0N81, 0x3e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.A0R1, 0x5fed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0A1, 0x47 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0B1, 0x40 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0C1, 0x41 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0D1, 0x42 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0E1, 0x43 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0H1, 0x44 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IndHL1, 0x46 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IndIX1Offs, 0x46dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IndIY1Offs, 0x46fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IXH1, 0x44dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IXL1, 0x45dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IYH1, 0x44fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0IYL1, 0x45fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0L1, 0x45 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.B0N81, 0x06 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.BC0IndN161, 0x4bed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.BC0N161, 0x01 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0A1, 0x4f },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0B1, 0x48 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0C1, 0x49 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0D1, 0x4a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0E1, 0x4b },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0H1, 0x4c },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IndHL1, 0x4e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IndIX1Offs, 0x4edd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IndIY1Offs, 0x4efd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IXH1, 0x4cdd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IXL1, 0x4ddd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IYH1, 0x4cfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0IYL1, 0x4dfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0L1, 0x4d },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.C0N81, 0x0e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0A1, 0x57 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0B1, 0x50 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0C1, 0x51 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0D1, 0x52 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0E1, 0x53 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0H1, 0x54 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IndHL1, 0x56 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IndIX1Offs, 0x56dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IndIY1Offs, 0x56fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IXH1, 0x54dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IXL1, 0x55dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IYH1, 0x54fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0IYL1, 0x55fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0L1, 0x55 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.D0N81, 0x16 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.DE0IndN161, 0x5bed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.DE0N161, 0x11 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0A1, 0x5f },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0B1, 0x58 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0C1, 0x59 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0D1, 0x5a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0E1, 0x5b },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0H1, 0x5c },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IndHL1, 0x5e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IndIX1Offs, 0x5edd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IndIY1Offs, 0x5efd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IXH1, 0x5cdd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IXL1, 0x5ddd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IYH1, 0x5cfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0IYL1, 0x5dfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0L1, 0x5d },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.E0N81, 0x1e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0A1, 0x67 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0B1, 0x60 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0C1, 0x61 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0D1, 0x62 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0E1, 0x63 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0H1, 0x64 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0IndHL1, 0x66 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0IndIX1Offs, 0x66dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0IndIY1Offs, 0x66fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0L1, 0x65 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.H0N81, 0x26 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.HL0IndN161, 0x2a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.HL0N161, 0x21 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.I0A1, 0x47ed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndBC0A1, 0x02 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndDE0A1, 0x12 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0A1, 0x77 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0B1, 0x70 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0C1, 0x71 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0D1, 0x72 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0E1, 0x73 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0H1, 0x74 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0L1, 0x75 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndHL0N81, 0x36 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsA1, 0x77dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsB1, 0x70dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsC1, 0x71dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsD1, 0x72dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsE1, 0x73dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsH1, 0x74dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsL1, 0x75dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIX0OffsN81, 0x36dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsA1, 0x77fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsB1, 0x70fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsC1, 0x71fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsD1, 0x72fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsE1, 0x73fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsH1, 0x74fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsL1, 0x75fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndIY0OffsN81, 0x36fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160A1, 0x32 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160BC1, 0x43ed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160DE1, 0x53ed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160HL1, 0x22 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160IX1, 0x22dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160IY1, 0x22fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IndN160SP1, 0x73ed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IX0IndN161, 0x2add },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IX0N161, 0x21dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0A1, 0x67dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0B1, 0x60dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0C1, 0x61dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0D1, 0x62dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0E1, 0x63dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0IXH1, 0x64dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0IXL1, 0x65dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXH0N81, 0x26dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0A1, 0x6fdd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0B1, 0x68dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0C1, 0x69dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0D1, 0x6add },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0E1, 0x6bdd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0IXH1, 0x6cdd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0IXL1, 0x6ddd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IXL0N81, 0x2edd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IY0IndN161, 0x2afd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IY0N161, 0x21fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0A1, 0x67fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0B1, 0x60fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0C1, 0x61fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0D1, 0x62fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0E1, 0x63fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0IYH1, 0x64fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0IYL1, 0x65fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYH0N81, 0x26fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0A1, 0x6ffd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0B1, 0x68fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0C1, 0x69fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0D1, 0x6afd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0E1, 0x6bfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0IYH1, 0x6cfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0IYL1, 0x6dfd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.IYL0N81, 0x2efd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0A1, 0x6f },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0B1, 0x68 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0C1, 0x69 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0D1, 0x6a },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0E1, 0x6b },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0H1, 0x6c },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0IndHL1, 0x6e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0IndIX1Offs, 0x6edd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0IndIY1Offs, 0x6efd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0L1, 0x6d },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.L0N81, 0x2e },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.R0A1, 0x4fed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.SP0HL1, 0xf9 },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.SP0IndN161, 0x7bed },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.SP0IX1, 0xf9dd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.SP0IY1, 0xf9fd },
+         { (ulong)SyntaxParser.LD << 32 | Z80Modes.SP0N161, 0x31 },
+         { (ulong)SyntaxParser.LDD << 32 | Z80Modes.Implied, 0xa8ed },
+         { (ulong)SyntaxParser.LDDR << 32 | Z80Modes.Implied, 0xb8ed },
+         { (ulong)SyntaxParser.LDI << 32 | Z80Modes.Implied, 0xa0ed },
+         { (ulong)SyntaxParser.LDIR << 32 | Z80Modes.Implied, 0xb0ed },
+         { (ulong)SyntaxParser.NEG << 32 | Z80Modes.Implied, 0x44ed },
+         { (ulong)SyntaxParser.NOP << 32 | Z80Modes.Implied, 0x00 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0, 0xb7 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0A1, 0xb7 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0B1, 0xb0 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0C1, 0xb1 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0D1, 0xb2 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0E1, 0xb3 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0H1, 0xb4 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0IndHL1, 0xb6 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.A0L1, 0xb5 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.B0, 0xb0 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.C0, 0xb1 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.D0, 0xb2 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.E0, 0xb3 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.H0, 0xb4 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IndHL0, 0xb6 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IndIX0Offs, 0xb6dd },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IndIY0Offs, 0xb6fd },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IXH0, 0xb4dd },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IXL0, 0xb5dd },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IYH0, 0xb4fd },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.IYL0, 0xb5fd },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.L0, 0xb5 },
+         { (ulong)SyntaxParser.OR << 32 | Z80Modes.N80, 0xf6 },
+         { (ulong)SyntaxParser.OTDR << 32 | Z80Modes.Implied, 0xbbed },
+         { (ulong)SyntaxParser.OTIR << 32 | Z80Modes.Implied, 0xb3ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0A1, 0x79ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0B1, 0x41ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0C1, 0x49ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0D1, 0x51ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0E1, 0x59ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0H1, 0x61ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0L1, 0x69ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndC0N81, 0x71ed },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.IndN80A1, 0xd3 },
+         { (ulong)SyntaxParser.OUTD << 32 | Z80Modes.Implied, 0xabed },
+         { (ulong)SyntaxParser.OUTI << 32 | Z80Modes.Implied, 0xa3ed },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.AF0, 0xf1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.BC0, 0xc1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.DE0, 0xd1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.HL0, 0xe1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.IX0, 0xe1dd },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.IY0, 0xe1fd },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.AF0, 0xf5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.BC0, 0xc5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.DE0, 0xd5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.HL0, 0xe5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.IX0, 0xe5dd },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.IY0, 0xe5fd },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.C0, 0xd8 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.Implied, 0xc9 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.M0, 0xf8 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.NC, 0xd0 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.NZ, 0xc0 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.P, 0xf0 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.PE, 0xe8 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.PO, 0xe0 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.Z, 0xc8 },
+         { (ulong)SyntaxParser.RETI << 32 | Z80Modes.Implied, 0x4ded },
+         { (ulong)SyntaxParser.RETN << 32 | Z80Modes.Implied, 0x45ed },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.A0, 0x17cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.B0, 0x10cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.C0, 0x11cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.D0, 0x12cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.E0, 0x13cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.H0, 0x14cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndHL0, 0x16cb },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0Offs, 0x16cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsA1, 0x17cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsB1, 0x10cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsC1, 0x11cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsD1, 0x12cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsE1, 0x13cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsH1, 0x14cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIX0OffsL1, 0x15cbdd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0Offs, 0x16cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsA1, 0x17cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsB1, 0x10cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsC1, 0x11cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsD1, 0x12cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsE1, 0x13cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsH1, 0x14cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.IndIY0OffsL1, 0x15cbfd },
+         { (ulong)SyntaxParser.RL << 32 | Z80Modes.L0, 0x15cb },
+         { (ulong)SyntaxParser.RLA << 32 | Z80Modes.Implied, 0x17 },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.A0, 0x7cb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.B0, 0xcb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.C0, 0x1cb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.D0, 0x2cb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.E0, 0x3cb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.H0, 0x4cb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndHL0, 0x6cb },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0Offs, 0x6cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsA1, 0x7cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsB1, 0xcbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsC1, 0x1cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsD1, 0x2cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsE1, 0x3cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsH1, 0x4cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIX0OffsL1, 0x5cbdd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0Offs, 0x6cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsA1, 0x7cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsB1, 0xcbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsC1, 0x1cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsD1, 0x2cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsE1, 0x3cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsH1, 0x4cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.IndIY0OffsL1, 0x5cbfd },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.L0, 0x5cb },
+         { (ulong)SyntaxParser.RLCA << 32 | Z80Modes.Implied, 0x07 },
+         { (ulong)SyntaxParser.RLD << 32 | Z80Modes.Implied, 0x6fed },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.A0, 0x1fcb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.B0, 0x18cb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.C0, 0x19cb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.D0, 0x1acb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.E0, 0x1bcb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.H0, 0x1ccb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndHL0, 0x1ecb },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0Offs, 0x1ecbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsA1, 0x1fcbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsB1, 0x18cbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsC1, 0x19cbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsD1, 0x1acbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsE1, 0x1bcbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsH1, 0x1ccbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIX0OffsL1, 0x1dcbdd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0Offs, 0x1ecbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsA1, 0x1fcbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsB1, 0x18cbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsC1, 0x19cbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsD1, 0x1acbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsE1, 0x1bcbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsH1, 0x1ccbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.IndIY0OffsL1, 0x1dcbfd },
+         { (ulong)SyntaxParser.RR << 32 | Z80Modes.L0, 0x1dcb },
+         { (ulong)SyntaxParser.RRA << 32 | Z80Modes.Implied, 0x1f },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.A0, 0xfcb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.B0, 0x8cb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.C0, 0x9cb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.D0, 0xacb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.E0, 0xbcb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.H0, 0xccb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndHL0, 0xecb },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0Offs, 0xecbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsA1, 0xfcbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsB1, 0x8cbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsC1, 0x9cbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsD1, 0xacbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsE1, 0xbcbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsH1, 0xccbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIX0OffsL1, 0xdcbdd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0Offs, 0xecbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsA1, 0xfcbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsB1, 0x8cbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsC1, 0x9cbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsD1, 0xacbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsE1, 0xbcbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsH1, 0xccbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.IndIY0OffsL1, 0xdcbfd },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.L0, 0xdcb },
+         { (ulong)SyntaxParser.RRCA << 32 | Z80Modes.Implied, 0x0f },
+         { (ulong)SyntaxParser.RRD << 32 | Z80Modes.Implied, 0x67ed },
+         { (ulong)SyntaxParser.RST << 32 | Z80Modes.N80, 0xdf },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0A1, 0x9f },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0B1, 0x98 },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0C1, 0x99 },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0D1, 0x9a },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0E1, 0x9b },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0H1, 0x9c },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IndHL1, 0x9e },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IndIX1Offs, 0x9edd },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IndIY1Offs, 0x9efd },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IXH1, 0x9cdd },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IXL1, 0x9ddd },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IYH1, 0x9cfd },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0IYL1, 0x9dfd },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0L1, 0x9d },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.A0N81, 0xde },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.HL0BC1, 0x42ed },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.HL0DE1, 0x52ed },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.HL0HL1, 0x62ed },
+         { (ulong)SyntaxParser.SBC << 32 | Z80Modes.HL0SP1, 0x72ed },
+         { (ulong)SyntaxParser.SCF << 32 | Z80Modes.Implied, 0x37 },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.A0, 0x27cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.B0, 0x20cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.C0, 0x21cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.D0, 0x22cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.E0, 0x23cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.H0, 0x24cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndHL0, 0x26cb },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0Offs, 0x26cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsA1, 0x27cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsB1, 0x20cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsC1, 0x21cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsD1, 0x22cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsE1, 0x23cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsH1, 0x24cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIX0OffsL1, 0x25cbdd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0Offs, 0x26cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsA1, 0x27cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsB1, 0x20cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsC1, 0x21cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsD1, 0x22cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsE1, 0x23cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsH1, 0x24cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.IndIY0OffsL1, 0x25cbfd },
+         { (ulong)SyntaxParser.SLA << 32 | Z80Modes.L0, 0x25cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.A0, 0x37cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.B0, 0x30cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.C0, 0x31cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.D0, 0x32cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.E0, 0x33cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.H0, 0x34cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndHL0, 0x36cb },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0Offs, 0x36cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsA1, 0x37cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsB1, 0x30cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsC1, 0x31cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsD1, 0x32cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsE1, 0x33cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsH1, 0x34cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIX0OffsL1, 0x35cbdd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0Offs, 0x36cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsA1, 0x37cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsB1, 0x30cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsC1, 0x31cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsD1, 0x32cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsE1, 0x33cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsH1, 0x34cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.IndIY0OffsL1, 0x35cbfd },
+         { (ulong)SyntaxParser.SLL << 32 | Z80Modes.L0, 0x35cb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.A0, 0x2fcb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.B0, 0x28cb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.C0, 0x29cb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.D0, 0x2acb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.E0, 0x2bcb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.H0, 0x2ccb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndHL0, 0x2ecb },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0Offs, 0x2ecbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsA1, 0x2fcbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsB1, 0x28cbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsC1, 0x29cbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsD1, 0x2acbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsE1, 0x2bcbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsH1, 0x2ccbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIX0OffsL1, 0x2dcbdd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0Offs, 0x2ecbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsA1, 0x2fcbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsB1, 0x28cbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsC1, 0x29cbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsD1, 0x2acbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsE1, 0x2bcbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsH1, 0x2ccbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.IndIY0OffsL1, 0x2dcbfd },
+         { (ulong)SyntaxParser.SRA << 32 | Z80Modes.L0, 0x2dcb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.A0, 0x3fcb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.B0, 0x38cb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.C0, 0x39cb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.D0, 0x3acb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.E0, 0x3bcb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.H0, 0x3ccb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndHL0, 0x3ecb },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0Offs, 0x3ecbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsA1, 0x3fcbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsB1, 0x38cbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsC1, 0x39cbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsD1, 0x3acbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsE1, 0x3bcbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsH1, 0x3ccbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIX0OffsL1, 0x3dcbdd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0Offs, 0x3ecbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsA1, 0x3fcbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsB1, 0x38cbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsC1, 0x39cbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsD1, 0x3acbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsE1, 0x3bcbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsH1, 0x3ccbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.IndIY0OffsL1, 0x3dcbfd },
+         { (ulong)SyntaxParser.SRL << 32 | Z80Modes.L0, 0x3dcb },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0, 0x97 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0A1, 0x97 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0B1, 0x90 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0C1, 0x91 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0D1, 0x92 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0E1, 0x93 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0H1, 0x94 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0IndHL1, 0x96 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0L1, 0x95 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.B0, 0x90 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.C0, 0x91 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.D0, 0x92 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.E0, 0x93 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.H0, 0x94 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IndHL0, 0x96 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IndIX0Offs, 0x96dd },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IndIY0Offs, 0x96fd },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IXH0, 0x94dd },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IXL0, 0x95dd },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IYH0, 0x94fd },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.IYL0, 0x95fd },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.L0, 0x95 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.N80, 0xd6 },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0, 0xaf },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0A1, 0xaf },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0B1, 0xa8 },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0C1, 0xa9 },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0D1, 0xaa },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0E1, 0xab },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0H1, 0xac },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0IndHL1, 0xae },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.A0L1, 0xad },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.B0, 0xa8 },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.C0, 0xa9 },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.D0, 0xaa },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.E0, 0xab },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.H0, 0xac },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IndHL0, 0xae },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IndIX0Offs, 0xaedd },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IndIY0Offs, 0xaefd },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IXH0, 0xacdd },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IXL0, 0xaddd },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IYH0, 0xacfd },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.IYL0, 0xadfd },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.L0, 0xad },
+         { (ulong)SyntaxParser.XOR << 32 | Z80Modes.N80, 0xee },
     };
 
     private static readonly Dictionary<int, Instruction> s_z80AllOpcodes = new()
@@ -3133,488 +2392,266 @@ public sealed partial class Z80InstructionEncoder
         { 0xffcbfd, new Instruction("set 7,(iy+${0:x2}),a", 0xffcbfd, 4) }
     };
 
-    // s_i8080
-    private static readonly Dictionary<int, Dictionary<int, Instruction>> s_i8080 = new()
+    private static readonly Dictionary<ulong, int> s_i8080 = new()
     {
-        {
-            Z80Modes.A0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INR, new Instruction("inr a", 0x3c, 1) },
-                { SyntaxParser.DCR, new Instruction("dcr a", 0x3d, 1) },
-                { SyntaxParser.ADD, new Instruction("add a", 0x87, 1) },
-                { SyntaxParser.ADC, new Instruction("adc a", 0x8f, 1) },
-                { SyntaxParser.SUB, new Instruction("sub a", 0x97, 1) },
-                { SyntaxParser.SBB, new Instruction("sbb a", 0x9f, 1) },
-                { SyntaxParser.ANA, new Instruction("ana a", 0xa7, 1) },
-                { SyntaxParser.XRA, new Instruction("xra a", 0xaf, 1) },
-                { SyntaxParser.ORA, new Instruction("ora a", 0xb7, 1) },
-                { SyntaxParser.CMP, new Instruction("cmp a", 0xbf, 1) }
-            }
-        },
-        {
-            Z80Modes.A0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,a", 0x7f, 1) } }
-        },
-        {
-            Z80Modes.A0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,b", 0x78, 1) } }
-        },
-        {
-            Z80Modes.A0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,c", 0x79, 1) } }
-        },
-        {
-            Z80Modes.A0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,d", 0x7a, 1) } }
-        },
-        {
-            Z80Modes.A0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,e", 0x7b, 1) } }
-        },
-        {
-            Z80Modes.A0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,h", 0x7c, 1) } }
-        },
-        {
-            Z80Modes.A0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,l", 0x7d, 1) } }
-        },
-        {
-            Z80Modes.A0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov a,m", 0x7e, 1) } }
-        },
-        {
-            Z80Modes.A0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.MVI, new Instruction("mvi a,${0:x2}", 0x3e, 2) },
-                { SyntaxParser.ADI, new Instruction("adi a,${0:x2}", 0xc6, 2) }
-            }
-        },
-        {
-            Z80Modes.B0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.STAX, new Instruction("stax b", 0x02, 1) },
-                { SyntaxParser.INX,  new Instruction("inx b", 0x03, 1) },
-                { SyntaxParser.INR,  new Instruction("inr b", 0x04, 1) },
-                { SyntaxParser.DCR,  new Instruction("dcr b", 0x05, 1) },
-                { SyntaxParser.DAD,  new Instruction("dad b", 0x09, 1) },
-                { SyntaxParser.LDAX, new Instruction("ldax b", 0x0a, 1) },
-                { SyntaxParser.DCX,  new Instruction("dcx b", 0x0b, 1) },
-                { SyntaxParser.ADD,  new Instruction("add b", 0x80, 1) },
-                { SyntaxParser.ADC,  new Instruction("adc b", 0x88, 1) },
-                { SyntaxParser.SUB,  new Instruction("sub b", 0x90, 1) },
-                { SyntaxParser.SBB,  new Instruction("sbb b", 0x98, 1) },
-                { SyntaxParser.ANA,  new Instruction("ana b", 0xa0, 1) },
-                { SyntaxParser.XRA,  new Instruction("xra b", 0xa8, 1) },
-                { SyntaxParser.ORA,  new Instruction("ora b", 0xb0, 1) },
-                { SyntaxParser.CMP,  new Instruction("cmp b", 0xb8, 1) },
-                { SyntaxParser.POP,  new Instruction("pop b", 0xc1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push b", 0xc5, 1) }
-            }
-        },
-        {
-            Z80Modes.B0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,a", 0x47, 1) } }
-        },
-        {
-            Z80Modes.B0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,b", 0x40, 1) } }
-        },
-        {
-            Z80Modes.B0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,c", 0x41, 1) } }
-        },
-        {
-            Z80Modes.B0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,d", 0x42, 1) } }
-        },
-        {
-            Z80Modes.B0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,e", 0x43, 1) } }
-        },
-        {
-            Z80Modes.B0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,h", 0x44, 1) } }
-        },
-        {
-            Z80Modes.B0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,l", 0x45, 1) } }
-        },
-        {
-            Z80Modes.B0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov b,m", 0x46, 1) } }
-        },
-        {
-            Z80Modes.B0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LXI, new Instruction("lxi b,${0:x4}", 0x01, 3) },
-                { SyntaxParser.MVI, new Instruction("mvi b,${0:x2}", 0x06, 2) }
-            }
-        },
-        {
-            Z80Modes.C0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INR, new Instruction("inr c", 0x0c, 1) },
-                { SyntaxParser.DCR, new Instruction("dcr c", 0x0d, 1) },
-                { SyntaxParser.ADD, new Instruction("add c", 0x81, 1) },
-                { SyntaxParser.ADC, new Instruction("adc c", 0x89, 1) },
-                { SyntaxParser.SUB, new Instruction("sub c", 0x91, 1) },
-                { SyntaxParser.SBB, new Instruction("sbb c", 0x99, 1) },
-                { SyntaxParser.ANA, new Instruction("ana c", 0xa1, 1) },
-                { SyntaxParser.XRA, new Instruction("xra c", 0xa9, 1) },
-                { SyntaxParser.ORA, new Instruction("ora c", 0xb1, 1) },
-                { SyntaxParser.CMP, new Instruction("cmp c", 0xb9, 1) }
-            }
-        },
-        {
-            Z80Modes.C0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,a", 0x4f, 1) } }
-        },
-        {
-            Z80Modes.C0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,b", 0x48, 1) } }
-        },
-        {
-            Z80Modes.C0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,c", 0x49, 1) } }
-        },
-        {
-            Z80Modes.C0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,d", 0x4a, 1) } }
-        },
-        {
-            Z80Modes.C0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,e", 0x4b, 1) } }
-        },
-        {
-            Z80Modes.C0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,h", 0x4c, 1) } }
-        },
-        {
-            Z80Modes.C0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,l", 0x4d, 1) } }
-        },
-        {
-            Z80Modes.C0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov c,m", 0x4e, 1) } }
-        },
-        {
-            Z80Modes.C0N81, new Dictionary<int, Instruction>() { { SyntaxParser.MVI, new Instruction("mvi c,${0:x2}", 0x0e, 2) } }
-        },
-        {
-            Z80Modes.D0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.STAX, new Instruction("stax d", 0x12, 1) },
-                { SyntaxParser.INX,  new Instruction("inx d", 0x13, 1) },
-                { SyntaxParser.INR,  new Instruction("inr d", 0x14, 1) },
-                { SyntaxParser.DCR,  new Instruction("dcr d", 0x15, 1) },
-                { SyntaxParser.DAD,  new Instruction("dad d", 0x19, 1) },
-                { SyntaxParser.LDAX, new Instruction("ldax d", 0x1a, 1) },
-                { SyntaxParser.DCX,  new Instruction("dcx d", 0x1b, 1) },
-                { SyntaxParser.ADD,  new Instruction("add d", 0x82, 1) },
-                { SyntaxParser.ADC,  new Instruction("adc d", 0x8a, 1) },
-                { SyntaxParser.SUB,  new Instruction("sub d", 0x92, 1) },
-                { SyntaxParser.SBB,  new Instruction("sbb d", 0x9a, 1) },
-                { SyntaxParser.ANA,  new Instruction("ana d", 0xa2, 1) },
-                { SyntaxParser.XRA,  new Instruction("xra d", 0xaa, 1) },
-                { SyntaxParser.ORA,  new Instruction("ora d", 0xb2, 1) },
-                { SyntaxParser.CMP,  new Instruction("cmp d", 0xba, 1) },
-                { SyntaxParser.POP,  new Instruction("pop d", 0xd1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push d", 0xd5, 1) }
-            }
-        },
-        {
-            Z80Modes.D0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,a", 0x57, 1) } }
-        },
-        {
-            Z80Modes.D0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,b", 0x50, 1) } }
-        },
-        {
-            Z80Modes.D0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,c", 0x51, 1) } }
-        },
-        {
-            Z80Modes.D0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,d", 0x52, 1) } }
-        },
-        {
-            Z80Modes.D0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,e", 0x53, 1) } }
-        },
-        {
-            Z80Modes.D0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,h", 0x54, 1) } }
-        },
-        {
-            Z80Modes.D0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,l", 0x55, 1) } }
-        },
-        {
-            Z80Modes.D0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov d,m", 0x56, 1) } }
-        },
-        {
-            Z80Modes.D0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LXI, new Instruction("lxi d,${0:x4}", 0x11, 3) },
-                { SyntaxParser.MVI, new Instruction("mvi d,${0:x2}", 0x16, 2) }
-            }
-        },
-        {
-            Z80Modes.E0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INR, new Instruction("inr e", 0x1c, 1) },
-                { SyntaxParser.DCR, new Instruction("dcr e", 0x1d, 1) },
-                { SyntaxParser.ADD, new Instruction("add e", 0x83, 1) },
-                { SyntaxParser.ADC, new Instruction("adc e", 0x8b, 1) },
-                { SyntaxParser.SUB, new Instruction("sub e", 0x93, 1) },
-                { SyntaxParser.SBB, new Instruction("sbb e", 0x9b, 1) },
-                { SyntaxParser.ANA, new Instruction("ana e", 0xa3, 1) },
-                { SyntaxParser.XRA, new Instruction("xra e", 0xab, 1) },
-                { SyntaxParser.ORA, new Instruction("ora e", 0xb3, 1) },
-                { SyntaxParser.CMP, new Instruction("cmp e", 0xbb, 1) }
-            }
-        },
-        {
-            Z80Modes.E0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,a", 0x5f, 1) } }
-        },
-        {
-            Z80Modes.E0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,b", 0x58, 1) } }
-        },
-        {
-            Z80Modes.E0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,c", 0x59, 1) } }
-        },
-        {
-            Z80Modes.E0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,d", 0x5a, 1) } }
-        },
-        {
-            Z80Modes.E0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,e", 0x5b, 1) } }
-        },
-        {
-            Z80Modes.E0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,h", 0x5c, 1) } }
-        },
-        {
-            Z80Modes.E0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,l", 0x5d, 1) } }
-        },
-        {
-            Z80Modes.E0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov e,m", 0x5e, 1) } }
-        },
-        {
-            Z80Modes.E0N81, new Dictionary<int, Instruction>() { { SyntaxParser.MVI, new Instruction("mvi e,${0:x2}", 0x1e, 2) } }
-        },
-        {
-            Z80Modes.H0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INX,  new Instruction("inx h", 0x23, 1) },
-                { SyntaxParser.INR,  new Instruction("inr h", 0x24, 1) },
-                { SyntaxParser.DCR,  new Instruction("dcr h", 0x25, 1) },
-                { SyntaxParser.DAD,  new Instruction("dad h", 0x29, 1) },
-                { SyntaxParser.DCX,  new Instruction("dcx h", 0x2b, 1) },
-                { SyntaxParser.ADD,  new Instruction("add h", 0x84, 1) },
-                { SyntaxParser.ADC,  new Instruction("adc h", 0x8c, 1) },
-                { SyntaxParser.SUB,  new Instruction("sub h", 0x94, 1) },
-                { SyntaxParser.SBB,  new Instruction("sbb h", 0x9c, 1) },
-                { SyntaxParser.ANA,  new Instruction("ana h", 0xa4, 1) },
-                { SyntaxParser.XRA,  new Instruction("xra h", 0xac, 1) },
-                { SyntaxParser.ORA,  new Instruction("ora h", 0xb4, 1) },
-                { SyntaxParser.CMP,  new Instruction("cmp h", 0xbc, 1) },
-                { SyntaxParser.POP,  new Instruction("pop h", 0xe1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push h", 0xe5, 1) }
-            }
-        },
-        {
-            Z80Modes.H0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,a", 0x67, 1) } }
-        },
-        {
-            Z80Modes.H0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,b", 0x60, 1) } }
-        },
-        {
-            Z80Modes.H0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,c", 0x61, 1) } }
-        },
-        {
-            Z80Modes.H0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,d", 0x62, 1) } }
-        },
-        {
-            Z80Modes.H0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,e", 0x63, 1) } }
-        },
-        {
-            Z80Modes.H0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,h", 0x64, 1) } }
-        },
-        {
-            Z80Modes.H0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,l", 0x65, 1) } }
-        },
-        {
-            Z80Modes.H0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov h,m", 0x66, 1) } }
-        },
-        {
-            Z80Modes.H0N81, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.LXI, new Instruction("lxi h,${0:x4}", 0x21, 3) },
-                { SyntaxParser.MVI, new Instruction("mvi h,${0:x2}", 0x26, 2) }
-            }
-        },
-        {
-            Z80Modes.Implied, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.NOP,  new Instruction("nop", 0x00, 1) },
-                { SyntaxParser.RLC,  new Instruction("rlc", 0x07, 1) },
-                { SyntaxParser.RRC,  new Instruction("rrc", 0x0f, 1) },
-                { SyntaxParser.RAL,  new Instruction("ral", 0x17, 1) },
-                { SyntaxParser.RAR,  new Instruction("rar", 0x1f, 1) },
-                { SyntaxParser.DAA,  new Instruction("daa", 0x27, 1) },
-                { SyntaxParser.CMA,  new Instruction("cma", 0x2f, 1) },
-                { SyntaxParser.STC,  new Instruction("stc", 0x37, 1) },
-                { SyntaxParser.CMC,  new Instruction("cmc", 0x3f, 1) },
-                { SyntaxParser.HLT,  new Instruction("hlt", 0x76, 1) },
-                { SyntaxParser.RNZ,  new Instruction("rnz", 0xc0, 1) },
-                { SyntaxParser.RZ,   new Instruction("rz", 0xc8, 1) },
-                { SyntaxParser.RET,  new Instruction("ret", 0xc9, 1) },
-                { SyntaxParser.RNC,  new Instruction("rnc", 0xd0, 1) },
-                { SyntaxParser.RC,   new Instruction("rc", 0xd8, 1) },
-                { SyntaxParser.RPO,  new Instruction("rpo", 0xe0, 1) },
-                { SyntaxParser.XTHL, new Instruction("xthl", 0xe3, 1) },
-                { SyntaxParser.RPE,  new Instruction("rpe", 0xe8, 1) },
-                { SyntaxParser.PCHL, new Instruction("pchl", 0xe9, 1) },
-                { SyntaxParser.XCHG, new Instruction("xchg", 0xeb, 1) },
-                { SyntaxParser.RP,   new Instruction("rp", 0xf0, 1) },
-                { SyntaxParser.DI,   new Instruction("di", 0xf3, 1) },
-                { SyntaxParser.RM,   new Instruction("rm", 0xf8, 1) },
-                { SyntaxParser.SPHL, new Instruction("sphl", 0xf9, 1) },
-                { SyntaxParser.EI,   new Instruction("ei", 0xfb, 1) }
-            }
-        },
-        {
-            Z80Modes.L0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INR, new Instruction("inr l", 0x2c, 1) },
-                { SyntaxParser.DCR, new Instruction("dcr l", 0x2d, 1) },
-                { SyntaxParser.ADD, new Instruction("add l", 0x85, 1) },
-                { SyntaxParser.ADC, new Instruction("adc l", 0x8d, 1) },
-                { SyntaxParser.SUB, new Instruction("sub l", 0x95, 1) },
-                { SyntaxParser.SBB, new Instruction("sbb l", 0x9d, 1) },
-                { SyntaxParser.ANA, new Instruction("ana l", 0xa5, 1) },
-                { SyntaxParser.XRA, new Instruction("xra l", 0xad, 1) },
-                { SyntaxParser.ORA, new Instruction("ora l", 0xb5, 1) },
-                { SyntaxParser.CMP, new Instruction("cmp l", 0xbd, 1) }
-            }
-        },
-        {
-            Z80Modes.L0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,a", 0x6f, 1) } }
-        },
-        {
-            Z80Modes.L0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,b", 0x68, 1) } }
-        },
-        {
-            Z80Modes.L0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,c", 0x69, 1) } }
-        },
-        {
-            Z80Modes.L0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,d", 0x6a, 1) } }
-        },
-        {
-            Z80Modes.L0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,e", 0x6b, 1) } }
-        },
-        {
-            Z80Modes.L0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,h", 0x6c, 1) } }
-        },
-        {
-            Z80Modes.L0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,l", 0x6d, 1) } }
-        },
-        {
-            Z80Modes.L0M1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov l,m", 0x6e, 1) } }
-        },
-        {
-            Z80Modes.L0N81, new Dictionary<int, Instruction>() { { SyntaxParser.MVI, new Instruction("mvi l,${0:x2}", 0x2e, 2) } }
-        },
-        {
-            Z80Modes.M0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INR, new Instruction("inr m", 0x34, 1) },
-                { SyntaxParser.DCR, new Instruction("dcr m", 0x35, 1) },
-                { SyntaxParser.ADD, new Instruction("add m", 0x86, 1) },
-                { SyntaxParser.ADC, new Instruction("adc m", 0x8e, 1) },
-                { SyntaxParser.SUB, new Instruction("sub m", 0x96, 1) },
-                { SyntaxParser.SBB, new Instruction("sbb m", 0x9e, 1) },
-                { SyntaxParser.ANA, new Instruction("ana m", 0xa6, 1) },
-                { SyntaxParser.XRA, new Instruction("xra m", 0xae, 1) },
-                { SyntaxParser.ORA, new Instruction("ora m", 0xb6, 1) },
-                { SyntaxParser.CMP, new Instruction("cmp m", 0xbe, 1) }
-            }
-        },
-        {
-            Z80Modes.M0A1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,a", 0x77, 1) } }
-        },
-        {
-            Z80Modes.M0B1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,b", 0x70, 1) } }
-        },
-        {
-            Z80Modes.M0C1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,c", 0x71, 1) } }
-        },
-        {
-            Z80Modes.M0D1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,d", 0x72, 1) } }
-        },
-        {
-            Z80Modes.M0E1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,e", 0x73, 1) } }
-        },
-        {
-            Z80Modes.M0H1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,h", 0x74, 1) } }
-        },
-        {
-            Z80Modes.M0L1, new Dictionary<int, Instruction>() { { SyntaxParser.MOV, new Instruction("mov m,l", 0x75, 1) } }
-        },
-        {
-            Z80Modes.M0N81, new Dictionary<int, Instruction>() { { SyntaxParser.MVI, new Instruction("mvi m,${0:x2}", 0x36, 2) } }
-        },
-        {
-            Z80Modes.N160, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.SHLD, new Instruction("shld ${0:x4}", 0x22, 3) },
-                { SyntaxParser.LHLD, new Instruction("lhld ${0:x4}", 0x2a, 3) },
-                { SyntaxParser.STA,  new Instruction("sta ${0:x4}", 0x32, 3) },
-                { SyntaxParser.LDA,  new Instruction("lda ${0:x4}", 0x3a, 3) },
-                { SyntaxParser.JNZ,  new Instruction("jnz ${0:x4}", 0xc2, 3) },
-                { SyntaxParser.JMP,  new Instruction("jmp ${0:x4}", 0xc3, 3) },
-                { SyntaxParser.CNZ,  new Instruction("cnz ${0:x4}", 0xc4, 3) },
-                { SyntaxParser.JZ,   new Instruction("jz ${0:x4}", 0xca, 3) },
-                { SyntaxParser.CZ,   new Instruction("cz ${0:x4}", 0xcc, 3) },
-                { SyntaxParser.CALL, new Instruction("call ${0:x4}", 0xcd, 3) },
-                { SyntaxParser.JNC,  new Instruction("jnc ${0:x4}", 0xd2, 3) },
-                { SyntaxParser.CNC,  new Instruction("cnc ${0:x4}", 0xd4, 3) },
-                { SyntaxParser.JC,   new Instruction("jc ${0:x4}", 0xda, 3) },
-                { SyntaxParser.CC,   new Instruction("cc ${0:x4}", 0xdc, 3) },
-                { SyntaxParser.JPO,  new Instruction("jpo ${0:x4}", 0xe2, 3) },
-                { SyntaxParser.CPO,  new Instruction("cpo ${0:x4}", 0xe4, 3) },
-                { SyntaxParser.JPE,  new Instruction("jpe ${0:x4}", 0xea, 3) },
-                { SyntaxParser.CPE,  new Instruction("cpe ${0:x4}", 0xec, 3) },
-                { SyntaxParser.JP,   new Instruction("jp ${0:x4}", 0xf2, 3) },
-                { SyntaxParser.CP,   new Instruction("cp ${0:x4}", 0xf4, 3) },
-                { SyntaxParser.JM,   new Instruction("jm ${0:x4}", 0xfa, 3) },
-                { SyntaxParser.CM,   new Instruction("cm ${0:x4}", 0xfc, 3) }
-            }
-        },
-        {
-            Z80Modes.N80, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.ACI,  new Instruction("aci ${0:x2}", 0xce, 2) },
-                { SyntaxParser.OUT,  new Instruction("out ${0:x2}", 0xd3, 2) },
-                { SyntaxParser.SUI,  new Instruction("sui ${0:x2}", 0xd6, 2) },
-                { SyntaxParser.IN,   new Instruction("in ${0:x2}", 0xdb, 2) },
-                { SyntaxParser.SBI,  new Instruction("sbi ${0:x2}", 0xde, 2) },
-                { SyntaxParser.ANI,  new Instruction("ani ${0:x2}", 0xe6, 2) },
-                { SyntaxParser.XRI,  new Instruction("xri ${0:x2}", 0xee, 2) },
-                { SyntaxParser.ORI,  new Instruction("ori ${0:x2}", 0xf6, 2) },
-                { SyntaxParser.CPI,  new Instruction("cpi ${0:x2}", 0xfe, 2) },
-                { SyntaxParser.SHLD, new Instruction("shld ${0:x4}", 0x22, 3) },
-                { SyntaxParser.LHLD, new Instruction("lhld ${0:x4}", 0x2a, 3) },
-                { SyntaxParser.STA,  new Instruction("sta ${0:x4}", 0x32, 3) },
-                { SyntaxParser.LDA,  new Instruction("lda ${0:x4}", 0x3a, 3) },
-                { SyntaxParser.JNZ,  new Instruction("jnz ${0:x4}", 0xc2, 3) },
-                { SyntaxParser.JMP,  new Instruction("jmp ${0:x4}", 0xc3, 3) },
-                { SyntaxParser.CNZ,  new Instruction("cnz ${0:x4}", 0xc4, 3) },
-                { SyntaxParser.JZ,   new Instruction("jz ${0:x4}", 0xca, 3) },
-                { SyntaxParser.CZ,   new Instruction("cz ${0:x4}", 0xcc, 3) },
-                { SyntaxParser.CALL, new Instruction("call ${0:x4}", 0xcd, 3) },
-                { SyntaxParser.JNC,  new Instruction("jnc ${0:x4}", 0xd2, 3) },
-                { SyntaxParser.CNC,  new Instruction("cnc ${0:x4}", 0xd4, 3) },
-                { SyntaxParser.JC,   new Instruction("jc ${0:x4}", 0xda, 3) },
-                { SyntaxParser.CC,   new Instruction("cc ${0:x4}", 0xdc, 3) },
-                { SyntaxParser.JPO,  new Instruction("jpo ${0:x4}", 0xe2, 3) },
-                { SyntaxParser.CPO,  new Instruction("cpo ${0:x4}", 0xe4, 3) },
-                { SyntaxParser.JPE,  new Instruction("jpe ${0:x4}", 0xea, 3) },
-                { SyntaxParser.CPE,  new Instruction("cpe ${0:x4}", 0xec, 3) },
-                { SyntaxParser.JP,   new Instruction("jp ${0:x4}", 0xf2, 3) },
-                { SyntaxParser.CP,   new Instruction("cp ${0:x4}", 0xf4, 3) },
-                { SyntaxParser.JM,   new Instruction("jm ${0:x4}", 0xfa, 3) },
-                { SyntaxParser.CM,   new Instruction("cm ${0:x4}", 0xfc, 3) }
-            }
-        },
-        {
-            Z80Modes.PSW0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.POP,  new Instruction("pop psw", 0xf1, 1) },
-                { SyntaxParser.PUSH, new Instruction("push psw", 0xf5, 1) }
-            }
-        },
-        {
-            Z80Modes.SP0, new Dictionary<int, Instruction>()
-            {
-                { SyntaxParser.INX, new Instruction("inx sp", 0x33, 1) },
-                { SyntaxParser.DAD, new Instruction("dad sp", 0x39, 1) },
-                { SyntaxParser.DCX, new Instruction("dcx sp", 0x3b, 1) }
-            }
-        },
-        {
-            Z80Modes.SP0N161, new Dictionary<int, Instruction>() { { SyntaxParser.LXI, new Instruction("lxi sp,${0:x4}", 0x31, 3) } }
-        }
+         { (ulong)SyntaxParser.ACI << 32 | Z80Modes.N80, 0xce },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.A0, 0x8f },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.B0, 0x88 },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.C0, 0x89 },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.D0, 0x8a },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.E0, 0x8b },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.H0, 0x8c },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.L0, 0x8d },
+         { (ulong)SyntaxParser.ADC << 32 | Z80Modes.M0, 0x8e },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.A0, 0x87 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.B0, 0x80 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.C0, 0x81 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.D0, 0x82 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.E0, 0x83 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.H0, 0x84 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.L0, 0x85 },
+         { (ulong)SyntaxParser.ADD << 32 | Z80Modes.M0, 0x86 },
+         { (ulong)SyntaxParser.ADI << 32 | Z80Modes.A0N81, 0xc6 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.A0, 0xa7 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.B0, 0xa0 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.C0, 0xa1 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.D0, 0xa2 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.E0, 0xa3 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.H0, 0xa4 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.L0, 0xa5 },
+         { (ulong)SyntaxParser.ANA << 32 | Z80Modes.M0, 0xa6 },
+         { (ulong)SyntaxParser.ANI << 32 | Z80Modes.N80, 0xe6 },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.N160, 0xcd },
+         { (ulong)SyntaxParser.CALL << 32 | Z80Modes.N80, 0xcd },
+         { (ulong)SyntaxParser.CC << 32 | Z80Modes.N160, 0xdc },
+         { (ulong)SyntaxParser.CC << 32 | Z80Modes.N80, 0xdc },
+         { (ulong)SyntaxParser.CM << 32 | Z80Modes.N160, 0xfc },
+         { (ulong)SyntaxParser.CM << 32 | Z80Modes.N80, 0xfc },
+         { (ulong)SyntaxParser.CMA << 32 | Z80Modes.Implied, 0x2f },
+         { (ulong)SyntaxParser.CMC << 32 | Z80Modes.Implied, 0x3f },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.A0, 0xbf },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.B0, 0xb8 },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.C0, 0xb9 },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.D0, 0xba },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.E0, 0xbb },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.H0, 0xbc },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.L0, 0xbd },
+         { (ulong)SyntaxParser.CMP << 32 | Z80Modes.M0, 0xbe },
+         { (ulong)SyntaxParser.CNC << 32 | Z80Modes.N160, 0xd4 },
+         { (ulong)SyntaxParser.CNC << 32 | Z80Modes.N80, 0xd4 },
+         { (ulong)SyntaxParser.CNZ << 32 | Z80Modes.N160, 0xc4 },
+         { (ulong)SyntaxParser.CNZ << 32 | Z80Modes.N80, 0xc4 },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.N160, 0xf4 },
+         { (ulong)SyntaxParser.CP << 32 | Z80Modes.N80, 0xf4 },
+         { (ulong)SyntaxParser.CPE << 32 | Z80Modes.N160, 0xec },
+         { (ulong)SyntaxParser.CPE << 32 | Z80Modes.N80, 0xec },
+         { (ulong)SyntaxParser.CPI << 32 | Z80Modes.N80, 0xfe },
+         { (ulong)SyntaxParser.CPO << 32 | Z80Modes.N160, 0xe4 },
+         { (ulong)SyntaxParser.CPO << 32 | Z80Modes.N80, 0xe4 },
+         { (ulong)SyntaxParser.CZ << 32 | Z80Modes.N160, 0xcc },
+         { (ulong)SyntaxParser.CZ << 32 | Z80Modes.N80, 0xcc },
+         { (ulong)SyntaxParser.DAA << 32 | Z80Modes.Implied, 0x27 },
+         { (ulong)SyntaxParser.DAD << 32 | Z80Modes.B0, 0x09 },
+         { (ulong)SyntaxParser.DAD << 32 | Z80Modes.D0, 0x19 },
+         { (ulong)SyntaxParser.DAD << 32 | Z80Modes.H0, 0x29 },
+         { (ulong)SyntaxParser.DAD << 32 | Z80Modes.SP0, 0x39 },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.A0, 0x3d },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.B0, 0x05 },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.C0, 0x0d },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.D0, 0x15 },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.E0, 0x1d },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.H0, 0x25 },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.L0, 0x2d },
+         { (ulong)SyntaxParser.DCR << 32 | Z80Modes.M0, 0x35 },
+         { (ulong)SyntaxParser.DCX << 32 | Z80Modes.B0, 0x0b },
+         { (ulong)SyntaxParser.DCX << 32 | Z80Modes.D0, 0x1b },
+         { (ulong)SyntaxParser.DCX << 32 | Z80Modes.H0, 0x2b },
+         { (ulong)SyntaxParser.DCX << 32 | Z80Modes.SP0, 0x3b },
+         { (ulong)SyntaxParser.DI << 32 | Z80Modes.Implied, 0xf3 },
+         { (ulong)SyntaxParser.EI << 32 | Z80Modes.Implied, 0xfb },
+         { (ulong)SyntaxParser.HLT << 32 | Z80Modes.Implied, 0x76 },
+         { (ulong)SyntaxParser.IN << 32 | Z80Modes.N80, 0xdb },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.A0, 0x3c },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.B0, 0x04 },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.C0, 0x0c },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.D0, 0x14 },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.E0, 0x1c },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.H0, 0x24 },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.L0, 0x2c },
+         { (ulong)SyntaxParser.INR << 32 | Z80Modes.M0, 0x34 },
+         { (ulong)SyntaxParser.INX << 32 | Z80Modes.B0, 0x03 },
+         { (ulong)SyntaxParser.INX << 32 | Z80Modes.D0, 0x13 },
+         { (ulong)SyntaxParser.INX << 32 | Z80Modes.H0, 0x23 },
+         { (ulong)SyntaxParser.INX << 32 | Z80Modes.SP0, 0x33 },
+         { (ulong)SyntaxParser.JC << 32 | Z80Modes.N160, 0xda },
+         { (ulong)SyntaxParser.JC << 32 | Z80Modes.N80, 0xda },
+         { (ulong)SyntaxParser.JM << 32 | Z80Modes.N160, 0xfa },
+         { (ulong)SyntaxParser.JM << 32 | Z80Modes.N80, 0xfa },
+         { (ulong)SyntaxParser.JMP << 32 | Z80Modes.N160, 0xc3 },
+         { (ulong)SyntaxParser.JMP << 32 | Z80Modes.N80, 0xc3 },
+         { (ulong)SyntaxParser.JNC << 32 | Z80Modes.N160, 0xd2 },
+         { (ulong)SyntaxParser.JNC << 32 | Z80Modes.N80, 0xd2 },
+         { (ulong)SyntaxParser.JNZ << 32 | Z80Modes.N160, 0xc2 },
+         { (ulong)SyntaxParser.JNZ << 32 | Z80Modes.N80, 0xc2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.N160, 0xf2 },
+         { (ulong)SyntaxParser.JP << 32 | Z80Modes.N80, 0xf2 },
+         { (ulong)SyntaxParser.JPE << 32 | Z80Modes.N160, 0xea },
+         { (ulong)SyntaxParser.JPE << 32 | Z80Modes.N80, 0xea },
+         { (ulong)SyntaxParser.JPO << 32 | Z80Modes.N160, 0xe2 },
+         { (ulong)SyntaxParser.JPO << 32 | Z80Modes.N80, 0xe2 },
+         { (ulong)SyntaxParser.JZ << 32 | Z80Modes.N160, 0xca },
+         { (ulong)SyntaxParser.JZ << 32 | Z80Modes.N80, 0xca },
+         { (ulong)SyntaxParser.LDA << 32 | Z80Modes.N160, 0x3a },
+         { (ulong)SyntaxParser.LDA << 32 | Z80Modes.N80, 0x3a },
+         { (ulong)SyntaxParser.LDAX << 32 | Z80Modes.B0, 0x0a },
+         { (ulong)SyntaxParser.LDAX << 32 | Z80Modes.D0, 0x1a },
+         { (ulong)SyntaxParser.LHLD << 32 | Z80Modes.N160, 0x2a },
+         { (ulong)SyntaxParser.LHLD << 32 | Z80Modes.N80, 0x2a },
+         { (ulong)SyntaxParser.LXI << 32 | Z80Modes.B0N81, 0x01 },
+         { (ulong)SyntaxParser.LXI << 32 | Z80Modes.D0N81, 0x11 },
+         { (ulong)SyntaxParser.LXI << 32 | Z80Modes.H0N81, 0x21 },
+         { (ulong)SyntaxParser.LXI << 32 | Z80Modes.SP0N161, 0x31 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0A1, 0x7f },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0B1, 0x78 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0C1, 0x79 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0D1, 0x7a },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0E1, 0x7b },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0H1, 0x7c },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0L1, 0x7d },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.A0M1, 0x7e },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0A1, 0x47 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0B1, 0x40 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0C1, 0x41 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0D1, 0x42 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0E1, 0x43 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0H1, 0x44 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0L1, 0x45 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.B0M1, 0x46 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0A1, 0x4f },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0B1, 0x48 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0C1, 0x49 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0D1, 0x4a },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0E1, 0x4b },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0H1, 0x4c },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0L1, 0x4d },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.C0M1, 0x4e },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0A1, 0x57 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0B1, 0x50 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0C1, 0x51 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0D1, 0x52 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0E1, 0x53 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0H1, 0x54 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0L1, 0x55 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.D0M1, 0x56 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0A1, 0x5f },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0B1, 0x58 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0C1, 0x59 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0D1, 0x5a },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0E1, 0x5b },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0H1, 0x5c },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0L1, 0x5d },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.E0M1, 0x5e },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0A1, 0x67 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0B1, 0x60 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0C1, 0x61 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0D1, 0x62 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0E1, 0x63 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0H1, 0x64 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0L1, 0x65 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.H0M1, 0x66 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0A1, 0x6f },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0B1, 0x68 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0C1, 0x69 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0D1, 0x6a },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0E1, 0x6b },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0H1, 0x6c },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0L1, 0x6d },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.L0M1, 0x6e },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0A1, 0x77 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0B1, 0x70 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0C1, 0x71 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0D1, 0x72 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0E1, 0x73 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0H1, 0x74 },
+         { (ulong)SyntaxParser.MOV << 32 | Z80Modes.M0L1, 0x75 },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.A0N81, 0x3e },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.B0N81, 0x06 },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.C0N81, 0x0e },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.D0N81, 0x16 },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.E0N81, 0x1e },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.H0N81, 0x26 },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.L0N81, 0x2e },
+         { (ulong)SyntaxParser.MVI << 32 | Z80Modes.M0N81, 0x36 },
+         { (ulong)SyntaxParser.NOP << 32 | Z80Modes.Implied, 0x00 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.A0, 0xb7 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.B0, 0xb0 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.C0, 0xb1 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.D0, 0xb2 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.E0, 0xb3 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.H0, 0xb4 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.L0, 0xb5 },
+         { (ulong)SyntaxParser.ORA << 32 | Z80Modes.M0, 0xb6 },
+         { (ulong)SyntaxParser.ORI << 32 | Z80Modes.N80, 0xf6 },
+         { (ulong)SyntaxParser.OUT << 32 | Z80Modes.N80, 0xd3 },
+         { (ulong)SyntaxParser.PCHL << 32 | Z80Modes.Implied, 0xe9 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.B0, 0xc1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.D0, 0xd1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.H0, 0xe1 },
+         { (ulong)SyntaxParser.POP << 32 | Z80Modes.PSW0, 0xf1 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.B0, 0xc5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.D0, 0xd5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.H0, 0xe5 },
+         { (ulong)SyntaxParser.PUSH << 32 | Z80Modes.PSW0, 0xf5 },
+         { (ulong)SyntaxParser.RAL << 32 | Z80Modes.Implied, 0x17 },
+         { (ulong)SyntaxParser.RAR << 32 | Z80Modes.Implied, 0x1f },
+         { (ulong)SyntaxParser.RC << 32 | Z80Modes.Implied, 0xd8 },
+         { (ulong)SyntaxParser.RET << 32 | Z80Modes.Implied, 0xc9 },
+         { (ulong)SyntaxParser.RLC << 32 | Z80Modes.Implied, 0x07 },
+         { (ulong)SyntaxParser.RM << 32 | Z80Modes.Implied, 0xf8 },
+         { (ulong)SyntaxParser.RNC << 32 | Z80Modes.Implied, 0xd0 },
+         { (ulong)SyntaxParser.RNZ << 32 | Z80Modes.Implied, 0xc0 },
+         { (ulong)SyntaxParser.RP << 32 | Z80Modes.Implied, 0xf0 },
+         { (ulong)SyntaxParser.RPE << 32 | Z80Modes.Implied, 0xe8 },
+         { (ulong)SyntaxParser.RPO << 32 | Z80Modes.Implied, 0xe0 },
+         { (ulong)SyntaxParser.RRC << 32 | Z80Modes.Implied, 0x0f },
+         { (ulong)SyntaxParser.RZ << 32 | Z80Modes.Implied, 0xc8 },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.A0, 0x9f },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.B0, 0x98 },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.C0, 0x99 },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.D0, 0x9a },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.E0, 0x9b },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.H0, 0x9c },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.L0, 0x9d },
+         { (ulong)SyntaxParser.SBB << 32 | Z80Modes.M0, 0x9e },
+         { (ulong)SyntaxParser.SBI << 32 | Z80Modes.N80, 0xde },
+         { (ulong)SyntaxParser.SHLD << 32 | Z80Modes.N160, 0x22 },
+         { (ulong)SyntaxParser.SHLD << 32 | Z80Modes.N80, 0x22 },
+         { (ulong)SyntaxParser.SPHL << 32 | Z80Modes.Implied, 0xf9 },
+         { (ulong)SyntaxParser.STA << 32 | Z80Modes.N160, 0x32 },
+         { (ulong)SyntaxParser.STA << 32 | Z80Modes.N80, 0x32 },
+         { (ulong)SyntaxParser.STAX << 32 | Z80Modes.B0, 0x02 },
+         { (ulong)SyntaxParser.STAX << 32 | Z80Modes.D0, 0x12 },
+         { (ulong)SyntaxParser.STC << 32 | Z80Modes.Implied, 0x37 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.A0, 0x97 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.B0, 0x90 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.C0, 0x91 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.D0, 0x92 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.E0, 0x93 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.H0, 0x94 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.L0, 0x95 },
+         { (ulong)SyntaxParser.SUB << 32 | Z80Modes.M0, 0x96 },
+         { (ulong)SyntaxParser.SUI << 32 | Z80Modes.N80, 0xd6 },
+         { (ulong)SyntaxParser.XCHG << 32 | Z80Modes.Implied, 0xeb },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.A0, 0xaf },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.B0, 0xa8 },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.C0, 0xa9 },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.D0, 0xaa },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.E0, 0xab },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.H0, 0xac },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.L0, 0xad },
+         { (ulong)SyntaxParser.XRA << 32 | Z80Modes.M0, 0xae },
+         { (ulong)SyntaxParser.XRI << 32 | Z80Modes.N80, 0xee },
+         { (ulong)SyntaxParser.XTHL << 32 | Z80Modes.Implied, 0xe3 },
     };
 
     private static readonly Dictionary<int, Instruction> s_i8080allOpcodes = new()

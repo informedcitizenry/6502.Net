@@ -60,6 +60,19 @@ public sealed class ArrayValue : ValueBase, IList<ValueBase>
         IsTuple = other.IsTuple;
     }
 
+    public override ValueBase UpdateMember(ValueBase atIndex, ValueBase value)
+    {
+        if (atIndex.IsDefined && value.IsDefined)
+        {
+            if (atIndex.IsNumeric)
+            {
+                _list[atIndex.AsInt()] = value;
+                return value;
+            }
+        }
+        return new UndefinedValue();
+    }
+
     /// <summary>
     /// Get the element in the array at the specified index.
     /// </summary>

@@ -15,11 +15,8 @@ namespace Sixty502DotNet.Shared;
 /// </summary>
 public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 {
-    private int _dp;
-    private bool _truncateToDp;
-    private Dictionary<int, Instruction> _all, _implied, _absolute,
-                                        _immediateAbs, _immediate,
-                                        _zeroPage;
+    private Dictionary<int, Instruction> _disassembly;
+    private Dictionary<int, M6xxOpcode> _opcodes;
 
     /// <summary>
     /// Construct a new instance of the <see cref="M680xInstructionEncoder"/>
@@ -32,12 +29,8 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         : base(cpuid, services)
     {
         _dp = 0;
-        _absolute = null!;
-        _all = null!;
-        _immediate = null!;
-        _immediateAbs = null!;
-        _implied = null!;
-        _zeroPage = null!;
+        _opcodes = null!;
+        _disassembly = null!;
     }
 
     public override void Analyze(IList<CodeAnalysisContext> contexts)
@@ -120,7 +113,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         {
             opcode = opcode * 256 + bytes[offset++];
         }
-        if (_all.TryGetValue(opcode, out Instruction? instruction))
+        if (_disassembly.TryGetValue(opcode, out Instruction? instruction))
         {
             if (s_regOpcodes.Contains(opcode))
             {
@@ -265,67 +258,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         return (string.Empty, 0);
     }
 
-    private bool VisitVariableLength(List<Dictionary<int, Instruction>> lookups,
-                                      SyntaxParser.MnemonicContext mnemonic,
-                                      SyntaxParser.CpuInstructionContext instructionContext,
-                                      SyntaxParser.ExprContext expr,
-                                      SyntaxParser.BitwidthModifierContext? bitwidthModifier)
-    {
-        int bitwidthSize = BitwidthSize(bitwidthModifier);
-        if (bitwidthSize > 2)
-        {
-            return false;
-        }
-        double minValue = bitwidthSize == 1 ? sbyte.MinValue : short.MinValue;
-        double maxValue = bitwidthSize == 1 ? byte.MaxValue : ushort.MaxValue;
-        int operand = Services.Evaluator.SafeEvalNumber(expr, minValue, maxValue, _truncateToDp, _dp);
-        int operandSize = operand.Size();
-        if (bitwidthSize > 0)
-        {
-            lookups.RemoveAt(bitwidthSize - 1);
-        }
-        else if (operandSize > 1)
-        {
-            lookups.RemoveAt(0);
-        }
-        Instruction? instruction = null;
-        for (int i = 0; i < lookups.Count && !lookups[i].TryGetValue(mnemonic.Start.Type, out instruction); i++)
-        {
-        }
-        if (instruction == null)
-        {
-            if (Services.State.PassNeeded)
-            {
-                instructionContext.opcodeSize = 1;
-                instructionContext.operandSize = 2;
-                return true;
-            }
-            return false;
-        }
-        if (instruction.IsRelative)
-        {
-            // recalculate operand without respect to direct page value
-            operand = Services.Evaluator.SafeEvalNumber(expr, minValue, maxValue);
-            operand = Services.State.Output.GetRelativeOffset(operand, instruction.Size);
-            int minvalue = instruction.Is16BitRelative ? short.MinValue : sbyte.MinValue;
-            int maxvalue = instruction.Is16BitRelative ? short.MaxValue : sbyte.MaxValue;
-            if (operand < minvalue || operand > maxvalue)
-            {
-                if (!Services.State.PassNeeded)
-                {
-                    throw new Error(expr, "Relative offset too far");
-                }
-                operand = maxvalue;
-            }
-        }
-        instructionContext.opcode = instruction.Opcode;
-        instructionContext.opcodeSize = instruction.Opcode.Size();
-        instructionContext.operand = operand;
-        instructionContext.operandSize = instruction.Size - instructionContext.opcodeSize;
-        return true;
-    }
-
-    private bool VisitM6809Index(SyntaxParser.MnemonicContext mnemonic,
+    private bool EmitM6809Index(SyntaxParser.MnemonicContext mnemonic,
                                  SyntaxParser.CpuInstructionContext instruction,
                                  bool indirect,
                                  int indexRegs, /* set to 0 if not present */
@@ -333,7 +266,8 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
                                  int accumulator, /* set to -1 if not present */
                                  SyntaxParser.ExprContext? expression = null)
     {
-        if (Cpuid.EndsWith('0') || !s_m6809IndexedX.TryGetValue(mnemonic.Start.Type, out Instruction? opcode))
+        M6xxOpcode opcode = _opcodes[mnemonic.Start.Type];
+        if (Cpuid.EndsWith('0') || opcode.zeroPageX == Bad)
         {
             return false;
         }
@@ -373,7 +307,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             {
                 if (indexRegs.IsOneOf(SyntaxParser.PC, SyntaxParser.PCR))
                 {
-                    int opcodeSize = opcode.Opcode.Size();
+                    int opcodeSize = opcode.zeroPageX.Size();//opcode.Opcode.Size();
                     int relOffs = Services.State.Output.GetRelativeOffset(value, opcodeSize + 2);
                     if (relOffs < sbyte.MinValue || relOffs > sbyte.MaxValue)
                     {
@@ -418,7 +352,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         {
             postfix |= s_accumulatorRegs[accumulator];
         }
-        instruction.opcode = (opcode.Opcode * 256) | postfix;
+        instruction.opcode = (opcode.zeroPageX * 256) | postfix;
         instruction.operand = value;
         instruction.operandSize = size;
         instruction.opcodeSize = instruction.opcode.Size();
@@ -444,7 +378,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionAutoIncrement([NotNull] SyntaxParser.CpuInstructionAutoIncrementContext context)
     {
-        return VisitM6809Index(context.mnemonic(),
+        return EmitM6809Index(context.mnemonic(),
                              context,
                              context.LeftSquare() != null,
                              context.reg.Start.Type,
@@ -454,7 +388,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionDirect([NotNull] SyntaxParser.CpuInstructionDirectContext context)
     {
-        return VisitM6809Index(context.mnemonic(),
+        return EmitM6809Index(context.mnemonic(),
                              context,
                              true,
                              0,
@@ -465,17 +399,28 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionExpressionList([NotNull] SyntaxParser.CpuInstructionExpressionListContext context)
     {
-        if (context.exprList().expr().Length != 1)
+        SyntaxParser.ExprContext[] operand = context.exprList().expr();
+        if (operand.Length != 1)
         {
             return false;
         }
         if (context.Start.Type.IsOneOf(SyntaxParser.Tfradp, SyntaxParser.Tfrbdp))
         {
-            Tfrdp(context.mnemonic(), context, context.exprList().expr()[0]);
+            Tfrdp(context.mnemonic(), context, operand[0]);
             return true;
         }
-        List<Dictionary<int, Instruction>> lookups = new() { _zeroPage, _absolute };
-        return VisitVariableLength(lookups, context.mnemonic(), context, context.exprList().expr()[0], null);
+        
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
+        if (opcode.relative != Bad || opcode.relativeAbs != Bad)
+        {
+            return EmitRelative(opcode, context, operand[0]);
+        }
+        return EmitOpcodeVariant(opcode.zeroPage,
+                                 opcode.absolute,
+                                 Bad,
+                                 context,
+                                 null,
+                                 operand[0]);
     }
 
     public override bool VisitCpuInstructionImmmediate([NotNull] SyntaxParser.CpuInstructionImmmediateContext context)
@@ -485,40 +430,36 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         {
             return false;
         }
-        List<Dictionary<int, Instruction>> lookups = new() { _immediate, _immediateAbs };
-        return VisitVariableLength(lookups,
-                                 context.mnemonic(),
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
+        return EmitOpcodeVariant(opcode.immediate,
+                                 opcode.immediateAbs,
+                                 Bad,
                                  context,
-                                 context.imm,
-                                 context.bitwidthModifier());
+                                 context.bitwidthModifier(),
+                                 context.imm);
     }
 
     public override bool VisitCpuInstructionImplied([NotNull] SyntaxParser.CpuInstructionImpliedContext context)
     {
-        if (_implied.TryGetValue(context.Start.Type, out Instruction? instruction))
-        {
-            context.opcode = instruction.Opcode;
-            context.opcodeSize = instruction.Size;
-            return true;
-        }
-        return false;
+        return EmitOpcode(_opcodes[context.Start.Type].implied, context);
     }
 
     public override bool VisitCpuInstructionIndex([NotNull] SyntaxParser.CpuInstructionIndexContext context)
     {
         if (Cpuid.EndsWith('0'))
         {
-            if (context.register().Start.Type == SyntaxParser.X && s_m6800ZeroPageX.TryGetValue(context.Start.Type, out Instruction? instr))
+            M6xxOpcode opcode = _opcodes[context.Start.Type];
+            if (context.register().Start.Type == SyntaxParser.X && opcode.zeroPageX != Bad)
             {
                 context.operand = Services.Evaluator.SafeEvalNumber(context.expr(), sbyte.MinValue, byte.MaxValue, _truncateToDp, _dp);
                 context.operandSize = 1;
-                context.opcode = instr.Opcode;
-                context.opcodeSize = instr.Opcode.Size();
+                context.opcode = opcode.zeroPageX;
+                context.opcodeSize = opcode.zeroPageX.Size(); 
                 return true;
             }
             return false;
         }
-        return VisitM6809Index(context.mnemonic(),
+        return EmitM6809Index(context.mnemonic(),
                              context,
                              false,
                              context.register().Start.Type,
@@ -533,7 +474,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         {
             return false;
         }
-        return VisitM6809Index(context.mnemonic(),
+        return EmitM6809Index(context.mnemonic(),
                                 context,
                                 false,
                                 context.ix1.Type,
@@ -544,7 +485,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionIndirectIndexM6809([NotNull] SyntaxParser.CpuInstructionIndirectIndexM6809Context context)
     {
-        return VisitM6809Index(context.mnemonic(),
+        return EmitM6809Index(context.mnemonic(),
                                 context,
                                 true,
                                 context.register().Start.Type,
@@ -555,7 +496,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionRegisterOffset([NotNull] SyntaxParser.CpuInstructionRegisterOffsetContext context)
     {
-        return VisitM6809Index(context.mnemonic(),
+        return EmitM6809Index(context.mnemonic(),
                                context, context.LeftSquare() != null,
                                context.ix.Start.Type,
                                0,
@@ -569,7 +510,10 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             return false;
         }
         SyntaxParser.RegisterContext[] regs = context.register();
-        if (s_m6809IndexedX.ContainsKey(context.mnemonic().Start.Type))
+        int mnemonic = context.mnemonic().Start.Type;
+        M6xxOpcode opcode = _opcodes[mnemonic];
+
+        if (opcode.zeroPageX != Bad)
         {
             if (regs.Length > 2 ||
                 !s_accumulatorRegs.ContainsKey(regs[0].Start.Type) ||
@@ -577,19 +521,20 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             {
                 return false;
             }
-            return VisitM6809Index(context.mnemonic(),
+            return EmitM6809Index(context.mnemonic(),
                                  context,
                                  false,
                                  regs[1].Start.Type,
                                  0,
                                  regs[0].Start.Type);
         }
-        int mnemonic = context.mnemonic().Start.Type;
+
         bool isExchange = mnemonic.IsOneOf(SyntaxParser.EXG, SyntaxParser.TFR);
         if ((isExchange && regs.Length != 2) || regs.Length > 8)
         {
             return false;
         }
+        
         Dictionary<int, int> lookup = isExchange ? s_exchangeModes : s_pushPullModes;
         int registers = byte.MinValue;
         HashSet<int> registersEvaled = new();
@@ -612,12 +557,12 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             registers |= postbyte;
             registersEvaled.Add(reg);
         }
-        if (_zeroPage.TryGetValue(mnemonic, out Instruction? instruction))
+        if (opcode.zeroPage != Bad)
         {
-            context.opcode = instruction.Opcode;
+            context.opcode = opcode.zeroPage;
             context.operand = registers.AsPositive();
             context.operandSize = 1;
-            context.opcodeSize = instruction.Size - 1;
+            context.opcodeSize = opcode.zeroPage.Size();
             return true;
         }
         return false;
@@ -634,12 +579,17 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             Tfrdp(context.mnemonic(), context, context.expr());
             return true;
         }
-        List<Dictionary<int, Instruction>> lookups = new() { _zeroPage, _absolute };
-        return VisitVariableLength(lookups,
-                                     context.mnemonic(),
-                                     context,
-                                     context.expr(),
-                                     context.bitwidthModifier());
+        M6xxOpcode opcode = _opcodes[context.Start.Type];
+        if (opcode.relative != Bad || opcode.relativeAbs != Bad)
+        {
+            return EmitRelative(opcode, context, context.expr());
+        }
+        return EmitOpcodeVariant(opcode.zeroPage,
+                                 opcode.absolute,
+                                 Bad,
+                                 context,
+                                 context.bitwidthModifier(),
+                                 context.expr());
     }
 
     public override bool HandleDirective(SyntaxParser.DirectiveContext directive, SyntaxParser.ExprListContext? operands)
@@ -661,23 +611,15 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
     {
         if (cpuid.EndsWith('0'))
         {
-            _absolute = s_m6800Absolute;
-            _all = s_m6800AllOpcodes;
-            _immediate = s_m6800Immediate;
-            _immediateAbs = s_m6800ImmAbs;
-            _implied = s_m6800Implied;
-            _zeroPage = s_m6800ZeroPage;
+            _opcodes = s_m6800Opcodes;
+            _disassembly = s_m6800Disassembly;
             _dp = -1;
             _truncateToDp = false;
         }
         else
         {
-            _absolute = s_m6809Absolute;
-            _all = s_m6809AllOpcodes;
-            _immediate = s_m6809Immediate;
-            _immediateAbs = s_m6809ImmAbs;
-            _implied = s_m6809Implied;
-            _zeroPage = s_m6809ZeroPage;
+            _opcodes = s_m6809Opcodes;
+            _disassembly = s_m6809Disassembly;
             _dp = 0;
             _truncateToDp = true;
         }

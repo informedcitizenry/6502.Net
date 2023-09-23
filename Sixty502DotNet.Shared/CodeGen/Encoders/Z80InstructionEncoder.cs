@@ -5,8 +5,6 @@
 // 
 //-----------------------------------------------------------------------------
 
-using System;
-using System.Text;
 using Antlr4.Runtime.Misc;
 
 namespace Sixty502DotNet.Shared;
@@ -16,8 +14,8 @@ namespace Sixty502DotNet.Shared;
 /// </summary>
 public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 {
-    private Dictionary<int, Dictionary<int, Instruction>> _currentIS;
-    private Dictionary<int, Instruction> _opcodes;
+    private Dictionary<ulong, int> _opcodes;
+    private Dictionary<int, Instruction> _disassembly;
     private bool _i8080;
 
     /// <summary>
@@ -30,8 +28,8 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     public Z80InstructionEncoder(string cpuid, AssemblyServices services)
         : base(cpuid, services)
     {
-        _currentIS = _i8080 ? s_i8080 : s_z80;
-        _opcodes = _i8080 ? s_i8080allOpcodes : s_z80AllOpcodes;
+        _opcodes = _i8080 ? s_i8080 : s_z80;
+        _disassembly = _i8080 ? s_i8080allOpcodes : s_z80AllOpcodes;
     }
 
     private static bool IsPrefix(byte b) => b == 0xcb || b == 0xed || IsIXPrefix(b);
@@ -52,19 +50,18 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         return displ;
     }
 
-    private Instruction? GetInstruction(int mode, int mnemonic)
+    private int GetOpcode(int mnemonic, uint mode)
     {
-        if (_currentIS.TryGetValue(mode, out var lookup) &&
-            lookup.TryGetValue(mnemonic, out Instruction? instruction))
+        if (_opcodes.TryGetValue((ulong)mnemonic << 32 | mode, out int opcode))
         {
-            return instruction;
+            return opcode;
         }
-        return null;
+        return Bad;
     }
 
-    private static int GetRegisterMode(SyntaxParser.RegisterContext registerContext, bool secondPosition = false, bool indirect = false)
+    private static uint GetRegisterMode(SyntaxParser.RegisterContext registerContext, bool secondPosition = false, bool indirect = false)
     {
-        if (!s_firstPositionRegToMode.TryGetValue(registerContext.Start.Type, out int mode))
+        if (!s_firstPositionRegToMode.TryGetValue(registerContext.Start.Type, out uint mode))
         {
             throw new Error(registerContext, "Invalid register");
         }
@@ -84,7 +81,6 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         int mnemonic = mnemonicContext.Start.Type;
         if (mnemonic.IsOneOf(SyntaxParser.IM, SyntaxParser.RST))
         {
-            var typos = expression.GetType();
             int opcodeSize = 1;
             if (expression is not SyntaxParser.ExpressionPrimaryContext primary)
             {
@@ -111,17 +107,18 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             instructionContext.opcodeSize = opcodeSize;
             return true;
         }
-        int mode = Z80Modes.N80;
+        uint mode = Z80Modes.N160;
         int val = Services.Evaluator.SafeEvalNumber(expression, short.MinValue, ushort.MaxValue, 0);
-        int valSize = val.Size();
-        if (valSize == 2)
+        int valSize = 2;
+        int code = GetOpcode(mnemonic, mode);
+        if (code == Bad)
         {
-            mode = Z80Modes.N160;
+            code = GetOpcode(mnemonic, Z80Modes.N80);
+            valSize = 1;
         }
-        Instruction? code = GetInstruction(mode, mnemonic);
-        if (code != null)
+        if (code != Bad)
         {
-            if (code.IsRelative)
+            if (mnemonic.IsOneOf(SyntaxParser.DJNZ, SyntaxParser.JR))
             {
                 val = Services.State.Output.GetRelativeOffset(val, 2);
                 if (!Services.State.PassNeeded && (val < sbyte.MinValue || val > sbyte.MaxValue))
@@ -130,10 +127,10 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
                 }
                 valSize = 1;
             }
-            instructionContext.opcode = code.Opcode;
-            instructionContext.opcodeSize = code.Opcode.Size();
+            instructionContext.opcode = code;
+            instructionContext.opcodeSize = code.Size();
             instructionContext.operand = val;
-            instructionContext.operandSize = code.Size - instructionContext.opcodeSize;
+            instructionContext.operandSize = valSize;
             return true;
         }
         return false;
@@ -170,7 +167,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
                 opcode |= b * 0x100;
             }
         }
-        if (_opcodes.TryGetValue(opcode, out Instruction? instruction))
+        if (_disassembly.TryGetValue(opcode, out Instruction? instruction))
         {
             int operand = 0;
             if (bytes.Length + offset - opcode.Size() > 0)
@@ -262,61 +259,11 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionImplied([NotNull] SyntaxParser.CpuInstructionImpliedContext context)
     {
-        if (_currentIS[Z80Modes.Implied].TryGetValue(context.Start.Type, out Instruction? opcode))
+        int opcode = GetOpcode(context.Start.Type, Z80Modes.Implied);
+        if (opcode != Bad)
         {
-            context.opcode = opcode.Opcode;
-            context.opcodeSize = opcode.Size;
-            return true;
-        }
-        return false;
-    }
-
-    private bool VisitExprSecond(SyntaxParser.MnemonicContext mnemonic,
-                                  SyntaxParser.CpuInstructionContext instructionCtx,
-                                  SyntaxParser.RegisterContext reg,
-                                  SyntaxParser.ExprContext expr,
-                                  bool indirect)
-    {
-        int mnemonicType = mnemonic.Start.Type;
-        int regMode = GetRegisterMode(reg);
-        if (s_R8s.Contains(reg.Start.Type) &&
-            !s_Z80ConditionalJumps.Contains(mnemonicType) &&
-            (!indirect || mnemonicType.IsOneOf(SyntaxParser.IN, SyntaxParser.OUT)))
-        {
-            // ld r8,n
-            regMode |= Z80Modes.N81;
-        }
-        else
-        {
-            regMode |= Z80Modes.N161;
-        }
-        if (indirect)
-        {
-            regMode |= Z80Modes.Ind1Flag;
-        }
-
-        Instruction? instruction = GetInstruction(regMode, mnemonicType);
-        if (instruction != null)
-        {
-            int val;
-            int valSize = 2;
-            double minValue = short.MinValue, maxValue = ushort.MaxValue;
-            if (instruction.Size - instruction.Opcode.Size() == 1 && !instruction.IsRelative)
-            {
-                minValue = sbyte.MinValue;
-                maxValue = byte.MaxValue;
-                valSize = 1;
-            }
-            val = Services.Evaluator.SafeEvalNumber(expr, minValue, maxValue);
-            if (instruction.IsRelative)
-            {
-                valSize = 1;
-                val = Services.State.Output.GetRelativeOffset(val, 2);
-            }
-            instructionCtx.opcode = instruction.Opcode;
-            instructionCtx.opcodeSize = instruction.Size - valSize;
-            instructionCtx.operand = val;
-            instructionCtx.operandSize = valSize;
+            context.opcode = opcode;
+            context.opcodeSize = opcode.Size();
             return true;
         }
         return false;
@@ -326,7 +273,39 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     {
         SyntaxParser.RegisterContext reg = context.register();
         SyntaxParser.ExprContext expr = context.expr();
-        return VisitExprSecond(context.mnemonic(), context, reg, expr, true);
+        int mnemonicType = context.Start.Type;
+        uint regMode = GetRegisterMode(reg);
+        int operandSize = 2;
+        if (s_R8s.Contains(reg.Start.Type) &&
+            mnemonicType == SyntaxParser.IN)
+        {
+            // in r8,(n)
+            regMode |= Z80Modes.IndN81;
+            operandSize = 1;
+        }
+        else
+        {
+            regMode |= Z80Modes.IndN161;
+        }
+        int code = GetOpcode(mnemonicType, regMode);
+        if (code != Bad)
+        {
+            int val;
+            double minValue = short.MinValue, maxValue = ushort.MaxValue;
+
+            if (operandSize == 1)
+            {
+                minValue = sbyte.MinValue;
+                maxValue = byte.MaxValue;
+            }
+            val = Services.Evaluator.SafeEvalNumber(expr, minValue, maxValue);
+            context.opcode = code;
+            context.opcodeSize = code.Size();
+            context.operand = val;
+            context.operandSize = operandSize;
+            return true;
+        }
+        return false;
     }
 
     public override bool VisitCpuInstructionZ80Immediate([NotNull] SyntaxParser.CpuInstructionZ80ImmediateContext context)
@@ -334,30 +313,30 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         int regType = context.register().Start.Type;
         double minValue = short.MinValue, maxValue = ushort.MaxValue;
         int operandSize = 2;
-        int exprMode = Z80Modes.N161;
-        if (s_R8s.Contains(regType))
+        uint exprMode = Z80Modes.N161;
+        if (s_R8s.Contains(regType) && !s_Z80ConditionalJumps.Contains(context.Start.Type))
         {
             operandSize = 1;
             exprMode = Z80Modes.N81;
         }
         int operand = Services.Evaluator.SafeEvalNumber(context.expr(), minValue, maxValue, 0);
-        int regMode = GetRegisterMode(context.register(), false);
-        Instruction? instruction = GetInstruction(exprMode | regMode, context.Start.Type); ;
-        if (instruction == null)
+        uint regMode = GetRegisterMode(context.register(), false);
+        int code = GetOpcode(context.Start.Type, exprMode | regMode);
+        if (code == Bad)
         {
             return false;
         }
-        if (instruction.IsRelative)
+        if (context.Start.Type.IsOneOf(SyntaxParser.DJNZ, SyntaxParser.JR))
         {
             operandSize = 1;
-            operand = Services.State.Output.GetRelativeOffset(operand, instruction.Size);
+            operand = Services.State.Output.GetRelativeOffset(operand, code.Size() + 1);
             if (!Services.State.PassNeeded && (operand < sbyte.MinValue || operand > sbyte.MaxValue))
             {
                 throw new Error(context, "Relative offset too far");
             }
         }
-        context.opcode = instruction.Opcode;
-        context.opcodeSize = instruction.Size - operandSize;
+        context.opcode = code;
+        context.opcodeSize = code.Size();
         context.operand = operand;
         context.operandSize = operandSize;
         return true;
@@ -367,7 +346,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     {
         double minValue = short.MinValue, maxValue = ushort.MaxValue;
         int operandSize = 2;
-        int exprMode = Z80Modes.IndN160;
+        uint exprMode = Z80Modes.IndN160;
         if (s_R8s.Contains(context.register().Start.Type) && context.mnemonic().Start.Type.IsOneOf(SyntaxParser.IN, SyntaxParser.OUT))
         {
             minValue = sbyte.MinValue;
@@ -376,15 +355,14 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             exprMode = Z80Modes.IndN80;
         }
         int operand = Services.Evaluator.SafeEvalNumber(context.expr(), minValue, maxValue, 0);
-        int regMode = GetRegisterMode(context.register(), true);
-
-        Instruction? instruction = GetInstruction(exprMode | regMode, context.Start.Type); ;
-        if (instruction == null)
+        uint regMode = GetRegisterMode(context.register(), true);
+        int code = GetOpcode(context.Start.Type, exprMode | regMode);
+        if (code == Bad)
         {
             return false;
         }
-        context.opcode = instruction.Opcode;
-        context.opcodeSize = instruction.Size - operandSize;
+        context.opcode = code;
+        context.opcodeSize = code.Size();
         context.operand = operand;
         context.operandSize = operandSize;
         return true;
@@ -393,7 +371,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     public override bool VisitCpuInstructionIndirectRegisterFirst([NotNull] SyntaxParser.CpuInstructionIndirectRegisterFirstContext context)
     {
         SyntaxParser.RegisterContext[] regs = context.register();
-        int mode = GetRegisterMode(regs[0], false, true);
+        uint mode = GetRegisterMode(regs[0], false, true);
 
         int val = int.MinValue;
         int valSize = 0;
@@ -406,15 +384,14 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             if (mode == Z80Modes.IndC0)
             {
                 mode |= Z80Modes.N81;
-                SyntaxParser.ExpressionPrimaryContext? e = context.expr() as SyntaxParser.ExpressionPrimaryContext;
-                if (e != null)
+                if (context.expr() is SyntaxParser.ExpressionPrimaryContext e)
                 {
                     _ = Evaluator.EvalIntegerLiteral(e.primaryExpr(), 0);
-                    Instruction? instr = GetInstruction(mode, context.Start.Type);
-                    if (instr != null)
+                    int opcode = GetOpcode(context.Start.Type, mode);
+                    if (opcode != Bad)
                     {
-                        context.opcode = instr.Opcode;
-                        context.opcodeSize = instr.Size;
+                        context.opcode = opcode;
+                        context.opcodeSize = opcode.Size();
                         return true;
                     }
                 }
@@ -425,13 +402,13 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             valSize = 1;
         }
         SyntaxParser.MnemonicContext mnemonicCtx = context.mnemonic();
-        Instruction? code = GetInstruction(mode, mnemonicCtx.Start.Type);
-        if (code != null)
+        int code = GetOpcode(mnemonicCtx.Start.Type, mode);
+        if (code != Bad)
         {
-            context.opcode = code.Opcode;
+            context.opcode = code;
+            context.opcodeSize = code.Size();
             context.operand = val;
             context.operandSize = valSize;
-            context.opcodeSize = code.Size - context.operandSize;
             return true;
         }
         return false;
@@ -439,13 +416,13 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionIndirectRegisterSecond([NotNull] SyntaxParser.CpuInstructionIndirectRegisterSecondContext context)
     {
-        int mode = GetRegisterMode(context.ind, true, true);
+        uint mode = GetRegisterMode(context.ind, true, true);
         mode |= GetRegisterMode(context.register()[0]);
-        Instruction? code = GetInstruction(mode, context.Start.Type);
-        if (code != null)
+        int code = GetOpcode(context.Start.Type, mode);
+        if (code != Bad)
         {
-            context.opcode = code.Opcode;
-            context.opcodeSize = code.Size;
+            context.opcode = code;
+            context.opcodeSize = code.Size();
             return true;
         }
         return false;
@@ -454,7 +431,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     public override bool VisitCpuInstructionRegisterList([NotNull] SyntaxParser.CpuInstructionRegisterListContext context)
     {
         SyntaxParser.RegisterContext[] regs = context.register();
-        int mode = GetRegisterMode(regs[0]);
+        uint mode = GetRegisterMode(regs[0]);
         if (regs.Length > 1)
         {
             if (regs.Length > 2)
@@ -463,11 +440,15 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             }
             mode |= GetRegisterMode(regs[1], true);
         }
-        Instruction? opcode = GetInstruction(mode, context.Start.Type);
-        if (opcode != null)
+        int code = GetOpcode(context.Start.Type, mode);
+        if (code != Bad)
         {
-            context.opcode = opcode.Opcode;
-            context.opcodeSize = opcode.Size;
+            context.opcode = code;
+            context.opcodeSize = code.Size();
+            if (code == 0xcb)
+            {
+                context.opcodeSize++;
+            }
             return true;
         }
         return false;
@@ -475,7 +456,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionZ80Index([NotNull] SyntaxParser.CpuInstructionZ80IndexContext context)
     {
-        int mode;
+        uint mode;
         int val = int.MinValue;
         if (context.ix0 != null)
         {
@@ -497,25 +478,27 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
                 ? Z80Modes.IndIX1Offs : Z80Modes.IndIY1Offs;
             mode |= GetRegisterMode(context.r0);
         }
-        Instruction? opcode = GetInstruction(mode, context.Start.Type);
-        if (opcode != null)
+        int opcode = GetOpcode(context.Start.Type, mode);
+        if (opcode != Bad)
         {
             int displ = GetIndexDisplacement(context.z80Index());
             displ *= 0x10000;
-            displ |= opcode.Opcode & 0xffff;
-            int opcodeSize = opcode.Size;
+            displ |= opcode & 0xffff;
             if (val > int.MinValue)
             {
                 context.operand = val;
                 context.operandSize = 1;
-                opcodeSize--;
             }
-            else if (opcode.Size > 3)
+            else
             {
-                displ |= ((opcode.Opcode & 0xff0000) * 256);
+                displ |= (opcode & 0xff0000) * 256;
             }
             context.opcode = displ;
-            context.opcodeSize = opcodeSize;
+            context.opcodeSize = opcode.Size() + 1;
+            if (opcode == 0xcbdd)
+            {
+                context.opcodeSize++;
+            }
             return true;
         }
         return false;
@@ -549,8 +532,8 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     protected override void OnSetCpu(string cpuid)
     {
         _i8080 = cpuid.StartsWith('i') || cpuid.StartsWith('I');
-        _currentIS = _i8080 ? s_i8080 : s_z80;
-        _opcodes = _i8080 ? s_i8080allOpcodes : s_z80AllOpcodes;
+        _opcodes = _i8080 ? s_i8080 : s_z80;
+        _disassembly = _i8080 ? s_i8080allOpcodes : s_z80AllOpcodes;
     }
 
     public override void Analyze(IList<CodeAnalysisContext> contexts)

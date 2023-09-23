@@ -118,7 +118,7 @@ cpuInstruction
     |   mnemonic '#' imm=expr ',' NL* expr (',' NL* X)?                 # CpuInstructionImmmediate
     |   mnemonic ix0=z80Index (',' NL* (r1=register | e1=expr))?        # CpuInstructionZ80Index
     |   mnemonic r0=register ',' NL* ix1=z80Index                       # CpuInstructionZ80Index
-    |   mnemonic '(' expr ',' X ')'                                     # CpuInstructionIndexedIndirect
+    |   mnemonic bitwidthModifier? '(' expr ',' X ')'                   # CpuInstructionIndexedIndirect
     |   mnemonic '(' expr (',' ix0=(S | SP))? ')' ',' NL* ix1=(Y | Z)   # CpuInstructionIndirectIndexed
     |   mnemonic '(' expr ')' ',' NL* register                          # CpuInstructionZ80IndirectIndexed
     |   mnemonic register ',' NL* '(' expr ')'                          # CpuInstructionIndirectExpressionSecond

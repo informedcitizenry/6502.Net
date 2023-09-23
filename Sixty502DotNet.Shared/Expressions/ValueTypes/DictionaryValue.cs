@@ -160,6 +160,16 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
         }
     }
 
+    public override ValueBase UpdateMember(ValueBase atIndex, ValueBase value)
+    {
+        if (atIndex.IsDefined && value.IsDefined && _firstKey?.TypeCompatible(atIndex) == true)
+        {
+            _dictionary[atIndex] = value;
+            return value;
+        }
+        return new UndefinedValue();
+    }
+
     /// <summary>
     /// Get the value of the given key.
     /// </summary>
