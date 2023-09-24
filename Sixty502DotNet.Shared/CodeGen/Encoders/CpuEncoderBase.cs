@@ -228,9 +228,9 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         int operandSize = operandValue.Size();
         if (bitwidthSize > 0)
         {
-            if (operandSize > bitwidthSize)
+            if (operandSize > bitwidthSize && !Services.State.PassNeeded)
             {
-                return Services.State.PassNeeded;
+                throw new Error(operand, "Operand value exceeds maximum due to bitwidth modifier constraints");
             }
             operandSize = bitwidthSize;
         }
