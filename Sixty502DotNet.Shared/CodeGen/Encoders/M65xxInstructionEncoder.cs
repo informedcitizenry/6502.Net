@@ -431,7 +431,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
                 _opcodes = new Dictionary<int, M6xxOpcode>(s_6502Opcodes);
                 break;
             case "6502i":
-                _opcodes = s_6502iOpcodes;
+                _opcodes = new Dictionary<int, M6xxOpcode>(s_6502iOpcodes);
                 _disassembly.Add(s_6502iDisassembly);
                 break;
             case "65816":
@@ -451,7 +451,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
                 _disassembly.Add(s_65ce02Disassembly);
                 break;
             case "c64dtv":
-                _opcodes = s_c64dtvOpcodes;
+                _opcodes = new Dictionary<int, M6xxOpcode>(s_c64dtvOpcodes);
                 _disassembly.Add(s_c64dtvDisassembly);
                 break;
             case "HuC6280":
