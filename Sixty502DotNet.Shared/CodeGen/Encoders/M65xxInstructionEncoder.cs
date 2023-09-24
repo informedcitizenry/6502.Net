@@ -225,9 +225,9 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         M6xxOpcode opcode = _opcodes[context.Start.Type];
         if (context.Y() != null)
         {
-            return EmitOpcode(opcode.directIndexed, context, null, context.expr(), 1);
+            return EmitOpcode(opcode.directIndexed, context, context.expr(), 1);
         }
-        return EmitOpcode(opcode.directZ, context, null, context.expr(), 1);
+        return EmitOpcode(opcode.directZ, context, context.expr(), 1);
     }
 
     private bool EmitPseudoRelative(int mnemonic, int pseudo, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand)

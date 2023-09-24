@@ -158,6 +158,11 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         return EmitOpcode(opcodeHex, context, null, new SyntaxParser.ExprContext[] { operand }, 1);
     }
 
+    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand, int operandSize)
+    {
+        return EmitOpcode(opcodeHex, context, null, new SyntaxParser.ExprContext[] { operand }, operandSize);
+    }
+
     protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.BitwidthModifierContext? bitwidth, SyntaxParser.ExprContext operand, int operandSize)
     {
         return EmitOpcode(opcodeHex, context, bitwidth, new SyntaxParser.ExprContext[] { operand }, operandSize);
@@ -259,25 +264,29 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         return true;
     }
 
-    protected bool EmitRelative(M6xxOpcode opcode, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext expr)
+    protected bool EmitRelative(int opcode, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext expr, int operandSize)
     {
-        int opcodeHex = opcode.relative != Bad ? opcode.relative : opcode.relativeAbs;
-        int operand = Services.Evaluator.SafeEvalNumber(expr, short.MinValue, ushort.MaxValue, _truncateToDp, _dp);
-        int operandSize = opcodeHex == opcode.relative ? 1 : 2;
-        int offs = operand - (Services.State.Output.LogicalPC + opcodeHex.Size() + operandSize);
-        if ((opcodeHex == opcode.relative && (offs < sbyte.MinValue || offs > sbyte.MaxValue)) ||
-            (opcodeHex == opcode.relativeAbs && (offs < short.MinValue || offs > short.MaxValue)))
+        int operand = Services.Evaluator.SafeEvalAddress(expr);
+        int offs = operand - (Services.State.Output.LogicalPC + opcode.Size() + operandSize);
+        if ((operandSize == 1 && (offs < sbyte.MinValue || offs > sbyte.MaxValue)) ||
+            (operandSize == 2 && (offs < short.MinValue || offs > short.MaxValue)))
         {
             if (!Services.State.PassNeeded)
             {
                 throw new Error(expr, "Relative offset too far");
             }
         }
-        context.opcode = opcodeHex;
-        context.opcodeSize = opcodeHex.Size();
+        context.opcode = opcode;
+        context.opcodeSize = opcode.Size();
         context.operand = offs;
         context.operandSize = operandSize;
         return true;
+    }
+
+    protected bool EmitRelative(M6xxOpcode opcode, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext expr)
+    {
+        int opcodeHex = opcode.relative != Bad ? opcode.relative : opcode.relativeAbs;
+        return EmitRelative(opcodeHex, context, expr, opcodeHex == opcode.relative ? 1 : 2);
     }
 
     /// <summary>

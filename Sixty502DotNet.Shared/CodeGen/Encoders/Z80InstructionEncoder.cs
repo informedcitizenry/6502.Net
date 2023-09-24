@@ -76,7 +76,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         return mode;
     }
 
-    private bool VisitSingleValue(SyntaxParser.MnemonicContext mnemonicContext, SyntaxParser.CpuInstructionContext instructionContext, SyntaxParser.ExprContext expression)
+    private bool EmitSingleOperand(SyntaxParser.MnemonicContext mnemonicContext, SyntaxParser.CpuInstructionContext instructionContext, SyntaxParser.ExprContext expression)
     {
         int mnemonic = mnemonicContext.Start.Type;
         if (mnemonic.IsOneOf(SyntaxParser.IM, SyntaxParser.RST))
@@ -108,32 +108,18 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             return true;
         }
         uint mode = Z80Modes.N160;
-        int val = Services.Evaluator.SafeEvalNumber(expression, short.MinValue, ushort.MaxValue, 0);
-        int valSize = 2;
+        int operandSize = 2;
         int code = GetOpcode(mnemonic, mode);
+        if (mnemonic.IsOneOf(SyntaxParser.DJNZ, SyntaxParser.JR))
+        {
+            return EmitRelative(code, instructionContext, expression, 1);
+        }
         if (code == Bad)
         {
             code = GetOpcode(mnemonic, Z80Modes.N80);
-            valSize = 1;
+            operandSize = 1;
         }
-        if (code != Bad)
-        {
-            if (mnemonic.IsOneOf(SyntaxParser.DJNZ, SyntaxParser.JR))
-            {
-                val = Services.State.Output.GetRelativeOffset(val, 2);
-                if (!Services.State.PassNeeded && (val < sbyte.MinValue || val > sbyte.MaxValue))
-                {
-                    throw new Error(expression, "Relative offset too far");
-                }
-                valSize = 1;
-            }
-            instructionContext.opcode = code;
-            instructionContext.opcodeSize = code.Size();
-            instructionContext.operand = val;
-            instructionContext.operandSize = valSize;
-            return true;
-        }
-        return false;
+        return EmitOpcode(code, instructionContext, expression, operandSize);
     }
 
     protected override (string, int) OnDecode(byte[] bytes, bool _, int offset, int programCounter)
@@ -254,19 +240,12 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         {
             return false;
         }
-        return VisitSingleValue(context.mnemonic(), context, context.exprList().expr()[0]);
+        return EmitSingleOperand(context.mnemonic(), context, context.exprList().expr()[0]);
     }
 
     public override bool VisitCpuInstructionImplied([NotNull] SyntaxParser.CpuInstructionImpliedContext context)
     {
-        int opcode = GetOpcode(context.Start.Type, Z80Modes.Implied);
-        if (opcode != Bad)
-        {
-            context.opcode = opcode;
-            context.opcodeSize = opcode.Size();
-            return true;
-        }
-        return false;
+        return EmitOpcode(GetOpcode(context.Start.Type, Z80Modes.Implied), context);
     }
 
     public override bool VisitCpuInstructionIndirectExpressionSecond([NotNull] SyntaxParser.CpuInstructionIndirectExpressionSecondContext context)
@@ -287,31 +266,12 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         {
             regMode |= Z80Modes.IndN161;
         }
-        int code = GetOpcode(mnemonicType, regMode);
-        if (code != Bad)
-        {
-            int val;
-            double minValue = short.MinValue, maxValue = ushort.MaxValue;
-
-            if (operandSize == 1)
-            {
-                minValue = sbyte.MinValue;
-                maxValue = byte.MaxValue;
-            }
-            val = Services.Evaluator.SafeEvalNumber(expr, minValue, maxValue);
-            context.opcode = code;
-            context.opcodeSize = code.Size();
-            context.operand = val;
-            context.operandSize = operandSize;
-            return true;
-        }
-        return false;
+        return EmitOpcode(GetOpcode(mnemonicType, regMode), context, expr, operandSize);
     }
 
     public override bool VisitCpuInstructionZ80Immediate([NotNull] SyntaxParser.CpuInstructionZ80ImmediateContext context)
     {
         int regType = context.register().Start.Type;
-        double minValue = short.MinValue, maxValue = ushort.MaxValue;
         int operandSize = 2;
         uint exprMode = Z80Modes.N161;
         if (s_R8s.Contains(regType) && !s_Z80ConditionalJumps.Contains(context.Start.Type))
@@ -319,113 +279,58 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             operandSize = 1;
             exprMode = Z80Modes.N81;
         }
-        int operand = Services.Evaluator.SafeEvalNumber(context.expr(), minValue, maxValue, 0);
         uint regMode = GetRegisterMode(context.register(), false);
         int code = GetOpcode(context.Start.Type, exprMode | regMode);
-        if (code == Bad)
-        {
-            return false;
-        }
         if (context.Start.Type.IsOneOf(SyntaxParser.DJNZ, SyntaxParser.JR))
         {
-            operandSize = 1;
-            operand = Services.State.Output.GetRelativeOffset(operand, code.Size() + 1);
-            if (!Services.State.PassNeeded && (operand < sbyte.MinValue || operand > sbyte.MaxValue))
-            {
-                throw new Error(context, "Relative offset too far");
-            }
+            return EmitRelative(code, context, context.expr(), 1);
         }
-        context.opcode = code;
-        context.opcodeSize = code.Size();
-        context.operand = operand;
-        context.operandSize = operandSize;
-        return true;
+        return EmitOpcode(code, context, context.expr(), operandSize);
     }
 
     public override bool VisitCpuInstructionZ80IndirectIndexed([NotNull] SyntaxParser.CpuInstructionZ80IndirectIndexedContext context)
     {
-        double minValue = short.MinValue, maxValue = ushort.MaxValue;
         int operandSize = 2;
         uint exprMode = Z80Modes.IndN160;
         if (s_R8s.Contains(context.register().Start.Type) && context.mnemonic().Start.Type.IsOneOf(SyntaxParser.IN, SyntaxParser.OUT))
         {
-            minValue = sbyte.MinValue;
-            maxValue = byte.MaxValue;
             operandSize--;
             exprMode = Z80Modes.IndN80;
         }
-        int operand = Services.Evaluator.SafeEvalNumber(context.expr(), minValue, maxValue, 0);
         uint regMode = GetRegisterMode(context.register(), true);
-        int code = GetOpcode(context.Start.Type, exprMode | regMode);
-        if (code == Bad)
-        {
-            return false;
-        }
-        context.opcode = code;
-        context.opcodeSize = code.Size();
-        context.operand = operand;
-        context.operandSize = operandSize;
-        return true;
+        return EmitOpcode(GetOpcode(context.Start.Type, exprMode | regMode), context, context.expr(), operandSize);
     }
 
     public override bool VisitCpuInstructionIndirectRegisterFirst([NotNull] SyntaxParser.CpuInstructionIndirectRegisterFirstContext context)
     {
         SyntaxParser.RegisterContext[] regs = context.register();
         uint mode = GetRegisterMode(regs[0], false, true);
-
-        int val = int.MinValue;
-        int valSize = 0;
-        if (regs.Length > 1)
+        if (context.expr() == null)
         {
-            mode |= GetRegisterMode(regs[1], true);
-        }
-        else if (context.expr() != null)
-        {
-            if (mode == Z80Modes.IndC0)
+            if (regs.Length > 1)
             {
-                mode |= Z80Modes.N81;
-                if (context.expr() is SyntaxParser.ExpressionPrimaryContext e)
-                {
-                    _ = Evaluator.EvalIntegerLiteral(e.primaryExpr(), 0);
-                    int opcode = GetOpcode(context.Start.Type, mode);
-                    if (opcode != Bad)
-                    {
-                        context.opcode = opcode;
-                        context.opcodeSize = opcode.Size();
-                        return true;
-                    }
-                }
-                return false;
+                mode |= GetRegisterMode(regs[1], true);
             }
-            val = Services.Evaluator.SafeEvalNumber(context.expr(), sbyte.MinValue, byte.MaxValue);
-            mode |= Z80Modes.N81;
-            valSize = 1;
+            return EmitOpcode(GetOpcode(context.Start.Type, mode), context);
         }
-        SyntaxParser.MnemonicContext mnemonicCtx = context.mnemonic();
-        int code = GetOpcode(mnemonicCtx.Start.Type, mode);
-        if (code != Bad)
+        if (mode == Z80Modes.IndC0)
         {
-            context.opcode = code;
-            context.opcodeSize = code.Size();
-            context.operand = val;
-            context.operandSize = valSize;
-            return true;
+            mode |= Z80Modes.N81;
+            if (context.expr() is SyntaxParser.ExpressionPrimaryContext e)
+            {
+                _ = Evaluator.EvalIntegerLiteral(e.primaryExpr(), 0);
+                return EmitOpcode(GetOpcode(context.Start.Type, mode), context);
+            }
+            return false;
         }
-        return false;
+        return EmitOpcode(GetOpcode(context.Start.Type, mode | Z80Modes.N81), context, context.expr());
     }
 
     public override bool VisitCpuInstructionIndirectRegisterSecond([NotNull] SyntaxParser.CpuInstructionIndirectRegisterSecondContext context)
     {
         uint mode = GetRegisterMode(context.ind, true, true);
         mode |= GetRegisterMode(context.register()[0]);
-        int code = GetOpcode(context.Start.Type, mode);
-        if (code != Bad)
-        {
-            context.opcode = code;
-            context.opcodeSize = code.Size();
-            return true;
-        }
-        return false;
+        return EmitOpcode(GetOpcode(context.Start.Type, mode), context);
     }
 
     public override bool VisitCpuInstructionRegisterList([NotNull] SyntaxParser.CpuInstructionRegisterListContext context)
@@ -506,7 +411,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionZPAbsolute([NotNull] SyntaxParser.CpuInstructionZPAbsoluteContext context)
     {
-        if (VisitSingleValue(context.mnemonic(), context, context.expr()))
+        if (EmitSingleOperand(context.mnemonic(), context, context.expr()))
         {
             if (context.bitwidthModifier() != null)
             {
