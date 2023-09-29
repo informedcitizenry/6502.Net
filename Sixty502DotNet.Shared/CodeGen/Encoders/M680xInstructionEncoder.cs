@@ -448,14 +448,10 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
     {
         if (Cpuid.EndsWith('0'))
         {
-            M6xxOpcode opcode = _opcodes[context.Start.Type];
-            if (context.register().Start.Type == SyntaxParser.X && opcode.zeroPageX != Bad)
+            if (context.register().Start.Type == SyntaxParser.X)
             {
-                context.operand = Services.Evaluator.SafeEvalNumber(context.expr(), sbyte.MinValue, byte.MaxValue, _truncateToDp, _dp);
-                context.operandSize = 1;
-                context.opcode = opcode.zeroPageX;
-                context.opcodeSize = opcode.zeroPageX.Size(); 
-                return true;
+                M6xxOpcode opcode = _opcodes[context.Start.Type];
+                return EmitOpcode(opcode.zeroPageX, context, context.expr());
             }
             return false;
         }
@@ -528,7 +524,10 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
                                  0,
                                  regs[0].Start.Type);
         }
-
+        if (opcode.zeroPage == Bad)
+        {
+            return false;
+        }
         bool isExchange = mnemonic.IsOneOf(SyntaxParser.EXG, SyntaxParser.TFR);
         if ((isExchange && regs.Length != 2) || regs.Length > 8)
         {
@@ -537,7 +536,6 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
         
         Dictionary<int, int> lookup = isExchange ? s_exchangeModes : s_pushPullModes;
         int registers = byte.MinValue;
-        HashSet<int> registersEvaled = new();
         for (int i = 0; i < regs.Length; i++)
         {
             int reg = regs[i].Start.Type;
@@ -555,17 +553,12 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
                 registers <<= 4;
             }
             registers |= postbyte;
-            registersEvaled.Add(reg);
         }
-        if (opcode.zeroPage != Bad)
-        {
-            context.opcode = opcode.zeroPage;
-            context.operand = registers.AsPositive();
-            context.operandSize = 1;
-            context.opcodeSize = opcode.zeroPage.Size();
-            return true;
-        }
-        return false;
+        context.opcode = opcode.zeroPage;
+        context.operand = registers.AsPositive();
+        context.operandSize = 1;
+        context.opcodeSize = opcode.zeroPage.Size();
+        return true;
     }
 
     public override bool VisitCpuInstructionZPAbsolute([NotNull] SyntaxParser.CpuInstructionZPAbsoluteContext context)

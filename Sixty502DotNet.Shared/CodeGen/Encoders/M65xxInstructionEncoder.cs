@@ -117,10 +117,11 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
                     AnalyzeCallReturn(contexts[i], contexts[i + 1], 0x22, 0x40);
                 }
             }
-            if (contexts[i].ObjectCode.First() == 0x6e &&
+            if (Services.DiagnosticOptions.WarnJumpBug &&
+                !Services.State.PassNeeded &&
+                contexts[i].ObjectCode.First() == 0x6e &&
                 contexts[i].Cpuid.StartsWith("6502") &&
-                contexts[i].ObjectCode.ToArray()[1] == 0xff &&
-                Services.DiagnosticOptions.WarnJumpBug)
+                contexts[i].ObjectCode.ToArray()[1] == 0xff)
             {
                 contexts[i].Report = "Indirect jump at page boundary has a defect";
             }
@@ -437,7 +438,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
             case "65816":
                 _opcodes = s_65816Opcodes;
                 _disassembly.Add(s_65c02Disassembly);
-                _disassembly.Add(s_65816Disassembly);
+                _disassembly.Add(new Dictionary<int, Instruction>(s_65816Disassembly));
                 _disassembly.Add(s_w65c02Disassembly);
                 break;
             case "65C02":
@@ -489,14 +490,34 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         _dp = -1;
     }
 
+    private void TransformDisassembly(int size, Func<int, bool> func)
+    {
+        char oldWidth = size == 2 ? '2' : '4';
+        char newWidth = size == 2 ? '4' : '2';
+        for (int i = 0; i < _disassembly.Count; i++)
+        {
+            Dictionary<int, Instruction> disassembly = _disassembly[i];
+            foreach (var kvp in disassembly)
+            {
+                if (func(kvp.Value.Opcode))
+                {
+                    disassembly[kvp.Key] = new Instruction(kvp.Value.DisassemblyFormat.Replace(oldWidth, newWidth),
+                                                kvp.Value.Opcode, size);
+                }
+            }
+        }
+    }
+
     private void M(int size)
     {
         _a16 = size == 2;
+        TransformDisassembly(size, opcode => (opcode & 0xf) == 9 && (opcode & 0xf0) / 16 % 2 == 0);
     }
 
     private void X(int size)
     {
         _x16 = size == 2;
+        TransformDisassembly(size, opcode => opcode == 0xa0 || opcode == 0xa2 || opcode == 0xc0 || opcode == 0xe0);
     }
 
     public override bool HandleDirective(SyntaxParser.DirectiveContext directive, SyntaxParser.ExprListContext? operands)

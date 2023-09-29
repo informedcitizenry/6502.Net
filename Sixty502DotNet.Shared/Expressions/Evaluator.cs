@@ -8,7 +8,6 @@
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
-using SharpCompress.Common;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -1005,13 +1004,13 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         return cond.AsBool() ? Eval(context.then) : Eval(context.els);
     }
 
-    private ValueBase BindSubscriptAssignment(SyntaxParser.ExpressionSubscriptContext subscript, IToken assign, ValueBase rvalue)
+    private ValueBase BindSubscriptAssignment(SyntaxParser.ExpressionSubscriptContext subscript, IToken assign, ValueBase rvalue, bool asConstant)
     {
         if (subscript.ix == null)
         {
             throw new Error(subscript, "Not a valid lvalue expression");
         }
-        if (assign.Type == SyntaxParser.Equal)
+        if (assign.Type == SyntaxParser.Equal && asConstant)
         {
             throw new Error(subscript, "Invalid operator syntax for assignment");
         }
@@ -1026,7 +1025,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         }
         ValueBase index = Eval(subscript.ix);
 
-        if (callee is ArrayValue)
+        if (callee is ArrayValue || callee.ValueType == ValueType.String)
         {
             if (index.IsDefined && !index.IsNumeric)
             {
@@ -1042,15 +1041,11 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 throw new Error(subscript.ix, "Index out of range");
             }
         }
-        if (callee is DictionaryValue dict && index.IsDefined && !dict.ContainsKey(index))
+        else if (callee is DictionaryValue dict && index.IsDefined && !dict.ContainsKey(index))
         {
             throw new Error(subscript.ix, "Key not found");
         }
-        if (!callee[index].TypeCompatible(rvalue))
-        {
-            throw new TypeMismatchError(subscript);
-        }
-        return callee.UpdateMember(index, AssignOperation(subscript, subscript.target.Start, callee[index], assign, rvalue));//  rvalue);
+        return callee.UpdateMember(index, AssignOperation(subscript, subscript.target.Start, callee[index], assign, rvalue));
     }
 
     private ValueBase BindTupleAssignment(SyntaxParser.ExpressionCollectionContext coll, IToken assign, ValueBase rvalue, bool asConstant)
@@ -1078,22 +1073,26 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             throw new Error(rvalue.Expression ?? lexpr, "Right-hand side expression is a method and cannot be assigned");
         }
-        if (lexpr is SyntaxParser.ExpressionGroupedContext grouped)
-        {
-            return BindAssignment(grouped, assign, rvalue, asConstant);
-        }
         if (lexpr is SyntaxParser.ExpressionSubscriptContext subscript)
         {
-            return BindSubscriptAssignment(subscript, assign, rvalue);
+            return BindSubscriptAssignment(subscript, assign, rvalue, asConstant);
         }
         if (lexpr is SyntaxParser.ExpressionCollectionContext coll && coll.tuple() != null)
         {
             return BindTupleAssignment(coll, assign, rvalue, asConstant);
         }
-        if (lexpr is not SyntaxParser.ExpressionDotMemberContext &&
-            lexpr is not SyntaxParser.ExpressionSimpleIdentifierContext)
+        if (lexpr is SyntaxParser.ExpressionGroupedContext grouped)
         {
-            throw new Error(lexpr, "Not a valid lvalue expression");
+            return BindAssignment(grouped.expr(), assign, rvalue, asConstant);
+        }
+        if (lexpr is not SyntaxParser.ExpressionSimpleIdentifierContext &&
+            lexpr is not SyntaxParser.ExpressionDotMemberContext)
+        {
+            if (lexpr is not SyntaxParser.ExpressionIncDecContext incDec)
+            {
+                throw new Error(lexpr, "Left-hand side expression is not a valid lvalue expression.");
+            }
+            _ = Eval(incDec);
         }
         SymbolBase? lsym = Resolve(lexpr, asConstant, false);
         IValueResolver? lresolver;

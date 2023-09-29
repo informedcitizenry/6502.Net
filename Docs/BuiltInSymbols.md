@@ -64,7 +64,7 @@ Casts a signed number between -128 and 127 into its unsigned form.
 Converts (or attempts to convert) binary output in unpacked CBM/MBF floating point format into a double floating point number, starting from the address parameter.
 
 ```
-    // assume in the assembled output, $d000-$d005 contains 82 00 49 0f da
+    // assume in the assembled output, $d000-$d005 contains 82 00 49 0f da a2
     cbmflt($d000) // 3.1415926534682512
     
 ```
@@ -74,7 +74,7 @@ Converts (or attempts to convert) binary output in unpacked CBM/MBF floating poi
 Converts (or attempts to convert) binary output in packed CBM/MBF floating point format into a double floating point number, starting from the address parameter.
 
 ```
-    // assume $d000-$d004 contains 82 49 0f da
+    // assume $d000-$d004 contains 82 49 0f da a2
     cbmflt($d000) // 3.1415926534682512
     
 ```
@@ -207,7 +207,7 @@ Casts a signed number between -8388608 and 8388607 into its unsigned form.
 
 ### **`peek(`** *`offset`* **`)`**
 
-Lookup generated code output at the offset.
+Look up generated code output at the offset.
 
 ```
     // assume $c000 is 0xa9
@@ -265,7 +265,7 @@ The starting address of a section.
 
 ```
     .dsection "zp", $02, $100
-    .echo section("zp") // $02
+    .echo section("zp") // 2
 ```
 
 ### **`sgn(`** *`value`* **`)`**
@@ -334,8 +334,8 @@ The string representation of the expression's type.
 ```
 mynum = 3.2
 myarray = [mynum, 4.5, 6.3]
-mynumtype = typeof(mynum) // "String"
-myarraytype = typeof(myarray) // "Array<Double>"
+mynumtype = typeof(mynum) // "Number"
+myarraytype = typeof(myarray) // "Array<Number>"
 ```
 
 ### **`word(`** *`value`* **`)`**

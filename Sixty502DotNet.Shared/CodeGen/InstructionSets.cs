@@ -999,7 +999,7 @@ public static class InstructionSets
             "HuC6280"   or
             "m65"       or
             "R65C02"    or
-            "W65C02"    => M65xx[cpuid],//M65xxUnified,//M65xx[cpuid],
+            "W65C02"    => M65xx[cpuid],
 
             "m6800"     or
             "m6809"     => M680x[cpuid],

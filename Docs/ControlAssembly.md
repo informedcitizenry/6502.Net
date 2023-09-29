@@ -79,15 +79,14 @@ Switch statements allow more compact forms of conditional assembly. For each `.s
 ```
     .switch CPU_NAME
         .case "65816"
-            brl long_address
+            jsr long_address
             .break
         .case "45GS02"
         .case "65CE02"
         .case "m65"
-            bcs long_address
+            jmp long_address
             .break
         .default
-            bcc next
             jmp long_address
     .endswitch
 afterswitch nop

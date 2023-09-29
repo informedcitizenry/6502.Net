@@ -4,7 +4,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ReleaseVersion>4.0</ReleaseVersion>
+    <ReleaseVersion>4.1.1</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +25,6 @@
     <None Remove="Expressions\BuiltInFunctions\" />
     <None Remove="Runtime\" />
     <None Remove="CodeGen\" />
-    <None Remove="CodeGen\FormatProviders.cs\" />
     <None Remove="CodeGen\Encoders\" />
     <None Remove="JSON\" />
     <None Remove="Helpers\" />
@@ -45,7 +44,6 @@
     <Folder Include="Expressions\BuiltInFunctions\" />
     <Folder Include="Runtime\" />
     <Folder Include="CodeGen\" />
-    <Folder Include="CodeGen\FormatProviders.cs\" />
     <Folder Include="CodeGen\Encoders\" />
     <Folder Include="JSON\" />
     <Folder Include="Helpers\" />

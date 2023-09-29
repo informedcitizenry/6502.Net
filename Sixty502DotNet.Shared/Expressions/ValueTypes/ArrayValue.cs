@@ -62,13 +62,10 @@ public sealed class ArrayValue : ValueBase, IList<ValueBase>
 
     public override ValueBase UpdateMember(ValueBase atIndex, ValueBase value)
     {
-        if (atIndex.IsDefined && value.IsDefined)
+        if (value.IsDefined && atIndex.IsDefined && atIndex.IsNumeric)
         {
-            if (atIndex.IsNumeric)
-            {
-                _list[atIndex.AsInt()] = value;
-                return value;
-            }
+            _list[atIndex.AsInt()] = value;
+            return value;
         }
         return new UndefinedValue();
     }

@@ -199,7 +199,18 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
                 default: minValue = sbyte.MinValue; maxValue = byte.MaxValue; break;
             }
             operandValue <<= size * 8;
-            operandValue |= (long)Services.Evaluator.SafeEvalNumber(operands[i], minValue, maxValue, _truncateToDp, _dp);
+            if (i > 0 || context is not SyntaxParser.CpuInstructionImmmediateContext)
+            {
+                operandValue |= (long)Services.Evaluator.SafeEvalAddress(operands[i]);
+                if (operandValue.Size() > 2 && !Services.State.PassNeeded)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                operandValue |= (long)Services.Evaluator.SafeEvalNumber(operands[i], minValue, maxValue, _truncateToDp, _dp);
+            }
         }
         context.operand = operandValue;
         context.operandSize = operandSize;
@@ -216,7 +227,7 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         }
         else
         {
-            operandValue = Services.Evaluator.SafeEvalNumber(operand, short.MinValue, ushort.MaxValue);
+            operandValue = Services.Evaluator.SafeEvalNumber(operand, Int24.MinValue, UInt24.MaxValue);
         }
         if (Services.State.PassNeeded && absoluteHex == Bad)
         {
