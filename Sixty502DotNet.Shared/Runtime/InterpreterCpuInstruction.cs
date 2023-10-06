@@ -21,7 +21,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         {
             if (!_encoder.Visit(context.cpuInstruction()))
             {
-                throw new Error(context.Start, "Addressing mode not supported");
+                throw new Error(context, "Addressing mode not supported");
             }
         }
         catch (Warning w)

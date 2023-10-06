@@ -118,6 +118,75 @@ public static class InstructionSets
     };
 
     /// <summary>
+    /// The GameBoy instructions.
+    /// </summary>
+    public static IDictionary<string, int> GB80 =>
+    new Dictionary<string, int>
+    {
+        { "a",      SyntaxParser.A },
+        { "adc",    SyntaxParser.ADC },
+        { "add",    SyntaxParser.ADD },
+        { "af",     SyntaxParser.AF },   
+        { "and",    SyntaxParser.AND },
+        { "b",      SyntaxParser.B },
+        { "bc",     SyntaxParser.BC },
+        { "bit",    SyntaxParser.BITZ },
+        { "c",      SyntaxParser.C },
+        { "call",   SyntaxParser.CALL },
+        { "ccf",    SyntaxParser.CCF },
+        { "cp",     SyntaxParser.CP },
+        { "cpl",    SyntaxParser.CPL },
+        { "d",      SyntaxParser.D },
+        { "daa",    SyntaxParser.DAA },
+        { "de",     SyntaxParser.DE },
+        { "dec",    SyntaxParser.DEC },
+        { "di",     SyntaxParser.DI },
+        { "e",      SyntaxParser.E },
+        { "ei",     SyntaxParser.EI },
+        { "h",      SyntaxParser.H },
+        { "halt",   SyntaxParser.HALT },
+        { "hl",     SyntaxParser.HL },
+        { "inc",    SyntaxParser.INC },
+        { "jp",     SyntaxParser.JP },
+        { "jr",     SyntaxParser.JR },
+        { "l",      SyntaxParser.L },
+        { "ld",     SyntaxParser.LD },
+        { "ldd",    SyntaxParser.LDD },
+        { "ldi",    SyntaxParser.LDI },
+        { "nc",     SyntaxParser.NC },
+        { "nop",    SyntaxParser.NOP },
+        { "nz",     SyntaxParser.NZ },
+        { "or",     SyntaxParser.OR },
+        { "pop",    SyntaxParser.POP },
+        { "push",   SyntaxParser.PUSH },
+        { "res",    SyntaxParser.RES },
+        { "ret",    SyntaxParser.RET },
+        { "reti",   SyntaxParser.RETI },
+        { "rl",     SyntaxParser.RL },
+        { "rla",    SyntaxParser.RLA },
+        { "rlc",    SyntaxParser.RLC },
+        { "rlca",   SyntaxParser.RLCA },
+        { "rr",     SyntaxParser.RR },
+        { "rra",    SyntaxParser.RRA },
+        { "rrc",    SyntaxParser.RRC },
+        { "rrca",   SyntaxParser.RRCA },
+        { "rst",    SyntaxParser.RST },
+        { "sbc",    SyntaxParser.SBC },
+        { "scf",    SyntaxParser.SCF },
+        { "set",    SyntaxParser.SET },
+        { "sla",    SyntaxParser.SLA },
+        { "sp",     SyntaxParser.SP },
+        { "sra",    SyntaxParser.SRA },
+        { "srl",    SyntaxParser.SRL },
+        { "stop",   SyntaxParser.STOP },
+        { "sub",    SyntaxParser.SUB },
+        { "swap",   SyntaxParser.SWAP }, 
+        { "xor",    SyntaxParser.XOR },
+        { "z",      SyntaxParser.Z }
+    };
+
+
+    /// <summary>
     /// The M45GS02 instructions.
     /// </summary>
     public static IDictionary<string, int> M45GS02 =>
@@ -678,7 +747,7 @@ public static class InstructionSets
         { "af",     SyntaxParser.AF },
         { "b",      SyntaxParser.B },
         { "bc",     SyntaxParser.BC },
-        { "bit",    SyntaxParser.BIT },
+        { "bit",    SyntaxParser.BITZ },
         { "c",      SyntaxParser.C },
         { "call",   SyntaxParser.CALL },
         { "ccf",    SyntaxParser.CCF },
@@ -976,7 +1045,8 @@ public static class InstructionSets
     new Dictionary<string, IDictionary<string, int>>
     {
         { "i8080", I8080 },
-        { "z80", Z80 }
+        { "z80", Z80 },
+        { "gb80", GB80 }
     };
 
     /// <summary>
@@ -1005,6 +1075,7 @@ public static class InstructionSets
             "m6809"     => M680x[cpuid],
 
             "z80"       or
+            "gb80"      or
             "i8080"     => IntelZilog[cpuid],
             _           => throw new Error($"CPU \"{cpuid}\" not valid.")
         }).Concat(Directives).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);

@@ -341,12 +341,12 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
     {
         if (bitwidthModifier != null)
         {
-            int bitwidth = Evaluator.EvalIntegerLiteral(bitwidthModifier.DecLiteral(), "Invalid bitwidth specifier", 8, 25);
-            if (bitwidth % 8 != 0)
+            string text = bitwidthModifier.DecLiteral().Symbol.Text;
+            if (text.Equals("8") || text.Equals("16") || text.Equals("24"))
             {
-                throw new Error(bitwidthModifier.Start, "Invalid bitwidth specifier");
+                return int.Parse(text) / 8;
             }
-            return bitwidth / 8;
+            throw new Error(bitwidthModifier, "Invalid bitwidth specifier");
         }
         return 0;
     }

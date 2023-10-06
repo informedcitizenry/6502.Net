@@ -12,6 +12,7 @@
 | 65C02	    | 65xx	    | Apple IIc, Atari Lynx                         |
 | 65CE02	| 65xx	    | Amiga serial port                             |
 | c64dtv2   | 65xx	    | Commodore 64 on a chip                        |
+| gb80      | i8080/z80 | Nintendo Game Boy                             |
 | HuC6280   | 65xx	    | NEC PC Engine/Turbografix-16                  |
 | i8080	    | i8080/z80 | S80-based micros (MITS Altair, IMSAI 8080)    |
 | m65	    | 65xx	    | Mega65, an open source port of the C65        |
@@ -183,7 +184,36 @@ The conventions used to distinguish between base 6502/65CE02 mode and long/quad 
 
 Note also the `nop` mnemonic is unavailable in m65 mode because the opcode `$ea` is used to indicate long mode to the CPU.
 
+## GB80 Indirect and IO-addressing
+
+The LR35902 CPU used in the Game Boy is a variant of the Z80 that lacks certain addressing modes, such as the indexed modes. It also does not support the `in` and `out` IO commands. Game Boy assemblers typically use the convention of addressing adding the high page address either to an offset or the `C` register. 6502.Net mimics this same form:
+
+```
+        ld ($ff00+c),a   // same as 'out (c), a', assembles to: e2
+        ld a,($ff00+$1f) // same as 'in a,($1f)', assembles to: f0 1f
+```
+
+The high page offset can be a full expression, so though the form `$ff00` is recommended for clarity it is not required.
+
+Most assemblers targeting this platform use square brackets `[`/`]` to denote indirect addressing. As reflected in the example above, 6502.Net instead requires parentheses to enforce consistency with z80 style. 
+
 ## Z80 Implied Mode
 
 All of the Z80 instructions that are implied to work on the accumulator, such as `sub b`, can also be written as `sub a,b`. Similarly, the logical operations, such as `xor a` can also be written as `xor a,a`.
 
+## Other Topics
+
+* [Getting Started](/Docs/GettingStarted.md)
+* [Memory And Addressing](/Docs/MemoryAndAddressing.md)
+* [Data Generation](/Docs/DataGeneration.md)
+* [Expressions](/Docs/Expressions.md)
+* [Symbols And Scopes](/Docs/SymbolsAndScopes.md)
+* [Built-In Symbols](/Docs/BuiltInSymbols.md)
+* [Output And Listings](/Docs/OutputAndListings.md)
+* [Control Assembly](/Docs/ControlAssembly.md)
+* [Macros](/Docs/Macros.md)
+* [File Inclusions](/Docs/FileInclusions.md)
+* [Diagnostics](/Docs/Diagnostics.md)
+* [Disassembler](/Docs/Disassembler.md)
+* [Command-line Options](/Docs/CommandLineOptions.md)
+* [Technical Info](/Docs/TechnicalInfo.md)

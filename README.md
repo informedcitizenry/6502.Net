@@ -1,10 +1,10 @@
 ﻿# 6502.Net, A .Net-Based Cross-Assembler for Several 8-Bit Microprocessors.
 
-Version 4.1.1
+Version 4.2.1
 
 ## Overview
 
-The 6502.Net Macro Assembler is a cross-assembler targeting several CPUs from the 8-bit era of computing including the MOS 6502 and its variants, the Motorola M6800 and M6809, the Intel i8080, and the Zilog Z80. It has several advanced features, such as conditional assembly, macros and custom defined fuctions. With the aim of cross-platform compatibility, it is targeted for .Net 7.
+The 6502.Net Macro Assembler is a cross-assembler targeting several CPUs from the 8-bit era of computing including the MOS 6502 and its variants, the Motorola M6800 and M6809, the Intel i8080, and the Zilog Z80 (and the Sharp LR35902 variant powering the Nintendo Game Boy). It has several advanced features, such as conditional assembly, macros and custom defined fuctions. With the aim of cross-platform compatibility, it is targeted for .Net 7.
 
 Click below for various topics on usage and reference.
 

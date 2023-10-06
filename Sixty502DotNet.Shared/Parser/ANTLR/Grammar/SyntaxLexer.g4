@@ -79,6 +79,9 @@ tokens {
     /* c64dtv2 */
     SAC, SIR,
 
+    /* GB80 */
+    STOP, SWAP,
+
     /* HuC6280 */
     CLA, CLX, CLY, CSH, CSL, SAY, ST1, ST2, SXY, TAI, TAM, TDD,
     TIA, TII, TIN, TMA, TST,
@@ -104,12 +107,12 @@ tokens {
     WAI,
 
     /* Z80 */
-    ADD,  CALL, CCF,  CP,   CPD,  CPDR, CPI,  CPIR, CPL,  DI,
-    DJNZ, EI,   EX,   EXX,  HALT, IM,   IN,   IND,  INDR, INI,  
-    INIR, JP,   JR,   LD,   LDD,  LDDR, LDI,  LDIR, OR,   OTDR,
-    OTIR, OUT,  OUTD, OUTI, POP,  PUSH, RES,  RET,  RETI, RETN,
-    RL,   RLA,  RLC,  RLCA, RLD,  RR,   RRA,  RRC,  RRCA, RRD,
-    RST,  SCF,  SET,  SLA,  SLL,  SRA,  SRL,  SUB,  XOR,
+    ADD,  BITZ, CALL, CCF,  CP,   CPD,  CPDR, CPI,  CPIR, CPL,  
+    DI,   DJNZ, EI,   EX,   EXX,  HALT, IM,   IN,   IND,  INDR, 
+    INI,  INIR, JP,   JR,   LD,   LDD,  LDDR, LDI,  LDIR, OR,  
+    OTDR, OTIR, OUT,  OUTD, OUTI, POP,  PUSH, RES,  RET,  RETI, 
+    RETN, RL,   RLA,  RLC,  RLCA, RLD,  RR,   RRA,  RRC,  RRCA,
+    RRD,  RST,  SCF,  SET,  SLA,  SLL,  SRA,  SRL,  SUB,  XOR,
     AF,   C,    BC,   E,    DE,   H,    L,    HL,   I,    IX,
     IXH,  IXL,  IY,   IYH,  IYL,  M,    N,    NC,   NZ,   P,
     PE,   PO,   R,
@@ -191,7 +194,7 @@ DecFloatLiteral
     ;
 
 OctLiteral
-    :   '0' [oO]? OctalDigitString
+    :   '0' ([oO] | '_'+)? OctalDigitString
     ;
 
 OctFloatLiteral

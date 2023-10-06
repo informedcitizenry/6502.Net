@@ -16,7 +16,6 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 {
     private Dictionary<ulong, int> _opcodes;
     private Dictionary<int, Instruction> _disassembly;
-    private bool _i8080;
 
     /// <summary>
     /// Construct a new instance of the <see cref="Z80InstructionEncoder"/>
@@ -28,8 +27,8 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
     public Z80InstructionEncoder(string cpuid, AssemblyServices services)
         : base(cpuid, services)
     {
-        _opcodes = _i8080 ? s_i8080 : s_z80;
-        _disassembly = _i8080 ? s_i8080allOpcodes : s_z80AllOpcodes;
+        _opcodes = null!;
+        _disassembly = null!;
     }
 
     private static bool IsPrefix(byte b) => b == 0xcb || b == 0xed || IsIXPrefix(b);
@@ -127,7 +126,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         byte b = bytes[offset];
         int opcode = b;
         int operandIx = 1;
-        if (IsPrefix(b) && Cpuid.StartsWith('z') && bytes.Length + offset > 1)
+        if (IsPrefix(b) && bytes.Length + offset > 1)
         {
             b = bytes[offset + 1];
             if (bytes[offset] != 0xcb)
@@ -182,9 +181,14 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         {
             return false;
         }
+        int mnemonic = context.Start.Type;
         int displ = 6;
         if (hasReg)
         {
+            if (isIx && mnemonic == SyntaxParser.BITZ)
+            {
+                return false;
+            }
             int reg = context.register().Start.Type;
             if (reg == SyntaxParser.HL)
             {
@@ -209,12 +213,11 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             }
         }
         int baseCode = (Evaluator.EvalIntegerLiteral(context.DecLiteral(), "Valid bit constant [0-7] expected", 0, 8) * 8) + displ;
-        int mnemonic = context.Start.Type;
         baseCode = mnemonic switch
         {
-            SyntaxParser.BIT => (0x40 + baseCode) * 0x100,
-            SyntaxParser.RES => (0x80 + baseCode) * 0x100,
-            SyntaxParser.SET => (0xc0 + baseCode) * 0x100,
+            SyntaxParser.BITZ => (0x40 + baseCode) * 0x100,
+            SyntaxParser.RES  => (0x80 + baseCode) * 0x100,
+            SyntaxParser.SET  => (0xc0 + baseCode) * 0x100,
             _                => throw new Error(context.Start, "Addressing mode not supported")
         };
         if (isIx)
@@ -245,7 +248,14 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionImplied([NotNull] SyntaxParser.CpuInstructionImpliedContext context)
     {
-        return EmitOpcode(GetOpcode(context.Start.Type, Z80Modes.Implied), context);
+        int opcodeHex = GetOpcode(context.Start.Type, Z80Modes.Implied);
+        if (context.Start.Type == SyntaxParser.STOP)
+        {
+            context.opcode = opcodeHex;
+            context.opcodeSize = 2;
+            return true;
+        }
+        return EmitOpcode(opcodeHex, context);
     }
 
     public override bool VisitCpuInstructionIndirectExpressionSecond([NotNull] SyntaxParser.CpuInstructionIndirectExpressionSecondContext context)
@@ -254,6 +264,17 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         SyntaxParser.ExprContext expr = context.expr();
         int mnemonicType = context.Start.Type;
         uint regMode = GetRegisterMode(reg);
+        if (Cpuid[0] == 'g' &&
+            mnemonicType == SyntaxParser.LD &&
+            regMode == Z80Modes.A0 &&
+            expr is SyntaxParser.ExpressionAdditiveContext addition &&
+            addition.Plus() != null)
+        {
+            if (Services.Evaluator.SafeEvalAddress(addition.lhs) == 0xff00)
+            {
+                return EmitOpcode(0xf0, context, addition.rhs, 1);
+            }
+        }
         int operandSize = 2;
         if (s_R8s.Contains(reg.Start.Type) &&
             mnemonicType == SyntaxParser.IN)
@@ -274,7 +295,8 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         int regType = context.register().Start.Type;
         int operandSize = 2;
         uint exprMode = Z80Modes.N161;
-        if (s_R8s.Contains(regType) && !s_Z80ConditionalJumps.Contains(context.Start.Type))
+        if ((s_R8s.Contains(regType) && !s_Z80ConditionalJumps.Contains(context.Start.Type)) ||
+            (Cpuid[0] == 'g' && context.Start.Type == SyntaxParser.ADD && regType == SyntaxParser.SP))
         {
             operandSize = 1;
             exprMode = Z80Modes.N81;
@@ -290,6 +312,17 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionZ80IndirectIndexed([NotNull] SyntaxParser.CpuInstructionZ80IndirectIndexedContext context)
     {
+        if (Cpuid[0] == 'g' &&
+            context.Start.Type == SyntaxParser.LD &&
+            context.register().Start.Type == SyntaxParser.A &&
+            context.expr() is SyntaxParser.ExpressionAdditiveContext addition &&
+            addition.Plus() != null)
+        {
+            if (Services.Evaluator.SafeEvalAddress(addition.lhs) == 0xff00)
+            {
+                return EmitOpcode(0xe0, context, addition.rhs, 1);
+            }
+        }
         int operandSize = 2;
         uint exprMode = Z80Modes.IndN160;
         if (s_R8s.Contains(context.register().Start.Type) && context.mnemonic().Start.Type.IsOneOf(SyntaxParser.IN, SyntaxParser.OUT))
@@ -424,6 +457,34 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         return false;
     }
 
+    public override bool VisitCpuInstructionGB80Index([NotNull] SyntaxParser.CpuInstructionGB80IndexContext context)
+    {
+        if (Cpuid[0] != 'g')
+        {
+            return false;
+        }
+        SyntaxParser.ExprContext io = context.gb0?.io ?? context.gb1!.io;
+        int ioVal = Services.Evaluator.SafeEvalAddress(io);
+        if (ioVal != 0xff00 && !Services.State.PassNeeded)
+        {
+            return false;
+        }
+        if (context.a0 != null)
+        {
+            return EmitOpcode(0xf2, context);
+        }
+        return EmitOpcode(0xe2, context);
+    }
+
+    public override bool VisitCpuInstructionGB80StackOffset([NotNull] SyntaxParser.CpuInstructionGB80StackOffsetContext context)
+    {
+        if (context.Start.Type != SyntaxParser.LD || Cpuid[0] != 'g')
+        {
+            return false;
+        }
+        return EmitOpcode(0xf8, context, context.expr(), 1);
+    }
+
     public override bool HandleDirective(SyntaxParser.DirectiveContext directive, SyntaxParser.ExprListContext? operands)
     {
         return false;
@@ -436,9 +497,21 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     protected override void OnSetCpu(string cpuid)
     {
-        _i8080 = cpuid.StartsWith('i') || cpuid.StartsWith('I');
-        _opcodes = _i8080 ? s_i8080 : s_z80;
-        _disassembly = _i8080 ? s_i8080allOpcodes : s_z80AllOpcodes;
+        switch (cpuid)
+        {
+            case "i8080":
+                _opcodes = s_i8080;
+                _disassembly = s_i8080allOpcodes;
+                break;
+            case "gb80":
+                _opcodes = s_gb80;
+                _disassembly = s_gb80AllOpcodes;
+                break;
+            default:
+                _opcodes = s_z80;
+                _disassembly = s_z80AllOpcodes;
+                break;
+        }
     }
 
     public override void Analyze(IList<CodeAnalysisContext> contexts)

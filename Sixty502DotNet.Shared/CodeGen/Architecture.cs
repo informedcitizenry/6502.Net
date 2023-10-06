@@ -31,8 +31,11 @@ public readonly struct Architecture
     {
         CpuEncoderBase encoder = cpuid switch
         {
-            "m6800" or "m6809"  => new M680xInstructionEncoder(cpuid, services),
-            "i8080" or "z80"    => new Z80InstructionEncoder(cpuid, services),
+            "m6800" or
+            "m6809"             => new M680xInstructionEncoder(cpuid, services),
+            "i8080" or
+            "gb80" or
+            "z80"               => new Z80InstructionEncoder(cpuid, services),
             _                   => new M65xxInstructionEncoder(cpuid, services)
         };
         return new Architecture(InstructionSets.GetByCpuid(cpuid),

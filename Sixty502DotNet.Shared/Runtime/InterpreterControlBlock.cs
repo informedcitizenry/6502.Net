@@ -366,11 +366,11 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     public override int VisitInstructionPage([NotNull] SyntaxParser.InstructionPageContext context)
     {
-        int currentPage = Services.State.LogicalPCOnAssemble & 0xFF00;
+        int currentPage = Services.State.LogicalPCOnAssemble & 0xFFFF00;
         if (context.block() != null)
         {
             _ = Visit(context.block());
-            if ((Services.State.Output.LogicalPC & 0xFF00) != currentPage && !Services.State.PassNeeded)
+            if ((Services.State.Output.LogicalPC & 0xFFFF00) != currentPage && !Services.State.PassNeeded)
             {
                 throw new Error(context.block().stat()[^1], "Code crosses page boundary");
             }

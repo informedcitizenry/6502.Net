@@ -307,7 +307,7 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             {
                 if (indexRegs.IsOneOf(SyntaxParser.PC, SyntaxParser.PCR))
                 {
-                    int opcodeSize = opcode.zeroPageX.Size();//opcode.Opcode.Size();
+                    int opcodeSize = opcode.zeroPageX.Size();
                     int relOffs = Services.State.Output.GetRelativeOffset(value, opcodeSize + 2);
                     if (relOffs < sbyte.MinValue || relOffs > sbyte.MaxValue)
                     {

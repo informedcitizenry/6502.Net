@@ -284,18 +284,15 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
             }
             return EmitOpcodeVariant(opcode.zeroPage, opcode.absolute, opcode.longAddress, context, null, exprs[0]);
         }
-        else if (exprs.Length == 2)
+        if (exprs.Length == 2)
         {
             return EmitOpcode(opcode.blockMove, context, null, exprs.Reverse().ToArray(), 1, 1);
         }
-        else
+        if (exprs.Length > 3)
         {
-            if (exprs.Length > 3)
-            {
-                return false;
-            }
-            return EmitOpcode(opcode.threeOperand, context, null, exprs, 2, 2, 2);
+            return false;
         }
+        return EmitOpcode(opcode.threeOperand, context, null, exprs, 2, 2, 2);
     }
 
     public override bool VisitCpuInstructionImmmediate([NotNull] SyntaxParser.CpuInstructionImmmediateContext context)
@@ -373,19 +370,20 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
     public override bool VisitCpuInstructionIndirectIndexed([NotNull] SyntaxParser.CpuInstructionIndirectIndexedContext context)
     {
         M6xxOpcode opcode = _opcodes[context.Start.Type];
-        if (context.S() != null)
+        int opcodeHex;
+        if (context.ix0 != null)
         {
-            return EmitOpcode(opcode.indirectS, context, context.expr());
+            if (context.ix1.Type != SyntaxParser.Y)
+            {
+                return false;
+            }
+            opcodeHex = context.ix0.Type == SyntaxParser.S ? opcode.indirectS : opcode.indirectSp;
         }
-        if (context.SP() != null)
+        else
         {
-            return EmitOpcode(opcode.indirectSp, context, context.expr());
+            opcodeHex = context.ix1.Type == SyntaxParser.Z ? opcode.indirectZ : opcode.indirectIndexed;
         }
-        if (context.Z() != null)
-        {
-            return EmitOpcode(opcode.indirectZ, context, context.expr());
-        }
-        return EmitOpcode(opcode.indirectIndexed, context, context.expr());
+        return EmitOpcode(opcodeHex, context, context.expr());
     }
 
     public override bool VisitCpuInstructionRegisterList([NotNull] SyntaxParser.CpuInstructionRegisterListContext context)
@@ -591,4 +589,3 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         _auto = Services.ArchitectureOptions.AutosizeRegisters;
     }
 }
-
