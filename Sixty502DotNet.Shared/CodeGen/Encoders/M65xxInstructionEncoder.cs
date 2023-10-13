@@ -53,12 +53,8 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
 
     }
 
-    private static Instruction? LookupOpcode(int key, List<Dictionary<int, Instruction>>? lookups)
+    private static Instruction? LookupOpcode(int key, List<Dictionary<int, Instruction>> lookups)
     {
-        if (lookups == null)
-        {
-            return null;
-        }
         for (int i = lookups.Count - 1; i >= 0; i--)
         {
             if (lookups[i].TryGetValue(key, out Instruction? opcode))
@@ -163,6 +159,11 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
                 string pseudo = string.Format(instr.DisassemblyFormat, operandVals[0]);
                 return ($"{pseudo}:jmp ${jmp:x4} ", 5);
             }
+        }
+        if (instr.Opcode == 0 && isSingleInstruction && bytes.Length == 2)
+        {
+            // brk #$2a
+            return (string.Format("brk #${0:x2}", bytes[1]), 2);
         }
         return (string.Format(instr.DisassemblyFormat, operandVals), instr.Size);
     }

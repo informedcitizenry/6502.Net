@@ -97,7 +97,7 @@ public sealed partial class Preprocessor : SyntaxParserBaseVisitor<IList<IToken>
         }
         catch (IOException)
         {
-            throw new Error(context.d, "Cannot include source");
+            throw new Error(context.filename, "Cannot include source");
         }
         if (context.d.Type == SyntaxParser.Binclude)
         {

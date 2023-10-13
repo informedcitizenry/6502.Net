@@ -189,7 +189,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             int codepoint = Services.Evaluator.Eval(operand.expr()[^1]).AsInt();
             if (codepoint < 0 || codepoint > 0x10ffff)
             {
-                throw new Error(operand.expr()[^1], "Illegal quantity");
+                throw new IllegalQuantityError(operand.expr()[^1]);
             }
             Services.Encoding.Map(mapping, codepoint);
         }

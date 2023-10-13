@@ -6,7 +6,7 @@
 
 | Name      | Family	| Notable usage                                 |
 |-----------|-----------|-----------------------------------------------|
-| 4510	    | 65xx	    | Commodore 65 (Unreleased C64 successor)       |
+| 45GS02	| 65xx	    | Commodore 65 (Unreleased C64 successor)       |
 | 6502	    | 65xx	    | Many popular 8-bit computer & arcade games    |
 | 6502i	    | 65xx	    | Undocumented 6502 instructions                |
 | 65C02	    | 65xx	    | Apple IIc, Atari Lynx                         |
@@ -70,9 +70,9 @@ You can change this behavior explicitly by pre-fixing the operand with the width
             jsr [24] $ffd2  // > .c005 22 d2 ff 00
 ```
 
-## 65xx Long Branch Pseudo Mnemonics
+## 65xx Far Branch Pseudo Mnemonics
 
-For convenience, long branch instructions are available to the programmer, where the distance is calculated to the offset relative to the current instruction before assembly, and if the branch is too far, an absolute jump is created. The pseudo-mnemonics for these long branches are `jcc`, `jcs`, `jeq`, `jmi`, `jne`, `jpl`, `jvc`, and `jvs`.
+For convenience, far branch instructions are available to the programmer, where the distance is calculated to the offset relative to the current instruction before assembly, and if the branch is too far, an absolute jump is created. The pseudo-mnemonics for these long branches are `jcc`, `jcs`, `jeq`, `jmi`, `jne`, `jpl`, `jvc`, and `jvs`.
 
 ```
             * = $c000
@@ -186,7 +186,7 @@ Note also the `nop` mnemonic is unavailable in m65 mode because the opcode `$ea`
 
 ## GB80 Indirect and IO-addressing
 
-The LR35902 CPU used in the Game Boy is a variant of the Z80 that lacks certain addressing modes, such as the indexed modes. It also does not support the `in` and `out` IO commands. Game Boy assemblers typically use the convention of addressing adding the high page address either to an offset or the `C` register. 6502.Net mimics this same form:
+The LR35902 CPU used in the Game Boy is a variant of the Z80 that lacks certain addressing modes, such as the indexed modes. It also does not support the `in` and `out` IO commands. Due to this limitation, the Game Boy instead maps the upper page of memory for IO devices. Assemblers typically use the convention of addressing adding the high page address either to an offset or the `C` register. 6502.Net mimics this same form:
 
 ```
         ld ($ff00+c),a   // same as 'out (c), a', assembles to: e2

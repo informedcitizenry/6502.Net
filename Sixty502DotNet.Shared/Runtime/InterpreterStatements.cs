@@ -17,7 +17,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         {
             if (Services.State.Symbols.ActiveScope != Services.State.Symbols.GlobalScope)
             {
-                throw new Error(context.Start, "Functions can only be defined in the global scope");
+                throw new Error(context, "Named functions can only be defined in the global scope");
             }
             UserFunctionObject func = new(context.argList(), context.block(), null, null);
             Constant funcSym = new(context.Start, func, Services.State.Symbols.GlobalScope);
@@ -51,6 +51,11 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
     public override int VisitStatConstant([NotNull] SyntaxParser.StatConstantContext context)
     {
         SyntaxParser.ExprContext rvalue = context.expr();
+        if (rvalue is SyntaxParser.ExpressionArrowContext &&
+            Services.State.Symbols.GlobalScope != Services.State.Symbols.ActiveScope)
+        {
+            throw new Error(context, "Named functions can only be defined in the global scope");
+        }
         ValueBase val = rvalue.value;
         if (Services.State.InFirstPass || !val.IsDefined)
         {
@@ -61,6 +66,10 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             if (Services.State.InFirstPass)
             {
+                if (context.equ.Type == SyntaxParser.Global && Services.State.Symbols.InFunctionScope)
+                {
+                    throw new Error(context, "Cannot define global constant in a function scope");
+                }
                 IScope scope = context.equ.Type == SyntaxParser.Global ?
                 Services.State.Symbols.GlobalScope : Services.State.Symbols.ActiveScope;
                 try

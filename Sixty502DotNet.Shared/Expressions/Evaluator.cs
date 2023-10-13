@@ -174,7 +174,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             return value;
         }
-        throw new Error(context, "Illegal quantity");
+        throw new IllegalQuantityError(context);
     }
 
     public static int EvalNumberLiteralType(SyntaxParser.PrimaryExprContext context, string error, int start, int end)
@@ -189,7 +189,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 }
                 catch
                 {
-                    throw new Error(context, "Illegal quantity");
+                    throw new IllegalQuantityError(context);
                 }
             }
             (Encoding enc, string textString) = EncodingFromPrefix(context.Start);
@@ -303,7 +303,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             minValue = Int24.MinValue;
             maxValue = UInt24.MaxValue;
         }
-        ValueBase val = EvalNumber(expression, minValue, maxValue, "Illegal quantity");
+        ValueBase val = EvalNumber(expression, minValue, maxValue);
         if (val.IsDefined)
         {
             int valInt = val.AsInt();
@@ -317,7 +317,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 {
                     return defaultValue;
                 }
-                throw new Error(expression, "Illegal quantity");
+                throw new IllegalQuantityError(expression);
             }
             return valInt;
         }
@@ -355,12 +355,12 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
     /// <param name="errorMsg">The custom error message report if evaluation fails.</param>
     /// <returns>The evaluation result as a <see cref="ValueBase"/>.</returns>
     /// <exception cref="Error"></exception>
-    public ValueBase EvalNumber(SyntaxParser.ExprContext expression, double minValue = int.MinValue, double maxValue = uint.MaxValue, string errorMsg = "Illegal quantity")
+    public ValueBase EvalNumber(SyntaxParser.ExprContext expression, double minValue = int.MinValue, double maxValue = uint.MaxValue)
     {
         ValueBase value = CoerceToNumber(Eval(expression));
         if (value.IsDefined && (value.AsDouble() < minValue || value.AsDouble() > maxValue))
         {
-            throw new Error(expression, errorMsg);
+            throw new IllegalQuantityError(expression);
         }
         return value;
     }
@@ -421,7 +421,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             if (Eval(call.expr()) is not FunctionObject obj)
             {
-                throw new Error(call.expr(), "Cannot make call with non-function expression");
+                throw new Error(call.expr(), "Expression is not callable");
             }
             ArrayValue p = call.exprList() != null
                     ? (ArrayValue)Visit(call.exprList())
@@ -429,7 +429,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
 
             return Invoke(call, obj, p);
         }
-        throw new Error(context, "Cannot make call with non-function expression");
+        throw new Error(context, "Expression is not callable");
     }
 
     /// <summary>
@@ -764,6 +764,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         }
         catch (ArgumentOutOfRangeException)
         {
+            if (Services?.State.PassNeeded == true)
+            {
+                return new UndefinedValue();
+            }
             throw new Error((ParserRuleContext?)context.ix ?? context.range(), "Index out of range");
         }
         catch (KeyNotFoundException)
@@ -804,8 +808,12 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             return new UndefinedValue();
         }
-        if (context.expr() is SyntaxParser.ExpressionDotMemberContext member)
+        if (callable is TypeMethodBase)
         {
+            if (context.expr() is not SyntaxParser.ExpressionDotMemberContext member)
+            {
+                throw new Error(context, "Method call is being used as a function");
+            }
             if (!CachedEvaluations.TryPop(out ValueBase? thisObj))
             {
                 thisObj = Eval(member.target);
@@ -1008,7 +1016,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
     {
         if (subscript.ix == null)
         {
-            throw new Error(subscript, "Not a valid lvalue expression");
+            throw new Error(subscript, "Left-hand side expression is not a valid lvalue expression");
         }
         if (assign.Type == SyntaxParser.Equal && asConstant)
         {
@@ -1038,6 +1046,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             }
             if (callee.Count <= ix)
             {
+                if (Services?.State.PassNeeded == true)
+                {
+                    return new UndefinedValue();
+                }
                 throw new Error(subscript.ix, "Index out of range");
             }
         }
@@ -1228,13 +1240,13 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             };
             if (primaryVal.ValueType == ValueType.Integer && (primaryVal.AsDouble() < int.MinValue || primaryVal.AsDouble() > uint.MaxValue))
             {
-                throw new Error(context, "Illegal quantity");
+                throw new IllegalQuantityError(context);
             }
             return primaryVal;
         }
         catch
         {
-            throw new Error(context, "Illegal quantity");
+            throw new IllegalQuantityError(context);
         }
     }
 

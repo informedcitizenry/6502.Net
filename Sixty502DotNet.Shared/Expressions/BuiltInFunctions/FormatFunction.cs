@@ -24,7 +24,7 @@ public sealed class FormatFunction : BuiltInFunctionObject
     {
         if (parameters?.Count < 1)
         {
-            throw new Error(callSite.expr(), "Too few parameters to function");
+            throw new Error(callSite, "Too few parameters to function");
         }
         if (parameters![0] is not StringValue format)
         {

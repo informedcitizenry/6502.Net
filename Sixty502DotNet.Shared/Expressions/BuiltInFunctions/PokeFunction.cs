@@ -31,7 +31,7 @@ public sealed class PokeFunction : BuiltInFunctionObject
         int value = (int)parameters![1].AsDouble();
         if (addr < short.MinValue || addr > ushort.MaxValue || value < sbyte.MinValue || value > byte.MaxValue)
         {
-            throw new Error(callSite.exprList().expr()[0], "Illegal quantity");
+            throw new IllegalQuantityError(callSite.exprList().expr()[0]);
         }
         ValueBase current = new NumericValue(_codeOutput.Peek(addr & 0xffff));
         _codeOutput.Poke(addr & 0xffff, (byte)(value & 0xff));

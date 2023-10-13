@@ -31,7 +31,7 @@ public sealed class PeekFunction : BuiltInFunctionObject
         int addr = (int)parameters![0].AsDouble();
         if (addr < short.MinValue || addr > ushort.MaxValue)
         {
-            throw new Error(callSite.exprList().expr()[0], "Illegal quantity");
+            throw new IllegalQuantityError(callSite.exprList().expr()[0]);
         }
         return new NumericValue(_output.Peek(addr & 0xffff));
     }

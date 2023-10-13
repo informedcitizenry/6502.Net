@@ -280,6 +280,11 @@ WS
     ) -> skip
     ;
 
+UnclosedLiteral
+    :   '"'
+    |   [']
+    ;
+
 Unrecogized
     :   .
     ;

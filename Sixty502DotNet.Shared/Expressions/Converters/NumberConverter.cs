@@ -114,7 +114,7 @@ public static partial class NumberConverter
         }
         catch
         {
-            throw new Error(terminal.Symbol, "Illegal quantity");
+            throw new IllegalQuantityError(terminal.Symbol);
         }
     }
 

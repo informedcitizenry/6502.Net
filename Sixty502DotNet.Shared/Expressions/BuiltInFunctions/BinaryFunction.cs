@@ -23,7 +23,7 @@ public sealed class BinaryFunction : BuiltInFunctionObject
     {
         if (parameters.Count == 0)
         {
-            throw new Error(callSite.expr(), "Too few parameters to function");
+            throw new Error(callSite, "Too few parameters to function");
         }
         int offset = 0;
         int size = 0;
@@ -33,7 +33,6 @@ public sealed class BinaryFunction : BuiltInFunctionObject
             {
                 if (parameters.Count > 3)
                 {
-
                     throw new Error(callSite.exprList().expr()[^1], "Too many parameters to function");
                 }
                 size = parameters[2].AsInt();
@@ -56,7 +55,7 @@ public sealed class BinaryFunction : BuiltInFunctionObject
         }
         if (offset + size > file.Data.Length)
         {
-            throw new Error(callSite.exprList().expr()[1], "Offset and/or size specified too large");
+            throw new Error(callSite.exprList(), "Offset and/or size specified too large");
         }
         ArrayValue bytes = new();
         for (int i = 0; i < size; i++)

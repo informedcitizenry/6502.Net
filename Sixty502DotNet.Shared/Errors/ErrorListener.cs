@@ -32,27 +32,15 @@ public sealed partial class ErrorListener : BaseErrorListener
         {
             return preprocStat.d;
         }
-        if (context is SyntaxParser.StatBlockContext statBlock)
+        return context switch
         {
-            return statBlock.b;
-        }
-        if (context is SyntaxParser.StatFuncDeclContext statFunc)
-        {
-            return statFunc.Function().Symbol;
-        }
-        if (context is SyntaxParser.StatEnumDeclContext statEnum)
-        {
-            return statEnum.Enum().Symbol;
-        }
-        if (context is SyntaxParser.InstructionContext instrContext)
-        {
-            return instrContext.Start;
-        }
-        if (context is SyntaxParser.IfBlockContext ifBlock)
-        {
-            return ifBlock.Start;
-        }
-        return null;
+            SyntaxParser.StatBlockContext statBlock         => statBlock.b,
+            SyntaxParser.StatFuncDeclContext statFunc       => statFunc.Function().Symbol,
+            SyntaxParser.StatEnumDeclContext statEnum       => statEnum.Enum().Symbol,
+            SyntaxParser.InstructionContext instrContext    => instrContext.Start,
+            SyntaxParser.IfBlockContext ifBlock             => ifBlock.Start,
+            _                                               => null
+        };
     }
 
     private static readonly Dictionary<int, int> s_blockTypes = new()
@@ -64,6 +52,11 @@ public sealed partial class ErrorListener : BaseErrorListener
 
     public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException? e)
     {
+        if (offendingSymbol.Type == SyntaxParser.Unrecogized)
+        {
+            msg = $"Unrecognized character '{GetOffendingSymbolText(offendingSymbol)}'";
+            goto logError;
+        }
         Parser? parser = recognizer as Parser;
         if (parser == null && (e is NoViableAltException || e is LexerNoViableAltException))
         {
@@ -88,8 +81,13 @@ public sealed partial class ErrorListener : BaseErrorListener
                     goto logError;
                 }
             }
-            if (e?.GetExpectedTokens()?.Count > 0)
+            if (e?.GetExpectedTokens()?.Count > 0 && e.Context is not SyntaxParser.EosContext)
             {
+                if (offendingSymbol.Type == SyntaxParser.UnclosedLiteral)
+                {
+                    msg = $"unclosed string literal";
+                    goto logError;
+                }
                 if (e.Context is SyntaxParser.EosContext)
                 {
                     msg = $"end of statement expected but found '{GetOffendingSymbolText(offendingSymbol)}'";
@@ -98,26 +96,33 @@ public sealed partial class ErrorListener : BaseErrorListener
                 var expected = e.GetExpectedTokens().ToList();
                 if (expected.Count < 5)
                 {
-                    List<string> expectedNames = new();
-                    for (int i = 0; i < expected.Count; i++)
-                    {
-                        if (expected[i] < 0)
-                        {
-                            expectedNames.Add("statement");
-                            continue;
-                        }
-                        expectedNames.Add(vocab.GetLiteralName(expected[i]));
-                    }
-                    string messageFormat = "{0} expected but found '{1}'";
                     if (expected.Count > 1)
                     {
-                        messageFormat = "One of: {0} expected but found '{1}'";
+                        msg = $"Invalid context for '{GetOffendingSymbolText(offendingSymbol)}'";
+                        goto logError;
                     }
-                    msg = string.Format(messageFormat, string.Join(',', expectedNames), GetOffendingSymbolText(offendingSymbol));
+                    string expectedName = "statement";
+                    if (expected[0] > -1)
+                    {
+                        string litName = vocab.GetDisplayName(expected[0]);
+                        if (!string.IsNullOrEmpty(litName))
+                        {
+                            expectedName = litName;
+                        }
+                    }
+                    string messageFormat = "{0} expected but found '{1}'";
+                    msg = string.Format(messageFormat, expectedName, GetOffendingSymbolText(offendingSymbol));
                     goto logError;
                 }
             }
-            msg = $"Unexpected: '{offendingSymbol.Text}'";
+            if (offendingSymbol.Type == SyntaxParser.NL || offendingSymbol.Type == SyntaxParser.Eof)
+            {
+                msg = $"Unexpected end of statement";
+            }
+            else
+            {
+                msg = $"Unexpected: '{offendingSymbol.Text}'";
+            }
         }
     logError:
         msg = EndOfFileRegex().Replace(msg, "end of file");
@@ -129,7 +134,7 @@ public sealed partial class ErrorListener : BaseErrorListener
     /// Gets the list of <see cref="Error"/> objects the parser encountered
     /// during parsing.
     /// </summary>
-    public List<Error> Errors { get; init; }
+    public HashSet<Error> Errors { get; init; }
 
     [GeneratedRegex("'?EOF'?")]
     private static partial Regex EndOfFileRegex();

@@ -37,7 +37,7 @@ public sealed class CbmFloatFunction : BuiltInFunctionObject
         int addr = (int)parameters![0].AsDouble();
         if (addr < short.MinValue || addr > ushort.MaxValue)
         {
-            throw new Error(callSite.exprList().expr()[0], "Illegal quantity");
+            throw new IllegalQuantityError(callSite.exprList().expr()[0]);
         }
         var bytes = _codeOutput.GetRange(addr & 0xffff, _packed ? 5 : 6);
         double conv = ToDouble(bytes.ToList(), _packed);
@@ -92,7 +92,7 @@ public sealed class CbmFloatFunction : BuiltInFunctionObject
         var ieeeConv = new Ieee754Converter(value);
         var ieee = ieeeConv.Binary;
 
-        if (ieee == 0 || ieee == 0x8000000000000000)
+        if (ieee == 0 || ieee == 0x8000000000000000UL)
         {
             // zero or negative zero
             return bytes;

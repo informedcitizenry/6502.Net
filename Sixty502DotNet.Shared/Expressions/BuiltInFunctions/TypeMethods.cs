@@ -52,7 +52,7 @@ public sealed class ConcatMethod : TypeMethodBase
     {
         if (!parameters[0].TypeCompatible(parameters[1]))
         {
-            throw new TypeMismatchError(callSite.exprList().expr()[0]);
+            throw new TypeMismatchError(callSite.exprList().expr()[1]);
         }
         try
         {
@@ -60,7 +60,7 @@ public sealed class ConcatMethod : TypeMethodBase
         }
         catch (ArgumentException)
         {
-            throw new Error(callSite.exprList().expr()[0], "Could not concatenate collections");
+            throw new Error(callSite.exprList(), "Could not concatenate collections");
         }
     }
 }
@@ -499,7 +499,7 @@ public sealed class SomeMethod : TypeMethodBase
         ArrayValue array = (ArrayValue)parameters[0];
         if (parameters[1] is not FunctionObject funcObj)
         {
-            throw new Error(callSite.exprList().expr()[1], "Parameter must be a predicate");
+            throw new Error(callSite.exprList().expr()[0], "Parameter must be a predicate");
         }
 
         for (int i = 0; i < array.Count; i++)
@@ -584,7 +584,7 @@ public sealed class SubstringMethod : TypeMethodBase
         }
         if (parameters.Count < 2)
         {
-            throw new Error(callSite.exprList(), "Too few parameters for function");
+            throw new Error(callSite, "Too few parameters for function");
         }
         int start = parameters[1].AsInt();
         ValueBase str = parameters[0];

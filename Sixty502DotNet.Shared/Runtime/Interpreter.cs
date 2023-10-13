@@ -94,6 +94,10 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             catch (Error err)
             {
+                if (err is IllegalQuantityError && Services.State.PassNeeded)
+                {
+                    continue;
+                }
                 if (err.IsControlFlow)
                 {
                     if (err is Goto g)
@@ -195,46 +199,45 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     private void GenListing(SyntaxParser.StatContext stat, ValueBase value)
     {
-        string valString; 
-        if (value.ValueType != ValueType.Callable && AddListing() && !stat.Start.Text.Equals("_", StringComparison.Ordinal))
+        if (!AddListing() || value.ValueType == ValueType.Callable || stat.Start.Text.Equals("_", StringComparison.Ordinal))
         {
-            valString = value.ToString()!;
-            if (!_options.OutputOptions.NoSource)
+            return;
+        }
+        string valString = value.ToString()!;
+        if (!_options.OutputOptions.NoSource)
+        {
+            string source = stat.GetSourceLine(_options.OutputOptions.VerboseList);
+            if (_options.OutputOptions.VerboseList)
             {
-                string source = stat.GetSourceLine(_options.OutputOptions.VerboseList);
-                if (_options.OutputOptions.VerboseList)
+                string[] sources = source.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+                source = sources[0];
+                for (int i = 1; i < sources.Length; i++)
                 {
-                    string[] sources = source.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
-                    source = sources[0];
-                    for (int i = 1; i < sources.Length; i++)
-                    {
-                        source += $"\n{" ",-86}{sources[i]}";
-                    }
-                    if (!_options.OutputOptions.NoAssembly)
-                    {
-                        GenListing(stat.Start, $"={valString,-55}{source}");
-                    }
-                    else
-                    {
-                        GenListing(stat.Start, $"{"",-55}{source}");
-                    }
-                    return;
+                    source += $"\n{" ",-86}{sources[i]}";
                 }
-                valString = value.ToString()!.Elliptical(38);
                 if (!_options.OutputOptions.NoAssembly)
                 {
-                    GenListing(stat.Start, $"={valString,-55}{source.Elliptical(90)}");
+                    GenListing(stat.Start, $"={valString,-55}{source}");
                 }
                 else
                 {
-                    GenListing(stat.Start, $"{"",-55}{source.Elliptical(90)}");
+                    GenListing(stat.Start, $"{"",-55}{source}");
                 }
                 return;
             }
+            valString = valString.Elliptical(38);
             if (!_options.OutputOptions.NoAssembly)
             {
-                GenListing(stat.Start, $"={valString}");
+                GenListing(stat.Start, $"={valString,-55}{source.Elliptical(90)}");
             }
+            else
+            {
+                GenListing(stat.Start, $"{"",-55}{source.Elliptical(90)}");
+            }
+        }
+        else if (!_options.OutputOptions.NoAssembly)
+        {
+            GenListing(stat.Start, $"={valString}");
         }
     }
    
@@ -457,7 +460,9 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         return Services.State;
     }
 
-    private bool AddListing() => !Services.State.PrintOff && !Services.State.PassNeeded;
+    private bool AddListing() => !Services.State.PrintOff &&
+                                 !Services.State.PassNeeded &&
+                                 !Services.State.Symbols.InFunctionScope;
 
     /// <summary>
     /// The shared <see cref="AssemblyServices"/> for the runtime assembly

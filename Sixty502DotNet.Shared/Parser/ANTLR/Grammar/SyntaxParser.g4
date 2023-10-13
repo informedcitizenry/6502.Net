@@ -124,6 +124,8 @@ cpuInstruction
     |   mnemonic '(' expr (',' ix0=(S | SP))? ')' ',' NL* ix1=(Y | Z)   # CpuInstructionIndirectIndexed
     |   mnemonic '(' expr ')' ',' NL* register                          # CpuInstructionZ80IndirectIndexed
     |   LD HL ',' NL* SP ('+'|'-') NL* expr                             # CpuInstructionGB80StackOffset
+    |   LD a0=A ',' NL* '(' HL inc=('-' | '+') ')'                      # CpuInstructionGB80AccIncrement
+    |   LD '(' HL inc=('-' | '+') ')' ',' NL* a1=A                      # CpuInstructionGB80AccIncrement
     |   mnemonic register ',' NL* '(' expr ')'                          # CpuInstructionIndirectExpressionSecond
     |   mnemonic register ',' NL* expr                                  # CpuInstructionZ80Immediate
     |   mnemonic '(' ind=register ')' (',' NL* (expr | register))?      # CpuInstructionIndirectRegisterFirst

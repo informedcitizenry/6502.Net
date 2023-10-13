@@ -476,9 +476,27 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         return EmitOpcode(0xe2, context);
     }
 
+    public override bool VisitCpuInstructionGB80AccIncrement([NotNull] SyntaxParser.CpuInstructionGB80AccIncrementContext context)
+    {
+        if (Cpuid[0] != 'g')
+        {
+            return false;
+        }
+        int opcodeHex;
+        if (context.a0 != null)
+        {
+            opcodeHex = context.inc.Type == SyntaxParser.Plus ? 0x2a : 0x3a;
+        }
+        else
+        {
+            opcodeHex = context.inc.Type == SyntaxParser.Plus ? 0x22 : 0x32;
+        }
+        return EmitOpcode(opcodeHex, context);
+    }
+
     public override bool VisitCpuInstructionGB80StackOffset([NotNull] SyntaxParser.CpuInstructionGB80StackOffsetContext context)
     {
-        if (context.Start.Type != SyntaxParser.LD || Cpuid[0] != 'g')
+        if (Cpuid[0] != 'g')
         {
             return false;
         }
@@ -490,10 +508,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         return false;
     }
 
-    protected override void OnReset()
-    {
-
-    }
+    protected override void OnReset() { }
 
     protected override void OnSetCpu(string cpuid)
     {

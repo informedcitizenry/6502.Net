@@ -11,7 +11,7 @@ cr  .macro
     .endmacro
 ```
 
-Macros are invoked with a leading . preceding the macro name, much like a directive.
+Macros are invoked with a leading `.` preceding the macro name, much like a directive.
 
 ```
     .cr // will expand to:
@@ -131,6 +131,19 @@ long_branch .macro mnemif, mnemifnot, dest
     .endif
     .endmacro
     .long_branch bne,beq,$2000
+```
+
+## Macros and Scopes
+
+Because macros are evaluated in a pre-process phase, they are considered "global" regardless of whether they appear in source within scope blocks, which are defined only during assemble time. Therefore a macro in a scope block would be invoked as if it were in the global scope.
+
+```
+myscope     .block
+mymacro     .macro
+            lda #\1
+            .endmacro
+            .endblock
+            .mymacro // not 'myscope.mymacro'
 ```
 
 ## Other Topics

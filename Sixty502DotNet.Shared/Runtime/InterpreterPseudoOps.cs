@@ -131,7 +131,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                     Services.State.Output.AddUninitialized(size);
                     continue;
                 }
-                throw new Error(val.Expression!, "Illegal quantity");
+                throw new IllegalQuantityError(val.Expression!);
             }
             Services.State.Output.Add(gen, size);
         }
@@ -184,7 +184,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 double num = val.AsDouble();
                 if (num < int.MinValue || num > uint.MaxValue)
                 {
-                    throw new Error(array[i].Expression!, "Illegal quantity");
+                    throw new IllegalQuantityError(array[i].Expression!);
                 }
                 stringBytes.AddRange(Services.State.Output.ConvertToBytes(num));
             }
@@ -216,7 +216,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 int highBitSet = stringBytes.FindIndex(b => b > 0x7f);
                 if (highBitSet >= 0)
                 {
-                    throw new Error(argList[highBitSet], "Illegal quantity");
+                    throw new IllegalQuantityError(argList[highBitSet]);
                 }
                 if (pseudoOp == SyntaxParser.Lstring)
                 {

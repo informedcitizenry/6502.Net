@@ -91,7 +91,7 @@ public static class ProgramParser
         ParseResult parseResult = new()
         {
             Program = parser.program(),
-            Errors = syntaxErrors.Errors,
+            Errors = syntaxErrors.Errors.ToList(),
             UninvokeMacros = preprocessor.UninvokedMacros
         };
         return parseResult;

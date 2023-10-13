@@ -86,6 +86,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         int selected = -1;
 
         SyntaxParser.CaseBlockContext[] caseBlocks = context.caseBlock();
+        HashSet<ValueBase> caseLabelValues = new();
         for (int i = 0; i < caseBlocks.Length; i++)
         {
             SyntaxParser.CaseBlockContext caseBlock = caseBlocks[i];
@@ -103,18 +104,18 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 ValueBase caseVal = Evaluator.EvalConstant(caseLabels[c]);
                 if (!caseVal.IsDefined)
                 {
-                    throw new Error(caseLabels[c].Start, "Case label must be a constant expression");
+                    throw new Error(caseLabels[c], "Case label must be a constant expression");
                 }
                 if (test.ValueType != caseVal.ValueType)
                 {
-                    throw new Error(caseLabels[c].Start, "Case label type mismatch");
+                    throw new Error(caseLabels[c], "Case label type mismatch");
+                }
+                if (!caseLabelValues.Add(caseVal))
+                {
+                    throw new Error(caseLabels[c], "Case label already defined");
                 }
                 if (test.Equals(caseVal))
                 {
-                    if (selected > -1)
-                    {
-                        throw new Error(caseLabels[c].Start, "Case label already defined");
-                    }
                     selected = i;
                 }
             }
@@ -349,7 +350,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 }
                 else if (context.block() == null)
                 {
-                    throw new Error(context.Start, "For loop with no condition and an empty block results in an infinite loop");
+                    throw new Error(context, "For loop with no condition and an empty block results in an infinite loop");
                 }
             }
             if (context.label() != null)
