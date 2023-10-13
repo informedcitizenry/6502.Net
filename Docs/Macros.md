@@ -143,7 +143,7 @@ mymacro     .macro
             lda #\1
             .endmacro
             .endblock
-            .mymacro // not 'myscope.mymacro'
+            .mymacro $42 // not 'myscope.mymacro'
 ```
 
 ## Other Topics

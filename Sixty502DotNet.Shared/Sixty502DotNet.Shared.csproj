@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4BuildTasks" Version="12.2.0">
+    <PackageReference Include="Antlr4BuildTasks" Version="12.3.0">
         <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
