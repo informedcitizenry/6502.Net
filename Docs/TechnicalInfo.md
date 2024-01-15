@@ -34,7 +34,7 @@ CustomCharStreamFactory charStreamFactory = new WSCharStreamFactory(handlerFunc)
 
 
 Interpreter interpreter = new(options, fileReader);
-AssemblyState state = interpreter.Exec(request, handlerFunc);
+AssemblyState state = interpreter.Exec(request, charStreamFactory);
 if (state.Errors.Count == 0)
 {
     // response
