@@ -29,9 +29,12 @@ One other possible use-case is to create a web front-end that calls the assemble
 ```csharp
 
 // Implement the IBinaryFileReader interface and extend the CustomCharStreamFactory class
+IBinaryFileReader fileReader = new WSBinaryReader();
+CustomCharStreamFactory charStreamFactory = new WSCharStreamFactory(handlerFunc);
 
-Interpreter interpreter = new(options, new WSBinaryReader());
-AssemblyState state = interpreter.Exec(request, new WSCharStreamFactory(handlerFunc));
+
+Interpreter interpreter = new(options, fileReader);
+AssemblyState state = interpreter.Exec(request, handlerFunc);
 if (state.Errors.Count == 0)
 {
     // response
