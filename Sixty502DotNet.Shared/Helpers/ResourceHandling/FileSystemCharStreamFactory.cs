@@ -38,7 +38,7 @@ public sealed class FileSystemCharStreamFactory : ICharStreamFactory
         {
             return CharStreams.fromPath(sourcePath);
         }
-        throw new IOException();
+        throw new IOException($"Could not open file '{source}'");
     }
 }
 

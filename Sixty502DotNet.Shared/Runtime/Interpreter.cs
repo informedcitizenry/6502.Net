@@ -308,6 +308,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     private void PushAnonymousScope(int scopeIndex)
     {
+        Services.State.PassNeeded |= Services.State.InFirstPass;
         if (Services.State.Symbols.LookupToScope($"::{scopeIndex}") is not AnonymousScope scope)
         {
             scope = new AnonymousScope(scopeIndex, Services.State.Symbols.ActiveScope);

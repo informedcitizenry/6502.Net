@@ -97,6 +97,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     public override int VisitStatBlock([NotNull] SyntaxParser.StatBlockContext context)
     {
+        Services.State.PassNeeded |= Services.State.InFirstPass;
         CheckWhiteSpaceLeftOfLabel(context.name);
         if (context.name?.Identifier() == null)
         {
