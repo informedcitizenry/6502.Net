@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -30,12 +30,16 @@ public sealed class CharFunction : BuiltInFunctionObject
 
     protected override ValueBase OnInvoke(SyntaxParser.ExpressionCallContext callSite, ArrayValue? parameters)
     {
-        if (parameters![0].AsDouble() >= 0 && parameters![0].AsDouble() <= 0x10FFFF)
+        int codePoint = parameters![0].AsInt();
+        if (codePoint >= 0 && codePoint <= 0x10FFFF)
         {
-            return new StringValue($"\"{char.ConvertFromUtf32(parameters[0].AsInt())}\"")
+            if (_encoding is AsmEncoding enc)
             {
-                TextEncoding = _encoding
-            };
+                return new StringValue($"\"{enc.CodepointToString(codePoint)}\"",
+                                       _encoding,
+                                       enc.EncodingName);
+            }
+            return new StringValue($"\"{char.ConvertFromUtf32(codePoint)}\"");
         }
         throw new Error(callSite.exprList().expr()[0], "Illegal quantity error");
     }

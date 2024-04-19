@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -49,7 +49,7 @@ public sealed partial class Interpreter
         {
             if (info.StartAddressOffset >= 0)
             {
-                AddWarning((IToken?)null, "Program counter option ignored due to format specified");    
+                Services.State.Warnings.Add(new Warning((IToken?)null, "Program counter option ignored due to format specified"));    
             }
             if (programCounter.Value < 0 || programCounter.Value > ushort.MaxValue)
             {

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -97,6 +97,7 @@ public static class OptionsFactory
             WarningsAsErrors = logging?["warningsAsErrors"]?.AsBool() ?? false,
             WarnLeft = logging?["warnLeft"]?.AsBool() ?? false,
             WarnNotUnusedSections = logging?["suppressUnusedSectionWarning"]?.AsBool() ?? false,
+            WarnRegistersAsIdentifiers = logging?["warnRegistersAsIdentifiers"]?.AsBool() ?? false,
             WarnSimplifyCallReturn = logging?["warnSimplifyCallReturn"]?.AsBool() ?? false,
             WarnUnreferencedSymbols = logging?["warnUnreferencedSymbols"]?.AsBool() ?? false
         };
@@ -121,7 +122,7 @@ public static class OptionsFactory
             cLIOptions.LabelsAddressesOnly || cLIOptions.NoAssembly || cLIOptions.NoDisassembly || cLIOptions.NoSource ||
             cLIOptions.TruncateAssembly || cLIOptions.VerboseList)
         {
-            JsonObject listingOptions = new();
+            JsonObject listingOptions = [];
             if (cLIOptions.Disassemble)
             {
                 listingOptions.Add("disassemble", new BoolValue(true));
@@ -149,7 +150,7 @@ public static class OptionsFactory
             cLIOptions.WarnCaseMismatch || cLIOptions.WarningsAsErrors || cLIOptions.WarnLeft ||
             cLIOptions.WarnNotUnusedSections || cLIOptions.WarnSimplifyCallReturn || cLIOptions.WarnUnreferencedSymbols)
         {
-            JsonObject loggingOptions = new();
+            JsonObject loggingOptions = [];
             if (!string.IsNullOrEmpty(cLIOptions.ErrorFile)) loggingOptions.Add("errorPath", new StringValue($"\"{cLIOptions.ErrorFile}\""));
             if (cLIOptions.EchoEachPass) loggingOptions.Add("echoEachPass", new BoolValue(true));
             if (cLIOptions.NoHighlighting) loggingOptions.Add("noHighlighting", new BoolValue(true));
@@ -163,8 +164,10 @@ public static class OptionsFactory
             if (cLIOptions.EnableAllWarnings || cLIOptions.WarningsAsErrors) loggingOptions.Add("warningsAsErrors", new BoolValue(true));
             if (cLIOptions.EnableAllWarnings || cLIOptions.WarnLeft) loggingOptions.Add("warnLeft", new BoolValue(true));
             if (cLIOptions.EnableAllWarnings || cLIOptions.WarnNotUnusedSections) loggingOptions.Add("suppressUnusedSectionWarning", new BoolValue(true));
+            if (cLIOptions.EnableAllWarnings || cLIOptions.WarnRegistersAsIdentifiers) loggingOptions.Add("warnRegistersAsIdentifiers", new BoolValue(true));
             if (cLIOptions.EnableAllWarnings || cLIOptions.WarnSimplifyCallReturn) loggingOptions.Add("warnSimplifyCallReturn", new BoolValue(true));
             if (cLIOptions.EnableAllWarnings || cLIOptions.WarnUnreferencedSymbols) loggingOptions.Add("warnUnreferencedSymbols", new BoolValue(true));
+            
             obj.Add("loggingOptions", loggingOptions);
         }
         if (!string.IsNullOrEmpty(cLIOptions.IncludePath)) obj.Add("includePath", new StringValue($"\"{cLIOptions.IncludePath}\""));
@@ -172,7 +175,7 @@ public static class OptionsFactory
         if (!string.IsNullOrEmpty(cLIOptions.OutputSection)) obj.Add("outputSection", new StringValue($"\"{cLIOptions.OutputSection}\""));
         if (!string.IsNullOrEmpty(cLIOptions.Patch)) obj.Add("patch", new StringValue($"\"{cLIOptions.Patch}\""));
         if (cLIOptions.ResetPCOnBank) obj.Add("resetPCOnBank", new BoolValue(true));
-        JsonArray sources = new();
+        JsonArray sources = [];
         for (int i = 0; i < cLIOptions.InputFiles?.Count; i++)
         {
             sources.Add(new StringValue(cLIOptions.InputFiles![i].ToString()));
@@ -180,7 +183,7 @@ public static class OptionsFactory
         obj.Add("sources", sources);
         if (cLIOptions.Sections?.Count > 0)
         {
-            JsonObject sections = new();
+            JsonObject sections = [];
             for (int i = 0; i < cLIOptions.Sections.Count; i++)
             {
                 (string sectionName, int start, int? end) = ParserBase.ParseDefineSection(cLIOptions.Sections[i]);
@@ -226,6 +229,7 @@ public static class OptionsFactory
                 WarnJumpBug = cLIOptions.EnableAllWarnings || cLIOptions.WarnAboutJumpBug,
                 WarnOfUnreferencedSymbols = cLIOptions.EnableAllWarnings || cLIOptions.WarnUnreferencedSymbols,
                 WarnTextInNonTextPseudoOp = cLIOptions.EnableAllWarnings || cLIOptions.WarnAboutUsingTextInNonTextPseudoOps,
+                WarnRegistersAsIdentifiers = cLIOptions.EnableAllWarnings || cLIOptions.WarnRegistersAsIdentifiers,
                 WarnSimplifyCallReturn = cLIOptions.EnableAllWarnings || cLIOptions.WarnSimplifyCallReturn,
                 WarnWhitespaceBeforeLabels = cLIOptions.EnableAllWarnings || cLIOptions.WarnLeft
             },

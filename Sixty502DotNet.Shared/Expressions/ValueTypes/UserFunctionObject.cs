@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -38,9 +38,9 @@ public sealed class UserFunctionObject : FunctionObject
         }
         if (argList.defaultArgList() != null)
         {
-            argc += argList.defaultArgList().Identifier().Length;
+            argc += argList.defaultArgList().ident().Length;
         }
-        return argc + argList.Identifier().Length;
+        return argc + argList.ident().Length;
     }
 
     /// <summary>

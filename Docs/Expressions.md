@@ -229,12 +229,14 @@ The `.unamp` directive will delete the custom encoding for the codepoint or rang
 
 The assembler can be directed to encode string literals explicitly regardless of the active encoding, according to their prefix:
 
-| Prefix | Encoding | Example                            |
-|--------|----------|------------------------------------|
-| None   | Current  | `"HI" // by default 48 49`         |
-| `u8`   | UTF-8    | `u8"HI" // 48 49`                  |
-| `u`    | UTF-16   | `u"HI" // 48 00 49 00`             |
-| `U`    | UTF-32   | `U"HI" // 48 00 00 00 49 00 00 00` |
+| Prefix | Encoding                 | Example                            |
+|--------|--------------------------|------------------------------------|
+| None   | Current                  | `"HI" // by default 48 49`         |
+| `p`    | PETSCII                  | `p"HI" // c8 c9`                   |
+| `s`    | Commodore screen codes   | `s"HI" // 08 09`                   |
+| `u8`   | UTF-8                    | `u8"HI" // 48 49`                  |
+| `u`    | UTF-16                   | `u"HI" // 48 00 49 00`             |
+| `U`    | UTF-32                   | `U"HI" // 48 00 00 00 49 00 00 00` |
 
 #### Escape sequences
 
@@ -277,6 +279,36 @@ In the above example, the expression can be transformed with format specifiers:
 ```
         .string $"Start address: ${START:X4}" // Becomes "Start address: $C000"
 ```
+
+To represent a curly brace within the string itself, add an extra brace (`{` for left or `}` for right):
+
+        .string $"{{HI}}" // Becomes "{HI}"
+
+#### Commodore Control Codes
+
+For PETSCII and screen code encodings, the assembler also recognizes control codes found in program listings of various Commodore references and related magazines, such as [Compute's Gazette](https://archive.org/details/computes.gazette/Compute_Gazette_Issue_01_1983_Jul/):
+
+```
+    .string p"{CLR}{HOME}" // > 93 13
+    .encoding "cbmscreen"
+    .string "{SPACE}{UP ARROW}" // > 20 1e
+```
+
+If the string is an interpolated string, care must be taken in adding control codes since in interpolated strings curly braces mark the boundaries of interpolated expressions:
+
+```
+        .encoding "petscii"
+        .string $"{CLR}{HOME}{3+2}"
+```
+
+The above would give an error (or an unexpected result if `CLR` and `HOME` are labels). To fix that simply escape the braces themselves:
+
+```
+        .encoding "petscii"
+        .string $"{{CLR}}{{HOME}}{3+2}" // > 93 13 35
+```
+
+See [here](/Docs/CommodoreControlCodes.md) for a full listing of all valid control codes for these two encodings.
 
 #### Char Methods
 

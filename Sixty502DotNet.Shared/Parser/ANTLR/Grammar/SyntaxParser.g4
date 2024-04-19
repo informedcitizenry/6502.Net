@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -30,7 +30,7 @@ preprocEos
     ;
 
 preprocStat
-    :   Identifier d=Macro macroParam? begin=NL+ ~(Endmacro)* end=NL+ label? Endmacro
+    :   ident d=Macro macroParam? begin=NL+ ~(Endmacro)* end=NL+ label? Endmacro
     |   label? d=DotIdentifier macroParam?
     |   label? d=(Include | Binclude) filename=(StringLiteral | UnicodeStringLiteral)
     |   label? d=End
@@ -53,9 +53,9 @@ block
     ;
 
 stat
-    :   Identifier equ=(Equ | Equal | Global) expr eos          # StatConstant
-    |   Identifier Function argList? eos block? Endfunction eos # StatFuncDecl
-    |   Identifier Enum eos enumDef+ Endenum eos                # StatEnumDecl
+    :   ident equ=(Equ | Equal | Global) expr eos               # StatConstant
+    |   ident Function argList? eos block? Endfunction eos      # StatFuncDecl
+    |   ident Enum eos enumDef+ Endenum eos                     # StatEnumDecl
     |   name=label? b=Block eos block? end=label? Endblock eos  # StatBlock
     |   name=label? b=Proc eos block? end=label? Endproc eos    # StatBlock
     |   label? instruction eos                                  # StatInstruction
@@ -64,7 +64,7 @@ stat
     ;
 
 enumDef
-    :   Identifier ('=' primaryExpr)? eos
+    :   ident ('=' primaryExpr)? eos
     ;
 
 instruction
@@ -74,8 +74,8 @@ instruction
     |   Do eos block? label? Whiletrue while=expr                                       # InstructionWhileLoop
     |   ifBlock                                                                         # InstructionIf
     |   For init=expr? ',' NL* cond=expr? ',' NL* inc=exprList eos block? label? Next   # InstructionFor
-    |   Foreach iterator=Identifier ',' NL* collection=expr eos block? label? Next      # InstructionForeach
-    |   Namespace root=Identifier identifierPart* eos block? label? Endnamespace        # InstructionNamespace
+    |   Foreach iterator=ident ',' NL* collection=expr eos block? label? Next           # InstructionForeach
+    |   Namespace root=ident identifierPart* eos block? label? Endnamespace             # InstructionNamespace
     |   Page eos block? label? Endpage                                                  # InstructionPage
     |   Repeat repetition=expr eos block? label? Endrepeat                              # InstructionRepeat
     |   Switch expr eos caseBlock* Endswitch                                            # InstructionSwitch
@@ -84,7 +84,7 @@ instruction
 
 label
     locals [bool visited = false]
-    :   Identifier 
+    :   ident 
     |   '+'
     |   '-'
     ;
@@ -111,7 +111,7 @@ cpuInstruction
             long operand = 0,
             int operandSize = 0]
     :   bitMnemonic DecLiteral ',' NL* z80Index (',' NL* register)?     # CpuInstructionBit
-    |   bitMnemonic DecLiteral ',' NL* LeftParen register RightParen    # CpuInstructionBit
+    |   bitMnemonic DecLiteral ',' NL* '(' register ')'                 # CpuInstructionBit
     |   bitMnemonic DecLiteral ',' NL* register                         # CpuInstructionBit
     |   bitMnemonic DecLiteral ',' NL* expr (',' NL* expr)?             # CpuInstructionBit
     |   mnemonic bitwidthModifier? '#' imm=expr                         # CpuInstructionImmmediate
@@ -122,16 +122,16 @@ cpuInstruction
     |   mnemonic r0=register ',' NL* ix1=z80Index                       # CpuInstructionZ80Index
     |   mnemonic bitwidthModifier? '(' expr ',' X ')'                   # CpuInstructionIndexedIndirect
     |   mnemonic '(' expr (',' ix0=(S | SP))? ')' ',' NL* ix1=(Y | Z)   # CpuInstructionIndirectIndexed
-    |   mnemonic '(' expr ')' ',' NL* register                          # CpuInstructionZ80IndirectIndexed
     |   LD HL ',' NL* SP ('+'|'-') NL* expr                             # CpuInstructionGB80StackOffset
     |   LD a0=A ',' NL* '(' HL inc=('-' | '+') ')'                      # CpuInstructionGB80AccIncrement
     |   LD '(' HL inc=('-' | '+') ')' ',' NL* a1=A                      # CpuInstructionGB80AccIncrement
+    |   mnemonic register (',' NL* register)*                           # CpuInstructionRegisterList
+    |   mnemonic '(' ind=register ')' (',' NL* (register | expr))?      # CpuInstructionIndirectRegisterFirst
+    |   mnemonic (register | expr) ',' NL* '(' ind=register ')'         # CpuInstructionIndirectRegisterSecond
     |   mnemonic register ',' NL* '(' expr ')'                          # CpuInstructionIndirectExpressionSecond
     |   mnemonic register ',' NL* expr                                  # CpuInstructionZ80Immediate
-    |   mnemonic '(' ind=register ')' (',' NL* (expr | register))?      # CpuInstructionIndirectRegisterFirst
-    |   mnemonic (expr | register) ',' NL* '(' ind=register ')'         # CpuInstructionIndirectRegisterSecond
+    |   mnemonic '(' expr ')' ',' NL* register                          # CpuInstructionZ80IndirectIndexed
     |   mnemonic '[' expr ']' ',' NL* reg=(Y | Z)                       # CpuInstructionDirectIndex
-    |   mnemonic '[' expr ',' register ']'                              # CpuInstructionIndirectIndexM6809
     |   mnemonic '[' expr ']'                                           # CpuInstructionDirect
     |   mnemonic bitwidthModifier? expr ',' NL* register                # CpuInstructionIndex
     |   mnemonic '[' ',' inc='--' reg=register ']'                      # CpuInstructionAutoIncrement
@@ -139,8 +139,8 @@ cpuInstruction
     |   mnemonic ',' NL* inc=('-' | '--') reg=register                  # CpuInstructionAutoIncrement
     |   mnemonic ',' NL* reg=register inc=('+' | '++')                  # CpuInstructionAutoIncrement
     |   mnemonic '[' acc=(A | B | D)? ',' ix=register ']'               # CpuInstructionRegisterOffset
+    |   mnemonic '[' expr ',' register ']'                              # CpuInstructionIndirectIndexM6809
     |   mnemonic ',' NL* ix=register                                    # CpuInstructionRegisterOffset
-    |   mnemonic register (',' NL* register)*                           # CpuInstructionRegisterList
     |   mnemonic exprList                                               # CpuInstructionExpressionList
     |   mnemonic bitwidthModifier? expr                                 # CpuInstructionZPAbsolute
     |   mnemonic                                                        # CpuInstructionImplied
@@ -282,11 +282,16 @@ register
 argList
     :   argList ',' NL* defaultArgList
     |   defaultArgList
-    |   Identifier (',' NL* Identifier)*
+    |   ident (',' NL* ident)*
+    ;
+
+ident
+    :   Identifier
+    |   registerAsIdentifier
     ;
 
 defaultArgList
-    :   Identifier '=' expr (',' NL* Identifier '=' expr)*
+    :   ident '=' expr (',' NL* ident '=' expr)*
     ;
 
 pseudoOpArgList
@@ -301,8 +306,8 @@ exprList
     :   expr (',' NL* expr)*
     ;
 
-defineAssign:   Identifier ('=' expr)?;
-defineSection:  Identifier ',' NL* start=expr (',' NL* end=expr)?;
+defineAssign:   ident ('=' expr)?;
+defineSection:  ident ',' NL* start=expr (',' NL* end=expr)?;
 
 expr
     locals [ValueBase value = new UndefinedValue()]
@@ -328,6 +333,7 @@ expr
     |   <assoc=right> lhs=expr assignOp rhs=expr                        # ExpressionAssignment
     |   unary_op=('<' | '>' | '&' | '^' | '^^') expr                    # ExpressionUnary
     |   Identifier                                                      # ExpressionSimpleIdentifier
+    |   registerAsIdentifier                                            # ExpressionSimpleIdentifier
     |   primaryExpr                                                     # ExpressionPrimary
     |   '*'                                                             # ExpressionProgramCounter
     |   anonymousLabel                                                  # ExpressionAnonymousLabel
@@ -339,17 +345,28 @@ expr
     ;
 
 identifierPart
-    :   '.' NL* Identifier
+    :   '.' NL* ident
     |   DotIdentifier
+    |   pseudoOp
+    |   directive
+    ;
+
+registerAsIdentifier
+    :   A | AF | B   | BC  | C   | CC  | D   | DE  | DP | E | H  | HL  
+    |   L | I  | IX  | IXH | IXL | IY  | IYH | IYL | M  | N | NC | NZ 
+    |   P | PC | PCR | PE  | PO  | PSW | R   | S   | SP | U | X  | Y  
+    |   Z  
     ;
 
 primaryExpr
     :   AltBinLiteral
     |   BinFloatLiteral | BinLiteral
+    |   CbmScreenCharLiteral
     |   CharLiteral
     |   DecFloatLiteral | DecLiteral
     |   HexFloatLiteral | HexLiteral
     |   OctFloatLiteral | OctLiteral
+    |   PetsciiCharLiteral
     |   True | False | NaN
     ;
 
@@ -384,6 +401,8 @@ keyValuePair
 key
     :   primaryExpr
     |   identifierPart
+    |   CbmScreenStringLiteral
+    |   PetsciiStringLiteral
     |   StringLiteral
     |   UnicodeStringLiteral
     ;
@@ -394,6 +413,8 @@ tuple
 
 stringLiteral
     :   interpolString
+    |   CbmScreenStringLiteral
+    |   PetsciiStringLiteral
     |   StringLiteral
     |   UnicodeStringLiteral
     ;

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -11,6 +11,9 @@ options {
     superClass=LexerBase;
 }
 
+// All keyword tokens, including mnemonics, CPU registers, and pseudo-op directives
+// we are declaring their type but not defining in this grammar, CPU type and
+// case sensitivity are determined only at runtime.
 tokens {
     /* constants */
     True, False, NaN,
@@ -147,6 +150,14 @@ DoubleQuote
     :   '$"' -> pushMode(STRING)
     ;
 
+CbmScreenStringLiteral
+    :   ('s' | 'S') StringLiteral
+    ;
+
+PetsciiStringLiteral
+    :   ('p' | 'P') StringLiteral
+    ;
+
 UnicodeStringLiteral
     :   ('u' '8'? | 'U') StringLiteral
     ;
@@ -156,8 +167,16 @@ StringLiteral
     |   '"' SChar+ '"'
     ;
 
+CbmScreenCharLiteral
+    :   ('s' | 'S') CharLiteral
+    ;
+
+PetsciiCharLiteral
+    :   ('p' | 'P') CharLiteral
+    ;
+
 CharLiteral
-    :   '\'' CChar '\''
+    :   ['] CChar+ [']
     ;
 
 HexLiteral
@@ -340,6 +359,7 @@ SChar
 fragment
 CChar
     :   ~[\\'\n\r]
+    |   '{' [A-Z] (('-'|' ') ~[\\'\n\r}]+)? '}'
     |   Escape
     ;
 

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -99,7 +99,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
     {
         Services.State.PassNeeded |= Services.State.InFirstPass;
         CheckWhiteSpaceLeftOfLabel(context.name);
-        if (context.name?.Identifier() == null)
+        if (context.name?.ident() == null)
         {
             if (context.name != null)
             {
@@ -171,7 +171,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
     {
         CheckWhiteSpaceLeftOfLabel(context.label());
         SyntaxParser.LabelContext? labelCtx = context.label();
-        if (labelCtx?.Identifier() == null)
+        if (labelCtx?.ident() == null)
         {
             if (labelCtx != null)
             {

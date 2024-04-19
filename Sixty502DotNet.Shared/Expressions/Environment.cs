@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -93,7 +93,7 @@ public static class Environment
         BuiltInFunction("range", new RangeFunction(), scope);
         BuiltInFunction("section", new SectionFunction(services), scope);
         BuiltInFunction("sizeof", new SizeofFunction(), scope);
-        BuiltInFunction("typeof", new TypeofFunction(), scope);
+        BuiltInFunction("typeof", new TypeofFunction(services), scope);
 
         MathFunction("abs", p => Math.Abs(p[0]), 1, scope);
         MathFunction("atan", p => Math.Atan(p[0]), 1, scope);
@@ -188,105 +188,7 @@ public static class Environment
         BuiltInFunction("toString", new ToStringMethod(services), FunctionType);
 
         // set architecture specific encodings
-        services.Encoding.SelectEncoding("\"petscii\"");
-        services.Encoding.Map("az", 'A');
-        services.Encoding.Map("AZ", 0xc1);
-        services.Encoding.Map('£', '\\');
-        services.Encoding.Map('↑', '^');
-        services.Encoding.Map('←', '_');
-        services.Encoding.Map('▌', 0xa1);
-        services.Encoding.Map('▄', 0xa2);
-        services.Encoding.Map('▔', 0xa3);
-        services.Encoding.Map('▁', 0xa4);
-        services.Encoding.Map('▏', 0xa5);
-        services.Encoding.Map('▒', 0xa6);
-        services.Encoding.Map('▕', 0xa7);
-        services.Encoding.Map('◤', 0xa9);
-        services.Encoding.Map('├', 0xab);
-        services.Encoding.Map('└', 0xad);
-        services.Encoding.Map('┐', 0xae);
-        services.Encoding.Map('▂', 0xaf);
-        services.Encoding.Map('┌', 0xb0);
-        services.Encoding.Map('┴', 0xb1);
-        services.Encoding.Map('┬', 0xb2);
-        services.Encoding.Map('┤', 0xb3);
-        services.Encoding.Map('▎', 0xb4);
-        services.Encoding.Map('▍', 0xb5);
-        services.Encoding.Map('▃', 0xb9);
-        services.Encoding.Map('✓', 0xba);
-        services.Encoding.Map('┘', 0xbd);
-        services.Encoding.Map('━', 0xc0);
-        services.Encoding.Map('♠', 0xc1);
-        services.Encoding.Map('│', 0xc2);
-        services.Encoding.Map('╮', 0xc9);
-        services.Encoding.Map('╰', 0xca);
-        services.Encoding.Map('╯', 0xcb);
-        services.Encoding.Map('╲', 0xcd);
-        services.Encoding.Map('╱', 0xce);
-        services.Encoding.Map('●', 0xd1);
-        services.Encoding.Map('♥', 0xd3);
-        services.Encoding.Map('╭', 0xd5);
-        services.Encoding.Map('╳', 0xd6);
-        services.Encoding.Map('○', 0xd7);
-        services.Encoding.Map('♣', 0xd8);
-        services.Encoding.Map('♦', 0xda);
-        services.Encoding.Map('┼', 0xdb);
-        services.Encoding.Map('π', 0xde);
-        services.Encoding.Map('◥', 0xdf);
-        services.Encoding.Map("\x80\xff", 0x80);
-
-        services.Encoding.SelectEncoding("\"cbmscreen\"");
-        services.Encoding.Map("@Z", '\0');
-        services.Encoding.Map("az", 'A');
-        services.Encoding.Map('£', '\\');
-        services.Encoding.Map('π', '^'); // π is $5e in unshifted
-        services.Encoding.Map('↑', '^'); // ↑ is $5e in shifted
-        services.Encoding.Map('←', '_');
-        services.Encoding.Map('▌', '`');
-        services.Encoding.Map('▄', 'a');
-        services.Encoding.Map('▔', 'b');
-        services.Encoding.Map('▁', 'c');
-        services.Encoding.Map('▏', 'd');
-        services.Encoding.Map('▒', 'e');
-        services.Encoding.Map('▕', 'f');
-        services.Encoding.Map('◤', 'i');
-        services.Encoding.Map('├', 'k');
-        services.Encoding.Map('└', 'm');
-        services.Encoding.Map('┐', 'n');
-        services.Encoding.Map('▂', 'o');
-        services.Encoding.Map('┌', 'p');
-        services.Encoding.Map('┴', 'q');
-        services.Encoding.Map('┬', 'r');
-        services.Encoding.Map('┤', 's');
-        services.Encoding.Map('▎', 't');
-        services.Encoding.Map('▍', 'u');
-        services.Encoding.Map('▃', 'y');
-        services.Encoding.Map('✓', 'z');
-        services.Encoding.Map('┘', '}');
-        services.Encoding.Map('━', '@');
-        services.Encoding.Map('♠', 'A');
-        services.Encoding.Map('│', 'B');
-        services.Encoding.Map('╮', 'I');
-        services.Encoding.Map('╰', 'J');
-        services.Encoding.Map('╯', 'K');
-        services.Encoding.Map('╲', 'M');
-        services.Encoding.Map('╱', 'N');
-        services.Encoding.Map('●', 'Q');
-        services.Encoding.Map('♥', 'S');
-        services.Encoding.Map('╭', 'U');
-        services.Encoding.Map('╳', 'V');
-        services.Encoding.Map('○', 'W');
-        services.Encoding.Map('♣', 'X');
-        services.Encoding.Map('♦', 'Z');
-        services.Encoding.Map('┼', '[');
-        services.Encoding.Map('◥', '_');
-        services.Encoding.Map("\x80\xff", 0x80);
-
-        services.Encoding.SelectEncoding("\"atascreen\"");
-        services.Encoding.Map(" _", '\0');
-        services.Encoding.Map("\x80\xff", 0x80);
-
-        services.Encoding.SelectDefaultEncoding();
+        EncodingMappings.MapEncodings(services.Encoding);
     }
 
     /// <summary>
@@ -319,4 +221,3 @@ public static class Environment
     /// </summary>
     public static Prototype TupleType { get; }
 }
-

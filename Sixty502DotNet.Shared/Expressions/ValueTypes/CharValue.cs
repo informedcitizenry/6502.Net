@@ -1,9 +1,11 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
 //-----------------------------------------------------------------------------
+
+using System.Text;
 
 namespace Sixty502DotNet.Shared;
 
@@ -14,11 +16,13 @@ public sealed class CharValue : ValueBase
 {
     private char _value;
 
+    private int _numVal;
+
     /// <summary>
     /// Create a new instance of a <see cref="CharValue"/>.
     /// </summary>
     public CharValue()
-        : this('\0')
+        : this('\0', Encoding.UTF8, null)
     {
 
     }
@@ -28,59 +32,48 @@ public sealed class CharValue : ValueBase
     /// value is set to the specified character value.
     /// </summary>
     /// <param name="val">The character value.</param>
-    public CharValue(char val)
+    /// <param name="encoding">The encoding associated to the <see cref="CharValue"/>.</param>
+    /// <param name="encodingName">The encoding name of the encoding.</param>
+    public CharValue(char val, Encoding encoding, string? encodingName)
     {
         _value = val;
+        TextEncoding = encoding;
+        EncodingName = encodingName;
+        if (TextEncoding is AsmEncoding enc && !char.IsSurrogate(_value))
+        {
+            var current = enc.EncodingName;
+            enc.SelectEncoding(encodingName ?? current);
+            _numVal = enc.GetEncodedValue(_value.ToString());
+            enc.SelectEncoding(current);
+        }
+        else
+        {
+            _numVal = _value;
+        }
         Prototype = Environment.PrimitiveType;
         ValueType = ValueType.Char;
     }
 
-    /// <summary>
-    /// Create a new instance of a <see cref="CharValue"/> whose underlying
-    /// value is set to the specified double value.
-    /// </summary>
-    /// <param name="num">The double value.</param>
-    /// <exception cref="ArgumentException"></exception>
-    public CharValue(double num)
-    {
-        string strVal = char.ConvertFromUtf32((int)num);
-        char[] chars = TextEncoding.GetChars(TextEncoding.GetBytes(strVal));
-        if (chars.Length > 1)
-        {
-            throw new ArgumentException();
-        }
-        _value = chars[0];
-        ValueType = ValueType.Char;
-        Prototype = Environment.PrimitiveType;
-    }
 
     /// <summary>
     /// Create a new instance of a <see cref="CharValue"/> from a string.
     /// </summary>
     /// <param name="str">The string of the character.</param>
-    public CharValue(string str)
-        : this(str[1..^1][0])
+    /// <param name="encoding">The encoding associated to the <see cref="CharValue"/>.</param>
+    /// <param name="encodingName">The encoding name of the encoding.</param>
+    public CharValue(string str, Encoding encoding, string? encodingName)
+        : this(str[1..^1][0], encoding, encodingName)
     {
 
     }
 
-    public override double AsDouble()
-    {
-        return AsInt();
-    }
+    public override double AsDouble() => _numVal;
 
-    public override int AsInt()
-    {
-        if (TextEncoding is AsmEncoding enc)
-        {
-            return enc.GetEncodedValue(_value.ToString());
-        }
-        return char.ConvertToUtf32(_value.ToString(), 0);
-    }
+    public override int AsInt() => _numVal;
 
     protected override int OnCompareTo(ValueBase other)
     {
-        return Comparer<char>.Default.Compare(_value, other.AsChar());
+        return Comparer<int>.Default.Compare(_numVal, other.AsInt());
     }
 
     public override bool TypeCompatible(ValueBase other)
@@ -92,15 +85,12 @@ public sealed class CharValue : ValueBase
     {
         if (other is NumericValue)
         {
-            return Convert.ToInt64(_value) == other.AsDouble();
+            return _numVal == other.AsInt();
         }
         return _value == other.AsChar();
     }
 
-    public override int Size()
-    {
-        return TextEncoding.GetByteCount(_value.ToString());
-    }
+    public override int Size() => _numVal.Size();
 
     public override string TypeName() => "Character";
 
@@ -108,10 +98,7 @@ public sealed class CharValue : ValueBase
     {
         if (rhs is StringValue)
         {
-            return new StringValue($"\"{rhs.AddWith(this)}\"")
-            {
-                TextEncoding = this.TextEncoding
-            };
+            return rhs.AddWith(this);
         }
         if (rhs is CharValue || rhs is NumericValue)
         {
@@ -120,22 +107,26 @@ public sealed class CharValue : ValueBase
         return base.AddWith(rhs);
     }
 
-    public override string ToString()
-    {
-        return $"'{_value}'";
-    }
+    public override string ToString() => $"'{_value}'";
 
     public override byte[] ToBytes()
     {
-        return TextEncoding.GetBytes(new char[] { _value });
+        return BitConverter.GetBytes(_numVal).Take(2).ToArray();
+    }
+
+    public override byte[] ToEndianBytes(bool little)
+    {
+        var bytes = ToBytes();
+        if (little != BitConverter.IsLittleEndian)
+        {
+            return bytes.Reverse().ToArray();
+        }
+        return bytes;
     }
 
     public override ValueBase AsCopy()
     {
-        return new CharValue(ToString())
-        {
-            TextEncoding = TextEncoding
-        };
+        return new CharValue(ToString(), TextEncoding, EncodingName);
     }
 
     public override char AsChar() => _value;
@@ -153,15 +144,28 @@ public sealed class CharValue : ValueBase
             {
                 throw new InvalidOperationError(Expression?.Start);
             }
-            _value = conv[0];
+            if (TextEncoding is AsmEncoding enc)
+            {
+                var encodingName = enc.EncodingName;
+                enc.SelectEncoding(EncodingName ?? encodingName);
+                var chars = enc.GetChars(enc.GetBytes(conv));
+                if (chars.Length > 1)
+                {
+                    throw new InvalidOperationError(Expression?.Start);
+                }
+                _value = chars[0];
+                enc.SelectEncoding(encodingName);
+            }
+            else
+            {
+                _value = conv[0];
+            }
+            _numVal = other.AsInt();
             return;
         }
         _value = ((CharValue)other)._value;
     }
 
-    public override object? ToObject()
-    {
-        return _value;
-    }
+    public override object? Data() => _value;
 }
 

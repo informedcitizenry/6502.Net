@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -8,6 +8,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Antlr4.Runtime;
 
 namespace Sixty502DotNet.Shared;
 
@@ -31,23 +32,50 @@ public static partial class StringConverter
     }
 
     /// <summary>
+    /// Convert the parsed Commodore-encoded character literal into a character.
+    /// </summary>
+    /// <param name="charToken">The character literal representation.</param>
+    /// <param name="encoding">The encoding.</param>
+    /// <returns>A value that encapsulates the character.</returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidCharLiteralError"><exception>
+    public static ValueBase ConvertCbmPetsciiChar(IToken charToken, Encoding? encoding)
+    {
+        string encodingName = charToken.Type == SyntaxParser.CbmScreenCharLiteral ?
+                                                "\"cbmscreen\"" :
+                                                "\"petscii\"";
+        AsmEncoding? asmEncoding = encoding as AsmEncoding;
+        if (asmEncoding == null)
+        {
+            asmEncoding = new AsmEncoding();
+            EncodingMappings.MapEncodings(asmEncoding);
+        }
+        StringValue charStringVal = new(Unescape($"\"{charToken.Text[2..^1]}\""), asmEncoding!, encodingName);
+        var charStringList = charStringVal.ToList();
+        if (charStringList.Count != 1)
+        {
+            throw new InvalidCharLiteralError(charToken);
+        }
+        return charStringList[0];
+    }
+
+    /// <summary>
     /// Convert the parsed character literal into a character.
     /// </summary>
     /// <param name="charString">The character literal representation.</param>
     /// <param name="encoding">The encoding.</param>
     /// <returns>A value that encapsulates the character.</returns>
     /// <exception cref="ArgumentException"></exception>
-    public static ValueBase ConvertChar(string charString, Encoding encoding)
+    /// <exception cref="InvalidCharLiteralError"><exception>
+    public static ValueBase ConvertChar(IToken charToken, Encoding encoding, string? encodingName)
     {
-        charString = Unescape(charString[1..^1]);
-        if (charString.Length > 1)
+        StringValue charStringVal = new(Unescape($"\"{charToken.Text[1..^1]}\""), encoding, encodingName);
+        var charStringList = charStringVal.ToList();
+        if (charStringList.Count != 1)
         {
-            throw new ArgumentException(null, nameof(charString));
+            throw new InvalidCharLiteralError(charToken);
         }
-        return new CharValue(charString[0])
-        {
-            TextEncoding = encoding
-        };
+        return new CharValue(charStringList[0].AsChar(), encoding, encodingName);
     }
 
     /// <summary>
@@ -55,20 +83,15 @@ public static partial class StringConverter
     /// </summary>
     /// <param name="stringString">The string literal representation.</param>
     /// <param name="encoding">The encoding.</param>
+    /// <param name="encodingName">The (optional) encoding name.</param>
     /// <returns>A value that encapsulates the string.</returns>
-    public static ValueBase ConvertString(string stringString, Encoding encoding)
+    public static ValueBase ConvertString(string stringString, Encoding encoding, string? encodingName)
     {
         if (stringString[0] == '"' && stringString[1] == '"' && stringString[2] == '"')
         {
-            return new StringValue(stringString)
-            {
-                TextEncoding = encoding
-            };
+            return new StringValue(stringString, encoding, encodingName);
         }
-        return new StringValue(Unescape(stringString))
-        {
-            TextEncoding = encoding
-        };
+        return new StringValue(Unescape(stringString), encoding, encodingName);
     }
 
     [GeneratedRegex("\\\\u([dD][8-9a-bA-B][0-9a-fA-F]{2})\\\\u([dD][c-fC-F][0-9a-fA-F]{2})", RegexOptions.Compiled)]

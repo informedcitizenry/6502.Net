@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -138,6 +138,8 @@ public abstract class LexerBase : Lexer
                _previousToken.Type.IsOneOf(SyntaxLexer.AltBinLiteral,
                                            SyntaxLexer.BinLiteral,
                                            SyntaxLexer.BinFloatLiteral,
+                                           SyntaxLexer.CbmScreenCharLiteral,
+                                           SyntaxLexer.CbmScreenStringLiteral,
                                            SyntaxLexer.CharLiteral,
                                            SyntaxLexer.DecLiteral,
                                            SyntaxLexer.DecFloatLiteral,
@@ -155,6 +157,8 @@ public abstract class LexerBase : Lexer
                                            SyntaxLexer.NaN,
                                            SyntaxLexer.OctLiteral,
                                            SyntaxLexer.OctFloatLiteral,
+                                           SyntaxLexer.PetsciiCharLiteral,
+                                           SyntaxLexer.PetsciiStringLiteral,
                                            SyntaxLexer.RightParen,
                                            SyntaxLexer.RightSquare,
                                            SyntaxLexer.RightCurly,

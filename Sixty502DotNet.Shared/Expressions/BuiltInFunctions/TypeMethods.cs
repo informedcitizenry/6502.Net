@@ -1,9 +1,11 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
 //-----------------------------------------------------------------------------
+
+using System.Text;
 
 namespace Sixty502DotNet.Shared;
 
@@ -465,7 +467,7 @@ public sealed class SkipMethod : TypeMethodBase
         }
         if (parameters[0] is StringValue sv)
         {
-            return new StringValue(sv.Skip(skip))
+            return new StringValue(sv.Skip(skip), sv.TextEncoding, sv.EncodingName)
             {
                 TextEncoding = sv.TextEncoding
             };
@@ -601,7 +603,7 @@ public sealed class SubstringMethod : TypeMethodBase
         {
             throw new Error(callSite.exprList(), "Index of out range");
         }
-        return new StringValue($"\"{str.AsString().Substring(start, len)}\"")
+        return new StringValue($"\"{str.AsString().Substring(start, len)}\"", str.TextEncoding, str.EncodingName)
         {
             Expression = callSite
         };
@@ -632,10 +634,7 @@ public sealed class TakeMethod : TypeMethodBase
         }
         if (parameters[0] is StringValue sv)
         {
-            return new StringValue(sv.Take(take))
-            {
-                TextEncoding = sv.TextEncoding
-            };
+            return new StringValue(sv.Take(take), sv.TextEncoding, sv.EncodingName);
         }
         return new ArrayValue(parameters[0].ToList().Take(take).ToList())
         {
@@ -739,7 +738,7 @@ public sealed class ToLowerMethod : TypeMethodBase
     protected override ValueBase OnInvoke(SyntaxParser.ExpressionCallContext callSite, ArrayValue parameters)
     {
         string original = parameters[0].AsString();
-        return new StringValue($"\"{original.ToLower()}\"");
+        return new StringValue($"\"{original.ToLower()}\"", parameters[0].TextEncoding, parameters[0].EncodingName);
     }
 }
 
@@ -765,7 +764,7 @@ public sealed class ToStringMethod : TypeMethodBase
         {
             return parameters[0];
         }
-        return new StringValue($"\"{parameters[0]}\"");
+        return new StringValue($"\"{parameters[0]}\"", Services.Encoding, Services.Encoding.EncodingName);
     }
 }
 
@@ -812,7 +811,7 @@ public sealed class ToUpperMethod : TypeMethodBase
     protected override ValueBase OnInvoke(SyntaxParser.ExpressionCallContext callSite, ArrayValue parameters)
     {
         string original = parameters[0].AsString();
-        return new StringValue($"\"{original.ToUpper()}\"");
+        return new StringValue($"\"{original.ToUpper()}\"", Services.Encoding, Services.Encoding.EncodingName);
     }
 }
 

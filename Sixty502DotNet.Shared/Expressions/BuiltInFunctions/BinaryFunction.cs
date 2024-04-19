@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -41,7 +41,7 @@ public sealed class BinaryFunction : BuiltInFunctionObject
         }
         if (BinaryCollection == null)
         {
-            throw new ArgumentNullException("Assembler error", nameof(BinaryCollection));
+            throw new NullReferenceException(nameof(BinaryCollection));
         }
  
         BinaryFile? file = BinaryCollection.Get(parameters[0].AsString());

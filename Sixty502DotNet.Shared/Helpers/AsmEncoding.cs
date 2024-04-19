@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -7,6 +7,7 @@
 
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Sixty502DotNet.Shared;
 
@@ -15,11 +16,16 @@ namespace Sixty502DotNet.Shared;
 /// to target architectures with different character encoding
 /// schemes.
 /// </summary>
-public sealed class AsmEncoding : Encoding
+public sealed partial class AsmEncoding : Encoding
 {
     private Dictionary<string, Dictionary<int, int>> _maps;
+    private Dictionary<string, Dictionary<string, byte>> _encodingControlCodes;
     private Dictionary<int, int> _currentMap;
+    private Dictionary<string, byte> _currentControlCodes;
+    private string _currentEncodingName;
     private bool _caseSensitive;
+
+    private static readonly Regex s_codeRegex = CodeRegex();
 
     /// <summary>
     /// Constructs an instance of the <see cref="AsmEncoding"/> class, used to encode 
@@ -34,6 +40,9 @@ public sealed class AsmEncoding : Encoding
         var comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
         _maps = new Dictionary<string, Dictionary<int, int>>(comparer);
         _currentMap = new Dictionary<int, int>();
+        _encodingControlCodes = new Dictionary<string, Dictionary<string, byte>>(comparer);
+        _currentControlCodes = new Dictionary<string, byte>();
+        _currentEncodingName = null!;
         SelectEncoding("\"none\"");
     }
 
@@ -46,7 +55,7 @@ public sealed class AsmEncoding : Encoding
     {
     }
 
-    byte[] GetCharBytes(string s)
+    private byte[] GetCharBytes(string s)
     {
         var utf32 = char.ConvertToUtf32(s, 0);
         if (_currentMap.TryGetValue(utf32, out var code))
@@ -104,7 +113,48 @@ public sealed class AsmEncoding : Encoding
     }
 
     /// <summary>
-    /// Adds a character mapping to translate from source to object
+    /// Get the string representation of the code point.
+    /// </summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>A string representation of the code point, if the code point
+    /// is valid. Otherwise returns <code>null</code>.</returns>
+    public string? CodepointToString(int codePoint)
+    {
+        if (_currentMap.ContainsValue(codePoint))
+        {
+            codePoint = _currentMap.First(e => e.Value.Equals(codePoint)).Key;
+        }
+        try
+        {
+            return char.ConvertFromUtf32(codePoint);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Add a control code mapping to translate source to object. Control codes
+    /// were often used in program listings in Commodore reference material and
+    /// magazines to indicate special keypresses in string literals. 
+    /// Examples include <c>{CLR}</c> and <c>{CLEFT ARROW}</c>.
+    /// </summary>
+    /// <param name="mapping">The control code mapping name.</param>
+    /// <param name="code">The mapped code.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public void MapControlCode(string mapping, byte code)
+    {
+        // the default encoding cannot be changed
+        if (_currentMap == _maps.First().Value)
+            return;
+        if (string.IsNullOrEmpty(mapping))
+            throw new ArgumentNullException(nameof(mapping), "Mapping argument missing.");
+        _currentControlCodes[mapping] = code;
+    }
+
+    /// <summary>
+    /// Add a character mapping to translate from source to object
     /// </summary>
     /// <param name="mapping">The text element, or range of text elements to map.</param>
     /// <param name="code">The code of the mapping.</param>
@@ -190,8 +240,13 @@ public sealed class AsmEncoding : Encoding
     /// <summary>
     /// Select the current encoding to the default UTF-8 encoding
     /// </summary>
-    public void SelectDefaultEncoding() => _currentMap = _maps["\"none\""];
+    public void SelectDefaultEncoding()
+    {
+        _currentMap = _maps["\"none\""];
+        _currentControlCodes = _encodingControlCodes["\"none\""];
+        _currentEncodingName = "\"none\"";
 
+    } 
     /// <summary>
     /// Select the current named encoding
     /// </summary>
@@ -199,8 +254,13 @@ public sealed class AsmEncoding : Encoding
     public void SelectEncoding(string encodingName)
     {
         if (!_maps.ContainsKey(encodingName))
+        {
             _maps.Add(encodingName, new Dictionary<int, int>());
+            _encodingControlCodes.Add(encodingName, new Dictionary<string, byte>());
+        }    
         _currentMap = _maps[encodingName];
+        _currentControlCodes = _encodingControlCodes[encodingName];
+        _currentEncodingName = encodingName;
     }
 
     public override int GetByteCount(string s)
@@ -233,6 +293,38 @@ public sealed class AsmEncoding : Encoding
         while (textEnumerator.MoveNext())
         {
             var elem = textEnumerator.GetTextElement();
+            if (_currentControlCodes.Count > 0 && elem.Equals("{") && s.Length > 3)
+            {
+                StringBuilder code = new(elem);
+                while (textEnumerator.MoveNext())
+                {
+                    elem = textEnumerator.GetTextElement();
+                    code.Append(elem);
+                    if (elem.Equals("}"))
+                    {
+                        break;
+                    }
+                }
+                string escape = code.ToString();
+                if (_currentControlCodes.TryGetValue(escape, out byte value))
+                {
+                    bytes.Add(value);
+                }
+                else
+                {
+                    var isCode = s_codeRegex.Match(escape);
+                    if (isCode.Success && 
+                        int.TryParse(isCode.Groups[1].Value, out int codeNum) &&
+                        codeNum < 256)
+                    {
+                        bytes.Add((byte)codeNum);
+                        continue;
+                    }
+                    bytes.AddRange(GetCharBytes("{"));
+                    bytes.AddRange(GetBytes(escape[1..]));
+                }
+                continue;
+            }
             bytes.AddRange(GetCharBytes(elem));
         }
         return bytes.ToArray();
@@ -348,9 +440,14 @@ public sealed class AsmEncoding : Encoding
         }
     }
 
+    public override string EncodingName => _currentEncodingName;
+
     /// <summary>
     /// Gets whether the currently selected map has custom mappings.
     /// </summary>
     public bool CurrentMapIsCustom => !ReferenceEquals(_currentMap, _maps["\"none\""])
                                         && _currentMap.Count > 0;
+
+    [GeneratedRegex("\\{(\\d{1,3})\\}", RegexOptions.Compiled)]
+    private static partial Regex CodeRegex();
 }

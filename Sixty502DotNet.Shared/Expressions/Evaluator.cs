@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -8,6 +8,7 @@
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+using Microsoft.Build.Framework;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -129,6 +130,11 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
 
     private static (Encoding, string) EncodingFromPrefix(IToken token)
     {
+        if (token.Type == SyntaxParser.CbmScreenStringLiteral ||
+            token.Type == SyntaxParser.PetsciiStringLiteral)
+        {
+            return (Encoding.UTF8, token.Text[1..]);
+        }
         if (token.Type == SyntaxParser.StringLiteral ||
             (token.Type == SyntaxParser.UnicodeStringLiteral && token.Text[1] == '8'))
         {
@@ -143,11 +149,11 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             (Encoding.UTF32, token.Text[1..]);
     }
 
-    private static ValueBase GetConvertedString(string literalText, Encoding encoding, ParserRuleContext context)
+    private static ValueBase GetConvertedString(string literalText, Encoding encoding, string? encodingName, ParserRuleContext context)
     {
         try
         {
-            return StringConverter.ConvertString(literalText, encoding);
+            return StringConverter.ConvertString(literalText, encoding, encodingName);
         }
         catch (RegexParseException)
         {
@@ -185,7 +191,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             {
                 try
                 {
-                    return StringConverter.ConvertChar(context.Start.Text, Encoding.UTF8).AsInt();
+                    return StringConverter.ConvertChar(context.Start, Encoding.UTF8, null).AsInt();
                 }
                 catch
                 {
@@ -193,7 +199,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 }
             }
             (Encoding enc, string textString) = EncodingFromPrefix(context.Start);
-            double val = GetConvertedString(textString, enc, context).AsDouble();
+            double val = GetConvertedString(textString, enc, null, context).AsDouble();
             if (!double.IsFinite(val) || double.IsNaN(val) || val < start || val > end)
             {
                 throw new Error(context, error);
@@ -368,14 +374,14 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
     private void SetupFrame(FunctionScope frame, SyntaxParser.ExpressionCallContext callSite, SyntaxParser.ArgListContext? argList, ArrayValue parameters)
     {
         int paramIndex = 0;
-        ITerminalNode[] args;
+        SyntaxParser.IdentContext[] args;
         if (argList?.argList() != null)
         {
-            args = argList.argList().Identifier();
+            args = argList.argList().ident();
         }
         else
         {
-            args = argList?.Identifier() ?? Array.Empty<ITerminalNode>();
+            args = argList?.ident() ?? Array.Empty<SyntaxParser.IdentContext>();
         }
         for (int i = 0; i < args.Length; i++)
         {
@@ -387,7 +393,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             Variable paramVar = new(args[i].GetText(), paramVal, frame);
             frame.Define(paramVar.Name, paramVar);
         }
-        ITerminalNode[]? defaultArgs = argList?.defaultArgList()?.Identifier();
+        SyntaxParser.IdentContext[]? defaultArgs = argList?.defaultArgList()?.ident();
         SyntaxParser.ExprContext[]? defaultVals = argList?.defaultArgList()?.expr();
         for (int i = 0; i < defaultArgs?.Length; i++)
         {
@@ -533,7 +539,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                     try
                     {
                         string f = $"{{0{format.GetText()}}}";
-                        _ = sb.AppendFormat(f, val.ToObject());
+                        _ = sb.AppendFormat(f, val.Data());
                     }
                     catch
                     {
@@ -558,7 +564,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 _ = sb.Append(strPartList[i].GetText().Replace("{{", "{").Replace("}}", "}"));
             }
         }
-        return GetConvertedString(sb.ToString(), Services?.Encoding ?? Encoding.UTF8, context);
+        return GetConvertedString(sb.ToString(), 
+                                  Services?.Encoding ?? Encoding.UTF8, 
+                                  Services?.Encoding?.EncodingName, 
+                                  context);
     }
 
     /// <summary>
@@ -587,15 +596,14 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             {
                 if (lhs.ValueType == ValueType.Char)
                 {
-                    lhs = new StringValue($"\"{lhs.AsString()}\"")
-                    {
-                        TextEncoding = Services?.Encoding ?? Encoding.UTF8
-                    };
+                    lhs = new StringValue($"\"{lhs.AsString()}\"",
+                                          Services?.Encoding ?? Encoding.UTF8,
+                                          Services?.Encoding?.EncodingName);
                 }
-                if (rhs.IsNumeric) rhs = new StringValue($"\"{rhs}\"")
-                {
-                    TextEncoding = Services?.Encoding ?? Encoding.UTF8
-                };
+                if (rhs.IsNumeric && lhs.ValueType == ValueType.String) rhs = 
+                new StringValue($"\"{rhs}\"", 
+                                Services?.Encoding ?? Encoding.UTF8,
+                                Services?.Encoding?.EncodingName);
             }
             else
             {
@@ -717,6 +725,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         ValueBase collection = Eval(context.target);
         if (!collection.IsCollection)
         {
+            if (!collection.IsDefined)
+            {
+                return collection;
+            }
             throw new Error(context.LeftSquare().Symbol, "Invalid operation");
         }
         ValueBase result;
@@ -1190,6 +1202,12 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             ((NumericValue)newPc).IsBinary = true;
             return newPc;
         }
+        if (context.lhs is SyntaxParser.ExpressionSimpleIdentifierContext ident &&
+            ident.registerAsIdentifier() != null &&
+            Services.DiagnosticOptions.WarnRegistersAsIdentifiers)
+        {
+            Services.State.Warnings.Add(new Warning(ident, "Register is being used as an identifier"));
+        }
         return BindAssignment(context.lhs, assign, rhs, asConstant);
     }
 
@@ -1228,7 +1246,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 SyntaxParser.AltBinLiteral or
                 SyntaxParser.BinLiteral or
                 SyntaxParser.BinFloatLiteral => NumberConverter.ConvertBinary(valueText, t == SyntaxParser.BinFloatLiteral),
-                SyntaxParser.CharLiteral     => StringConverter.ConvertChar(valueText, Services?.Encoding ?? Encoding.UTF8),
+                SyntaxParser.CbmScreenCharLiteral or
+                SyntaxParser.PetsciiCharLiteral 
+                                             => StringConverter.ConvertCbmPetsciiChar(context.Start, Services?.Encoding),
+                SyntaxParser.CharLiteral     => StringConverter.ConvertChar(context.Start, Services?.Encoding ?? Encoding.UTF8, Services?.Encoding?.EncodingName),
                 SyntaxParser.False           => new BoolValue(false),
                 SyntaxParser.HexLiteral or
                 SyntaxParser.HexFloatLiteral => NumberConverter.ConvertHex(valueText, t == SyntaxParser.HexFloatLiteral),
@@ -1243,6 +1264,10 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 throw new IllegalQuantityError(context);
             }
             return primaryVal;
+        }
+        catch (InvalidCharLiteralError)
+        {
+            throw new InvalidCharLiteralError(context);
         }
         catch
         {
@@ -1290,14 +1315,27 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
     public override ValueBase VisitExpressionStringLiteral([NotNull] SyntaxParser.ExpressionStringLiteralContext context)
     {
         ValueBase stringValue;
-        if (context.stringLiteral().StringLiteral() != null || context.stringLiteral().UnicodeStringLiteral() != null)
+        string? encodingName = Services?.Encoding.EncodingName;
+        if (context.stringLiteral().StringLiteral() != null || 
+            context.stringLiteral().CbmScreenStringLiteral() != null ||
+            context.stringLiteral().PetsciiStringLiteral() != null ||
+            context.stringLiteral().UnicodeStringLiteral() != null)
         {
             (Encoding enc, string literalText) = EncodingFromPrefix(context.stringLiteral().Start);
-            if (Services != null && context.stringLiteral().UnicodeStringLiteral() == null)
+            if (Services != null && 
+                context.stringLiteral().UnicodeStringLiteral() == null)
             {
                 enc = Services.Encoding;
+                if (context.stringLiteral().PetsciiStringLiteral() != null)
+                {
+                    encodingName = "\"petscii\"";
+                }
+                else if (context.stringLiteral().CbmScreenStringLiteral() != null)
+                {
+                    encodingName = "\"cbmscreen\"";
+                }
             }
-            stringValue = GetConvertedString(literalText, enc, context);
+            stringValue = GetConvertedString(literalText, enc, encodingName, context);
             context.value = stringValue;
         }
         else stringValue = VisitChildren(context);
@@ -1315,7 +1353,9 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             ValueBase key;
             if (keyContext.identifierPart() != null)
             {
-                key = new StringValue($"\"{members[i].key().identifierPart().NamePart()}\"");
+                key = new StringValue($"\"{members[i].key().identifierPart().NamePart()}\"", 
+                                      Services?.Encoding ?? Encoding.UTF8, 
+                                      Services?.Encoding.EncodingName);
             }
             else if (keyContext.primaryExpr() != null)
             {
@@ -1328,7 +1368,20 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
                 {
                     enc = Services.Encoding;
                 }
-                key = GetConvertedString(literalText, enc, context);
+                string? name = null;
+                if (enc is AsmEncoding asmEncoding)
+                {
+                    name = asmEncoding.EncodingName;
+                }
+                else if (keyContext.CbmScreenStringLiteral() != null)
+                {
+                    name = "\"cbmscreen\"";
+                }
+                else if (keyContext.PetsciiStringLiteral() != null)
+                {
+                    name = "\"petscii\"";
+                }
+                key = GetConvertedString(literalText, enc, name, context);
             }
             ValueBase val = Eval(members[i].val); isConstant &= members[i].val.IsConstant();
             if (!dict.TryAdd(key, val, out DictionaryValue.AddStatus why))

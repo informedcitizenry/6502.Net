@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -148,7 +148,9 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 ValueBase val = Services.Evaluator.Eval(pseudoOpArgs[i].expr());
                 if (_options.DiagnosticOptions.WarnTextInNonTextPseudoOp && val.ValueType == ValueType.String)
                 {
-                    AddWarning(pseudoOpArgs[i].expr(), "Textual data was inserted using non-string pseudo-op");
+                    Services.State.Warnings.Add(
+                        new Warning(pseudoOpArgs[i].expr(), 
+                                    "Textual data was inserted using non-string pseudo-op"));
                 }
                 values.Add(val);
             }
@@ -173,7 +175,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             if (val.ValueType == ValueType.String)
             {
-                stringBytes.AddRange(val.TextEncoding.GetBytes(val.AsString()));
+                stringBytes.AddRange(val.ToBytes());
             }
             else if (val is ArrayValue subArray)
             {

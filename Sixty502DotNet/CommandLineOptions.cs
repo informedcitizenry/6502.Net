@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -353,6 +353,12 @@ public sealed class CommandLineOptions
     public bool WarnNotUnusedSections { get; init; }
 
     /// <summary>
+    /// Get a flag indicating whether to warn about registers being used as identifiers.
+    /// </summary>
+    [Option("wregister-as-identifier", Required =false, HelpText = "Warn when a register is being used as an identifier.")]
+    public bool WarnRegistersAsIdentifiers { get; init; }
+
+    /// <summary>
     /// Get the flag indicating whether to warn whether a call and return can be simplified to a jump.
     /// </summary>
     [Option("Wsimplify-call-return", Required = false, HelpText = "Warn when call and return can be simplified to jump.")]
@@ -385,7 +391,7 @@ public sealed class CommandLineOptions
                 new UnParserSettings() { PreferShortName = true },
                 new CommandLineOptions()
                 {
-                    InputFiles = new List<string>() { "inputfile.asm" },
+                    InputFiles = ["inputfile.asm"],
                     OutputFile = "output.bin"
                 });
         }

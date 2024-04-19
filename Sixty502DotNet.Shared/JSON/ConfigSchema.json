@@ -121,6 +121,9 @@
                         "warnLeft": {
                             "type": "boolean"
                         },
+                        "warnRegistersAsIdentifiers": {
+                            "type": "boolean"
+                        },
                         "warnSimplifyCallReturn": {
                             "type": "boolean"
                         },

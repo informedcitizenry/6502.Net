@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -46,6 +46,6 @@ public sealed class UndefinedValue : ValueBase
         return other?.IsDefined != true;
     }
 
-    public override object? ToObject() => null;
+    public override object? Data() => null;
 }
 

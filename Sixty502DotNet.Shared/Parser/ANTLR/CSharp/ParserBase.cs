@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -169,7 +169,7 @@ public abstract class ParserBase : Parser
                 throw new Exception($"End address in section argument '{section}' must be a constant numeric expression");
             }
         }
-        return (context.Identifier().GetText(), start.AsInt(), end?.AsInt());
+        return (context.Start.Text, start.AsInt(), end?.AsInt());
     }
 
     /// <summary>

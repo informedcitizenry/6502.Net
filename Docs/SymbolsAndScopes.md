@@ -40,9 +40,9 @@ Like standard labels, anonymous labels can be used in expressions as well:
     lda (-) + 2,x // read second from offset from backward reference.
 ```
 
-# Constants and Variables
+## Constants and Variables
 
-## Constants
+### Constants
 
 Constants are symbols that, like labels, make it convenient to represent addresses or values referenced from other parts of code.
 
@@ -57,7 +57,7 @@ CHRIN .equ $ffcf
 
 Constants can be forward referenced, and can only be assigned once--as they are constant, their values cannot be changed.
 
-## Variables
+### Variables
 
 Variables are symbols assigned to values that can be changed as often as needed. The assignment `:=` operator can declares a new variable or re-assign the contents of an existing variable to a new value.
 
@@ -279,13 +279,23 @@ label   nop
 
 # Symbols and Reserved Words
 
-User-defined symbols cannot share with mnemonics and registers of the current target CPU, unless their case does not match and the assembler is set to case-sensitive. For instance, in 6502 mode all of the 56 6502 mnemonics and `a`, `x`, and `y` are reserved and cannot be used for label or constant names.
+User-defined symbols cannot share the same name as mnemonics of the current target CPU, unless their case does not match and the assembler is set to case-sensitive. For instance, in 6502 mode all of the 56 6502 mnemonics are reserved and cannot be used for label or constant names.
 
 ```
 lda nop // this would error "lda" cannot be used as a label
 
     // with option -C set
 Lda nop // no error
+```
+
+Symbols can share names with registers, but the presence of a register in an operand for a CPU instruction might cause an unexpected compilation result or even an error. To avoid this you would need to refactor the operand expression.
+
+```
+        a = 3
+        asl a // The assembler interprets 'a' not as an address but as 
+              // the accumulator register
+
+        asl a+0 // The assembler interprets 'a' as a constant (the address 3)
 ```
 
 ## Other Topics

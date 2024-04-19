@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -157,6 +157,10 @@ public readonly struct DiagnosticOptions
     /// of the defined symbol's
     /// </summary>
     public bool WarnCaseMismatch { get; init; }
+    /// <summary>
+    /// Warn when registers are being used as identifiers.
+    /// </summary>
+    public bool WarnRegistersAsIdentifiers { get; init; }
     /// <summary>
     /// Warn when call/returns can be simplified
     /// </summary>

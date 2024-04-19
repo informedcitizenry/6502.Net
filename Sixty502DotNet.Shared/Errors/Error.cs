@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -84,9 +84,9 @@ public class Error : Exception, IEquatable<Error>
     /// </summary>
     /// <param name="warning">The warning to copy.</param>
     public Error(Warning warning)
-        : this(warning.Token, warning.Message)
+        : this(warning.Context?.Start ?? warning.Token, warning.Message, true)
     {
-
+        
     }
 
     public override bool Equals(object? obj)

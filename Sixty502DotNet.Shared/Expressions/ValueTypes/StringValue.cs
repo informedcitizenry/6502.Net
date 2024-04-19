@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -17,13 +17,26 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
 {
     private string _value;
     private CharValueEnumerator _charValueEnumerator;
+
+    private byte[] _bytes;
+
+    private char[] _chars;
+
     private readonly bool _isMultiline;
 
     /// <summary>
     /// Construct a new instance of a <see cref="StringValue"/>.
     /// </summary>
     public StringValue()
-        : this(string.Empty)
+    {
+        _value = string.Empty;
+        _charValueEnumerator = new CharValueEnumerator(string.Empty, Encoding.UTF8, null);
+        _chars = Array.Empty<char>();
+        _bytes = Array.Empty<byte>();
+    }
+
+    public StringValue(string str)
+        : this(str, Encoding.UTF8, null)
     {
 
     }
@@ -33,13 +46,21 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
     /// <see cref="string"/>.
     /// </summary>
     /// <param name="str">The string value.</param>
-    public StringValue(string str)
+    /// <param name="encoding">The encoding associated to the <see cref="StringValue"/>.</param>
+    /// <param name="encodingName">The encoding name of the encoding.</param>
+    public StringValue(string str, Encoding encoding, string? encodingName)
     {
         _value = str.Trim('"');
-        _charValueEnumerator = new CharValueEnumerator(_value);
+        _charValueEnumerator = new CharValueEnumerator(_value, encoding, encodingName);
         _isMultiline = _value.Contains('\n') || _value.Contains('\r');
+        TextEncoding = encoding;
+        EncodingName = encodingName;
+        _bytes = null!;
+        _chars = null!;
+        GetBytesAndChars();
         Prototype = Environment.StringType;
         ValueType = ValueType.String;
+
     }
 
     /// <summary>
@@ -47,8 +68,10 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
     /// <see cref="char"/> collection.
     /// </summary>
     /// <param name="chars">The characters of the string.</param>
-    public StringValue(IEnumerable<char> chars)
-        : this(new string(chars.ToArray()))
+    /// <param name="encoding">The encoding associated to the <see cref="StringValue"/>.</param>
+    /// <param name="encodingName">The encoding name of the encoding.</param>
+    public StringValue(IEnumerable<char> chars, Encoding encoding, string? encodingName)
+        : this(new string(chars.ToArray()), encoding, encodingName)
     {
 
     }
@@ -58,7 +81,9 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
     /// of <see cref="CharValue"/>s.
     /// </summary>
     /// <param name="chars">The char values to make up the string.</param>
-    public StringValue(IEnumerable<CharValue> chars)
+    /// <param name="encoding">The encoding associated to the <see cref="StringValue"/>.</param>
+    /// <param name="encodingName">The encoding name of the encoding.</param>
+    public StringValue(IEnumerable<CharValue> chars, Encoding encoding, string? encodingName)
     {
         StringBuilder sb = new();
         foreach (CharValue c in chars)
@@ -66,8 +91,13 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
             sb.Append(c.AsString());
         }
         _value = sb.ToString();
-        _charValueEnumerator = new CharValueEnumerator(_value);
+        TextEncoding = encoding;
+        EncodingName = encodingName;
+        _charValueEnumerator = new CharValueEnumerator(_value, encoding, encodingName);
         _isMultiline = _value.Contains('\n') || _value.Contains('\r');
+        _bytes = null!;
+        _chars = null!;
+        GetBytesAndChars();
         Prototype = Environment.StringType;
         ValueType = ValueType.String;
     }
@@ -77,29 +107,71 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
     /// array of <see cref="char"/>s.
     /// </summary>
     /// <param name="chars">The char array.</param>
-    public StringValue(ValueBase[] chars)
+    /// <param name="encoding">The encoding associated to the <see cref="StringValue"/>.</param>
+    /// <param name="encodingName">The encoding name of the encoding.</param>
+    public StringValue(ValueBase[] chars, Encoding encoding, string? encodingName)
     {
         StringBuilder sb = new();
         for (int i = 0; i < chars.Length; i++)
         {
-            char c = chars[i].AsChar();
-            _isMultiline |= c == '\n' || c == '\r';
-            sb.Append(c);
+            sb.Append(chars[i].AsChar());
         }
         _value = sb.ToString();
-        _charValueEnumerator = new CharValueEnumerator(_value);
+        _isMultiline = _value.Contains('\n') || _value.Contains('\r');
+        TextEncoding = encoding;
+        EncodingName = encodingName;
+        _charValueEnumerator = new CharValueEnumerator(_value, encoding, encodingName);
+        _bytes = null!;
+        _chars = null!;
+        GetBytesAndChars();
         ValueType = ValueType.String;
         Prototype = Environment.StringType;
     }
 
+    private void GetBytesAndChars()
+    {
+        if (TextEncoding is AsmEncoding enc)
+        {
+            var currentEncoding = enc.EncodingName;
+            enc.SelectEncoding(EncodingName ?? currentEncoding);
+            _bytes = TextEncoding.GetBytes(_value);
+            _chars = enc.GetChars(_bytes);
+            enc.SelectEncoding(currentEncoding);
+            return;
+        }
+        _bytes = TextEncoding.GetBytes(_value);
+        _chars = TextEncoding.GetChars(_bytes);
+    }
+
+    private byte[] GetBytes()
+    {
+        if (TextEncoding is AsmEncoding asmEncoding)
+        {
+            var currentName = asmEncoding.EncodingName;
+            asmEncoding.SelectEncoding(EncodingName ?? currentName);
+            var bytes = TextEncoding.GetBytes(_value);
+            asmEncoding.SelectEncoding(currentName);
+            return bytes;
+        }
+        return TextEncoding.GetBytes(_value);
+    }
+
     protected override int OnCompareTo(ValueBase other)
     {
-        return Comparer<string>.Default.Compare(_value, other.AsString());
+        if (other is StringValue sv)
+        {
+            return Comparer<byte[]>.Default.Compare(_bytes, sv._bytes);
+        }
+        throw new TypeMismatchError(Expression?.Start);
     }
 
     protected override bool OnEqualTo(ValueBase? other)
     {
-        return other?.AsString().Equals(_value) == true;
+        if (other is StringValue sv)
+        {
+            return EqualityComparer<byte[]>.Default.Equals(_bytes, sv._bytes);
+        }
+        throw new TypeMismatchError(Expression?.Start);
     }
 
     public override string AsString()
@@ -114,15 +186,14 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
 
     public override int AsInt()
     {
-        if (TextEncoding is AsmEncoding enc)
+        if (_bytes.Length > 4)
         {
-            return enc.GetEncodedValue(_value);
+            throw new IllegalQuantityError(Expression?.Start);
         }
-        byte[] textBytes = TextEncoding.GetBytes(_value);
         int val = 0;
-        for (int i = textBytes.Length - 1; i >= 0; i--)
+        for (int i = _bytes.Length - 1; i >= 0; i--)
         {
-            val = (val << 8) | textBytes[i];
+            val = (val << 8) | _bytes[i];
         }
         return val;
     }
@@ -142,10 +213,7 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
             : $"\"{_value}\"";
     }
 
-    public override int Size()
-    {
-        return TextEncoding.GetByteCount(_value);
-    }
+    public override int Size() => _bytes.Length;
 
     public override string TypeName() => "String";
 
@@ -161,24 +229,33 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
         {
             _value = ((StringValue)other)._value;
         }
-        _charValueEnumerator = new CharValueEnumerator(_value);
+        _charValueEnumerator = new CharValueEnumerator(_value, TextEncoding, EncodingName);
+    }
+
+    public override ValueBase UpdateMember(ValueBase atIndex, ValueBase value)
+    {
+        this[atIndex] = value;
+        return value;
     }
 
     public override void Sort()
     {
-        List<char> valueChars = _value.ToCharArray().ToList();
-        valueChars.Sort();
-        _value = new string(valueChars.ToArray());
+        Array.Sort(_chars);
+        _value = new string(_chars);
+        _bytes = ToBytes();
     }
 
     public override ValueBase this[int index]
     {
-        get => new CharValue(_value[index]);
+        get
+        {
+            return new CharValue(_chars[index], TextEncoding, EncodingName);
+        }
         set
         {
-            char[] chars = _value.ToCharArray();
-            chars[index] = value.AsChar();
-            _value = new string(chars);
+            _chars[index] = value.AsChar();
+            _value = new string(_chars);
+            _bytes = GetBytes();
         }
     }
 
@@ -206,65 +283,54 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
 
     public override ValueBase[] Slice(int start, int length)
     {
+        char[] slice = _chars.Skip(start).Take(length).ToArray();
         ValueBase[] charVals = new ValueBase[length];
         for (int i = 0; i < length; i++)
         {
-            charVals[i] = new CharValue($"'{_value[start + i]}'");
+            charVals[i] = new CharValue(slice[i], TextEncoding, EncodingName);
         }
         return charVals;
     }
 
     public override ValueBase FromRange(Range range)
     {
-        return new StringValue($"\"{_value[range]}\"");
+        return new StringValue($"\"{_value[range]}\"", TextEncoding, EncodingName);
     }
 
     public override ValueBase AddWith(ValueBase rhs)
     {
-        StringValue sv = new();
+        StringValue sv;
         if (rhs is CharValue)
         {
-            sv._value = $"{_value}{rhs.AsChar()}";
+            sv = new StringValue($"{_value}{rhs.AsChar()}", TextEncoding, EncodingName);
         }
         else
         {
-            sv._value = $"{_value}{rhs.AsString()}";
+            sv = new StringValue($"{_value}{rhs.AsString()}", TextEncoding, EncodingName);
         }
         return sv;
     }
 
-    public override int Count => _value.Length;
+    public override int Count => _chars.Length;
 
     public override IList<ValueBase> ToList()
     {
         List<ValueBase> chars = new();
-        foreach (char c in _value)
+        for (int i = 0; i < _chars.Length; i++)
         {
-            chars.Add(new CharValue($"'{c}'")
-            {
-                TextEncoding = TextEncoding
-            });
+            chars.Add(new CharValue(_chars[i], TextEncoding, EncodingName));
         }
         return chars;
     }
 
-    public override object? ToObject()
-    {
-        return _value;
-    }
+    public override object? Data() => _value;
 
     public override ValueBase AsCopy()
     {
-        return new StringValue(ToString())
-        {
-            TextEncoding = TextEncoding
-        };
+        return new StringValue(ToString(), TextEncoding, EncodingName);
     }
 
-    public override byte[] ToBytes()
-    {
-        return TextEncoding.GetBytes(_value);
-    }
+    public override byte[] ToBytes() => _bytes;
 
     public override byte[] ToEndianBytes(bool little)
     {

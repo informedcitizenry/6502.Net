@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -69,7 +69,7 @@ public static class Disassembler
         }
         FileSystemBinaryReader binaryReader = new(cliOptions.IncludePath);
 
-        List<byte[]> objectCode = new();
+        List<byte[]> objectCode = [];
         for (int i = 0; i < cliOptions.InputFiles!.Count; i++)
         {
             try

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -166,7 +166,7 @@ public sealed partial class M65xxInstructionEncoder
         { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xd0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
@@ -230,7 +230,7 @@ public sealed partial class M65xxInstructionEncoder
         { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
@@ -422,7 +422,7 @@ public sealed partial class M65xxInstructionEncoder
         { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xd0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BRA, new M6xxOpcode(  Bad,  Bad,  Bad, 0x80,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
@@ -592,7 +592,7 @@ public sealed partial class M65xxInstructionEncoder
         { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
@@ -873,7 +873,7 @@ public sealed partial class M65xxInstructionEncoder
         { SyntaxParser.BMI, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BNE, new M6xxOpcode(  Bad,  Bad,  Bad, 0xD0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BPL, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
+        { SyntaxParser.BRK, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVC, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.BVS, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
         { SyntaxParser.CLC, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },

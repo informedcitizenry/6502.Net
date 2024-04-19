@@ -1,10 +1,11 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
 //-----------------------------------------------------------------------------
 
+using System.Text;
 using Antlr4.Runtime.Misc;
 
 namespace Sixty502DotNet.Shared;
@@ -60,7 +61,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             if (directive.Start.Type == SyntaxParser.Warnif)
             {
-                AddWarning(directive, error);
+                Services.State.Warnings.Add(new Warning(directive, error));
                 return;
             }
             throw new Error(operands[0], error);
@@ -283,7 +284,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 Print(directive, exprs[0]);
                 return;
             case SyntaxParser.Encoding:
-                StringValue encoding = new($"\"{Evaluator.EvalStringLiteral(exprs[0])}\"");
+                StringValue encoding = new($"\"{Evaluator.EvalStringLiteral(exprs[0])}\"", Encoding.UTF8, null);
                 Services.Encoding.SelectEncoding(encoding.ToString());
                 return;
             case SyntaxParser.Format:

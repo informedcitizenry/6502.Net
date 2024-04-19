@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -777,10 +777,10 @@ public abstract class ValueBase :
     }
 
     /// <summary>
-    /// Casts the value to a <see cref="object"/>.
+    /// Gets the value's underlying data..
     /// </summary>
     /// <returns>The value as a .Net <see cref="object"/>.</returns>
-    public abstract object? ToObject();
+    public abstract object? Data();
 
     /// <summary>
     /// Casts the value to the specified type <typeparamref name="T"/>
@@ -792,7 +792,7 @@ public abstract class ValueBase :
     {
         try
         {
-            object? o = ToObject();
+            object? o = Data();
             if (o != null)
             {
                 return (T)Convert.ChangeType(o, typeof(T));
@@ -832,7 +832,7 @@ public abstract class ValueBase :
         return OnCompareTo(other);
     }
 
-    public static implicit operator ValueBase(string value) => new StringValue($"\"{value}\"");
+    public static implicit operator ValueBase(string value) => new StringValue($"\"{value}\"", Encoding.UTF8, null);
 
     /// <summary>
     /// Get the value's type name.
@@ -941,6 +941,12 @@ public abstract class ValueBase :
     /// data as numeric values.
     /// </summary>
     public Encoding TextEncoding { get; set; }
+
+    /// <summary>
+    /// Get or set the value's text encoding name for representation of 
+    /// textual data as numeric values.
+    /// </summary>
+    public string? EncodingName { get; set; }
 
     /// <summary>
     /// Gets the value's <see cref="ValueType"/>.

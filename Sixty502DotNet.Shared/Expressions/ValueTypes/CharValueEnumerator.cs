@@ -1,11 +1,12 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
 //-----------------------------------------------------------------------------
 
 using System.Collections;
+using System.Text;
 
 namespace Sixty502DotNet.Shared;
 
@@ -15,6 +16,11 @@ namespace Sixty502DotNet.Shared;
 public class CharValueEnumerator : IEnumerator<CharValue>
 {
     private readonly IEnumerator<char> _charEnumerator;
+
+    private readonly Encoding _encoding;
+
+    private readonly string? _encodingName;
+
     private CharValue _current;
 
     /// <summary>
@@ -23,10 +29,14 @@ public class CharValueEnumerator : IEnumerator<CharValue>
     /// </summary>
     /// <param name="value">The string to enumerate and yield
     /// <see cref="CharValue"/>s.</param>
-    public CharValueEnumerator(string value)
+    /// <param name="encoding"></param>
+    /// <param name="encodingName"></param>
+    public CharValueEnumerator(string value, Encoding encoding, string? encodingName)
     {
         _charEnumerator = value.GetEnumerator();
         _current = new CharValue();
+        _encoding = encoding;
+        _encodingName = encodingName;
     }
 
     /// <summary>
@@ -62,7 +72,7 @@ public class CharValueEnumerator : IEnumerator<CharValue>
     {
         if (_charEnumerator.MoveNext())
         {
-            _current = new CharValue(_charEnumerator.Current);
+            _current = new CharValue(_charEnumerator.Current, _encoding, _encodingName);
             return true;
         }
         return false;

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -29,7 +29,14 @@ public sealed class SectionFunction : BuiltInFunctionObject
     protected override ValueBase OnInvoke(SyntaxParser.ExpressionCallContext callSite, ArrayValue? parameters)
     {
         string sectionName = parameters![0].AsString();
-        return new NumericValue(_output.GetSectionStart(sectionName));
+        try
+        {
+            return new NumericValue(_output.GetSectionStart(sectionName));
+        }
+        catch (Exception ex)
+        {
+            throw new Error(callSite, ex.Message);
+        }
     }
 }
 

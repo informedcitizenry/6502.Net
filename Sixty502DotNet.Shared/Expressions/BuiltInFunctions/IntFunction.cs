@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -24,7 +24,7 @@ public sealed class IntFunction : BuiltInFunctionObject
 
     protected override ValueBase OnInvoke(SyntaxParser.ExpressionCallContext callSite, ArrayValue? parameters)
     {
-        return new NumericValue(parameters![0].AsDouble());
+        return new NumericValue(parameters![0].AsInt());
     }
 }
 

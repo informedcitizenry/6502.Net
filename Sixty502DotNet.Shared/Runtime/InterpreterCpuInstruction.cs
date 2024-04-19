@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -26,7 +26,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         }
         catch (Warning w)
         {
-            AddWarning(w);
+            Services.State.Warnings.Add(w);
         }
         Services.State.Output.Add(context.cpuInstruction().opcode, context.cpuInstruction().opcodeSize);
         if (context.cpuInstruction().operandSize > 0)

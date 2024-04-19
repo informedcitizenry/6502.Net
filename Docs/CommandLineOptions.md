@@ -312,6 +312,15 @@ If any defined sections are not used, do not emit a warning.
     // do not warn if "zp" is never used
 ```
 
+**`--Wregister-as-identifier`**
+
+Warn when a constant, label, or variable shares the same name as a CPU register.
+
+```
+    .cpu "z80"
+    ix = 0
+```
+
 **`--Wsimplify-call-return`**
 
 If a return instruction immediately follows a call instruction, warn that the two instructions can be combined into a single jump instruction.

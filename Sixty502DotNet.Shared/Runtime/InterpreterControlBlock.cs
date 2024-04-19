@@ -1,10 +1,11 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
 //-----------------------------------------------------------------------------
 
+using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 
 namespace Sixty502DotNet.Shared;
@@ -126,11 +127,37 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         }
         if (selected > -1)
         {
+            var fellthrough = selected < caseBlocks.Length - 1;
+            SyntaxParser.BlockContext? fallthroughBlock = null;
             for (int i = selected; i < caseBlocks.Length; i++)
             {
                 SyntaxParser.CaseBlockContext selectedBlock = caseBlocks[i];
-                try { Visit(selectedBlock.block()); }
-                catch (Break) { break; }
+                if (i < caseBlocks.Length - 1)
+                {
+                    fallthroughBlock = selectedBlock.block();
+                }
+                try 
+                { 
+                    Visit(selectedBlock.block()); 
+                }
+                catch (Break) 
+                {
+                    fellthrough = false;
+                    break; 
+                }
+            }
+            if (fellthrough)
+            {
+                var selectedBlock = fallthroughBlock!.children;
+                for (int i = selectedBlock.Count - 1; i >= 0; i--)
+                {
+                    if (selectedBlock[i] is ParserRuleContext stat)
+                    {
+                        Services.State.Warnings.Add(new Warning(stat, "Switch case falls through here"));
+                        return 0;
+                    }
+                }
+                Services.State.Warnings.Add(new Warning(fallthroughBlock!, "Switch case falls through here"));
             }
         }
         return 0;
@@ -173,9 +200,9 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         {
             throw new Error(context, "Cannot define named scopes in function blocks");
         }
-        if (Services.State.Symbols.LookupToScope(context.root.Text) is not Namespace rootNs)
+        if (Services.State.Symbols.LookupToScope(context.root.Start.Text) is not Namespace rootNs)
         {
-            rootNs = new(context.root, Services.State.Symbols.ActiveScope)
+            rootNs = new(context.root.Start, Services.State.Symbols.ActiveScope)
             {
                 IsProcScope = Services.State.Symbols.ActiveScope is ScopedSymbol s && s.IsProcScope
             };
@@ -264,7 +291,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             PushAnonymousScope(context.Start.TokenIndex);
             if (collection is DictionaryValue dict)
             {
-                ScopedSymbol dictIterator = new(context.Identifier().Symbol, Services.State.Symbols.ActiveScope);
+                ScopedSymbol dictIterator = new(context.iterator.Start, Services.State.Symbols.ActiveScope);
                 Services.State.Symbols.Define(dictIterator);
 
                 if (context.block() == null)
@@ -286,7 +313,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                 Services.State.Symbols.ActiveScope.Remove(dictIterator.Name);
                 return 0;
             }
-            Variable iterator = new(context.Identifier().Symbol, Services.State.Symbols.ActiveScope);
+            Variable iterator = new(context.iterator.Start, Services.State.Symbols.ActiveScope);
             Services.State.Symbols.Define(iterator);
             if (context.block() == null)
             {
@@ -367,11 +394,11 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     public override int VisitInstructionPage([NotNull] SyntaxParser.InstructionPageContext context)
     {
-        int currentPage = Services.State.LogicalPCOnAssemble & 0xFFFF00;
+        uint currentPage = (uint)Services.State.LogicalPCOnAssemble & 0xFFFFFF00;
         if (context.block() != null)
         {
             _ = Visit(context.block());
-            if ((Services.State.Output.LogicalPC & 0xFFFF00) != currentPage && !Services.State.PassNeeded)
+            if (((uint)Services.State.Output.LogicalPC & 0xFFFFFF00) != currentPage && !Services.State.PassNeeded)
             {
                 throw new Error(context.block().stat()[^1], "Code crosses page boundary");
             }

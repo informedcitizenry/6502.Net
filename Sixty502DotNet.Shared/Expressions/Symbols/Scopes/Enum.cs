@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -21,7 +21,7 @@ public static class Enum
     /// enum.</returns>
 	public static ScopedSymbol Define(SyntaxParser.StatEnumDeclContext context, SymbolManager symbols)
     {
-        ScopedSymbol enumSym = new(context.Identifier().Symbol, symbols.ActiveScope)
+        ScopedSymbol enumSym = new(context.Start, symbols.ActiveScope)
         {
             IsReferenced = false
         };
@@ -42,7 +42,7 @@ public static class Enum
             {
                 defVal = startVal++;
             }
-            Constant defSym = new(enumDef.Identifier().Symbol, new NumericValue(defVal), enumSym);
+            Constant defSym = new(enumDef.Start, new NumericValue(defVal), enumSym);
             enumSym.Define(defSym.Name, defSym);
         }
         return enumSym;

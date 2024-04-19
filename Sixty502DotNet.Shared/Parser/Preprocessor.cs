@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -404,7 +404,7 @@ public sealed partial class Preprocessor : SyntaxParserBaseVisitor<IList<IToken>
         {
             if (err.Token == null)
             {
-                throw err;
+                throw;
             }
             _errorListener?.SyntaxError(TextWriter.Null, parser, err.Token, err.Token.Line, err.Token.Column, err.Message, new CustomParseError());
             return new List<IToken>();

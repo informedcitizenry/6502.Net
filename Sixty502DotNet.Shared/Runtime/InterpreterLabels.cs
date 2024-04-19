@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -72,15 +72,20 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         if (_options.DiagnosticOptions.WarnWhitespaceBeforeLabels &&
             context?.Start.Column > 0)
         {
-            AddWarning(context, "Label does not begin a new line");
+            Services.State.Warnings.Add(new Warning(context, "Label does not begin a new line"));
         }
     }
 
     public override int VisitLabel([NotNull] SyntaxParser.LabelContext context)
     {
         CheckWhiteSpaceLeftOfLabel(context);
-        if (context.Identifier() != null)
+        if (context.ident() != null)
         {
+            if (context.ident().registerAsIdentifier() != null &&
+                Services.DiagnosticOptions.WarnRegistersAsIdentifiers)
+            {
+                Services.State.Warnings.Add(new Warning(context, "Register is being used as an identifier"));
+            }
             _ = DefineLabel(context);
         }
         else

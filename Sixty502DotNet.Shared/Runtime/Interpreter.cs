@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -38,7 +38,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         _uninvokedMacros = new List<KeyValuePair<string, Macro>>();
         _options = options;
         Services = new(this, options.GeneralOptions.CaseSensitive, options.ArchitectureOptions, options.DiagnosticOptions);
-        _encoder = new M680xInstructionEncoder("6502", Services);
+        _encoder = new M65xxInstructionEncoder("6502", Services);
         _incBins = new(binaryFileReader);
         _analysisContexts = new();
         _memoizedDefines = new();
@@ -90,7 +90,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             }
             catch (Warning warning)
             {
-                AddWarning(warning.Context, warning.Message);
+                Services.State.Warnings.Add(warning);
             }
             catch (Error err)
             {
@@ -108,7 +108,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                             continue;
                         }
                     }
-                    throw err;
+                    throw;
                 }
                 Services.State.Errors.Add(err);
             }
@@ -136,6 +136,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         try
         {
             ExecBlock(context.block());
+            ConvertWarningsToErrors();
             return Services.State.Errors.Count == 0 ? 0 : -1;
         }
         catch (Error err)
@@ -163,7 +164,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             {
                 throw new Exception($"Define argument '{_options.GeneralOptions.Defines[i]}' must be a constant expression");
             }
-            Environment.DefineConstant(ctx.Identifier().GetText(),
+            Environment.DefineConstant(ctx.Start.Text,
                                        val,
                                        Services.State.Symbols.GlobalScope,
                                        false);
@@ -317,39 +318,15 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         Services.State.Symbols.PushScope(scope);
     }
 
-    private void AddWarning(Warning w)
+    private void ConvertWarningsToErrors()
     {
-        if (Services.DiagnosticOptions.WarningsAsErrors)
+        if (Services.DiagnosticOptions.WarningsAsErrors && Services.State.Warnings.Count > 0)
         {
-            Services.State.Errors.Add(new Error(w));
-        }
-        else
-        {
-            Services.State.Warnings.Add(w);
-        }
-    }
-
-    private void AddWarning(IToken? token, string message)
-    {
-        if (Services.DiagnosticOptions.WarningsAsErrors)
-        {
-            Services.State.Errors.Add(new Error(token, message));
-        }
-        else
-        {
-            Services.State.Warnings.Add(new Warning(token, message));
-        }
-    }
-
-    private void AddWarning(ParserRuleContext? context, string message)
-    {
-        if (Services.DiagnosticOptions.WarningsAsErrors)
-        {
-            Services.State.Errors.Add(context != null ? new Error(context, message) : new Error(message));
-        }
-        else
-        {
-            Services.State.Warnings.Add(context != null ? new Warning(context, message) : new Warning((IToken?)null, message));
+            for (int i = 0; i < Services.State.Warnings.Count; i++)
+            {
+                Services.State.Errors.Add(new Error(Services.State.Warnings[i]));
+            }
+            Services.State.Warnings.Clear();
         }
     }
 
@@ -435,7 +412,8 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         {
             if (!string.IsNullOrEmpty(_analysisContexts[i].Report))
             {
-                AddWarning(_analysisContexts[i].Context, _analysisContexts[i].Report!);
+                Services.State.Warnings.Add(new Warning(_analysisContexts[i].Context, 
+                                            _analysisContexts[i].Report!));
             }
         }
         if (!Services.DiagnosticOptions.DoNotWarnAboutUnusedSections)
@@ -443,7 +421,8 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             IEnumerable<string> unusedSections = Services.State.Output.UnusedSections;
             foreach (string sectionName in unusedSections)
             {
-                AddWarning((IToken?)null, $"Unused section '{sectionName}'");
+                Services.State.Warnings.Add(new Warning((IToken?)null,
+                                            $"Unused section '{sectionName}'"));
             }
         }
         if (Services.DiagnosticOptions.WarnOfUnreferencedSymbols)
@@ -451,11 +430,13 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             IEnumerable<SymbolBase> unusedSymbols = Services.State.Symbols.GetUnreferencedSymbols();
             foreach (SymbolBase unusedSymbol in unusedSymbols)
             {
-                AddWarning(unusedSymbol.Token, $"Symbol '{unusedSymbol.Name}' was never referenced");
+                Services.State.Warnings.Add(new Warning(unusedSymbol.Token, 
+                                                        $"Symbol '{unusedSymbol.Name}' was never referenced"));
             }
             foreach (KeyValuePair<string, Macro> macroName in _uninvokedMacros)
             {
-                AddWarning(macroName.Value.MacroDeclaration, $"Macro '{macroName.Key}' was never invoked");
+                Services.State.Warnings.Add(new Warning(macroName.Value.MacroDeclaration, 
+                                                        $"Macro '{macroName.Key}' was never invoked"));
             }
         }
         return Services.State;

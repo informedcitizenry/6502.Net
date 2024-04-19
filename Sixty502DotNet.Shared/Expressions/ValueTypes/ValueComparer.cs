@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -52,10 +52,7 @@ public sealed class ValueComparer : IComparer<ValueBase>
     /// <summary>
     /// Construct a new function of the <see cref="ValueComparer"/> class.
     /// </summary>
-	public ValueComparer()
-    {
-        Function = null;
-    }
+	public ValueComparer() => Function = null;
 
     /// <summary>
     /// Compare two values.

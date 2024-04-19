@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -253,7 +253,7 @@ public sealed class ArrayValue : ValueBase, IList<ValueBase>
 
     public override void Sort(ValueComparer comparer)
     {
-        _list.Order(comparer);
+        _ = _list.Order(comparer);
     }
 
     public void Clear()
@@ -296,7 +296,7 @@ public sealed class ArrayValue : ValueBase, IList<ValueBase>
         _list.Sort();
     }
 
-    public override object? ToObject()
+    public override object? Data()
     {
         return null;
     }

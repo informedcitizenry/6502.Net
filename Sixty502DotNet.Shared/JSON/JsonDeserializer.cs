@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -81,7 +81,7 @@ public class JsonDeserializer : JsonBaseVisitor<ValueBase?>
 
     private static string GetString(ITerminalNode stringNode)
     {
-        return StringConverter.ConvertString(stringNode.GetText(), Encoding.UTF8).AsString();
+        return StringConverter.ConvertString(stringNode.GetText(), Encoding.UTF8, null).AsString();
     }
 
     public override ValueBase? VisitValue([NotNull] JsonParser.ValueContext context)
@@ -96,7 +96,7 @@ public class JsonDeserializer : JsonBaseVisitor<ValueBase?>
         }
         if (context.String() != null)
         {
-            ValueBase stringValue = StringConverter.ConvertString(context.Start.Text, Encoding.UTF8);
+            ValueBase stringValue = StringConverter.ConvertString(context.Start.Text, Encoding.UTF8, null);
             stringValue.JsonPath = GetPath();
             return stringValue;
         }

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -195,7 +195,7 @@ public sealed class JsonSchemaBuilder
                         .CombineWith(AllDraftsMapper());
 
     KeywordMapper Draft2019()
-        => new KeywordMapper().Map("$recursiveAnchor", ValueType.Boolean, "$dynamicAnchor", (t) => new StringValue("\"\""))
+        => new KeywordMapper().Map("$recursiveAnchor", ValueType.Boolean, "$dynamicAnchor", (t) => new StringValue("\"\"", System.Text.Encoding.UTF8, null))
                               .Map("$recursiveRef", ValueType.String, "$dynamicRef")
                               .CombineWith(AllDraftsPost4Pre2020())
                               .CombineWith(AllDraftsPost7())
@@ -544,14 +544,14 @@ public sealed class JsonSchemaBuilder
                 {
                     JsonArray reqArray = new()
                     {
-                        new StringValue(prop)
+                        new StringValue(prop, System.Text.Encoding.UTF8, null)
                     };
                     obj.Add("required", reqArray);
                 }
                 else
                 {
                     var reqArr = (JsonArray)required;
-                    reqArr.Add(new StringValue(prop));
+                    reqArr.Add(new StringValue(prop, System.Text.Encoding.UTF8, null));
                 }
             }
         }

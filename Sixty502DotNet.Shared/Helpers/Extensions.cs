@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -317,11 +317,11 @@ public static class IParseTree_Extensions
     /// <returns>The member name.</returns>
     public static string NamePart(this SyntaxParser.IdentifierPartContext identifier)
     {
-        if (identifier.DotIdentifier() != null)
+        if (identifier.ident() != null)
         {
-            return identifier.DotIdentifier().GetText().TrimStartOnce('.').Trim();
+            return identifier.ident().GetText();
         }
-        return identifier.Identifier().GetText();
+        return identifier.Start.Text.TrimStartOnce('.').Trim();
     }
 
     /// <summary>

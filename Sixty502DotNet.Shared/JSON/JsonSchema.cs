@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -377,16 +377,20 @@ public sealed partial class JsonSchema
         return null;
     }
 
-    private static string? GetStringProperty(JsonObject obj, string property)
+    private string? GetStringProperty(JsonObject obj, string property)
     {
         if (obj.TryGetValue(property, out ValueBase? value))
         {
-            return value!.AsString();
+            if (value is StringValue stringValue)
+            {
+                return stringValue.AsString();
+            }
+            throw new JsonSchemaException($"Property '{property}' must be a string value", this);
         }
         return null;
     }
 
-    private static Nullable<T> GetProperty<T>(JsonObject obj, string property) where T : struct
+    private static T? GetProperty<T>(JsonObject obj, string property) where T : struct
     {
         if (obj.TryGetValue(property, out ValueBase? value))
         {

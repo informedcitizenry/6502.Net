@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2023 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -37,11 +37,13 @@ public sealed class FormatFunction : BuiltInFunctionObject
         object[] formatParams = new object[parameters.Count - 1];
         for (int i = 0; i < parameters.Count - 1; i++)
         {
-            formatParams[i] = parameters[i + 1].ToObject()
+            formatParams[i] = parameters[i + 1].Data()
                 ?? parameters[i + 1].ToString()
                 ?? "undefined";
         }
-        return new StringValue($"\"{string.Format(format.AsString(), formatParams)}\"");
+        return new StringValue($"\"{string.Format(format.AsString(), formatParams)}\"",
+                               parameters[0].TextEncoding,
+                               parameters[0].EncodingName);
     }
 
     protected override bool OnEqualTo(ValueBase other)

@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------
-// Copyright (c) 2017-2022 informedcitizenry <informedcitizenry@gmail.com>
+// Copyright (c) 2017-2024 informedcitizenry <informedcitizenry@gmail.com>
 //
 // Licensed under the MIT license. See LICENSE for full license information.
 // 
@@ -167,7 +167,7 @@ public sealed class SymbolManager
         }
     }
 
-    private string GetSymbolListings(IScope scope, bool labelsOnly, bool viceLabels)
+    private static string GetSymbolListings(IScope scope, bool labelsOnly, bool viceLabels)
     {
         StringBuilder symBuilder = new();
         var scopeSyms = scope.GetSymbols();
