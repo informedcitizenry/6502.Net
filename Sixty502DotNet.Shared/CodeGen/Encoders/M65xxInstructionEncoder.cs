@@ -359,7 +359,18 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
                 break;
             default: break;
         }
-        return EmitOpcodeVariant(zeroPageHex, absoluteHex, longHex, context, context.bitwidthModifier(), context.expr());
+        if (EmitOpcodeVariant(zeroPageHex, absoluteHex, longHex, context, context.bitwidthModifier(), context.expr()))
+        {
+            return true;
+        }
+        if (!RegisterIsSymbol(context.register()))
+        {
+            return false;
+        }
+        zeroPageHex = _opcodes[mnemonic].zeroPage;
+        absoluteHex = _opcodes[mnemonic].absolute;
+        longHex = _opcodes[mnemonic].longAddress;
+        return EmitOpcodeVariant(zeroPageHex, absoluteHex, longHex, context, context.bitwidthModifier(), context.register().ToExpression(context));
     }
 
     public override bool VisitCpuInstructionIndexedIndirect([NotNull] SyntaxParser.CpuInstructionIndexedIndirectContext context)
@@ -389,12 +400,50 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionRegisterList([NotNull] SyntaxParser.CpuInstructionRegisterListContext context)
     {
-        if (context.register().Length == 1 &&
-            context.register()[0].Start.Type == SyntaxParser.A)
+        int mnemonic = context.Start.Type;
+        int zeroPageHex = Bad, absoluteHex = Bad, longHex = Bad;
+        var regs = context.register();
+        var registerAsExpr = context.register()[0].ToExpression(context);
+        
+        if (regs.Length == 1)
         {
-            return EmitOpcode(_opcodes[context.Start.Type].accumulator, context);
+            if (regs[0].Start.Type == SyntaxParser.A && _opcodes[mnemonic].accumulator != Bad)
+            {
+                return EmitOpcode(_opcodes[mnemonic].accumulator, context);
+            }
+            if (RegisterIsSymbol(regs[0]))
+            {
+                zeroPageHex = _opcodes[mnemonic].zeroPage;
+                absoluteHex = _opcodes[mnemonic].absolute;
+                longHex = _opcodes[mnemonic].longAddress;
+                return EmitOpcodeVariant(zeroPageHex, absoluteHex, longHex, context, null, registerAsExpr);
+            }
+            return false;
         }
-        return false;
+        if (!RegisterIsSymbol(regs[1]))
+        {
+            return false;
+        }
+        if (regs.Length > 2)
+        {
+            return false;
+        }
+        switch (context.register()[1].Start.Type)
+        {
+            case SyntaxParser.S:
+                return EmitOpcode(_opcodes[mnemonic].zeroPageS, context, registerAsExpr);
+            case SyntaxParser.X:
+                zeroPageHex = _opcodes[mnemonic].zeroPageX;
+                absoluteHex = _opcodes[mnemonic].absoluteX;
+                longHex = _opcodes[mnemonic].longX;
+                break;
+            case SyntaxParser.Y:
+                zeroPageHex = _opcodes[mnemonic].zeroPageY;
+                absoluteHex = _opcodes[mnemonic].absoluteY;
+                break;
+            default: break;
+        }
+        return EmitOpcodeVariant(zeroPageHex, absoluteHex, longHex, context, null, registerAsExpr);
     }
 
     public override bool VisitCpuInstructionZPAbsolute([NotNull] SyntaxParser.CpuInstructionZPAbsoluteContext context)

@@ -169,7 +169,7 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
     {
         if (other is StringValue sv)
         {
-            return EqualityComparer<byte[]>.Default.Equals(_bytes, sv._bytes);
+            return _bytes.SequenceEqual(sv._bytes);
         }
         throw new TypeMismatchError(Expression?.Start);
     }

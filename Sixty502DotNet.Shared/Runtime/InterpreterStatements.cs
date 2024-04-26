@@ -116,13 +116,11 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             Label label = DefineLabel(context.name);
             label.DefinesScope = true;
             label.IsProcScope = context.b.Type == SyntaxParser.Proc;
-            if (label.IsProcScope)
+            if (label.IsProcScope && 
+                !Services.State.InFirstPass && 
+                !label.IsReferenced)
             {
-                if (!Services.State.InFirstPass && !label.IsReferenced)
-                {
-                    return 0;
-                }
-                Services.State.PassNeeded = Services.State.InFirstPass;
+                return 0;
             }
             if (Services.State.Symbols.InFunctionScope)
             {

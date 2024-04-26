@@ -153,6 +153,11 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         }
     }
 
+    protected bool RegisterIsSymbol(SyntaxParser.RegisterContext register)
+    {
+        return Services.State.Symbols.Lookup(register.GetText()) is IValueResolver || Services.State.InFirstPass;
+    }
+
     protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand)
     {
         return EmitOpcode(opcodeHex, context, null, new SyntaxParser.ExprContext[] { operand }, 1);

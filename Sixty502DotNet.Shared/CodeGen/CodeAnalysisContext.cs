@@ -47,7 +47,7 @@ public sealed class CodeAnalysisContext
     public IReadOnlyCollection<byte> ObjectCode { get; init; }
 
     /// <summary>
-    /// Get the context offset from program starter.
+    /// Get the context offset from program start.
     /// </summary>
     public int Offset { get; init; }
 

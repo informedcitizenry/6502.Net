@@ -88,7 +88,7 @@ public static partial class NumberConverter
         int start = 0;
         if (text.Length > 1)
         {
-            if (!char.IsDigit(text[1]))
+            if (!char.IsAsciiHexDigit(text[1]))
             {
                 radix = text[1] switch
                 {

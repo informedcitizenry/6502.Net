@@ -182,7 +182,7 @@ Define one or more sections.
 6502.net myprog.asm -o myprog.prg --dsections zp,$02,$100 himem,$f000
 ```
 
-**`I`**, **`--include-path`**
+**`-I`**, **`--include-path`**
 
 Include the path in the argument when attempting to open filenames, for instance with `.binary` or `.include`.
 
@@ -278,7 +278,7 @@ MyMixedCaseLabel = 3
     lda #mymixedcaselabel // creates warning
 ```
 
-**`--Werror`**e
+**`--Werror`**
 
 Treat all warnings as errors.
 

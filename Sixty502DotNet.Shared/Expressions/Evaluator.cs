@@ -284,6 +284,32 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
     }
 
     /// <summary>
+    /// Evaluate the expression as an address if possible. If any part of the
+    /// evaluation fails due to unresolved symbols or value quantity falling outside
+    /// of the given bounds, then only raise a runtime error if an assembly
+    /// pass is not pending. If a pass is pending, then return a default value.
+    /// </summary>
+    /// <param name="expression">The parsed primary expression.</param>
+    /// <param name="truncateToPage">Truncate the result to a given page.</param>
+    /// <param name="pageValue">The current page to truncate the result if the
+    /// result and the page match. For instance, if the page is $0f and the
+    /// value (as a hexadecimal value) is $0ff3, then the returned value will
+    /// be $f3.</param>
+    /// <returns>The value as an integer.</returns>
+    /// <exception cref="Error"></exception>
+    public int SafeEvalAddress(SyntaxParser.PrimaryExprContext expression, bool truncateToPage = false, int pageValue = 0)
+    {
+        int minValue = Services?.ArchitectureOptions.LongAddressing == true ? Int24.MinValue : short.MinValue;
+        int maxValue = Services?.ArchitectureOptions.LongAddressing == true ? UInt24.MaxValue : ushort.MaxValue;
+        int address = EvalNumberLiteralType(expression, "Type mismatch", minValue, maxValue);
+        if (((address / 0x10000) & 0xff) == Services?.State.Output.CurrentBank)
+        {
+            return address & 0xffff;
+        }
+        return address;
+    }
+
+    /// <summary>
     /// Evaluate the expression as a numeric value if possible. If any part of the
     /// evaluation fails due to unresolved symbols or value quantity falling outside
     /// of the given bounds, then only raise a runtime error if an assembly

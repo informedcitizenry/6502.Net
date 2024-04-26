@@ -116,8 +116,6 @@ cpuInstruction
     |   bitMnemonic DecLiteral ',' NL* expr (',' NL* expr)?             # CpuInstructionBit
     |   mnemonic bitwidthModifier? '#' imm=expr                         # CpuInstructionImmmediate
     |   mnemonic '#' imm=expr ',' NL* expr (',' NL* X)?                 # CpuInstructionImmmediate
-    |   LD gb0=gb80Index ',' NL* a1=A                                   # CpuInstructionGB80Index
-    |   LD a0=A ',' NL* gb1=gb80Index                                   # CpuInstructionGB80Index
     |   mnemonic ix0=z80Index (',' NL* (r1=register | e1=expr))?        # CpuInstructionZ80Index
     |   mnemonic r0=register ',' NL* ix1=z80Index                       # CpuInstructionZ80Index
     |   mnemonic bitwidthModifier? '(' expr ',' X ')'                   # CpuInstructionIndexedIndirect
@@ -262,10 +260,6 @@ directive
 
 z80Index
     :   '(' (IX | IY) ('+' | '-') expr ')'
-    ;
-
-gb80Index
-    :   '(' io=expr '+' reg=C ')'
     ;
 
 bitwidthModifier

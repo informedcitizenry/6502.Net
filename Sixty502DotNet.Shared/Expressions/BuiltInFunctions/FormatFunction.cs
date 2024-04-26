@@ -37,9 +37,14 @@ public sealed class FormatFunction : BuiltInFunctionObject
         object[] formatParams = new object[parameters.Count - 1];
         for (int i = 0; i < parameters.Count - 1; i++)
         {
-            formatParams[i] = parameters[i + 1].Data()
-                ?? parameters[i + 1].ToString()
-                ?? "undefined";
+            if (parameters[i + 1].IsObject && parameters[i + 1].ValueType != ValueType.String)
+            {
+                formatParams[i] = parameters[i + 1].ToString() ?? "undefined";
+            }
+            else 
+            {
+                formatParams[i] = parameters[i + 1].Data() ?? "undefined";
+            }
         }
         return new StringValue($"\"{string.Format(format.AsString(), formatParams)}\"",
                                parameters[0].TextEncoding,

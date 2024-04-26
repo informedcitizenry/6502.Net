@@ -390,7 +390,7 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
 
     public override object? Data()
     {
-        return null;
+        return _dictionary;
     }
 
     public override int Size()

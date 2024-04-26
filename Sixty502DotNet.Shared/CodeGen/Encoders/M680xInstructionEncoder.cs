@@ -456,12 +456,12 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
             return false;
         }
         return EmitM6809Index(context.mnemonic(),
-                             context,
-                             false,
-                             context.register().Start.Type,
-                             0,
-                             -1,
-                             context.expr());
+                              context,
+                              false,
+                              context.register().Start.Type,
+                              0,
+                              -1,
+                              context.expr());
     }
 
     public override bool VisitCpuInstructionIndirectIndexed([NotNull] SyntaxParser.CpuInstructionIndirectIndexedContext context)
@@ -501,11 +501,18 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionRegisterList([NotNull] SyntaxParser.CpuInstructionRegisterListContext context)
     {
+        SyntaxParser.RegisterContext[] regs = context.register();
         if (Cpuid.EndsWith('0'))
         {
+            if (regs.Length > 1 && 
+                RegisterIsSymbol(regs[0]) &&
+                regs[1].Start.Type == SyntaxParser.X)
+            {
+                M6xxOpcode opc = _opcodes[context.Start.Type];
+                return EmitOpcode(opc.zeroPageX, context, regs[0].ToExpression(context));
+            }
             return false;
         }
-        SyntaxParser.RegisterContext[] regs = context.register();
         int mnemonic = context.mnemonic().Start.Type;
         M6xxOpcode opcode = _opcodes[mnemonic];
 
@@ -515,6 +522,16 @@ public sealed partial class M680xInstructionEncoder : CpuEncoderBase
                 !s_accumulatorRegs.ContainsKey(regs[0].Start.Type) ||
                 !s_indexRegs.ContainsKey(regs[1].Start.Type))
             {
+                if (RegisterIsSymbol(regs[0]))
+                {
+                    return EmitM6809Index(context.mnemonic(),
+                                          context,
+                                          false,
+                                          regs[1].Start.Type,
+                                          0,
+                                          -1,
+                                          regs[0].ToExpression(context));
+                }
                 return false;
             }
             return EmitM6809Index(context.mnemonic(),

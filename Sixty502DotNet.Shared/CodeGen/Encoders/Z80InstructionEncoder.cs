@@ -35,6 +35,34 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     private static bool IsIXPrefix(byte b) => b == 0xdd || b == 0xfd;
 
+    private static bool IsGB80IndexC(SyntaxParser.ExprContext expr)
+    {
+        return expr is SyntaxParser.ExpressionAdditiveContext addition &&
+                addition.rhs is SyntaxParser.ExpressionSimpleIdentifierContext &&
+                addition.rhs.Start.Type == SyntaxParser.C;
+    }
+
+    private bool IsGB80IndexOffset(SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext expr, out SyntaxParser.ExpressionAdditiveContext? additiveContext)
+    {
+        if (Cpuid[0] == 'g' && 
+            context.Start.Type == SyntaxParser.LD &&
+            expr is SyntaxParser.ExpressionAdditiveContext addition &&
+            addition.Plus() != null)
+        {
+            additiveContext = addition;
+            try
+            {
+                return Services.Evaluator.SafeEvalAddress(addition.lhs) == 0xff00 || Services.State.PassNeeded;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        additiveContext = null;
+        return false;
+    }
+
     private int GetIndexDisplacement(SyntaxParser.Z80IndexContext z80Index)
     {
         int displ = Services.Evaluator.SafeEvalNumber(z80Index.expr(), sbyte.MinValue, byte.MaxValue, 0);
@@ -264,16 +292,16 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         SyntaxParser.ExprContext expr = context.expr();
         int mnemonicType = context.Start.Type;
         uint regMode = GetRegisterMode(reg);
-        if (Cpuid[0] == 'g' &&
-            mnemonicType == SyntaxParser.LD &&
-            regMode == Z80Modes.A0 &&
-            expr is SyntaxParser.ExpressionAdditiveContext addition &&
-            addition.Plus() != null)
+
+        if (IsGB80IndexOffset(context, expr, out var addition))
         {
-            if (Services.Evaluator.SafeEvalAddress(addition.lhs) == 0xff00)
+            if (IsGB80IndexC(expr))
             {
-                return EmitOpcode(0xf0, context, addition.rhs, 1);
+                // ld a,($ff00+c)
+                return EmitOpcode(0xf2, context);
             }
+            // ld a,($ff00+n)
+            return EmitOpcode(0xf0, context, addition!.rhs, 1);
         }
         int operandSize = 2;
         if (s_R8s.Contains(reg.Start.Type) &&
@@ -312,16 +340,16 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     public override bool VisitCpuInstructionZ80IndirectIndexed([NotNull] SyntaxParser.CpuInstructionZ80IndirectIndexedContext context)
     {
-        if (Cpuid[0] == 'g' &&
-            context.Start.Type == SyntaxParser.LD &&
-            context.register().Start.Type == SyntaxParser.A &&
-            context.expr() is SyntaxParser.ExpressionAdditiveContext addition &&
-            addition.Plus() != null)
+        var expr = context.expr();
+        if (IsGB80IndexOffset(context, expr, out var addition))
         {
-            if (Services.Evaluator.SafeEvalAddress(addition.lhs) == 0xff00)
+            if (IsGB80IndexC(expr))
             {
-                return EmitOpcode(0xe0, context, addition.rhs, 1);
+                // ld ($ff00+c),a
+                return EmitOpcode(0xe2, context);
             }
+            // ld ($ff00+n),a
+            return EmitOpcode(0xe0, context, addition!.rhs, 1);
         }
         int operandSize = 2;
         uint exprMode = Z80Modes.IndN160;
@@ -388,6 +416,21 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
                 context.opcodeSize++;
             }
             return true;
+        }
+        if (regs.Length > 1 && RegisterIsSymbol(regs[1]))
+        {
+            var regType = regs[0].Start.Type;
+            int operandSize = 2;
+            uint exprMode = Z80Modes.N161;
+            if (s_R8s.Contains(regType) ||
+                (Cpuid[0] == 'g' && context.Start.Type == SyntaxParser.ADD && regType == SyntaxParser.SP))
+            {
+                operandSize = 1;
+                exprMode = Z80Modes.N81;
+            }
+            mode = GetRegisterMode(regs[0]);
+            code = GetOpcode(context.Start.Type, exprMode | mode);
+            return EmitOpcode(code, context, regs[1].ToExpression(context), operandSize);
         }
         return false;
     }
@@ -457,25 +500,6 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         return false;
     }
 
-    public override bool VisitCpuInstructionGB80Index([NotNull] SyntaxParser.CpuInstructionGB80IndexContext context)
-    {
-        if (Cpuid[0] != 'g')
-        {
-            return false;
-        }
-        SyntaxParser.ExprContext io = context.gb0?.io ?? context.gb1!.io;
-        int ioVal = Services.Evaluator.SafeEvalAddress(io);
-        if (ioVal != 0xff00 && !Services.State.PassNeeded)
-        {
-            return false;
-        }
-        if (context.a0 != null)
-        {
-            return EmitOpcode(0xf2, context);
-        }
-        return EmitOpcode(0xe2, context);
-    }
-
     public override bool VisitCpuInstructionGB80AccIncrement([NotNull] SyntaxParser.CpuInstructionGB80AccIncrementContext context)
     {
         if (Cpuid[0] != 'g')
@@ -536,6 +560,11 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             if (i < contexts.Count - 1)
             {
                 AnalyzeCallReturn(contexts[i], contexts[i + 1], 0xcd, 0xc9);
+            }
+            if (contexts[i].ObjectCode.First() == 0x3e &&
+                contexts[i].ObjectCode.ToArray()[1] == 0x00)
+            {
+                contexts[i].Report = "Use 'xor a,a' to reset the 'a' register";
             }
         }
     }

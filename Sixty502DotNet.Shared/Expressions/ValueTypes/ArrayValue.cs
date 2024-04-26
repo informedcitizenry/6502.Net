@@ -298,7 +298,7 @@ public sealed class ArrayValue : ValueBase, IList<ValueBase>
 
     public override object? Data()
     {
-        return null;
+        return _list;
     }
 
     public override IList<ValueBase> ToList()

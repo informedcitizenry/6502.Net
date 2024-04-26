@@ -104,7 +104,13 @@ public sealed class CodeOutput
         Transform = null;
         PCOverflow = HasOutput = _started = false;
         _sectionCollection.Reset();
-        CurrentBank = ProgramEnd = PreviousPC = _pc = _logicalPc = _initVal = 0;
+        CurrentBank = 
+        ProgramStart = 
+        ProgramEnd = 
+        PreviousPC = 
+        _pc = 
+        _logicalPc = 
+        _initVal = 0;
     }
 
     /// <summary>

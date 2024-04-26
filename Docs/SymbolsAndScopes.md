@@ -288,7 +288,7 @@ lda nop // this would error "lda" cannot be used as a label
 Lda nop // no error
 ```
 
-Symbols can share names with registers, but the presence of a register in an operand for a CPU instruction might cause an unexpected compilation result or even an error. To avoid this you would need to refactor the operand expression.
+Symbols can share names with registers, but for certain addressing modes the presence of a register in an operand for a CPU instruction might cause an unexpected compilation result or even an error. To avoid this you would need to refactor the operand expression.
 
 ```
         a = 3

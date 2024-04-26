@@ -395,6 +395,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         while (Services.State.Errors.Count == 0 && Services.State.PassNeeded)
         {
             _encoder.Reset();
+            _analysisContexts.Clear();
             Services.State.Reset();
             currentPass.Value.SetAs(new NumericValue(Services.State.CurrentPass));
             if (Services.State.CurrentPass > MaxPasses)

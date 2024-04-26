@@ -324,6 +324,14 @@ public static class IParseTree_Extensions
         return identifier.Start.Text.TrimStartOnce('.').Trim();
     }
 
+    public static SyntaxParser.ExprContext ToExpression(this SyntaxParser.RegisterContext register, ParserRuleContext parent)
+    {
+        SyntaxParser.ExprContext expr = new SyntaxParser.ExprContext(parent, register.invokingState);
+        SyntaxParser.ExpressionSimpleIdentifierContext ident = new SyntaxParser.ExpressionSimpleIdentifierContext(expr);
+        ident.AddChild(register.Start);
+        return ident;
+    }
+
     /// <summary>
     /// Get the entire source line for a parsed statement.
     /// </summary>

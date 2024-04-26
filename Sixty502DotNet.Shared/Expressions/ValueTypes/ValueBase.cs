@@ -773,7 +773,7 @@ public abstract class ValueBase :
     /// otherwise.</returns>
     public bool IsIdenticalTo(ValueBase other)
     {
-        return IsObject && ReferenceEquals(this, other);
+        return IsObject && ReferenceEquals(Data(), other.Data());
     }
 
     /// <summary>
