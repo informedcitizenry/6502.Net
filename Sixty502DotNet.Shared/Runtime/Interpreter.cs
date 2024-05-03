@@ -187,7 +187,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     private void GenListing(IToken start, string listing)
     {
-        if (AddListing())
+        if (AddListing)
         {
             if (_options.OutputOptions.VerboseList)
             {
@@ -200,7 +200,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 
     private void GenListing(SyntaxParser.StatContext stat, ValueBase value)
     {
-        if (!AddListing() || value.ValueType == ValueType.Callable || stat.Start.Text.Equals("_", StringComparison.Ordinal))
+        if (!AddListing || stat.Start.Text.Equals("_", StringComparison.Ordinal))
         {
             return;
         }
@@ -244,7 +244,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
    
     private int GenListing(SyntaxParser.InstructionContext context, char leadingChar, bool disassemble)
     {
-        if (AddListing())
+        if (AddListing)
         {
             SyntaxParser.StatContext stat = (SyntaxParser.StatContext)context.Parent;
             var genBytes = Services.State.Output.GetBytesFrom(Services.State.LongLogicalPCOnAssemble);
@@ -443,9 +443,9 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         return Services.State;
     }
 
-    private bool AddListing() => !Services.State.PrintOff &&
-                                 !Services.State.PassNeeded &&
-                                 !Services.State.Symbols.InFunctionScope;
+    private bool AddListing =>  !Services.State.PrintOff &&
+                                !Services.State.PassNeeded &&
+                                !Services.State.Symbols.InFunctionScope;
 
     /// <summary>
     /// The shared <see cref="AssemblyServices"/> for the runtime assembly

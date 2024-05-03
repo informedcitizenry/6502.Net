@@ -15,7 +15,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
     {
         bool isConstant = context.assignOp().Start.Type == SyntaxParser.Equal;
         ValueBase val = Services.Evaluator.Eval(context, isConstant);
-        if (AddListing() && (context.Start.Type == SyntaxParser.Asterisk || isConstant) && val.ValueType != ValueType.Callable)
+        if (AddListing && (context.Start.Type == SyntaxParser.Asterisk || isConstant) && val.ValueType != ValueType.Callable)
         {
             SyntaxParser.StatContext stat = (SyntaxParser.StatContext)context.Parent;
             if (context.Start.Type == SyntaxParser.Asterisk)

@@ -133,7 +133,7 @@ public sealed class CharValue : ValueBase
 
     public override string AsString() => _value.ToString();
 
-    public override int GetHashCode() => _value.GetHashCode();
+    public override int GetHashCode() => _numVal.GetHashCode();
 
     protected override void OnSetAs(ValueBase other)
     {

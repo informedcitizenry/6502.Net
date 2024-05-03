@@ -35,10 +35,9 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
     private static bool IsIXPrefix(byte b) => b == 0xdd || b == 0xfd;
 
-    private static bool IsGB80IndexC(SyntaxParser.ExprContext expr)
+    private static bool IsGB80IndexC(SyntaxParser.ExpressionAdditiveContext addition)
     {
-        return expr is SyntaxParser.ExpressionAdditiveContext addition &&
-                addition.rhs is SyntaxParser.ExpressionSimpleIdentifierContext &&
+        return addition.rhs is SyntaxParser.ExpressionSimpleIdentifierContext &&
                 addition.rhs.Start.Type == SyntaxParser.C;
     }
 
@@ -295,7 +294,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
 
         if (IsGB80IndexOffset(context, expr, out var addition))
         {
-            if (IsGB80IndexC(expr))
+            if (IsGB80IndexC(addition!))
             {
                 // ld a,($ff00+c)
                 return EmitOpcode(0xf2, context);
@@ -343,7 +342,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         var expr = context.expr();
         if (IsGB80IndexOffset(context, expr, out var addition))
         {
-            if (IsGB80IndexC(expr))
+            if (IsGB80IndexC(addition!))
             {
                 // ld ($ff00+c),a
                 return EmitOpcode(0xe2, context);
@@ -565,6 +564,11 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
                 contexts[i].ObjectCode.ToArray()[1] == 0x00)
             {
                 contexts[i].Report = "Use 'xor a,a' to reset the 'a' register";
+            }
+            else if (contexts[i].ObjectCode.First() == 0xfe && 
+                     contexts[i].ObjectCode.ToArray()[1] == 0x00)
+            {
+                contexts[i].Report = "Use 'and a,a' or 'or a,a' here";
             }
         }
     }

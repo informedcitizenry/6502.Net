@@ -59,6 +59,27 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
     private ValueBase? _firstVal;
     private bool _keyIsStringType;
 
+    private void DoAdd(ValueBase key, ValueBase value)
+    {
+        if (_firstKey != null && !key.TypeCompatible(_firstKey))
+        {
+            return;
+        }
+        _dictionary.Add(key, value);
+        if (_keyIsStringType)
+        {
+            try
+            {
+                Prototype!.Define(key.AsString(), new Variable(key.AsString(), value, Prototype));
+            }
+            catch
+            {
+                // we know as a "value" the string type is different so we ignore any symbol
+                // definition exceptions
+            }
+        }
+    }
+
     /// <summary>
     /// Construct a new instance of the <see cref="DictionaryValue"/>.
     /// </summary>
@@ -70,26 +91,6 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
         _firstVal = null;
         Prototype = new(Environment.DictionaryType);
         ValueType = ValueType.Dictionary;
-    }
-
-    /// <summary>
-    /// Construct a new instance of the <see cref="DictionaryValue"/> class.
-    /// </summary>
-    /// <param name="keys">A list of values that represent the
-    /// dictionary keys. The order of the keys in the list must match
-    /// that of the list of values.</param>
-    /// <param name="values">A list of values that represent the
-    /// dictionary values. The order of the values in the list must match
-    /// that of the list of keys.</param>
-    public DictionaryValue(IList<ValueBase> keys, IList<ValueBase> values)
-    {
-        _dictionary = new Dictionary<ValueBase, ValueBase>();
-        Prototype = new(Environment.DictionaryType);
-        ValueType = ValueType.Dictionary;
-        for (int i = 0; i < keys.Count; i++)
-        {
-            Add(keys[i], values[i]);
-        }
     }
 
     /// <summary>
@@ -256,11 +257,11 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
             _firstKey = key;
             _firstVal = value;
         }
-        if (!_firstKey.TypeCompatible(key) || !_firstVal.TypeCompatible(value))
+        else if (!_firstKey.TypeCompatible(key) || !_firstVal.TypeCompatible(value))
         {
             throw new TypeMismatchError();
         }
-        _dictionary.Add(key, value);
+        DoAdd(key, value);
     }
 
     /// <summary>
@@ -287,12 +288,7 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
             _keyIsStringType = key is StringValue || key is CharValue;
             _firstKey = key;
             _firstVal = value;
-            _dictionary.Add(key, value);
-            if (_keyIsStringType)
-            {
-
-                Prototype!.Define(key.AsString(), new Variable(key.AsString(), value, Prototype));
-            }
+            DoAdd(key, value);
             return true;
         }
         if (!_firstKey.TypeCompatible(key))
@@ -305,15 +301,12 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
             addStatus = AddStatus.ValueTypeMismatch;
             return false;
         }
-        if (!_dictionary.TryAdd(key, value))
+        if (_dictionary.ContainsKey(key))
         {
             addStatus = AddStatus.DuplicateKey;
             return false;
         }
-        if (_keyIsStringType)
-        {
-            Prototype!.Define(key.AsString(), new Variable(key.AsString(), value, Prototype));
-        }
+        DoAdd(key, value);
         return true;
     }
 
@@ -323,7 +316,16 @@ public sealed partial class DictionaryValue : ValueBase, IDictionary<ValueBase, 
     /// <param name="item">The key/value pair.</param>
     public void Add(KeyValuePair<ValueBase, ValueBase> item)
     {
-        Add(item.Key, item.Value);
+        if (_firstKey == null && _firstVal == null)
+        {
+            _firstKey = item.Key;
+            _firstVal = item.Value;
+        }
+        else if (!_firstKey!.TypeCompatible(item.Key) || !_firstVal!.TypeCompatible(item.Value))
+        {
+            return;
+        }
+        DoAdd(item.Key, item.Value);
     }
 
     /// <summary>
