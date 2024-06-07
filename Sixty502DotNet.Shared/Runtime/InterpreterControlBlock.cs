@@ -12,19 +12,20 @@ namespace Sixty502DotNet.Shared;
 
 public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
 {
-    private bool IfCondition(SyntaxParser.IfBlockContext context, SyntaxParser.ExprContext condExpression)
+
+    private bool IfCondition(int ifType, SyntaxParser.ExprContext condExpression)
     {
-        if (context.Ifdef() != null ||
-            context.Ifndef() != null ||
-            context.Elseifdef().Length > 0 ||
-            context.Elseifndef().Length > 0)
+        if (ifType.IsOneOf(SyntaxParser.Ifdef, 
+                           SyntaxParser.Ifndef, 
+                           SyntaxParser.Elseifdef, 
+                           SyntaxParser.Elseifndef))
         {
             if (!Services.State.InFirstPass &&
                 _memoizedDefines.TryGetValue(condExpression.Start.TokenIndex, out bool defined))
             {
                 return defined;
             }
-            if (context.Ifdef() != null || context.Elseifdef().Length > 0)
+            if (ifType == SyntaxParser.Ifdef || ifType == SyntaxParser.Elseifdef)
             {
                 defined = Services.Evaluator.Resolve(condExpression, true, false) != null;
             }
@@ -35,19 +36,19 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
             _memoizedDefines[condExpression.Start.TokenIndex] = defined;
             return defined;
         }
-        if (context.Ifconst() != null ||
-            context.Ifnconst() != null ||
-            context.Elseifconst().Length > 0 ||
-            context.Elseifnconst().Length > 0)
+        if (ifType.IsOneOf(SyntaxParser.Ifconst,
+                           SyntaxParser.Ifnconst,
+                           SyntaxParser.Elseifconst,
+                           SyntaxParser.Elseifnconst))
         {
             ValueBase constVal = Evaluator.EvalConstant(condExpression);
-            if (context.Ifconst() != null || context.Elseifconst().Length > 0)
+            if (ifType == SyntaxParser.Ifconst || ifType == SyntaxParser.Elseifconst)
             {
                 return constVal.IsDefined;
             }
-            return !constVal.IsDefined;
+            return !constVal.IsDefined;     
         }
-        if (context.If() != null || context.Elseif().Length > 0)
+        if (ifType == SyntaxParser.If || ifType == SyntaxParser.Elseif)
         {
             ValueBase condVal = Services.Evaluator.Eval(condExpression);
             return condVal.IsDefined && condVal.AsBool();
@@ -58,20 +59,36 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
     public override int VisitInstructionIf([NotNull] SyntaxParser.InstructionIfContext context)
     {
         SyntaxParser.IfBlockContext ifBlock = context.ifBlock();
-        SyntaxParser.BlockContext[] ifBlocks = ifBlock.block();
-        SyntaxParser.ExprContext[] exprBlocks = ifBlock.expr();
-        int selected = -1;
-        for (int i = 0; i < ifBlocks.Length; i++)
+        if (IfCondition(ifBlock.Start.Type, ifBlock.expr()))
         {
-            if (i >= exprBlocks.Length || IfCondition(ifBlock, exprBlocks[i]))
+            if (ifBlock.ifbl != null)
+            {
+                return Visit(ifBlock.ifbl);
+            }
+            return 0;
+        }
+        int selected = -1;
+        var elseIfBlocks = ifBlock.elseIfBlock();
+        for (int i = 0; i < elseIfBlocks.Length; i++)
+        {
+            var elseIfBlock = elseIfBlocks[i];
+            if (IfCondition(elseIfBlock.Start.Type, elseIfBlock.expr()))
             {
                 selected = i;
                 break;
             }
         }
-        if (selected >= 0 && ifBlocks[selected] != null)
+        if (selected >= 0)
         {
-            return Visit(ifBlocks[selected]);
+            if (elseIfBlocks[selected].block() != null)
+            {
+                return Visit(ifBlock.elseIfBlock()[selected].block());
+            }
+            return 0;
+        }
+        if (ifBlock.elsebl != null)
+        {
+            return Visit(ifBlock.elsebl);
         }
         return 0;
     }

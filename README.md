@@ -1,6 +1,6 @@
 ﻿# 6502.Net, A .Net-Based Cross-Assembler for Several 8-Bit Microprocessors.
 
-Version 4.3.1
+Version 4.3.2
 
 ## Overview
 

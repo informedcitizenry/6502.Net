@@ -6,50 +6,43 @@
 //-----------------------------------------------------------------------------
 
 using Sixty502DotNet.Shared;
+using System.Reflection;
 
 namespace Sixty502DotNet.CLI;
 
 public static class Disassembler
 {
+    private static readonly HashSet<string> s_excluded =
+    [
+        "Disassemble", "InputFiles", "OutputFile"
+    ];
+    
 	private static bool CheckOptions(CommandLineOptions cliOptions)
 	{
-        if (cliOptions.Autosize ||
-            cliOptions.BranchAlways ||
-            cliOptions.CaseSensitive ||
-            !string.IsNullOrEmpty(cliOptions.ConfigFile) ||
-            cliOptions.CreateConfig ||
-            cliOptions.Defines?.Count > 0 ||
-            cliOptions.EchoEachPass ||
-            cliOptions.EnableAllWarnings ||
-            !string.IsNullOrEmpty(cliOptions.ErrorFile) ||
-            !string.IsNullOrEmpty(cliOptions.IncludePath) ||
-            !string.IsNullOrEmpty(cliOptions.LabelFile) ||
-            cliOptions.LabelsAddressesOnly ||
-            !string.IsNullOrEmpty(cliOptions.ListingFile) ||
-            cliOptions.LongAddressing ||
-            cliOptions.NoDisassembly ||
-            cliOptions.NoHighlighting ||
-            cliOptions.NoSource ||
-            cliOptions.NoStats ||
-            cliOptions.NoWarnings ||
-            !string.IsNullOrEmpty(cliOptions.OutputSection) ||
-            !string.IsNullOrEmpty(cliOptions.Patch) ||
-            cliOptions.ResetPCOnBank ||
-            cliOptions.Sections?.Count > 0 ||
-            cliOptions.ShowChecksums ||
-            cliOptions.TruncateAssembly ||
-            cliOptions.VerboseList ||
-            cliOptions.ViceLabels ||
-            cliOptions.WarnAboutJumpBug ||
-            cliOptions.WarnAboutUsingTextInNonTextPseudoOps ||
-            cliOptions.WarnCaseMismatch ||
-            cliOptions.WarningsAsErrors ||
-            cliOptions.WarnLeft ||
-            cliOptions.WarnNotUnusedSections ||
-            cliOptions.WarnSimplifyCallReturn ||
-            cliOptions.WarnUnreferencedSymbols)
+        var typeInfo = typeof(CommandLineOptions).GetTypeInfo();
+        var properties = typeInfo.GetProperties();
+        foreach (var property in properties)
         {
-            Output.OutputError(new Warning("One or more options is ignored in disassembly mode"), false);
+            if (s_excluded.Contains(property.Name))
+            {
+                continue;
+            }
+            var optionAttribute = property.GetCustomAttribute<CommandLine.OptionAttribute>();
+            if (optionAttribute == null)
+            {
+                continue;
+            }
+            var propValue = property.GetValue(cliOptions);
+            var propType = property.PropertyType;
+
+            if (!IsOptionSet(propValue, propType))
+            {
+                continue;
+            }
+            var optionName = !string.IsNullOrEmpty(optionAttribute.LongName) 
+                        ? $"--{optionAttribute.LongName}"
+                        : $"-{optionAttribute.ShortName}";
+            Output.OutputError(new Warning($"Command-line option '{optionName}' is ignored sin disassembly mode"), false);
         }
         if (cliOptions.InputFiles?.Count < 1)
         {
@@ -57,6 +50,23 @@ public static class Disassembler
             return false;
         }
         return true;
+    }
+
+    private static bool IsOptionSet(object? value, Type type)
+    {
+        if (value == null)
+        {
+            return false;
+        }
+        if (type.IsInterface)
+        {
+            return ((IList<string>)value).Count > 0;
+        }
+        if (type.IsValueType)
+        {
+            return (bool)value;
+        }
+        return !string.IsNullOrEmpty((string)value);
     }
 
 	public static void Disassemble(CommandLineOptions cliOptions)

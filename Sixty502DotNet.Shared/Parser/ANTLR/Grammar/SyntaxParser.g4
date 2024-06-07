@@ -94,9 +94,14 @@ caseBlock
     ;
 
 ifBlock
-    :   (If | Ifconst | Ifdef | Ifnconst | Ifndef) expr eos block? 
-        ((Elseif | Elseifconst | Elseifdef | Elseifnconst | Elseifndef) expr eos block?)*
-        (Else eos block?)? Endif
+    :   (If | Ifconst | Ifdef | Ifnconst | Ifndef) expr eos ifbl=block? 
+        elseIfBlock*
+        (Else eos elsebl=block?)? Endif
+    ;
+
+elseIfBlock
+    :   dir=(Elseif | Elseifconst | Elseifdef | Elseifnconst | Elseifndef) expr eos
+        elseifbl=block?
     ;
 
 eos
