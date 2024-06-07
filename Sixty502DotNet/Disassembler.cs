@@ -81,7 +81,8 @@ public static class Disassembler
         var (errors, warnings) = CheckOptions(cliOptions);
         if (errors.Count != 0)
         {
-            goto OutputErrors;
+            Output.OutputErrorsAndWarnings(errors, warnings, cliOptions.ErrorFile, true);
+            return;
         }
        FileSystemBinaryReader binaryReader = new(cliOptions.IncludePath);
 
@@ -95,7 +96,8 @@ public static class Disassembler
             catch
             {
                 errors.Add(new Error($"Could not read file '{cliOptions.InputFiles[i]}'"));
-                goto OutputErrors;
+                Output.OutputErrorsAndWarnings(errors, warnings, cliOptions.ErrorFile, true);
+                return;
             }
         }
         Options options = OptionsFactory.FromCLIOptions(cliOptions);
@@ -106,7 +108,6 @@ public static class Disassembler
 
         Console.WriteLine("-------------------------------------");
         Console.WriteLine("Disassembly file created.");
-OutputErrors:
         Output.OutputErrorsAndWarnings(errors, warnings, cliOptions.ErrorFile, true);
     }
 }

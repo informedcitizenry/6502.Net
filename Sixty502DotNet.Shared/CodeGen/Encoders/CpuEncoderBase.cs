@@ -85,7 +85,7 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         int pc = origin;
         int linePc = pc;
         StringBuilder sb = new();
-        sb.AppendLine($"        * = ${pc:x4}");
+        sb.AppendLine($"                           * = ${pc:x4}");
         try
         {
             while (offset < code.Length)
