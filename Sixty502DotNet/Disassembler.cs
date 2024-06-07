@@ -12,18 +12,26 @@ namespace Sixty502DotNet.CLI;
 
 public static class Disassembler
 {
-    private static readonly HashSet<string> s_excluded =
+    private static readonly HashSet<string> s_optionsNotIgnored =
     [
-        "Disassemble", "InputFiles", "OutputFile"
+        "Disassemble", 
+        "ErrorFile", 
+        "IncludePath",
+        "InputFiles", 
+        "OutputFile", 
+        "Quiet", 
+        "WarningsAsErrors"
     ];
     
-	private static bool CheckOptions(CommandLineOptions cliOptions)
+	private static (List<Error>, List<Warning>) CheckOptions(CommandLineOptions cliOptions)
 	{
         var typeInfo = typeof(CommandLineOptions).GetTypeInfo();
+        var errors = new List<Error>();
+        var warnings = new List<Warning>();
         var properties = typeInfo.GetProperties();
         foreach (var property in properties)
         {
-            if (s_excluded.Contains(property.Name))
+            if (s_optionsNotIgnored.Contains(property.Name))
             {
                 continue;
             }
@@ -42,42 +50,40 @@ public static class Disassembler
             var optionName = !string.IsNullOrEmpty(optionAttribute.LongName) 
                         ? $"--{optionAttribute.LongName}"
                         : $"-{optionAttribute.ShortName}";
-            Output.OutputError(new Warning($"Command-line option '{optionName}' is ignored sin disassembly mode"), false);
+            var message = $"Command-line option '{optionName}' is ignored in disassembly mode";
+            if (cliOptions.WarningsAsErrors)
+            {
+                errors.Add(new Error(message));
+            }
+            else
+            {
+                warnings.Add(new Warning(message));
+            }
         }
         if (cliOptions.InputFiles?.Count < 1)
         {
-            Output.OutputError(new Error("Input file(s) not specified"), false);
-            return false;
+            errors.Add(new Error("Input file(s) not specified"));
         }
-        return true;
+        return (errors, warnings);
     }
 
     private static bool IsOptionSet(object? value, Type type)
     {
-        if (value == null)
-        {
-            return false;
-        }
-        if (type.IsInterface)
-        {
-            return ((IList<string>)value).Count > 0;
-        }
-        if (type.IsValueType)
-        {
-            return (bool)value;
-        }
+        if (value == null) return false;
+        if (type.IsValueType) return (bool)value;
+        if (type.IsInterface) return ((IList<string>)value).Count > 0;
         return !string.IsNullOrEmpty((string)value);
     }
 
 	public static void Disassemble(CommandLineOptions cliOptions)
 	{
         Output.OutputProductInfo();
-
-        if (!CheckOptions(cliOptions))
+        var (errors, warnings) = CheckOptions(cliOptions);
+        if (errors.Count != 0)
         {
-            return;
+            goto OutputErrors;
         }
-        FileSystemBinaryReader binaryReader = new(cliOptions.IncludePath);
+       FileSystemBinaryReader binaryReader = new(cliOptions.IncludePath);
 
         List<byte[]> objectCode = [];
         for (int i = 0; i < cliOptions.InputFiles!.Count; i++)
@@ -88,8 +94,8 @@ public static class Disassembler
             }
             catch
             {
-                Output.OutputError(new Error($"Could not read file '{cliOptions.InputFiles[i]}'"), true);
-                return;
+                errors.Add(new Error($"Could not read file '{cliOptions.InputFiles[i]}'"));
+                goto OutputErrors;
             }
         }
         Options options = OptionsFactory.FromCLIOptions(cliOptions);
@@ -100,6 +106,8 @@ public static class Disassembler
 
         Console.WriteLine("-------------------------------------");
         Console.WriteLine("Disassembly file created.");
+OutputErrors:
+        Output.OutputErrorsAndWarnings(errors, warnings, cliOptions.ErrorFile, true);
     }
 }
 
