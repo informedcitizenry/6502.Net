@@ -12,28 +12,43 @@ options {
 }
 
 // All keyword tokens, including mnemonics, CPU registers, and pseudo-op directives
-// we are declaring their type but not defining in this grammar, CPU type and
-// case sensitivity are determined only at runtime.
+// we are declaring their type but not defining in this grammar. Since case sensitivity
+// is determined at runtime, only keywords can be tagged properly at runtime.
 tokens {
     /* constants */
-    True, False, NaN,
+    False, NaN, True,
 
     /* directives */
-    Addr, Align, Assert, Auto, Bank, Bankbytes, Binary, Binclude, 
-    Block, Break, Bstring, Byte, Case, Cbmflt, Cbmfltp, Char, 
-    Continue, Cpu, Cstring, Default, Dint, Do, DotEor, Dp, Dsection, 
-    Dword, Echo, Encoding, End, Endblock, Endenum, Endfunction, Endif,
-    Endmacro, Endnamespace, Endpage, Endproc, Endrelocate, Endrepeat, 
-    Endswitch, Endwhile, Enum, Else,Elseif, Elseifconst, Elseifdef, 
-    Elseifnconst, Elseifndef, Equ, Error, Errorif, Fill, For,
-    Forcepass, Foreach, Format, Function, Global, Goto, Hibytes, 
-    Hstring, Hiwords, If, Ifconst, Ifdef, Ifnconst, Ifndef,  
-    Import, Include, Initmem, Invoke, Label, Lobytes, Let, Lint,
-    Long, Lstring, Lowords, Manual, Macro, Map, M8, M16, MX8, MX16,
-    Namespace, Next, Nstring, Org, Page, Proc, Proff, Pron, Pseudopc, 
-    Pstring, Realpc, Relocate, Repeat, Return, Rta, Sbyte, Section, 
-    Short, Sint, String, Stringify, Switch, Tfradp, Tfrbdp, Unmap, 
-    Warn, Warnif, Word, While, Whiletrue, X8, X16,
+    Addr,           Align,          Assert,         Auto, 
+    Bank,           Bankbytes,      Binary,         Binclude, 
+    Block,          Break,          Bstring,        Byte, 
+    Case,           Cbmflt,         Cbmfltp,        Char, 
+    Continue,       Cpu,            Cstring,        Default,
+    Dint,           Do,             DotEor,         Dp, 
+    Dsection,       Dword,          Echo,           Encoding, 
+    End,            Endblock,       Endenum,        Endfunction,
+    Endif,          Endmacro,       Endnamespace,   Endpage, 
+    Endproc,        Endrelocate,    Endrepeat,      Endswitch,
+    Endwhile,       Enum,           Else,           Elseif,
+    Elseifconst,    Elseifdef,      Elseifnconst,   Elseifndef,
+    Equ,            Error,          Errorif,        Fill,
+    For,            Forcepass,      Foreach,        Format,
+    Function,       Global,         Goto,           Hibytes,
+    Hstring,        Hiwords,        If,             Ifconst,
+    Ifdef,          Ifnconst,       Ifndef,         Import,
+    Include,        Initmem,        Invoke,         Label,
+    Lobytes,        Let,            Lint,           Long,
+    Lstring,        Lowords,        Manual,         Macro,
+    Map,            M8,             M16,            MX8,
+    MX16,           Namespace,      Next,           Nstring,
+    Org,            Page,           Proc,           Proff,
+    Pron,           Pseudopc,       Pstring,        Realpc,
+    Relocate,       Repeat,         Return,         Rta,
+    Sbyte,          Section,        Short,          Sint,
+    String,         Stringify,      Switch,         Tfradp,
+    Tfrbdp,         Unmap,          Warn,           Warnif,
+    Word,           While,          Whiletrue,      X8, 
+    X16,
 
     /* 45GS02 */
     EOM, MAP,
@@ -98,7 +113,7 @@ tokens {
 
     /* m65 */
     ADCQ, ANDQ, ASLQ, ASRQ, BITQ, CPQ, DEQ, EORQ, INQ, LDQ, 
-    LSRQ, ORQ, ROLQ, RORQ, SBCQ, STQ,
+    LSRQ, ORQ,  ROLQ, RORQ, SBCQ, STQ,
 
     /* psuedo6502 */
     JCC, JCS, JEQ, JMI, JNE, JPL, JVC, JVS,
@@ -180,7 +195,7 @@ CharLiteral
     ;
 
 HexLiteral
-    :   ('0' [xX] | '$') HexDigitString
+    :   ('0' [xX] | '$') '_'* HexDigitString
     ;
 
 HexFloatLiteral
@@ -189,8 +204,8 @@ HexFloatLiteral
     ;
 
 BinLiteral
-    :   '0' [bB] BinDigitString
-    |   '%' BinDigitString { !PreviousIsExpr() }?
+    :   '0' [bB] '_'* BinDigitString
+    |   '%' '_'* BinDigitString { !PreviousIsExpr() }?
     ;
 
 BinFloatLiteral
@@ -204,7 +219,7 @@ AltBinLiteral
 
 DecLiteral
     :   '0'
-    |   [1-9] ('_'* DigitString*)?
+    |   [1-9] ('_' | DigitString)*
     ;
 
 DecFloatLiteral
@@ -213,7 +228,7 @@ DecFloatLiteral
     ;
 
 OctLiteral
-    :   '0' ([oO] | '_'+)? OctalDigitString
+    :   '0' [oO]? '_'* OctalDigitString
     ;
 
 OctFloatLiteral
@@ -225,7 +240,7 @@ LineComment
     :   
     (   '//'
     |   ';'
-    )   ~[\r\n]* -> skip
+    )   ~[\r\n\u0085\u2028\u2029]* -> skip
     ;
 
 BlockComment
@@ -289,13 +304,13 @@ RightSquare:    ']' { groups--; } ;
 RightCurly:     '}' { UnsaveGroups(); }; 
 
 NL
-    :   [\n\r]+ { SkipNewline(); }
+    :   UnicodeNL+ { SkipNewline(); }
     ;
 
 WS
     :
-    (   [ \t]+
-    |   '\\' [\n\r]
+    (   UnicodeWS+
+    |   '\\' UnicodeNL
     ) -> skip
     ;
 
@@ -351,15 +366,15 @@ InterpolSChar
 
 fragment
 SChar
-    :   ~[\\"\n\r]
+    :   ~[\\"\n\r\u0085\u2028\u2029]
     |   Escape
     |   UnicodeEscape
     ;
 
 fragment
 CChar
-    :   ~[\\'\n\r]
-    |   '{' [A-Z] (('-'|' ') ~[\\'\n\r}]+)? '}'
+    :   ~[\\'\n\r\u0085\u2028\u2029]
+    |   '{' [A-Z] (('-'|' ') ~[\\'\n\r\u0085\u2028\u2029}]+)? '}'
     |   Escape
     ;
 
@@ -387,6 +402,28 @@ UnicodeEscape
               HexDigit HexDigit HexDigit HexDigit
     ;
     
+fragment
+UnicodeNL
+    :   '\r\n'
+    |   '\r'
+    |   '\n'
+    |   '\u0085'
+    |   '\u2028' .. '\u2029'
+    ;
+
+fragment
+UnicodeWS
+    :   '\u0009'
+    |   '\u000B' .. '\u000C'
+    |   '\u0020'
+    |   '\u00A0'
+    |   '\u1680'
+    |   '\u2000' .. '\u200A'
+    |   '\u202F'
+    |   '\u205F'
+    |   '\u3000'
+    ;
+
 
 fragment
 Exponent
@@ -395,7 +432,7 @@ Exponent
 
 fragment
 HexDigitString
-    :   HexDigit+ ('_'* HexDigit)*
+    :   HexDigit ('_' | HexDigit)*
     ;
 
 fragment
@@ -405,7 +442,7 @@ HexDigit
 
 fragment
 DigitString
-    :   Digit ('_'* Digit)*
+    :   Digit ('_' | Digit)*
     ;
 
 fragment
@@ -415,7 +452,7 @@ Digit
 
 fragment
 OctalDigitString
-    :   OctalDigit+ ('_'* OctalDigit)*
+    :   OctalDigit ('_' | OctalDigit)*
     ;
 
 OctalDigit
@@ -424,7 +461,7 @@ OctalDigit
 
 fragment
 BinDigitString
-    :   BinDigit+ ('_'* BinDigit)*
+    :   BinDigit ('_' | BinDigit)*
     ;
 
 fragment
