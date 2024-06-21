@@ -5,7 +5,7 @@
 // 
 //-----------------------------------------------------------------------------
 
-using Sixty502DotNet.Shared;
+namespace Sixty502DotNet.Shared;
 
 public static class EncodingMappings
 {

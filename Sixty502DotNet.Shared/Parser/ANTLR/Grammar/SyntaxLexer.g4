@@ -360,7 +360,7 @@ IdentifierHead
 
 fragment
 InterpolSChar
-    :   ~[\\"\n\r{]
+    :   ~[\\"\n\r\u0085\u2028\u2029{]
     |   InterpolEscape
     ;
 

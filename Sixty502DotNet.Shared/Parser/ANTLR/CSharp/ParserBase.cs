@@ -14,6 +14,42 @@ namespace Sixty502DotNet.Shared;
 /// </summary>
 public abstract class ParserBase : Parser
 {
+
+    private static readonly HashSet<int> s_identifierTypes = new()
+    {
+        SyntaxParser.A,
+        SyntaxParser.B,
+        SyntaxParser.BC,
+        SyntaxParser.C,
+        SyntaxParser.D,
+        SyntaxParser.DE,
+        SyntaxParser.E,
+        SyntaxParser.H,
+        SyntaxParser.HL,
+        SyntaxParser.I,
+        SyntaxParser.Identifier,
+        SyntaxParser.IX,
+        SyntaxParser.IXH,
+        SyntaxParser.IXL,
+        SyntaxParser.IY,
+        SyntaxParser.IYH,
+        SyntaxParser.IYL,
+        SyntaxParser.L,
+        SyntaxParser.M,
+        SyntaxParser.N,
+        SyntaxParser.NC,
+        SyntaxParser.NZ,
+        SyntaxParser.P,
+        SyntaxParser.PE,
+        SyntaxParser.PO,
+        SyntaxParser.R,
+        SyntaxParser.S,
+        SyntaxParser.SP,
+        SyntaxParser.X,
+        SyntaxParser.Y,
+        SyntaxParser.Z
+    };
+
     protected ParserBase(ITokenStream input)
         : base(input, TextWriter.Null, TextWriter.Null)
     {
@@ -35,6 +71,9 @@ public abstract class ParserBase : Parser
         return true;
     }
 
+    protected static  bool IsIdentifierType(int type) 
+            => s_identifierTypes.Contains(type);
+
     public static IList<IToken> ParseMacroArguments(IList<IToken> unparsedTokens, out int parsedCount)
     {
         IList<IList<IToken>> parsed = ParseMacroParams(unparsedTokens);
@@ -43,7 +82,7 @@ public abstract class ParserBase : Parser
         for (int p = 0; p < parsed.Count; p++)
         {
             IList<IToken> param = parsed[p];
-            if (param[0].Type != SyntaxParser.Identifier)
+            if (!IsIdentifierType(param[0].Type))
             {
                 throw new Error(param[0], "Identifier expected");
             }
@@ -73,9 +112,8 @@ public abstract class ParserBase : Parser
         for (int p = startIndex; p < parsed.Count; p++)
         {
             IList<IToken> param = parsed[p];
-            if (param[0].Type != SyntaxParser.Identifier)
+            if (!IsIdentifierType(param[0].Type))
             {
-
                 throw new Error(param[0], "Identifier expected");
             }
             if (param.Count < 2 || param[1].Type != SyntaxParser.Equal)
