@@ -287,10 +287,11 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         if ((operandSize == 1 && (offs < sbyte.MinValue || offs > sbyte.MaxValue)) ||
             (operandSize == 2 && (offs < short.MinValue || offs > short.MaxValue)))
         {
-            if (!Services.State.PassNeeded)
+            if (!Services.State.PassNeeded && Services.State.CurrentPass > 4)
             {
                 throw new Error(expr, "Relative offset too far");
             }
+            Services.State.PassNeeded = true;
         }
         context.opcode = opcode;
         context.opcodeSize = opcode.Size();
