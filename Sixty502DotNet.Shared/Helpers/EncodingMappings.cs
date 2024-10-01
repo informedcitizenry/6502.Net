@@ -289,7 +289,7 @@ public static class EncodingMappings
 
         encoding.SelectEncoding("\"cbmscreen\"");
         encoding.Map("@Z", '\0');
-        encoding.Map("az", 'A');
+        //encoding.Map("az", 'A');
         encoding.Map('£', '\\');
         encoding.Map('π', '^'); // π is $5e in unshifted
         encoding.Map('↑', '^'); // ↑ is $5e in shifted
