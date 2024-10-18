@@ -6,16 +6,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RollForward>Major</RollForward>
     <PackageId>6502.Net</PackageId>
-    <Version>4.3.2.0</Version>
+    <Version>4.4.1.0</Version>
     <Authors>informedcitizenry</Authors>
     <Company>informedcitizenry</Company>
     <Product>6502.Net</Product>
     <Description>6502.Net, A .Net Cross Assembler for Several 8-Bit Microprocessors.</Description>
     <Copyright>Copyright (c) 2017-2024 informedcitizenry</Copyright>
-    <ReleaseVersion>4.3.2</ReleaseVersion>
+    <ReleaseVersion>4.4.1</ReleaseVersion>
     <AssemblyName>6502.Net</AssemblyName>
-    <AssemblyVersion>4.3.2.0</AssemblyVersion>
-    <FileVersion>4.3.2.0</FileVersion>
+    <AssemblyVersion>4.4.1.0</AssemblyVersion>
+    <FileVersion>4.4.1.0</FileVersion>
     <SignAssembly>false</SignAssembly>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
