@@ -175,8 +175,10 @@ mnemonic
     |   XBA | XCE
     /* 65CE02 */
     |   ASW | BGE | BLT | BSR | CLE | CPZ | DEZ | DEW 
-    |   INW | INZ | LDZ | PHW | PHZ | PLZ | ROW | RTN
-    |   SEE | TAB | TAZ | TBA | TSY | TYS | TZA
+    |   INW | INZ | LDZ | NEG | PHW | PHZ | PLZ | ROW 
+    |   RTN | SEE | TAB | TAZ | TBA | TSY | TYS | TZA
+    /* 45GS02 */
+    |   EOM | MAP
     /* 6800 */
     |   ABA  | ADCA | ADCB  | ADDA | ADDB | ANDA
     |   ANDB | ASLA | ASLB  | ASRA | ASRB | BGT
@@ -205,9 +207,9 @@ mnemonic
     /* c64dtv2 */
     |   SAC | SIR
     /* HuC6280 */
-    |   CLA | CLX | CLY | CSH | CSL | SAY | ST1 | ST2
-    |   SXY | TAI | TAM | TDD | TIA | TII | TIN | TMA
-    |   TST
+    |   CLA | CLX | CLY | CSH | CSL | SAY | SET | ST1
+    |   ST2 | SXY | TAI | TAM | TDD | TIA | TII | TIN
+    |   TMA | TST
     /* m65 */
     |   ADCQ | ANDQ | ASLQ | ASRQ | BITQ | CPQ 
     |   DEQ  | EORQ | INQ  | LDQ  | LSRQ | ORQ

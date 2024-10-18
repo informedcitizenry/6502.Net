@@ -215,7 +215,7 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
     /// <param name="context">The parsed expression.</param>
     /// <param name="error">The error message if the evaluation fails.</param>
     /// <param name="min">The minimum value of the expression.</param>
-    /// <param name="max">The maximum value of the expression.</param>
+    /// <param name="max">The first value beyond the maximum value of the expression.</param>
     /// <returns>The evaluated expression as an integer.</returns>
     /// <exception cref="Error">A runtime error encountered during evaluation.</exception>
     public static int EvalIntegerLiteral(SyntaxParser.PrimaryExprContext context, string error, int min, int max)
@@ -713,13 +713,17 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
         {
             return new UndefinedValue();
         }
-        return new UserFunctionObject(context.arrow().argList(),
-                                      context.arrow().block(),
-                                      context.arrow().expr(),
-                                      Services.State.Symbols.ActiveScope)
+        if (!context.value.IsDefined)
         {
-            Name = "()=>"
-        };
+            context.value = new UserFunctionObject(context.arrow().argList(),
+                                                   context.arrow().block(),
+                                                   context.arrow().expr(),
+                                                   Services.State.Symbols.ActiveScope)
+            {
+                Name = "()=>"
+            };
+        }
+        return context.value;
     }
 
     public override ValueBase VisitExpressionDotMember([NotNull] SyntaxParser.ExpressionDotMemberContext context)

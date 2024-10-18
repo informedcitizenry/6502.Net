@@ -412,12 +412,21 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
     public override int VisitInstructionPage([NotNull] SyntaxParser.InstructionPageContext context)
     {
         uint currentPage = (uint)Services.State.LogicalPCOnAssemble & 0xFFFFFF00;
+        bool usingLogical = Services.State.LogicalPCOnAssemble != Services.State.Output.ProgramCounter;
         if (context.block() != null)
         {
             _ = Visit(context.block());
             if (((uint)Services.State.Output.LogicalPC & 0xFFFFFF00) != currentPage && !Services.State.PassNeeded)
             {
-                throw new Error(context.block().stat()[^1], "Code crosses page boundary");
+                if (Services.State.CurrentPass > 4)
+                {
+                    if (usingLogical && Services.State.LogicalPCOnAssemble == Services.State.Output.ProgramCounter)
+                    {
+                        throw new Error(context, "Cannot determine a page boundary crossing if `.relocate` and `.endrelocate` are used in a `.page` block");
+                    }
+                    throw new Error(context.block().stat()[^1], "Code crosses page boundary");
+                }
+                Services.State.PassNeeded = true;
             }
         }
         return 0;

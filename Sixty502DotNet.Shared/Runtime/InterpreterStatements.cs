@@ -88,6 +88,8 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
                     existing = (Constant)Services.State.Symbols.GlobalScope.Lookup(context.Start.Text)!;
                 else
                     existing = (Constant)Services.State.Symbols.LookupToScope(context.Start.Text)!;
+                
+                Services.State.PassNeeded |= !existing.Value.Equals(val);
                 existing.Value = val;
             }
         }

@@ -57,7 +57,12 @@ public abstract class FunctionObject : ValueBase
 
     protected override bool OnEqualTo(ValueBase other)
     {
-        return ReferenceEquals(this, other);
+        if (other is FunctionObject fo)
+        {
+        
+            return ReferenceEquals(this, fo);
+        }
+        return false;
     }
 
     protected override void OnSetAs(ValueBase other)

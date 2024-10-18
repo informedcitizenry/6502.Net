@@ -10,7 +10,7 @@ namespace Sixty502DotNet.Shared;
 /// <summary>
 /// The various architecture-related options for the assembly.
 /// </summary>
-public readonly struct ArchitectureOptions
+public sealed class ArchitectureOptions
 {
     /// <summary>
     /// Get the architecture cpuid.
@@ -33,7 +33,7 @@ public readonly struct ArchitectureOptions
     /// <summary>
     /// Get the flag indicating that long (24 bit) addressing should be enabled.
     /// </summary>
-    public bool LongAddressing { get; init; }
+    public bool LongAddressing { get; set; }
 }
 
 /// <summary>

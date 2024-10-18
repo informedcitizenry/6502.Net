@@ -303,11 +303,14 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         int size = 1;
         if (context.expr().Length == 1)
         {
+            int immZpHex = opcode.immediate;
+            int immAbshex = opcode.immediateAbs;
             if ((s_accumulators.Contains(mnemonic) && _a16) || (s_indexes.Contains(mnemonic) && _x16))
             {
-                size = 2;
+                immZpHex = Bad;
+                immAbshex = opcode.immediate;
             }
-            bool emitted = EmitOpcode(opcode.immediate, context, context.bitwidthModifier(), context.imm, size);
+            bool emitted = EmitOpcodeVariant(immZpHex, immAbshex, Bad, context, context.bitwidthModifier(), context.imm);
             if (!emitted)
             {
                 return false;
@@ -472,6 +475,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         {
             case "45GS02":
                 _opcodes = s_45gs02Opcodes;
+                _disassembly.Add(s_45gs02Disassembly);
                 _disassembly.Add(s_65c02Disassembly);
                 _disassembly.Add(s_rc6502Diassembly);
                 _disassembly.Add(s_65ce02Disassembly);
@@ -534,6 +538,7 @@ public sealed partial class M65xxInstructionEncoder : CpuEncoderBase
         {
             _opcodes.Add(SyntaxParser.BRA, new M6xxOpcode(Bad, Bad, Bad, 0x50, Bad, Bad, Bad, Bad, Bad, Bad, Bad, Bad, Bad));
         }
+        Services.ArchitectureOptions.LongAddressing = cpuid.Equals("65816");
 
         _dp = -1;
     }

@@ -158,9 +158,23 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
         return Services.State.Symbols.Lookup(register.GetText()) is IValueResolver || Services.State.InFirstPass;
     }
 
-    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand)
+    protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand, bool signed8 = false)
     {
-        return EmitOpcode(opcodeHex, context, null, new SyntaxParser.ExprContext[] { operand }, 1);
+        if (!signed8)
+        {
+            return EmitOpcode(opcodeHex, context, null, new SyntaxParser.ExprContext[] { operand }, 1);
+        }
+        context.opcode = opcodeHex;
+        context.opcodeSize = opcodeHex.Size();
+        int operandVal = Services.Evaluator.SafeEvalAddress(operand);
+        if ((operandVal < sbyte.MinValue || operandVal > sbyte.MaxValue) &&
+            !Services.State.PassNeeded && Services.State.CurrentPass > 4)
+        {   
+            throw new Error(operand, "Operand must be a signed eight-bit value");
+        }
+        context.operand = operandVal & 0xff;
+        context.operandSize = 1;
+        return true;
     }
 
     protected bool EmitOpcode(int opcodeHex, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext operand, int operandSize)
@@ -206,11 +220,12 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
             operandValue <<= size * 8;
             if (i > 0 || context is not SyntaxParser.CpuInstructionImmmediateContext)
             {
-                operandValue |= (long)Services.Evaluator.SafeEvalAddress(operands[i]);
-                if (operandValue.Size() > 2 && !Services.State.PassNeeded)
+                long component = Services.Evaluator.SafeEvalAddress(operands[i]);
+                if (component.Size() > 2 && !Services.State.PassNeeded)
                 {
                     return false;
                 }
+                operandValue |= component;
             }
             else
             {
@@ -302,6 +317,16 @@ public abstract class CpuEncoderBase : SyntaxParserBaseVisitor<bool>
 
     protected bool EmitRelative(M6xxOpcode opcode, SyntaxParser.CpuInstructionContext context, SyntaxParser.ExprContext expr)
     {
+        if (opcode.relative != Bad && opcode.relativeAbs != Bad)
+        {
+            int from = Cpuid.Equals("65816") ? 3 : 2;
+            int operand = Services.Evaluator.SafeEvalAddress(expr);
+            int offs = operand - (Services.State.Output.LogicalPC + from);
+            if (offs < -128 || offs > 127)
+            {
+                return EmitRelative(opcode.relativeAbs, context, expr, 2);
+            }
+        }
         int opcodeHex = opcode.relative != Bad ? opcode.relative : opcode.relativeAbs;
         return EmitRelative(opcodeHex, context, expr, opcodeHex == opcode.relative ? 1 : 2);
     }

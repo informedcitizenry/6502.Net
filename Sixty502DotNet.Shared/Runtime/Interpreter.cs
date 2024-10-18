@@ -369,7 +369,7 @@ public sealed partial class Interpreter : SyntaxParserBaseVisitor<int>
         _encoder = architecture.Encoder;
         Services.State.Output.IsLittleEndian = architecture.IsLittleEndian;
         Services.State.Output.AllowLongOutput = _options.ArchitectureOptions.LongAddressing;
-
+        
         ParseOptions parseOptions = new()
         {
             CaseSensitive = _options.GeneralOptions.CaseSensitive,

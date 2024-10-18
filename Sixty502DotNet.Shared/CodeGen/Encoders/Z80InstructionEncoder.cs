@@ -126,7 +126,16 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             }
             else
             {
-                int rst = Evaluator.EvalIntegerLiteral(primary.primaryExpr(), 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38);
+                int rst;
+                if (Cpuid[0] == 'i')
+                {
+                    rst = Evaluator.EvalIntegerLiteral(primary.primaryExpr(), "3-bit constant expected", 0, 8);
+                    rst *= 8;
+                }
+                else
+                {
+                    rst = Evaluator.EvalIntegerLiteral(primary.primaryExpr(), 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38);
+                }
                 opcode = 0xc7 + rst;
             }
             instructionContext.opcode = opcode;
@@ -322,17 +331,31 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
         int regType = context.register().Start.Type;
         int operandSize = 2;
         uint exprMode = Z80Modes.N161;
-        if ((s_R8s.Contains(regType) && !s_Z80ConditionalJumps.Contains(context.Start.Type)) ||
-            (Cpuid[0] == 'g' && context.Start.Type == SyntaxParser.ADD && regType == SyntaxParser.SP))
+        bool signed8 = Cpuid[0] == 'g' && context.Start.Type == SyntaxParser.ADD && regType == SyntaxParser.SP;
+        bool is16BitLxi = context.Start.Type == SyntaxParser.LXI && regType.IsOneOf(SyntaxParser.B, SyntaxParser.D, SyntaxParser.H);
+        if ((s_R8s.Contains(regType) && !is16BitLxi && !s_Z80ConditionalJumps.Contains(context.Start.Type)) || signed8)
         {
             operandSize = 1;
             exprMode = Z80Modes.N81;
         }
         uint regMode = GetRegisterMode(context.register(), false);
+        if (is16BitLxi)
+        {
+            regMode = regMode switch
+            {
+                Z80Modes.B0 => Z80Modes.BC0,
+                Z80Modes.D0 => Z80Modes.DE0,
+                _           => Z80Modes.HL0
+            };
+        }
         int code = GetOpcode(context.Start.Type, exprMode | regMode);
         if (context.Start.Type.IsOneOf(SyntaxParser.DJNZ, SyntaxParser.JR))
         {
             return EmitRelative(code, context, context.expr(), 1);
+        }
+        if (signed8)
+        {
+            return EmitOpcode(code, context, context.expr(), true);
         }
         return EmitOpcode(code, context, context.expr(), operandSize);
     }
@@ -475,7 +498,7 @@ public sealed partial class Z80InstructionEncoder : CpuEncoderBase
             }
             context.opcode = displ;
             context.opcodeSize = opcode.Size() + 1;
-            if (opcode == 0xcbdd)
+            if (opcode == 0xcbdd || opcode == 0xcbfd)
             {
                 context.opcodeSize++;
             }

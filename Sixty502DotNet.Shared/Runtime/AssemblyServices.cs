@@ -21,6 +21,7 @@ public sealed class AssemblyServices
         State = new(new SymbolManager(false));
         Evaluator = new(this);
         Encoding = new(false);
+        ArchitectureOptions = new ArchitectureOptions();
     }
 
     /// <summary>
