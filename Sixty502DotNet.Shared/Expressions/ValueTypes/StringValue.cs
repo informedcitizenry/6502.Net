@@ -50,7 +50,7 @@ public sealed class StringValue : ValueBase, IEnumerable<CharValue>
     /// <param name="encodingName">The encoding name of the encoding.</param>
     public StringValue(string str, Encoding encoding, string? encodingName)
     {
-        _value = str.Trim('"');
+        _value = str.TrimOnce('"');
         _charValueEnumerator = new CharValueEnumerator(_value, encoding, encodingName);
         _isMultiline = _value.Contains('\n') || _value.Contains('\r');
         TextEncoding = encoding;
