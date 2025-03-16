@@ -65,6 +65,14 @@ public sealed class Evaluator : SyntaxParserBaseVisitor<ValueBase>
             throw new Error(expr.Start, "Constant assignment is invalid");
         }
         ValueBase val = Visit(expr);
+        if (!val.IsDefined && Services?.State.InFirstPass == false)
+        {
+            if (Services.State.CurrentPass > 3)
+            {
+                throw new Error(expr, "Cannot resolve expression after multiple passes");
+            }
+            Services.State.PassNeeded = true;
+        }
         val.Expression = expr;
         return val;
     }
