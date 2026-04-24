@@ -387,16 +387,8 @@ public class Method : IFunction
 public sealed class SizeMethod(TextEncodingCollection encodings)
  : Method(0, (_, _) => null)
 {
-    public override Value Invoke(IList<Value> arguments, CallExpression callSite)
-    {
-        if (arguments[0].AsAsmString() is {} asmString)
-        {
-            return new Value(encodings.GetEncodedBytes(asmString).Length);
-        }
-        return arguments[0].IsNumber()
-            ? new Value(arguments[0].AsInt(encodings).Size())
-            : new Value(arguments[0].Length);
-    }
+    public override Value Invoke(IList<Value> arguments, CallExpression callSite) 
+        => new(arguments[0].Size(encodings));
 }
 
 public sealed class SortMethod(AssemblyState state)

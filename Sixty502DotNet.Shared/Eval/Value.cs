@@ -464,6 +464,19 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
         return true;
     }
 
+    public int Size(TextEncodingCollection encoding)
+    {
+        if (_stringValue != null)
+        {
+            return encoding.GetEncodedBytes(_stringValue).Length;
+        }
+        if (_arrayValues == null)
+        {
+            return IsNumber() ? AsInt(encoding).Size() : Length;
+        }
+        return _arrayValues.Sum(t => t.Size(encoding));
+    }
+
     public int Length
     {
         get
