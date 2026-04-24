@@ -64,23 +64,17 @@ Casts a signed number between -128 and 127 into its unsigned form.
 
 ### **`cbmflt(`** *`address`* **`)`**
 
-Converts (or attempts to convert) binary output in unpacked CBM/MBF floating point format into a double floating point number, starting from the address parameter.
+Converts (or attempts to convert) binary output in CBM/MBF floating point format into a double floating point number, starting from the address parameter.
 
 ```
-    // assume in the assembled output, $d000-$d005 contains 82 00 49 0f da a2
+    // assume in the assembled output, $d000-$d005 contains 82 49 0f da a2
     cbmflt($d000) // 3.1415926534682512
     
 ```
 
 ### **`cbmfltp(`** *`address`* **`)`**
 
-Converts (or attempts to convert) binary output in packed CBM/MBF floating point format into a double floating point number, starting from the address parameter.
-
-```
-    // assume $d000-$d004 contains 82 49 0f da a2
-    cbmflt($d000) // 3.1415926534682512
-    
-```
+Deprecated. Use `cbmflt`.
 
 ### **`cbrt(`** *`value`* **`)`**
 
