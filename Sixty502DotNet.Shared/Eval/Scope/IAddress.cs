@@ -23,6 +23,4 @@ namespace Sixty502DotNet.Shared.Eval.Scope;
 public interface IAddress
 {
     int Address { get; }
-
-    bool UpdateAddress(int address);
 }

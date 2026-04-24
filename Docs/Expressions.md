@@ -529,8 +529,9 @@ A function is declared in one of two ways. The first way is to use the `.functio
 
 ```
 timestwo .function num
+{
         .return num * 2
-        .endfunction
+}
 ```
 
 A function that is declared this way must have a unique identifier. The function body itself only accepts full statements.
@@ -539,9 +540,9 @@ Parameters can be assigned optional default values.
 
 ```
 calculate_basic \
-    .function sob=2049, eob=0xa000
+    .function sob=2049, eob=0xa000 {
         .return eob-sob
-    .endfunction
+    }
 basic_size = calculate_basic() // 38911
 custom_size = calculate_basic(0x900) // 38656
 
@@ -550,9 +551,10 @@ custom_size = calculate_basic(0x900) // 38656
 A function can call itself recursively.
 
 ```
-factorial   .function n
+factorial   .function n 
+{
             .return n < 2 ? 1 : n * factorial(n - 1) 
-            .endfunction
+}
 ```
 
 Another way to define a function is as a function expression with arrow `=>` notation, a more compact and "modern" approach. The function can be an expression body or statement block.

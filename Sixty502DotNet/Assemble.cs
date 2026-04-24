@@ -35,7 +35,7 @@ public static class Assemble
         string configSchema;
         try
         {
-            configSchema = File.ReadAllText("JSON/ConfigSchema.json");
+            configSchema = File.ReadAllText("Json/ConfigSchema.json");
         }
         catch
         {

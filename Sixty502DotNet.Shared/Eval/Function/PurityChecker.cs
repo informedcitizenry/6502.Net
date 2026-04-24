@@ -26,14 +26,9 @@ namespace Sixty502DotNet.Shared.Eval.Function;
 
 public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool>
 {
-    public bool VisitConstantAssignStatement(ConstantAssignStatement statement)
-    {
-        if (statement.ConstSymbol.LeftToken.Text.ToString().Equals("*"))
-        {
-            return false;
-        }
-        return VariableExistsInOuterScope(statement.ConstSymbol);
-    }
+    public bool VisitConstantAssignStatement(ConstantAssignStatement statement) 
+        => !statement.ConstSymbol.LeftToken.Text.ToString().Equals("*") && 
+           VariableExistsInOuterScope(statement.ConstSymbol);
 
     public bool VisitVarAssignmentStatement(VarAssignmentStatement statement)
     {
@@ -99,12 +94,12 @@ public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool
 
     public bool VisitIfStatement(IfStatement statement)
     {
-        if (CheckBlock(statement.IfBlock.Block) ||
+        if (CheckBlock(statement.IfBlock.Block) &&
             CheckBlock(statement.ElseBlock))
         {
-            return true;
+            return statement.ElseIfBlocks.All(t => CheckBlock(t.Block));
         }
-        return statement.ElseIfBlocks.Any(t => CheckBlock(t.Block));
+        return false;
     }
 
     public bool VisitForStatement(ForStatement statement)
@@ -114,7 +109,7 @@ public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool
         => CheckBlock(statement.Block);
 
     public bool VisitSwitchStatement(SwitchStatement statement) 
-        => statement.Cases.Any(t => CheckBlock(t.Block));
+        => statement.Cases.All(t => CheckBlock(t.Block));
 
     public bool VisitExpressionBlockStatement(ExpressionBlockStatement statement)
         => CheckBlock(statement.Block);

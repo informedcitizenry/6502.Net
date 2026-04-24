@@ -45,10 +45,10 @@ public sealed class MathFunction(Func<double[], double> function, int arity) : I
 
     public int Arity { get; } = arity;
 
-    public int DefaultValues { get; } = 0;
-    
-    public bool IsVariant { get; } = false;
-    
+    public int DefaultValues => 0;
+
+    public bool IsVariant => false;
+
     private static readonly Random s_rng = new();
 
     public static MathFunction Abs => new(d => Math.Abs(d[0]), 1);
