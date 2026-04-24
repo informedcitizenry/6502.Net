@@ -9,7 +9,7 @@ As code is generated, the assembler internally keeps track of the program counte
     lda score
 ```
 
-The `.org` directive serves the same purpose.
+The `.org` directive serves the same purpose (though this feature is being deprecated).
 
 ```
         .org $c100
@@ -19,6 +19,17 @@ The `.org` directive serves the same purpose.
 All [label](/Docs/SymbolsAndScopes.md#Labels) addresses are calculated relative to the program counter value, and so each label following that update will be an offset of that.
 
 When the program counter is manually set after code has generated, the gap will be automatically filled.
+
+## Program/Section Origin ($$) Symbol
+
+The `$$` symbol directly references the start address of the program or current section if defined (see below).
+
+```
+        * = $c000
+        ldx #0
+        jsr init
+        jmp $$  ; this is $c000
+```
 
 ## Banks
 
@@ -145,15 +156,16 @@ Note that the directive `.pseudopc` is an alias of `.relocate` and `.realpc` is 
 
 ## Guarding Against Page Boundary Crossings
 
-There is a potential performance penalty when code cross page values (multiples of 256). To ensure certain blocks of code stay within the same page, use the `.page` and `.endpage` directives.
+There is a potential performance penalty when code cross page values (multiples of 256). To ensure certain blocks of code stay within the same page, use the `.page` directive.
 
 ```
         .page
--       ldx #0
-        nop
-        nop
-        jmp - 
-        .endpage
+        {
+-               ldx #0
+                nop
+                nop
+                jmp - 
+        }
 ```
 
 In the code above, if in fact the jmp instruction (including its operands) occurred across a page boundary, the assembler would report an error.
@@ -185,7 +197,7 @@ Output can be transformed for each byte with `.eor` directive.
         */
 ```
 
-This can be a nice quick code obfuscation trick. 
+This can be a nice quick code obfuscation trick.
 
 ## Other Topics
 
@@ -202,4 +214,3 @@ This can be a nice quick code obfuscation trick.
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

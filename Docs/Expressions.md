@@ -26,6 +26,15 @@ Use underscores to separate digits to aid in reading (e.g, `0xffff_ffff`). In ad
 
 Be aware that decimal numbers with leading zeros are considered octal (and so any 8 and 9 digits that followed would be illegal).
 
+
+#### Large Integer Literals
+
+Integer literals larger than 128-bits are converted to double floating point, resulting in a possible loss of precision. This means that operations on such values might not yield the expected results.
+
+```
+        .byte <$12d22342342342333eeefffffee332347209 // not guaranteed to be 09
+```
+
 Binary numbers can be alternatively represented as a series of dots (`.`) and octothorpes (`#`), which is useful when bit patterns represent other types of data, like pixels:
 
 ```
@@ -50,7 +59,6 @@ SUPPORTS_HIGH_SCORES = true
 | Method name | Purpose                                             | Example                   |
 |-------------|-----------------------------------------------------|---------------------------|
 | `toCbmFlt`  | Get the number value as a CBM-encoded byte array    | `3.141592653.toCbmFlt()`  |
-| `toCbmFltp` | Get the number value as a packed CBM-encoded array  | `3.141592653.toCbmFltp()` |
 | `size`      | Get the size (in bytes) of the number value         | `65490.size() // 2`       |
 | `toString`  | Get the value as a string                           | `true.toString()`         |
 
@@ -64,8 +72,6 @@ While all the above methods can be called on number values, only the `toString` 
 | `~`       | Bitwise NOT (integers)        | `~$ff` (`-256`)       |
 | `+`       | Positive number               | `+42`                 |
 | `-`       | Negation                      | `-42`                 |
-| `++`      | Pre/postfix increment         | `++numvar`/`numvar++` |
-| `--`      | Pre/postfix decrement         | `--numvar`/`numvar--` |
 | `<`       | Least significant byte	    | `<$ffd2` (`$d2`)      |
 | `>`       | Most significant byte	        | `>$ffd2` (`$ff`)      |
 | `&`       | Least significant word	    | `&$10ffff` (`$ffff`)  |
@@ -106,13 +112,6 @@ This would raise a syntax error because the `*` is interpreted as the multiply o
         sta * % 10 // even better
 ```
 
-Similar care is needed for using anonymous labels in compound expressions, which can erroneously be interpreted as operators:
-
-```
-        lda -+3 // this is negative 3
-        lda (-)+3 // this is anonymous label plus 3
-```
-
 #### Boolean Unary Operations
 
 | Operator  | Type                          | Example               |
@@ -123,7 +122,7 @@ Similar care is needed for using anonymous labels in compound expressions, which
 
 | Operator                  | Type          | Example                               |
 |---------------------------|---------------|---------------------------------------|
-| `<`,`<=`,`>`,`>=`        | Relational    | `5 < 8`, `9 >= 3`                     |
+| `<`,`<=`,`>`,`>=`         | Relational    | `5 < 8`, `9 >= 3`                     |
 | `==`,`!=`,`===`,`!==`     | Equality      | `9 == 3`, `arr1 === arr2` (`false`)   |
 | `&&`                      | Logical AND   | `true && false`                       |
 | `\|\|`                    | Logical OR    | `false \|\| true`                     |
@@ -134,11 +133,13 @@ The `===` and `!==` operators perform identity comparisons. The left hand of the
 val1 = 3
 val2 = val1
 val1 == val2 // true
-val2 === val1 // false
+val2 === val1 // true
 arr1 = [1,2]
 arr2 = arr1
+arr3 = [1,2]
 arr1 == arr2 // true
 arr1 === arr2 // also true
+arr1 === arr3 // false
 ```
 
 #### Boolean Ternary Operations
@@ -178,7 +179,7 @@ Character and string encodings deal with binary representation of characters and
 
 ```
     * = $0400
-    .encoding "cmbscreen"
+    .encoding "cbmscreen"
     .string "HELLO, WORLD!" // > 08 05 0c 0c 0f 2c 20 17  
                             // > 0f 12 0c 04 21
 ```
@@ -189,7 +190,7 @@ Custom encodings are created simply by selecting them:
     .encoding "myencoding"
 ```
 
-Newly created encodings will generate UTF-8 output. Use the `.map` directive to map specific glyphs or codepoints to custom encoding values, 
+Newly created encodings will generate UTF-8 output. Use the `.map` directive to map specific glyphs or codepoints to custom encoding values,
 
 ```
     .map "A", 0 // Uppercase 'A' now outputs zeros
@@ -227,7 +228,7 @@ The `.unamp` directive will delete the custom encoding for the codepoint or rang
     .unmap "A","Z" // or this way
 ```
 
-The assembler can be directed to encode string literals explicitly regardless of the active encoding, according to their prefix:
+Encode string literals explicitly regardless of the active encoding, according to their prefix:
 
 | Prefix | Encoding                 | Example                            |
 |--------|--------------------------|------------------------------------|
@@ -251,7 +252,6 @@ For characters and single-line strings, all of the .Net escape sequences are sup
 | `\'`          | Single quote                      |
 | `\"`          | Double quote                      |
 | `\\`          | Backslash                         |
-| `\?`          | Query                             |
 | `\a`          | Bell                              |
 | `\b`          | Backspace                         |
 | `\f`          | Form feed                         |
@@ -260,10 +260,9 @@ For characters and single-line strings, all of the .Net escape sequences are sup
 | `\t`          | Horizontal tab                    |
 | `\v`          | Vertical tab                      |
 | `\0`          | Terminator                        |
-| `\ooo`        | ASCII character in octal notation |
 | `\uhhhh`      | UTF-16 code unit (U+nnnn)         |
 | `\Uhhhhhhhh`  | UTF-32 code unit (U+nnnnnn)       |
-| `\xhhh-hhhh`  | ASCII character in hex notation   |
+| `\xhh`        | ASCII character in hex notation   |
 
 #### Interpolated String Literals
 
@@ -338,7 +337,7 @@ Characters and strings can play a dual role. Generally they are converted to the
 
 ```
     -'I' // -73
-    'H'+3 // 75
+    3+'H' // 75
     4*"A" // 260
 ```
 If the left hand side is a string, then the only operation available is concatenate `+`, and the right hand expression is converted to a string if necessary.
@@ -422,19 +421,18 @@ A tuple is declared likewise:
 
 #### Tuple Methods
 
-| Method name | Purpose                                                      | Example                                                              |
-|-------------|--------------------------------------------------------------|----------------------------------------------------------------------|
-| `contains`  | Test if the tuple contains an element                        | `(1,2).contains(3) // false`                                         |
-| `len`       | Get the length of the array                                  | `[1,2,3].len() // 3`                                                 |
-| `size`      | Get the size (in bytes) of the tuple                         | `(23,400).size() // 3`                                               |
-| `skip`      | Get a subsequence skipping n elements                        | `(1,2,3,4).skip(2) // (3,4)`                                         |
-| `take`      | Get the first n elements of the array                        | `(1,2,3,4).take(2) // (1,2)`                                         |
-| `toArray`   | Convert the tuple to an array (if possible)                  | `(1,2).toArray() // [1,2]`                                           |
-| `toString`  | Get a string representation of the tuple                     | `(1,2).toString() // "(1,2)"`                                        |
+| Method name | Purpose                                     | Example                               |
+|-------------|---------------------------------------------|---------------------------------------|
+| `concat`    | Concatenate two tuples                      | `(1,2).concat((3,4)) // (1,2,3,4)`    |
+| `len`       | Get the length of the array                 | `(1,2,3).len() // 3`                  |
+| `size`      | Get the size (in bytes) of the tuple        | `(23,400).size() // 3`                |
+| `skip`      | Get a subsequence skipping n elements       | `(1,2,3,4).skip(2) // (3,4)`          |
+| `take`      | Get the first n elements of the array       | `(1,2,3,4).take(2) // (1,2)`          |
+| `toString`  | Get a string representation of the tuple    | `(1,2).toString() // "(1,2)"`         |
 
 #### Array and Tuple Operations
 
-Element access and collection slicing for arrays and tuples takes the same forms as that of strings. Individual elements are referenced by index, subsequences by range. 
+Element access and collection slicing for arrays and tuples takes the same forms as that of strings. Individual elements are referenced by index, subsequences by range.
 
 ```
 myarray = [1, 2, 3, 4, 5]
@@ -457,7 +455,7 @@ In the examples above, each parameter of the range is optional. The end position
 |-------------------|-------------------------------|-----------------------------------------------|
 | `+`               | Concatenate                   | `[1,2] + [3,4] // [1,2,3,4]`                  |
 
-#### Tuple Operations 
+#### Tuple Operations
 
 Tuple assignments can look like other assignment expressions, where a single constant or variable is assigned to the tuple object itself.
 
@@ -495,13 +493,13 @@ city_populations = {
 }
 
     // internally keys are strings so are accessed accordingly
-    .echo city_populations["london"] // 9000000
+    .dword city_populations["london"] // 9000000
 ```
 
 Likewise, such a key's value can be accessed through dot notation:
 
 ```
-    .echo city_populations.new_york // 20000000
+    .dword city_populations.new_york // 20000000
 ```
 
 #### Dictionary Methods
@@ -512,7 +510,7 @@ Likewise, such a key's value can be accessed through dot notation:
 | `containsKey` | Test if the dictionary contains a given key       | `{"k1":1}.containsKey("k2") // false`         |
 | `keys`        | Get the dictionary keys as an array               | `{"k1":1,"k2":2}.keys() // ["k1","k2"]`       |
 | `len`         | Get the length of the dictionary                  | `{"k1":1,"k2":2}.len() // 2`                  |
-| `size`        | Get the size (in bytes) of the dictionary values  | `{"k1":u8"HELLO"}.size() // 5`                |
+| `size`        | Get the size (in bytes) of the dictionary values  | `{"k1":u8"HELLO"}.size() // 1`                |
 | `toString`    | Get a string representation of the dictionary     | `{"k1":1}.toString() // "{"k1":1}"`           |
 
 #### Dictionary Operations
@@ -525,9 +523,9 @@ Likewise, such a key's value can be accessed through dot notation:
 
 Functions are objects that encapsulate code or some functionality. They might accept parameters and return a value. Neither is required in the definition, but if the function is called as part of an expression then it must return a value.
 
-Functions share some similarities with [macros](/Docs/Macros.md), particularly in that they can have arguments, including default arguments. Unlike macros, function bodies cannot contain any assembly code or pseudo-ops.
+Functions share some similarities with [macros](/Docs/Macros.md). They can have arguments, including default arguments. Unlike macros, function bodies cannot contain any assembly code or pseudo-ops.
 
-A function can be declared in one of two ways. The first way is to use the `.function` directive.
+A function is declared in one of two ways. The first way is to use the `.function` directive.
 
 ```
 timestwo .function num
@@ -535,7 +533,7 @@ timestwo .function num
         .endfunction
 ```
 
-A function that is declared this way must have a unique identifier and can only be declared in the global scope. The function body itself only accepts full statements. 
+A function that is declared this way must have a unique identifier. The function body itself only accepts full statements.
 
 Parameters can be assigned optional default values.
 
@@ -557,7 +555,7 @@ factorial   .function n
             .endfunction
 ```
 
-Another way to define a function is with arrow `=>` notation, a more compact and "modern" approach. The function can be an expression body or statement block.
+Another way to define a function is as a function expression with arrow `=>` notation, a more compact and "modern" approach. The function can be an expression body or statement block.
 
 ```
 timestwo = (n) => n * 2 // single expression
@@ -579,10 +577,10 @@ Functions can be passed as parameters to other functions and methods, and can be
 timestwo = (n) => n * 2
 t2 = timestwo
 
-    .echo t2(4) // prints "8"
+    .byte t2(4) // > 8
 ```
 
-In the above example the constant `t2` is treated as a reference to the original function `timestwo`. 
+In the above example the constant `t2` is treated as a reference to the original function `timestwo`.
 
 Use `.invoke` to call a function or method as a standalone statement. The return value (if any) is discarded.
 
@@ -613,4 +611,3 @@ The `toString` method only reports runtime information about the function's type
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

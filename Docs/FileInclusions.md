@@ -49,4 +49,3 @@ The first argument is the file path. The second and third optional expressions a
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

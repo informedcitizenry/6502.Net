@@ -21,23 +21,28 @@ Alternatively you can specify with the `.format` directive.
 
 Many formats are specific to the CPU family of the source, though some are available to all CPU types. The full list of valid formats are:
 
-| Format        | CPU Family    | Description                                               |
-|---------------|---------------|-----------------------------------------------------------|
-| amsdos	    | i8080/z80	    | Amstrad CPC DOS (disk)                                    |
-| amstap        | i8080/z80     | Amstrad CPC DOS (tape)                                    |
-| apple2        | 65xx          | Apple ][ binary with Apple DOS header                     |
-| atari-xex     | 65xx          | Atari 8-bit binary with XEX header                        |
-| bytesource	| All	        | Refactor source as .byte statements                       |
-| cart          | 65xx          | Vice/CCS64-compatible cartridge image                     |
-| cbm           | 65xx          | Commodore DOS binary with load address header (default)   |
-| d64           | 65xx          | Commodore emulator D64 disk image format                  |
-| flat          | All           | Flat binary with no header                                |
-| hex           | All           | Hex dump of the binary output as plain text               |
-| msx	        | i8080/z80	    | MSX                                                       |
-| srec          | All           | Motorola S-record                                         |
-| srecmos	    | All           | MOS Technology formatted file (S-record variant)          |
-| t64	        | 65xx          | Commodore emulator T64 tape image format                  |
-| zx            | i8080/z80     | ZX Spectrum                                               |
+| Format      | CPU Family | Description                                             |
+|-------------|------------|---------------------------------------------------------|
+| amsdos      | i8080/z8.  | Amstrad CPC DOS (disk)                                  |
+| amstap      | i8080/z80  | Amstrad CPC DOS (tape)                                  |
+| apple2      | 65xx       | Apple ][ binary with Apple DOS header                   |
+| atari-xex   | 65xx       | Atari 8-bit binary with XEX header                      |
+| bytesource. | All	   | Refactor source as .byte statements                     |
+| cart        | 65xx       | Vice/CCS64-compatible cartridge image                   |
+| cbm         | 65xx       | Commodore DOS binary with load address header (default) |
+| com         | x86        | Basic 86-DOS COM file                                   |
+| cpm         | x86        | CP/M-86 executable (CMD) file                           |
+| d64         | 65xx       | Commodore emulator D64 disk image format                |
+| exe	      | x86/z80	   | PC DOS executable (EXE) file                            |
+| flat        | All        | Flat binary with no header                              |
+| hex         | All        | Hex dump of the binary output as plain text             |
+| hex86       | All        | Intel HEX-86 dump of the binary output as plain text    |
+| msx	      | i8080/z80. | MSX                                                     |
+| mz	      | x86/z80	   | PC DOS executable (EXE) file                            |
+| srec        | All        | Motorola S-record                                       |
+| srecmos     | All        | MOS Technology formatted file (S-record variant)        |
+| t64	      | 65xx       | Commodore emulator T64 tape image format                |
+| zx          | i8080/z80  | ZX Spectrum                                             |
 
 ## Section Output and Patching
 
@@ -55,7 +60,7 @@ Existing object files can be patched if a bugfix is required to be applied. The 
 
 ## Program Listings
 
-6502.Net can generate program listings. The `-l`/`--list` option specifies an output file.
+6502.Net can generate program listings. The `-L`/`--list` option specifies an output file.
 
 ```
 6502.Net.exe myprog.s -o myprog.prg --list=myprog_list.s
@@ -92,7 +97,7 @@ To control individual statements or blocks of statements from appearing in progr
 
 ## Symbol Listings
 
-In addition to program listing, it is possible to generate a list of all defined symbols with the `-L`/`--label` option.
+In addition to program listing, it is possible to generate a list of all defined symbols with the `-l`/`--labels` option.
 
 ```
 // contents of "myprog.s":
@@ -101,11 +106,11 @@ chrout  = $ffd2
 start   lda $0380
 
 
-// dotnet 6502.Net.dll myprog.s -o myprog.prg --label=myprog_labels.s
+// dotnet 6502.Net.dll myprog.s -o myprog.prg --labels=myprog_labels.s
 
 // contents of "myprog_labels.s":
-chrout                                            = $ffd2 (65490)
-start                                             = 033c (828)
+chrout                                                  = $65490
+start                                                   = $828
 ```
 
 By default all constants and labels will list. If you desire only to include labels, use the `--labels-addresses-only` option.
@@ -131,4 +136,3 @@ al 33c .start
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

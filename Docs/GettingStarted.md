@@ -2,20 +2,19 @@
 
 ## Overview
 
-The 6502.Net Assembler is a cross-assembler for several CPUs from the 8-bit era of computing including the Motorola 6800 and 6809, the MOS 6502 and its variants, the Intel 8080, and the Zilog Z80.
+The 6502.Net Assembler is a cross-assembler for several CPUs from the 8-bit era of computing including the Motorola 6800 and 6809, the MOS 6502 and its variants, the Intel 8080 and 8086, and the Zilog Z80.
 
-6502.Net is a multi-pass assembler that supports user comments, symbolic and macro assembly, as well as advanced features like conditional and iterative assembly. Its dialect and style generally follows that of the [TASS/TMP assemblers](http://turbo.style64.org/), and to a lesser extent [ca65](https://cc65.github.io/doc/ca65.html).
+6502.Net is a multi-pass assembler that supports user comments, symbolic and macro assembly, as well as advanced features like conditional and iterative assembly. For 65xx-based CPUs, the dialect and style generally follows that of the [TASS/TMP assemblers](http://turbo.style64.org/), and to a lesser extent [ca65](https://cc65.github.io/doc/ca65.html), while for Intel 8086/8088, it is broadly compatible with official Intel documentation from that era.
 
 This document does assume basic knowledge of assembly language, though the examples and explanations incorporating assembly code throughout should be easy to follow along even for the less familiar.
 
 ## Usage
 
-The executable requires at least one input file as an argument.
+The executable requires at least one argument, either input file or a command. Passing an input file marks it as source to compile:
 
 ```
 dotnet 6502.net.dll mygame.asm
 ```
-
 Several inputs can be specified at a time, processed in the order they are listed. The output filename can be set with the `-o`/`--output` option.
 
 ```
@@ -23,6 +22,12 @@ Several inputs can be specified at a time, processed in the order they are liste
 ```
 
 If not set, the output filename defaults to `a.out`.
+
+The `build` command assumes that a build file called `build.json` is present in the current directory unless a subsequent input file is passed as an argument.
+
+```
+6502.Net.exe build
+```
 
 ## General Syntax
 
@@ -32,7 +37,7 @@ A typical assembly statement takes the form of:
 label        instruction        operands
 ```
 
-This format should feel familiar to anyone who has developed using other assemblers. Labels are optional in statements. Though a common requirement in other assemblers, a label does not to be followed by a colon `:`, though this is allowed. 
+This format should feel familiar to anyone who has developed using other assemblers. Labels are optional in statements and end with a colon `:`, though this is not required.
 
 ## Hello, World
 
@@ -65,7 +70,7 @@ Statements are typically terminated by newline characters, but can also be separ
     lda #$41:jsr $ffd2:rts
 ```
 
-There are five conditions under which a newline character does not terminate a statement.
+There are six contexts under which a newline character does not terminate a statement.
 
 ```
 // When preceded by a backslash:
@@ -96,6 +101,10 @@ There are five conditions under which a newline character does not terminate a s
     PRESS <RETURN>
     TO BEGIN
  """
+ 
+// After a colon:
+    mov ax, WORD PTR cs:
+        [bx+10]
 ```
 
 ## Comments
@@ -156,5 +165,4 @@ loop   jsr $ffd2
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)
 

@@ -4,7 +4,7 @@
 
 # Pseudo Operation Arguments
 
-The `.align` and `.fill` pseudo-ops take one or two numeric expressions as arguments. All other pseudo-ops take one or more arguments, with each argument either an expression or a wildcard (`?`) to indicate uninitialized data whose size is determined by the pseudo-op. The expression argument can take a number, string or list (array or tuple). 
+The `.align` and `.fill` pseudo-ops take one or two numeric expressions as arguments. All other pseudo-ops take one or more arguments, with each argument either an expression or a wildcard (`?`) to indicate uninitialized data whose size is determined by the pseudo-op. The expression argument can take a number, string or list (array or tuple).
 
 ```
         .byte 1,2,3,4,5,6,7
@@ -79,21 +79,17 @@ Generate one or more values between 0 and 255 into the output. Wildcard `?`s rep
 
 **`.cbmflt`**
 
-Generate the "unpacked" CBM/MBF encoded representation of one or more floating point numbers. This format is similar to the IEEE-754 floating point specification, and was adopted by several 8-bit home computers. Wildcard `?`s represent uninitialized data, 6 byte in size.
+Generate a CBM/MBF encoded representation of one or more floating point numbers. This format is similar to the IEEE-754 floating point specification, and was adopted by several 8-bit home computers. Wildcard `?`s represent uninitialized data, 5 byte in size.
 
 ```
     .cbmflt 3.141592653
-    // > 82 00 49 0f da a1
+    // > 82 49 0f da a1
 ```
 
 **`.cbmfltp`**
 
-Generate the "packed" CBM/MBF encoded representation of one or more floating point numbers. This format is similar to the IEEE-754 floating point specification, and was adopted by several 8-bit home computers. Wildcard `?`s represent uninitialized data, 5 byte in size.
+Generate the "packed" CBM/MBF encoded representation of one or more floating point numbers. NOTE: This pseudo-op is deprecated.
 
-```
-    .cbmfltp 3.141592653
-    // > 82 49 0f da a1
-```
 
 **`.char`**
 
@@ -121,9 +117,18 @@ Generate one or more values between -2147483648 and 2147483647 into the output, 
     .dint 18000000      // > 80 a8 12 01
 ```
 
+**`.double`**
+
+Generate a binary (IEEE-754 encoded) representation of one or more double floating point numbers. Wildcard `?`s represent uninitialized data, 8 byte in size.
+
+```
+    .double 3.141592653
+    // > 38 e9 2f 54 fb 21 09 40 
+```
+
 **`.dword`**
 
-Generate one or more values between 0 and 4294967295 into the output, with byte order according to CPU endianness. Wildcard `?`s represent uninitialized data, 4 bytes in size.
+Generate one or more values between 0 and 2^32-1 into the output, with byte order according to CPU endianness. Wildcard `?`s represent uninitialized data, 4 bytes in size.
 
 ```
     // 65xx 
@@ -251,6 +256,10 @@ Insert a Pascal-style string into the assembly. Multiple arguments can be passed
     .pstring "hello"              // > 05 68 65 6c 6c 6f
 ```
 
+**`.qword`**
+
+Generate one or more values between 0 and 2^64-1 into the output, with byte order according to CPU endianness. Wildcard `?`s represent uninitialized data, 8 bytes in size.
+
 **`.rta`**
 
 Generate one or more values according to CPU endianness. The accepted value range is normally 1 to 65536, but can be longer if the option to allow long addressing is set, or if the current bank matches that of the expression. Useful for so-called "return jump" tables for 6502-based CPUs. Wildcard `?`s represent uninitialized data, two bytes in size.
@@ -314,6 +323,10 @@ Output expressions into assembly in its stringified form. If the expression is a
     .stringify $ffd2           // > 36 35 34 39 30
 ```
 
+**`.tbyte`**
+
+Generate one or more values between 0 and 2^80-1 into the output, with byte order according to CPU endianness. Wildcard `?`s represent uninitialized data, 10 bytes in size.
+
 **`.word`**
 
 Generate one or more values between 0 and 65535 into the output, with byte order according to CPU endianness. Wildcard `?`s represent uninitialized data, two bytes in size.
@@ -333,4 +346,3 @@ Generate one or more values between 0 and 65535 into the output, with byte order
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

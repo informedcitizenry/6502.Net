@@ -12,13 +12,13 @@ A named label is a string of alphanumeric characters that must begin with an und
 mylabel lda #0
 ```
 
-Each named label must be unique. In many assembly languages it is customary for a label to be followed by a `:`. In 6502.Net, this is allowed but not necessary.
+Each named label must be unique. In many assembly languages it is customary for a label to be followed by a `:`. In 6502.Net, this is permitted but not necessary.
 
 ## Anonymous Labels
 
 Because label names must be unique, and since branching can be a common task in assembly, it often becomes necessary for the programmer to be creative in assigning label names. One solution for this problem is to use anonymous labels, or backward and forward references.
 
-Forward references are declared with a +, while backward reference labels are declared using a -. They are forward or backward from the current assembly line and are referenced in the operand with one or more + or - symbols:
+Forward references are declared with a `+`, while backward reference labels are declared using a `-`. They are forward or backward from the current assembly line and are referenced in the operand with one or more `+` or `-` symbols:
 
 ```
 printmessage
@@ -55,7 +55,7 @@ CHRIN .equ $ffcf
     jsr CHROUT
 ```
 
-Constants can be forward referenced, and can only be assigned once--as they are constant, their values cannot be changed.
+Constants can be forward referenced, and can only be assigned once.
 
 ### Variables
 
@@ -73,21 +73,11 @@ Alternatively, one or more variables can be defined or have their values changed
     .let myvar = 1, myvar2 = 2 // etc.
 ```
 
-Unlike constants and labels, variables cannot be referenced before they are defined, as they are not preserved between passes. In the example below, assuming num has not previously been defined, the following code would error:
+Unlike constants and labels, variables cannot be referenced before they are defined, as they are not preserved between passes. In the example below, assuming `num` has not previously been defined, the following code would error:
 
 ```
     lda #num
 num := 3
-```
-
-When a variable is first defined, its type cannot change, only its value.
-
-```
-myint := 3 // good
-
-myint := 5 // good
-
-myint := [7] // type mismatch error
 ```
 
 ## Discard Symbol
@@ -111,34 +101,15 @@ myvar = myvar + 1
 myvar += 1
 ```
 
-Compound assignment operators are available for all arithmetic operations.
+Compound assignment operators are available for all arithmetic, bitwise and logical operations.
 
-### Pre- and Postfix Operators
+### Pre- and Postfix Increment Operators
 
-The example above can further be simplified using an increment operator.
-
-```
-myvar++
-
-// -or-
-
-++myvar
-```
-
-If the increment precedes the variable, the operation is the same except the expression performs the increment operation first before returning the value of the increment operation.
-
-```
-myvar := 2
-othervar := myvar++ // othervar is 2, myvar is 3
-
-othervar := ++myvar // othervar is now 4, same as myvar
-```
+These operators are no longer available as of version 5.
 
 # Symbol Scopes
 
-All symbols have scope. Scopes group symbols together. The default scope is the global scope.
-
-Symbols in separate scopes can share a common name.
+All symbols have scope. Scopes group symbols together. The default scope is the global scope. Symbols in separate scopes can share a common name.
 
 ## Cheap Local Symbols
 
@@ -177,16 +148,19 @@ _local  = $fb
 
 ### Blocks
 
+**NOTE:** *As of Version 5, all code blocks are wrapped in `{` and `}` braces. To revert to previous behavior, you must pass the `--legacy-blocks` option in the command line.*
+
 Symbols can also be wrapped into scope blocks. Instead of using cheap locals, symbols can be wrapped inside `.block` or `.proc` directives.
 
 ```
-routine1   .block
+routine1   .block 
+{            
             beq done
             jsr $ffd2
             inx
             jmp routine1
 done        rts
-            .endblock
+}
 routine2    ldy flag
             beq done
             jmp dosomething
@@ -199,26 +173,26 @@ Anonymous reference labels are also scoped, so any such labels are only accessab
 
 ```
 myblock     .block
+{
             ldx #0
 -           lda table,x
             beq +       // legal because myblock is enclosed in the global scope
             jsr process
             jmp -       
-            .endblock
+}
 +           rts
 
             // if the only back reference occurs in myblock, this is not legal:
             jmp -
 ```
 
-`.proc` is functionally the same as `.block` except that any code inside a `.proc` block will only assemble if one or more of its symbols are referenced outside.
+`.proc` is functionally the same as `.block` except that any code inside a `.proc` block will only assemble if one or more of its symbols are referenced outside of its scope.
 
 ```
 unassemble  .proc
-
+{
             nop
-            .endproc
-
+}
             //... end of file
 ```
 
@@ -226,13 +200,13 @@ In the above the `nop` would not end up in the output because nothing references
 
 ```
 assemble    .proc
+{
             nop
-            .endproc
-
+}
             lda #<assemble
 ```
 
-Since `assemble` is referenced later the entire contents inside the `.proc`/`.endproc` block will assemble.
+Since `assemble` is referenced later the entire contents inside the `.proc` block will assemble.
 
 ### Namespace
 
@@ -240,13 +214,15 @@ An alternative way to create a named scope is to create a namespace with the `.n
 
 ```
         .namespace simple
+{
 begin   nop
-        .endnamespace
+}
         jmp simple.begin
 
         .namespace more.complex
+{
 begin   nop
-        .endnamespace
+}
         jsr more.complex.begin
 ```
 
@@ -254,13 +230,15 @@ Note that, unlock a `.block` or `.proc` symbol, a namespace symbol can be appear
 
 ```
 myblock .block
+{
         brk
-        .endblock
+}
         jsr myblock // works (myblock is a label)
 
         .namespace mynamespace
+{
         brk
-        .endnamespace
+}
         jsr mynamespace // will not work (it is a namespace)
 ```
 
@@ -270,8 +248,9 @@ Named scopes can be imported into the current scope for the purposes of resolvin
 
 ```
 scope   .block
+{
 label   nop
-        .endblock
+}
 
         .import scope
         jmp label // no need to write it as "jmp scope.label" because scope is imported
@@ -313,4 +292,3 @@ Symbols can share names with registers, but for certain addressing modes the pre
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

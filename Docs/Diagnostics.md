@@ -17,12 +17,12 @@ When an error or warning is reported to the standard output, typically the sourc
 ```
 -$ dotnet 6502.net.dll x86code.s
 
-x86code.s(1:12): error: Unexpected: 'eax'
-        mov eax,ebx
-            ^--
+x86code.s(1:12): error: Addressing mode or operation not supported for CPU.
+1 |     mov eax,ebx
+  |         ^^^^^^^
 ```
 
-Use `--no-highlighting` to disable this feature. 
+Use `--no-highlighting` to disable this feature.
 
 ### Warning Options
 
@@ -46,7 +46,7 @@ In a similar vein, the `.errorif` directive will raise an error but with the con
 This can be turned into warning using `.warnif`.
 
 ```
-        .warnif * >= $0100, "Caution: Zero Page Boundary Crossed!"
+        .warnif * >= $0100, "Zero Page Boundary Crossed!"
 ```
 
 Errors and warnings can be raised unconditionally.
@@ -58,16 +58,6 @@ Errors and warnings can be raised unconditionally.
 ```
         .warn "We need to refactor this!"
 ```
-
-## Echo Directive
-
-To print merely informational messages, use the `.echo` directive.
-
-```
-        .echo $"Program Counter is ${*}"
-```
-
-`.echo` will only print the message on first pass but if the message is desired to printed each pass set the option `--echo-each-pass` is set.
 
 ## Other Topics
 
@@ -84,4 +74,3 @@ To print merely informational messages, use the `.echo` directive.
 * [File Inclusions](/Docs/FileInclusions.md)
 * [Disassembler](/Docs/Disassembler.md)
 * [Command-line Options](/Docs/CommandLineOptions.md)
-* [Technical Info](/Docs/TechnicalInfo.md)

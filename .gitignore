@@ -261,4 +261,7 @@ paket-files/
 # Visual Studio Code
 .vscode/
 
+# ANTLR java files
+.antlr/
+
 cfg

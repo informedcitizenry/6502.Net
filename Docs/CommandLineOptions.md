@@ -1,6 +1,10 @@
-﻿# Command Line Options
+﻿# Command Line
 
-Most options have a simple form, a single - followed by a character, though several have longer, alternate forms, with two -- and a name.
+Several command line options can direct various aspects of the assembly process, including output format, label case-sensitivity, and diagnostic/logging features. In addition, there are available certain commands that change the mode of application behavior. These will be described more fully below. If there is no command given for the first argument the behavior is to assemble source code from the given arguments.
+
+## Options Generally
+
+Most options have a simple form, a single `-` followed by a character, though several have longer, alternate forms, with two `--` and a name.
 
 For options that expect an argument, the argument can either follow the option token or appear as an assignment.
 
@@ -23,29 +27,13 @@ Example listing:
 
 **`-d`**, **`--no-disassembly`**
 
-For the listing file, do not generate a disassembly.
+For the listing file, do not generate a program disassembly.
 
 Example listing:
 
 ```
 .c000     a9 00                            LDA #ZERO // reset .A
 ```
-
-**`--disassemble--`**
-
-Disassemble the input file, treating the input as binary machine code, and outputting the disassembly to the specified output file.
-
-**`--disassembly-start`**
-
-Specify the start address of the disassembly output if the `--format` option is not set. Otherwise disassembly assumes the binary is CBM, with the address in the header.
-
-**`--disassembly-offset`**
-
-Specify the offset in the input binary to begin disassembly.
-
-**`-E`**
-
-Preprocess source to output stream. **NOTE**: This feature is no longer available.
 
 **`-e`**, **`--error`**
 
@@ -74,7 +62,16 @@ Output listing file to the file specified by the argument.
 Example listing:
 
 ```
-.c000     a9 00          lda #$00          LDA #ZERO // reset .A
+.c000    a9 00                  lda #$00                        LDA #ZERO // reset .A
+```
+
+**`--line-numbers`**
+
+Include the line number in the listing.
+
+```
+3          .c000    a9 00                  lda #$00                        LDA #ZERO // reset .A
+4          .c002    ea                     nop                             NOP
 ```
 
 **`-o`**, **`--output`**
@@ -94,7 +91,7 @@ dotnet 6502.net.dll myprog.asm -o myprog.prg --output-section text
 Patch the existing output file at the offset specified. Mostly for bug fixes. The offset can be any valid constant expression that evaluates to an address.
 
 ```
-6502.net.exe myfix.asm -o mygame.prg --patch=$452b
+6502.net.exe myfix.asm -o mygame.prg --patch=17707
 ```
 
 **`-s`**, **`--no-source`**
@@ -114,18 +111,15 @@ Truncate the assembly bytes to one line in the listing, rather than expanding to
 Example listing:
 
 ```
->c100     48 45 4c 4c 4f 20 57 4f ...          .string "HELLO WORLD, HOW ARE YOU DOING TODAY?"      
+>c100     48 45 4c 4c 4f 20 57 4f              .string "HELLO WORLD, HOW ARE YOU DOING TODAY?"      
 ```
 
 **`-v`**, **`--verbose-asm`**
 
-Include all whitespaces, including extraneous newlines, directives and comments, in listing.
-
-Example listing:
+Include full filename and line number in the listing.
 
 ```
-.c000     a9 00          lda #$00          LDA #ZERO //* here we will
-         reset the accumulator before we begin proper execution */
+myprog.a65(3):.c000    a9 00                  lda #$00                        LDA #ZERO // reset .A 
 ```
 
 **`--vice-labels`**
@@ -140,7 +134,7 @@ Used with `-l`. The label listing format conforms to VICE.
 
 **`--autosize-registers`**
 
-In 65816 mode, whenever a rep or sep is assembled, the assembler will inspect the flags and adjust the register size.
+For 65816, whenever a `rep` or `sep` is assembled, the assembler will inspect the flags and adjust the register size.
 
 ```
     // --autosize-registers
@@ -176,11 +170,15 @@ dotnet 6502.net.dll mysource.asm -o myprog.prg --define=DEBUG_MODE=true
 
 **`--dsections`**
 
-Define one or more sections. 
+Define one or more sections.
 
 ```
-6502.net myprog.asm -o myprog.prg --dsections zp,$02,$100 himem,$f000
+6502.net myprog.asm -o myprog.prg --dsections zp,2,256 himem,61440
 ```
+
+**`--enable-pseudo-long-branches`**
+
+Enable pseudo-long branches for 65xx CPUs.
 
 **`-I`**, **`--include-path`**
 
@@ -192,30 +190,30 @@ Include the path in the argument when attempting to open filenames, for instance
 
 **`--long-addressing`**
 
-Support long (24-bit) addressing mode. If set, output can exceed the 64KiB boundary that by default would cause an error. Even though long addressing mode can be supported this way, the program counter still can only be assigned values between 0 and 65535.
+Support long (24-bit) addressing mode. NOTE: This option is deprecated and will have effect on how addresses are resolved.
+
+**`--m16`**
+
+For 65816, explicitly treat the accumulator as a 16-bit register.
 
 **`--reset-pc-on-bank`**
 
-Reset the program counter on execution of the `.bank` directive. By default, changing the bank value will not reset the program counter.
+Reset the program counter on execution of the `.bank` directive. NOTE: This option is deprecated and will have effect on the program counter when an a `.bank` directive is encountered.
+
+**`--legacy-blocks`**
+
+Parse block directives using legacy delimiters. As of Version 5, all command blocks (such as for `.block`) are in `{` `}` braces, but pre-V5 source is accepted when this option is specified:
 
 ```
-    * = $c000
-    lda #0
-    .bank 1
-    nop     // nop address essentially is 01:c002
+  // with --legacy-blocks option
+myscope       .block
+myscopedlabel nop
+              .endblock
 ```
 
-This option changes that behavior.
+**`--x16`**
 
-```
-    // --reset-pc-on-bank
-    * = $c000
-    lda #0
-    .bank 1
-    nop     // nop address essentially is 01:0000
-```
-
-Note that, since banks can be set multiple times, this option overwrites previously generated output.
+For 65816, explicitly treat the index registers as 16-bit registers.
 
 ## Diagnostics Options
 
@@ -229,7 +227,7 @@ Display MD5 hash of output if assembly is successful.
 
 **`--echo-each-pass`**
 
-Send output from `.echo` directives on each pass. By default, messages printed by `.echo` to the console are only sent on first pass.
+Send output from `.echo` directives on each pass. NOTE: the `.echo` command is deprecated and this option will have no effect.
 
 **`--no-highlighting`**
 
@@ -245,7 +243,7 @@ Do not send any diagnostic or other information when assembling.
 
 **`-V`**, **`--version`**
 
-Report the version of of the 6502.Net assembly.
+Report the version of the 6502.Net assembly.
 
 **`-w`**, **`--no-warn`**
 
@@ -261,7 +259,7 @@ Enable all warnings. This is a compact alternative to sending these individual f
 
 **`--Wambiguous-zp`**
 
-Warn whenever a statement can either be a zero/direct page or absolute addressing mode.
+Warn whenever a statement can either be a zero/direct page or absolute addressing mode. Useful if you want to identify places in code that can either be optimized or sized appropriately.
 
 ```
     // --Wambiguous-zp
@@ -270,7 +268,7 @@ Warn whenever a statement can either be a zero/direct page or absolute addressin
 
 **`--Wcase-mismatch`**
 
-Warn if a symbol reference does not match the case of the definition
+Warn if a symbol reference does not match the case of the definition.
 
 ```
 MyMixedCaseLabel = 3
@@ -298,6 +296,10 @@ Warn when a whitespace precedes the label in a statement.
   nonleft lda #0 // warn
 ```
 
+**`--Wno-bank-crossed`**
+
+Do not emit a warning if a bank boundary is crossed during compilation.
+
 **`--Wno-unused-sections`**
 
 If any defined sections are not used, do not emit a warning.
@@ -311,6 +313,10 @@ If any defined sections are not used, do not emit a warning.
 
     // do not warn if "zp" is never used
 ```
+
+**`--Woptimize-z80-acc-to-zero`**
+
+For Z80 code, warn when `ld a,0` can be optimized to `and a` or `xor a`.
 
 **`--Wregister-as-identifier`**
 
@@ -355,35 +361,29 @@ unusedlabel = 3 // warn
 // --- EOF ---
 ```
 
-## Config Options
+## Extra commands
 
-**`--config`**
+Commands select a particular feature or set of behaviors with subsequent arguments processed as command options.
 
-Set options from the configuration file. The file format is a JSON string. A typical configuration might look like this:
+## Build command
 
-```json
-{
-    "target": {
-        "binaryFormat": "zx",
-        "cpu": "z80"
-	},
-    "sources": [
-        "zxlib.s",
-        "my_app.s"
-	],
-    "outputFile": "program.bin"
-}
-```
-
-**`--createconfig`**
-
-Generate a configuration file from the arguments provided.
+This command builds a project expecting a JSON-formatted build file. If no build file is given, the default file is assumed as `build.json`. A build file can be generated from arguments using the `create` command described below.
 
 ```
-6502.Net.exe mysource.s /lib/mylib.s --output=myoutput.bin --error=errors.txt --list=mylistfile.s --format=cbm --cpu=6502i --dsections=zp,2,256 text,$0801,$a000 --createconfig=a
+6502.Net build # builds a project from options in the build.json file
+6502.Net build myproj.json 
 ```
 
-creates a config file with the contents:
+## Create command
+
+The create command creates a build file from passed arguments.
+
+```
+6502.Net.exe create mysource.s /lib/mylib.s --output=myoutput.bin --error=errors.txt --list=mylistfile.s --format=cbm --cpu=6502i --dsections=zp,2,256 text,2049,40960
+```
+
+This would generate a `build.json` in the same folder as the executable with the contents:
+
 
 ```json
 {
@@ -404,8 +404,8 @@ creates a config file with the contents:
             "ends": 256
         },
         "text": {
-            "starts": "$0801",
-            "ends": "$a000"
+            "starts": 2049,
+            "ends": 40960
         }
     },
     "target": {
@@ -414,6 +414,44 @@ creates a config file with the contents:
     }
 }
 ```
+
+To save the build file under a different name, pass the `--build-file` option:
+
+```
+6502.Net create --build-file=mproj.json source.s -o prog.prg
+```
+
+## Disassemble command
+
+This command directs the assembler to act as a disassembler of a binary image. In this way behavior is opposite of assembly mode, where the expected input is a binary file whose output is a textual decoding of that binary into assembly code.
+
+The following will disassemble a Commodore program file into a disassembly listing:
+
+```
+6502.Net disassemble myprog.prg -o myprog_disasm.txt
+```
+
+### Disassemble options
+
+**`--cpu`, `-c`**
+
+Specify the CPU binary architecture of the input file to disassemble.
+
+**`--disassembly-offset`**
+
+Specify the offset in the input binary to begin disassembly.
+
+**`--disassembly-start`**
+
+Specify the start address of the disassembly output if the `--format` option is not set.
+
+**`--disassembly-end`**
+
+Specify the start address of the disasssembly output if the `--format` option is not set.
+
+**`--format`, `-f`**
+
+Specify the output format that the binary file conforms to. While disk/tape formats such as `d64` are not currently supported.
 
 ## Other Topics
 
@@ -430,4 +468,3 @@ creates a config file with the contents:
 * [File Inclusions](/Docs/FileInclusions.md)
 * [Diagnostics](/Docs/Diagnostics.md)
 * [Disassembler](/Docs/Disassembler.md)
-* [Technical Info](/Docs/TechnicalInfo.md)
