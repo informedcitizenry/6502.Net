@@ -853,7 +853,11 @@ public static partial class ZilogIntelEncoder
         var baseVal = eval.EvalInteger(operand.Left);
         if (baseVal != 0xff00)
         {
-            state.PassNeeded |= state.Passes < 4;
+            if (state.Passes >= 4)
+            {
+                return false;
+            }
+            state.PassNeeded = true;
             var instructions = accFirst 
                 ? s_gb80TwoOperandsIndSecond 
                 : s_gb80TwoOperandsIndFirst;
