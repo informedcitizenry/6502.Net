@@ -379,7 +379,7 @@ This command builds a project expecting a JSON-formatted build file. If no build
 The config command creates a build file from passed arguments.
 
 ```
-6502.Net.exe create mysource.s /lib/mylib.s --output=myoutput.bin --error=errors.txt --list=mylistfile.s --format=cbm --cpu=6502i --dsections=zp,2,256 text,2049,40960
+6502.Net.exe config mysource.s /lib/mylib.s --output=myoutput.bin --error=errors.txt --list=mylistfile.s --format=cbm --cpu=6502i --dsections=zp,2,256 text,2049,40960
 ```
 
 This would generate a `build.json` in the same folder as the executable with the contents:
