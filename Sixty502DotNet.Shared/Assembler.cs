@@ -267,14 +267,15 @@ public static class Assembler
                     OutputFormat.None => new FlatFormatProvider(),
                     _ => throw new OutputFormatException(state.Format)
                 },
-                Cpu.I86 => state.Format switch
+                Cpu.Gb80 or Cpu.I8080 or Cpu.I86 or Cpu.Z80 => state.Format switch
                 {
                     OutputFormat.None => new FlatFormatProvider(),
                     OutputFormat.Cpm => new CpmFormatProvider(),
                     OutputFormat.Mz => new MzFormatProvider(),
-                    _ => throw new OutputFormatException(state.Format)
+                    _ => cpu == Cpu.I86 
+                        ? throw new OutputFormatException(state.Format) 
+                        : new Z80FormatProvider(state.Format)
                 },
-                Cpu.Gb80 or Cpu.I8080 or Cpu.Z80 => new Z80FormatProvider(state.Format),
                 _ => state.Format switch
                 {
                     OutputFormat.Cart => new C64CartFormatProvider(),
