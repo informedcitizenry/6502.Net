@@ -418,7 +418,7 @@ This would generate a `build.json` in the same folder as the executable with the
 To save the build file under a different name, pass the `--build-file` option:
 
 ```
-6502.Net create --build-file=mproj.json source.s -o prog.prg
+6502.Net config --build-file=mproj.json source.s -o prog.prg
 ```
 
 ## Disassemble command
