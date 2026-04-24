@@ -374,9 +374,9 @@ This command builds a project expecting a JSON-formatted build file. If no build
 6502.Net build myproj.json 
 ```
 
-## Create command
+## Config command
 
-The create command creates a build file from passed arguments.
+The config command creates a build file from passed arguments.
 
 ```
 6502.Net.exe create mysource.s /lib/mylib.s --output=myoutput.bin --error=errors.txt --list=mylistfile.s --format=cbm --cpu=6502i --dsections=zp,2,256 text,2049,40960
