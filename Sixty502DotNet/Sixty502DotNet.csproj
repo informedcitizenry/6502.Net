@@ -12,7 +12,7 @@
     <Product>6502.Net</Product>
     <Description>A cross-assembler for 8-bit and 16-bit Microprocessors</Description>
     <Copyright>Copyright (c) 2017-2026 informedcitizenry</Copyright>
-    <ReleaseVersion>4.4.1</ReleaseVersion>
+    <ReleaseVersion>5.0.0</ReleaseVersion>
     <AssemblyName>6502.Net</AssemblyName>
     <AssemblyVersion>5.0.0</AssemblyVersion>
     <FileVersion>5.0.0</FileVersion>

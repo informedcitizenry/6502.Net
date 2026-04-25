@@ -29,7 +29,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D20247E5-5
 		Docs\SymbolsAndScopes.md = Docs\SymbolsAndScopes.md
 		Docs\GettingStarted.md = Docs\GettingStarted.md
 		Docs\Disassembler.md = Docs\Disassembler.md
-		Docs\TechnicalInfo.md = Docs\TechnicalInfo.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{34D37917-2E96-42D8-B037-BEBDE1777601}"
