@@ -51,7 +51,7 @@ If a 24-bit address is encountered but the upper eight bits match the bank value
 
 ## Sections
 
-The programmer might want to predefine code sections for organizational and readability purposes. A section can be defined with the `.dsection` directive, or the `--dsection` option. A section definition requires a name in the form of a string, followed by a start address and optional end address. The start must be within the 64KiB addressing range. If the end addess is specified it must be greater than the start address, and is considered the first address outside the bounds of the section addressing range. Otherwise the section end is considered to be the end of the 64KiB address space.
+The programmer might want to predefine code sections for organizational and readability purposes. A section can be defined with the `.dsection` directive, or the `--dsection` option. A section definition requires a name in the form of a string, followed by a start address and optional end address. The start must be within the 16MB addressing range. If the end addess is specified it must be greater than the start address, and is considered the first address outside the bounds of the section addressing range. Otherwise the section end is considered to be the end of the 16MB address space.
 
 ```
     .dsection "zp",$02,$100 // "zp" section starts at $02 and ends at $100 exclusive
@@ -122,32 +122,32 @@ done        rts
 message     .cstring "HELLO, HIGH CODE!"
 program_end .endrelocate  // program_end is set to the "real" program end
             nop
-            /* outputs the following =>
-            >0801 0b 08 0a 00
-            >0805 9e 32 30 36 31 00
-            >080b 00 00       eob
-            .080d a2 00       start     ldx #0
-            .080f bd 1b 08    -         lda highcode,x
-            .0812 9d 00 c0              sta $c000,x
-            .0815 e8                    inx
-            .0816 d0 f7                 bne -
-            .0818 4c 00 c0              jmp $c000
-            .081b             highcode
-            .c000                       .relocate $c000
-            .c000 a2 00                 ldx #0
-            .c002 bd 0f c0    printloop lda message,x
-            .c005 f0 07                 beq done
-            .c007 20 d2 ff              jsr $ffd2
-            .c00a e8                    inx
-            .c00b 4c 02 c0              jmp printloop
-            .c00e 60          done      rts
-            ;; message
-            >c00f 48 45 4c 4c 4f 2c 20 48
-            >c017 49 47 48 20 43 4f 44 45
-            >c01f 21 00
-            .c021             program_end
-            .083c ea                    nop
-            */
+/* outputs the following =>
+.0801                                                               * = $0801
+=$9e                                                    SYS         = $9e
+>0801    0b 08 0a 00                                                .word eob, 10
+>0805    9e 32 30 36 31 00                                          .cstring SYS, format("{0}", start)
+>080b    00 00                                          eob         .word 0
+.080d    a2 00                  ldx #$00                start       ldx #0
+.080f    bd 1b 08               lda $081b,x             -           lda highcode,x
+.0812    9d 00 c0               sta $c000,x                         sta $c000,x
+.0815    e8                     inx                                 inx
+.0816    d0 f7                  bne $080f                           bne -
+.0818    4c 00 c0               jmp $c000                           jmp $c000
+.081b                                                   highcode
+.081b   c000                                                               .relocate $c000
+.081b   c000    a2 00                  ldx #$00                            ldx #0
+.081d   c002    bd 0f c0               lda $c00f,x             printloop   lda message,x
+.0820   c005    f0 07                  beq $c00e                           beq done
+.0822   c007    20 d2 ff               jsr $ffd2                           jsr $ffd2
+.0825   c00a    e8                     inx                                 inx
+.0826   c00b    4c 02 c0               jmp $c002                           jmp printloop
+.0829   c00e    60                     rts                     done        rts
+>082a   c00f    48 45 4c 4c 4f 2c 20 48                        message     .cstring "HELLO, HIGH CODE!"
+>0832   c017    49 47 48 20 43 4f 44 45
+>0832   c01f    21 00
+.083c                                                   program_end .endrelocate  // program_end is set to the "real" program end
+.083c    ea                     nop                                 nop*/
 ```
 
 While it is good practice, using the `.endrelocate` directive is not required.
