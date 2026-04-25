@@ -227,7 +227,7 @@ public static partial class I86Encoder
             }
             else
             {
-                opc |= 0b01;
+                opc |= W;
                 if (!axAlu && s_alus.Contains(mnemonic) && immSize == 1)
                 {
                     opc |= D;
@@ -399,7 +399,7 @@ public static partial class I86Encoder
         }
         if (s_16BitRegisters.ContainsKey(dest) && !isSegment)
         {
-            opc |= 0b01;
+            opc |= W;
         }
         var mode = mnemonic switch
         {
@@ -424,7 +424,7 @@ public static partial class I86Encoder
         var opc = s_shifts[mnemonic] | Mode.Reg2Reg * 256 + D; 
         if (s_16BitRegisters.TryGetValue(dest, out var destHex))
         {
-            opc |= 0b1;
+            opc |= W;
         }
         else if (!s_8BitRegisters.TryGetValue(dest, out destHex))
         {
@@ -713,7 +713,7 @@ public static partial class I86Encoder
         var hex = stringCommand.Hex;
         if (operand.CoercedSize == 2 || operand.Registers.Any(r => r.Type == TokenType.Ax))
         {
-            hex |= 0b1;
+            hex |= W;
         }
         state.Output.EmitValue(hex, ByteOrder.LittleEndian);
         return true;
