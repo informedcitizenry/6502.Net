@@ -111,7 +111,7 @@ public class Compiler : IStatementVisitor<Jump>
         }
         if (left.LeftToken.Column > 0 && _assemblyState.AssemblyOptions.WarnLeftSpaceOfLabel)
         {
-            _assemblyState.Logger.LogWarning("Whitspace precedes label", left);
+            _assemblyState.Logger.LogWarning("Whitespace precedes label", left);
         }
         if (left.LeftToken.Type.IsRegister() && 
             _assemblyState.AssemblyOptions.WarnRegistersAsIdent &&
