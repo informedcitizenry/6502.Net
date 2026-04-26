@@ -282,6 +282,7 @@ public sealed partial class Parser
                 parser._current
             );
         var infixExpr = rule.Prefix(parser);
+        if (infixExpr is DictionaryInitExpression or FunctionExpression) return infixExpr;
         var op = parser._current;
         while (s_parseRules.TryGetValue(op.Type, out rule) && precedence <= rule.Precedence)
         {
@@ -301,7 +302,7 @@ public sealed partial class Parser
     
     private static Expression OpenParen(Parser parser)
     {
-        var leftToken = parser._current;
+        var openParen = parser._current;
         var isArrowFunc = true;
         parser.Advance();
         var parameters = new List<PrimaryExpression>();
@@ -358,7 +359,7 @@ public sealed partial class Parser
             {
                 return new FunctionExpression(parameters, defaultValues, parser.Expression())
                 {
-                    LeftToken = leftToken,
+                    LeftToken = openParen,
                     RightToken = parser._previous,
                     StatementIndex = parser._statementIndex
                 };
@@ -383,7 +384,7 @@ public sealed partial class Parser
             }
             return new FunctionExpression(parameters, defaultValues, body)
             {
-                LeftToken = leftToken,
+                LeftToken = openParen,
                 RightToken = parser._previous,
                 StatementIndex = parser._statementIndex
             };
@@ -393,17 +394,13 @@ public sealed partial class Parser
             case 0:
                 throw new CompileException(CompileExceptionType.ExpectedExpression, parser._previous);
             case > 1:
-                return new ArrayInitExpression(true, leftToken, innerExpressions)
+                return new ArrayInitExpression(true, openParen, innerExpressions)
                 {
                     RightToken = parser._previous,
                     StatementIndex = parser._statementIndex
                 };
         }
-        var inner = innerExpressions[0];
-        inner.LeftToken = leftToken;
-        inner.RightToken = parser._previous;
-        inner.Grouped = true;
-        return inner;
+        return new GroupedExpression(openParen, innerExpressions[0], parser._previous);
     }
     
     private static ArrayInitExpression ArrayInit(Parser parser)
@@ -655,10 +652,6 @@ public sealed partial class Parser
 
     private static CallExpression Call(Parser parser, Expression left)
     {
-        if (left is FunctionExpression && !left.Grouped)
-        {
-            throw new CompileException(CompileExceptionType.NotCallable, left);
-        }
         parser.Advance();
         var callExpr = new CallExpression(left)
         {
