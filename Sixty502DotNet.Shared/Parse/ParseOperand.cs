@@ -635,7 +635,10 @@ public sealed partial class Parser
                 StatementIndex = _statementIndex
             };
         }
-        Consume(TokenType.Comma);
+        if (!Match(TokenType.Comma))
+        {
+            ConsumeEosOrColon();
+        }
         DiscardNewlines();
         var expr =  Expression();
         if (CheckEosOrColon())
