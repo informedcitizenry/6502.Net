@@ -33,8 +33,6 @@ public abstract class Expression : Ast
     public Value Value { get; set; } = new Value();
 
     public abstract Value? Accept(IExpressionVisitor visitor);
-    
-    public bool Grouped { get; set; }
 }
 
 public sealed class PrimaryExpression : Expression
@@ -87,6 +85,8 @@ public sealed class GroupedExpression : Expression
 
     public override Value? Accept(IExpressionVisitor visitor)
         => Inner.Accept(visitor);
+
+    public override string ToString() => Inner?.ToString() ?? string.Empty;
 }
 
 public sealed class AnonymousRefExpression : Expression
