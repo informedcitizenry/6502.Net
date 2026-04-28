@@ -178,24 +178,32 @@ internal static class EvalValues
                 throw new CompileException(CompileExceptionType.ValueOverflow, expression);
             }
         }
-        var leftNum = left.AsDouble(encoding);
-        var rightNum = right.AsDouble(encoding);
-        return op switch
+        try
         {
-            TokenType.CaretCaret => new Value(Math.Pow(leftNum, rightNum)),
-            TokenType.Star => new Value(leftNum * rightNum),
-            TokenType.Slash => new Value(leftNum / rightNum),
-            TokenType.Plus => new Value(leftNum + rightNum),
-            TokenType.Minus => new Value(leftNum - rightNum),
-            TokenType.Lt => new Value(leftNum.FloatLt(rightNum)),
-            TokenType.Le => new Value(leftNum.FloatLe(rightNum)),
-            TokenType.Gt => new Value(leftNum.FloatGt(rightNum)),
-            TokenType.Ge => new Value(leftNum.FloatGe(rightNum)),
-            TokenType.Spaceship => new Value(Math.Sign(leftNum - rightNum)),
-            TokenType.EqEq => new Value(leftNum.FloatEq(rightNum)),
-            TokenType.BangEq => new Value(!leftNum.FloatEq(rightNum)),
-            _ => throw new InvalidBinaryOperationException(left, right, expression)
-        };
+            var leftNum = left.AsDouble(encoding);
+            var rightNum = right.AsDouble(encoding);
+            return op switch
+            {
+                TokenType.CaretCaret => new Value(Math.Pow(leftNum, rightNum)),
+                TokenType.Star => new Value(leftNum * rightNum),
+                TokenType.Slash => new Value(leftNum / rightNum),
+                TokenType.Plus => new Value(leftNum + rightNum),
+                TokenType.Minus => new Value(leftNum - rightNum),
+                TokenType.Lt => new Value(leftNum.FloatLt(rightNum)),
+                TokenType.Le => new Value(leftNum.FloatLe(rightNum)),
+                TokenType.Gt => new Value(leftNum.FloatGt(rightNum)),
+                TokenType.Ge => new Value(leftNum.FloatGe(rightNum)),
+                TokenType.Spaceship => new Value(Math.Sign(leftNum - rightNum)),
+                TokenType.EqEq => new Value(leftNum.FloatEq(rightNum)),
+                TokenType.BangEq => new Value(!leftNum.FloatEq(rightNum)),
+                _ => throw new InvalidBinaryOperationException(left, right, expression)
+            };
+        }
+        catch 
+        {
+            throw new CompileException(CompileExceptionType.ValueOverflow, expression);
+        }
+        
     }
 
     public static Value? UnaryOp

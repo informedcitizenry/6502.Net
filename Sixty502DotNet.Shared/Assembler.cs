@@ -272,9 +272,9 @@ public static class Assembler
                     OutputFormat.None => new FlatFormatProvider(),
                     OutputFormat.Cpm => new CpmFormatProvider(),
                     OutputFormat.Mz => new MzFormatProvider(),
-                    _ => cpu == Cpu.I86 
-                        ? throw new OutputFormatException(state.Format) 
-                        : new Z80FormatProvider(state.Format)
+                    _ => cpu != Cpu.I86 
+                        ? new Z80FormatProvider(state.Format) 
+                        : throw new OutputFormatException(state.Format)
                 },
                 _ => state.Format switch
                 {

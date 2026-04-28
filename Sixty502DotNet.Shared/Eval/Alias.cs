@@ -24,12 +24,5 @@ namespace Sixty502DotNet.Shared.Eval;
 
 public class Alias(int address) : IAddress
 {
-    public int Address { get; private set; } = address;
-    
-    public bool UpdateAddress(int address)
-    {
-        if (Address == address) return false;
-        Address = address;
-        return true;
-    }
+    public int Address { get; } = address;
 }

@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 using System.Text;
+using Sixty502DotNet.Shared.Error;
 
 namespace Sixty502DotNet.Shared.Eval.String;
 
@@ -95,7 +96,7 @@ public class TextEncodingCollection
                 Array.Resize(ref bytes, 4);
                 break;
             case > 4:
-                throw new ArgumentException($"Size of string literal \"{s}\" exceeds integer value");
+                throw new AsmEncodingError($"Size of string literal \"{s}\" exceeds integer value");
         }
         return BitConverter.ToInt32(bytes, 0);
     }
