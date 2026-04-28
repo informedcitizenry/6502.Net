@@ -49,7 +49,7 @@ public class TextEncodingCollection
         _ => TextEncodingType.Default
     };
     
-    public int GetEncodedValue(string s)
+    public long GetEncodedValue(string s)
     {
         if (string.IsNullOrEmpty(s))
             throw new ArgumentNullException(nameof(s), "String cannot be null.");
@@ -57,13 +57,13 @@ public class TextEncodingCollection
         var bytes = _currentTextEncoding.GetBytes(s);
         switch (bytes.Length)
         {
-            case < 4:
-                Array.Resize(ref bytes, 4);
+            case < 8:
+                Array.Resize(ref bytes, 8);
                 break;
-            case > 4:
+            case > 8:
                 throw new ArgumentException($"Size of string literal \"{s}\" exceeds integer value");
         }
-        return BitConverter.ToInt32(bytes, 0);
+        return BitConverter.ToInt64(bytes, 0);
     }
 
     public byte[] GetEncodedBytes(AsmString s)
