@@ -42,6 +42,9 @@ public static class BuiltIn
         state.SymbolTable.DefineBuiltIn("INT24_MIN", new Value(Int24.MinValue));
         state.SymbolTable.DefineBuiltIn("INT32_MAX", new Value(UInt24.MaxValue));
         state.SymbolTable.DefineBuiltIn("INT32_MIN", new Value(int.MinValue));
+        state.SymbolTable.DefineBuiltIn("MATH_E", new Value(Math.E));
+        state.SymbolTable.DefineBuiltIn("MATH_PI", new Value(Math.PI));
+        state.SymbolTable.DefineBuiltIn("MATH_TAU", new Value(Math.Tau));
         state.SymbolTable.DefineBuiltIn("NaN", new Value(double.NaN));
         state.SymbolTable.DefineBuiltIn("UINT8_MAX", new Value(byte.MaxValue));
         state.SymbolTable.DefineBuiltIn("UINT8_MIN", new Value(byte.MinValue));
