@@ -102,7 +102,7 @@ public class TextEncodingCollection
         return BitConverter.ToInt64(bytes, 0);
     }
 
-    public int GetEncodedValue(char c) 
+    public long GetEncodedValue(char c) 
         => GetEncodedValue(new string(c, 1));
 
     public void Map(string mapping, char code)
