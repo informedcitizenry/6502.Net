@@ -87,18 +87,18 @@ public class TextEncodingCollection
         return bytes.ToArray();
     }
 
-    public int GetEncodedValue(AsmString s)
+    public long GetEncodedValue(AsmString s)
     {
         var bytes = GetEncodedBytes(s);
         switch (bytes.Length)
         {
-            case < 4:
-                Array.Resize(ref bytes, 4);
+            case < 8:
+                Array.Resize(ref bytes, 8);
                 break;
-            case > 4:
+            case > 8:
                 throw new AsmEncodingError($"Size of string literal \"{s}\" exceeds integer value");
         }
-        return BitConverter.ToInt32(bytes, 0);
+        return BitConverter.ToInt64(bytes, 0);
     }
 
     public int GetEncodedValue(char c) 

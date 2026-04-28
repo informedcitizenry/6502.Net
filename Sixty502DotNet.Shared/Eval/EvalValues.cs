@@ -121,12 +121,13 @@ internal static class EvalValues
             throw new InvalidBinaryOperationException(left, right, expression);
         if (op == TokenType.Slash && right.AsInt(encoding) == 0)
             throw new CompileException(CompileExceptionType.DivideByZero, expression.Right);
-        if (expression.Operator.Type.IsIntOperator() || 
-            (left.IsInt() && right.IsInt()))
+        
+        try
         {
-            if (left.TypeTag == TypeTag.Int128 || right.TypeTag == TypeTag.Int128)
+            if (expression.Operator.Type.IsIntOperator() || 
+            (left.IsInt() && right.IsInt()))
             {
-                try
+                if (left.TypeTag == TypeTag.Int128 || right.TypeTag == TypeTag.Int128)
                 {
                     var left128 = left.AsInt128(encoding);
                     var right128 = right.AsInt128(encoding);
@@ -147,13 +148,6 @@ internal static class EvalValues
                         case TokenType.BitwiseOr: return new Value(left128 | right128);
                     }
                 }
-                catch (OverflowException)
-                {
-                    throw new CompileException(CompileExceptionType.ValueOverflow, expression);
-                }
-            }
-            try
-            {
                 var leftInt = left.AsInt(encoding);
                 var rightInt = right.AsInt(encoding);
                 switch (op)
@@ -173,13 +167,6 @@ internal static class EvalValues
                     case TokenType.BitwiseOr: return new Value(leftInt | rightInt);
                 }
             }
-            catch (OverflowException)
-            {
-                throw new CompileException(CompileExceptionType.ValueOverflow, expression);
-            }
-        }
-        try
-        {
             var leftNum = left.AsDouble(encoding);
             var rightNum = right.AsDouble(encoding);
             return op switch
@@ -203,7 +190,6 @@ internal static class EvalValues
         {
             throw new CompileException(CompileExceptionType.ValueOverflow, expression);
         }
-        
     }
 
     public static Value? UnaryOp
