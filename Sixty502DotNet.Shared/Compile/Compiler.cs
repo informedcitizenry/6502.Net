@@ -281,7 +281,7 @@ public class Compiler : IStatementVisitor<Jump>
         var sym = memberExpr.Member.Text.ToString();
         if (symbol?.AsDictionary() is { } memberDict)
         {
-            var dictMember = new Value(sym, TextEncodingType.Default);
+            var dictMember = new Value(sym);
             if (!memberDict.ContainsKey(dictMember))
                 throw new CompileException(CompileExceptionType.KeyNotFound, memberExpr.Member);
             if (!memberDict[dictMember].IsCompatibleType(newValue))

@@ -48,6 +48,8 @@ public class AsmTextEncoding : Encoding
             _codeUnitChars[kvp.Value] = kvp.Key;
     }
 
+    public bool IsMapped(char c) => _charCodeUnits.ContainsKey(c.ToString());
+    
     public override int GetByteCount(char[] chars, int index, int count)
     {
         var byteCount = 0;

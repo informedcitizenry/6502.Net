@@ -160,16 +160,14 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
         TypeTag = TypeTag.Char;
     }
 
-    public Value(string stringSegmentValue, TextEncodingType textEncodingType)
+    public Value
+    (
+        string stringSegmentValue, 
+        TextEncodingType textEncodingType = TextEncodingType.Default
+    )
     {
         TypeTag = TypeTag.String;
         _stringValue = new AsmString(textEncodingType, stringSegmentValue);
-    }
-    
-    public Value(string stringValue)
-    {
-        _stringValue = new AsmString(TextEncodingType.Default, stringValue);
-        TypeTag =  TypeTag.String;
     }
 
     public Value(List<Value> arrayValues, TypeTag typeTag)

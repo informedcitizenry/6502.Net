@@ -102,8 +102,15 @@ public class TextEncodingCollection
         return BitConverter.ToInt64(bytes, 0);
     }
 
-    public long GetEncodedValue(char c) 
-        => GetEncodedValue(new string(c, 1));
+    public long GetEncodedValue(char c)
+    {
+        if (char.IsSurrogate(c) && 
+            !_currentTextEncoding.IsMapped(c))
+        {
+            return c;
+        }
+        return GetEncodedValue(new string(c, 1));
+    }
 
     public void Map(string mapping, char code)
     {
