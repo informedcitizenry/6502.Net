@@ -87,6 +87,7 @@ public class TextEncodingCollection
         return bytes.ToArray();
     }
 
+    
     public long GetEncodedValue(AsmString s)
     {
         var bytes = GetEncodedBytes(s);
