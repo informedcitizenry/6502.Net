@@ -29,6 +29,8 @@ namespace Sixty502DotNet.Shared.Encode;
 
 internal static class EncodeUtil
 {
+    public const int Bad = -1;
+        
     public static void EnforceBit(Expression expr)
     {
         if (!(expr is PrimaryExpression { Expr.Type: TokenType.IntLiteral } bitExpr &&
@@ -56,13 +58,12 @@ internal static class EncodeUtil
     (
         AssemblyState state, 
         int opcodeHex, 
-        int badOpcodeHex,
         Expression operand, 
         int operandSize,
         ByteOrder byteOrder = ByteOrder.LittleEndian
     )
     {
-        if (opcodeHex == badOpcodeHex) return false;
+        if (opcodeHex == Bad) return false;
         var evaluator = new Evaluator(state);
         var operandVal = evaluator.EvalPagedBanked(operand);
         if (operandVal.Size() > operandSize && !state.PassNeeded)

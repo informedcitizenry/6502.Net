@@ -27,6 +27,8 @@ using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Encode;
 
+using static EncodeUtil;
+
 // ReSharper disable once InconsistentNaming
 public static partial class M65xxEncoder
 {
@@ -130,12 +132,12 @@ public static partial class M65xxEncoder
         var coercedSize = statement.Operand.CoercedSize;
         return statement.Operand.Type switch
         {
-            OperandType.Implied => EncodeUtil.EncodeImplied(state, opcode.implied, Bad),
+            OperandType.Implied => EncodeImplied(state, opcode.implied, Bad),
             OperandType.Register =>
                 statement.Operand.Registers[0].Type == TokenType.A &&
-                EncodeUtil.EncodeImplied(state, opcode.accumulator, Bad),
+                EncodeImplied(state, opcode.accumulator, Bad),
             OperandType.Address when coercedSize == 1 && opcode.relative != Bad && opcode.relativeAbsolute == Bad => 
-            EncodeUtil.EncodeRelative
+            EncodeRelative
             (
                 state, 
                 opcode, 
@@ -143,46 +145,43 @@ public static partial class M65xxEncoder
                 statement.Operand.Expressions[0]
             ),
             OperandType.Address when coercedSize == 2 && opcode.relative == Bad && opcode.relativeAbsolute != Bad 
-                => EncodeUtil.EncodeRelative
+                => EncodeRelative
             (
                 state, 
                 opcode, 
                 Bad, 
                 statement.Operand.Expressions[0]
             ),
-            OperandType.Address when coercedSize == 1 => EncodeUtil.EncodeSingleOperand
+            OperandType.Address when coercedSize == 1 => EncodeSingleOperand
             (
                 state,
                 opcode.zeroPage,
-                Bad,
                 statement.Operand.Expressions[0],
                 1
             ),
-            OperandType.Address when coercedSize == 2 => EncodeUtil.EncodeSingleOperand
+            OperandType.Address when coercedSize == 2 => EncodeSingleOperand
             (
                 state,
                 opcode.absolute,
-                Bad,
                 statement.Operand.Expressions[0],
                 2
             ),
-            OperandType.Address when coercedSize == 3 => EncodeUtil.EncodeSingleOperand
+            OperandType.Address when coercedSize == 3 => EncodeSingleOperand
             (
                 state,
                 opcode.longAddress,
-                Bad,
                 statement.Operand.Expressions[0],
                 3
             ),
             OperandType.Address when opcode.relative != Bad || opcode.relativeAbsolute != Bad
-            => EncodeUtil.EncodeRelative
+            => EncodeRelative
             (
                 state, 
                 opcode, 
                 Bad, 
                 statement.Operand.Expressions[0]
             ),
-            OperandType.Address => EncodeUtil.EncodeVariantOperand
+            OperandType.Address => EncodeVariantOperand
             (
                 state,
                 opcode.zeroPage,
@@ -200,11 +199,10 @@ public static partial class M65xxEncoder
                 opcode.immediate,
                 statement.Operand.Expressions[0]
             ),
-            OperandType.Immediate when coercedSize == 1 => EncodeUtil.EncodeSingleOperand
+            OperandType.Immediate when coercedSize == 1 => EncodeSingleOperand
             (
                 state,
                 opcode.immediate,
-                Bad,
                 statement.Operand.Expressions[0],
                 1
             ),
@@ -297,23 +295,21 @@ public static partial class M65xxEncoder
                 statement.Operand.Registers[0],
                 statement.Operand.Expressions[0]
             ),
-            OperandType.Indirect when statement.Operand.CoercedSize == 1 => EncodeUtil.EncodeSingleOperand
+            OperandType.Indirect when statement.Operand.CoercedSize == 1 => EncodeSingleOperand
             (
                 state,
                 opcode.indirectZeroPage,
-                Bad,
                 statement.Operand.Expressions[0],
                 1
             ),
-            OperandType.Indirect when statement.Operand.CoercedSize == 2 => EncodeUtil.EncodeSingleOperand
+            OperandType.Indirect when statement.Operand.CoercedSize == 2 => EncodeSingleOperand
             (
                 state,
                 opcode.indirectAbsolute,
-                Bad,
                 statement.Operand.Expressions[0],
                 2
             ),
-            OperandType.Indirect => EncodeUtil.EncodeVariantOperand
+            OperandType.Indirect => EncodeVariantOperand
             (
                 state,
                 opcode.indirectZeroPage,
@@ -329,23 +325,21 @@ public static partial class M65xxEncoder
                 statement.Operand.Registers[0],
                 statement.Operand.Expressions[0]
             ),
-            OperandType.IndirectLong when statement.Operand.CoercedSize == 1 => EncodeUtil.EncodeSingleOperand
+            OperandType.IndirectLong when statement.Operand.CoercedSize == 1 => EncodeSingleOperand
             (
                 state,
                 opcode.indirectLong,
-                Bad,
                 statement.Operand.Expressions[0],
                 1
             ),
-            OperandType.IndirectLong when statement.Operand.CoercedSize == 2 => EncodeUtil.EncodeSingleOperand
+            OperandType.IndirectLong when statement.Operand.CoercedSize == 2 => EncodeSingleOperand
             (
                 state,
                 opcode.indirectLongAbsolute,
-                Bad,
                 statement.Operand.Expressions[0],
                 2
             ),
-            OperandType.IndirectLong => EncodeUtil.EncodeVariantOperand
+            OperandType.IndirectLong => EncodeVariantOperand
             (
                 state,
                 opcode.indirectLong,
@@ -354,19 +348,17 @@ public static partial class M65xxEncoder
                 Bad,
                 statement.Operand.Expressions[0]
             ),
-            OperandType.IndirectLongIndexed => EncodeUtil.EncodeSingleOperand
+            OperandType.IndirectLongIndexed => EncodeSingleOperand
             (
                 state,
                 opcode.indirectLongIndexed,
-                Bad,
                 statement.Operand.Expressions[0],
                 1
             ),
-            OperandType.IndirectLongZ => EncodeUtil.EncodeSingleOperand
+            OperandType.IndirectLongZ => EncodeSingleOperand
             (
                 state,
                 opcode.indirectLongZ,
-                Bad,
                 statement.Operand.Expressions[0],
                 1
             ),
@@ -477,7 +469,7 @@ public static partial class M65xxEncoder
         {
             size = 2;
         }
-        return opcodeHex != Bad && EncodeUtil.EncodeSingleOperand(state, opcodeHex, Bad, operand, size);
+        return opcodeHex != Bad && EncodeSingleOperand(state, opcodeHex, operand, size);
     }
     
     private static bool EncodeImmediate16
@@ -489,7 +481,7 @@ public static partial class M65xxEncoder
     )
     {
         var opcodeHex = ImmediateIs8(state.Cpu, state.M16, state.X16, immediate8) ? immediate8 : immediate16;
-        return opcodeHex != Bad && EncodeUtil.EncodeSingleOperand(state, opcodeHex, Bad, operand, 2);
+        return opcodeHex != Bad && EncodeSingleOperand(state, opcodeHex, operand, 2);
     }
     
     
@@ -547,7 +539,7 @@ public static partial class M65xxEncoder
             default:
                 return false;
         }
-        return EncodeUtil.EncodeSingleOperand(state, opcodeHex, Bad, operand, size);
+        return EncodeSingleOperand(state, opcodeHex, operand, size);
     }
     
     private static bool EncodeVariantIndexedOperand
@@ -576,7 +568,7 @@ public static partial class M65xxEncoder
                 absoluteHex = opcode.absoluteY;
                 break;
         }
-        return EncodeUtil.EncodeVariantOperand(state, zeroPageHex, absoluteHex, longHex, Bad, operand);
+        return EncodeVariantOperand(state, zeroPageHex, absoluteHex, longHex, Bad, operand);
     }
 
     private static bool EncodeIndexedIndirectVariantOperand
@@ -602,7 +594,7 @@ public static partial class M65xxEncoder
             zeroPageHex = opcode.indexedZeroPageIndirect;
             absoluteHex = opcode.indexedAbsoluteIndirect;
         }
-        return EncodeUtil.EncodeVariantOperand
+        return EncodeVariantOperand
         (
             state, 
             zeroPageHex, 
@@ -642,7 +634,7 @@ public static partial class M65xxEncoder
                 _ => opcodeHex
             };
         }
-        return EncodeUtil.EncodeSingleOperand(state, opcodeHex, Bad, operand.Expressions[0], size);
+        return EncodeSingleOperand(state, opcodeHex, operand.Expressions[0], size);
     }
 
     private static bool EncodeIndirectIndexedOperand
@@ -655,8 +647,8 @@ public static partial class M65xxEncoder
     {
         return register.Type switch
         {
-            TokenType.Y => EncodeUtil.EncodeSingleOperand(state, opcode.indirectIndexed, Bad, operand, 1),
-            TokenType.Z => EncodeUtil.EncodeSingleOperand(state, opcode.indirectZ, Bad, operand, 1),
+            TokenType.Y => EncodeSingleOperand(state, opcode.indirectIndexed, operand, 1),
+            TokenType.Z => EncodeSingleOperand(state, opcode.indirectZ, operand, 1),
             _ => false
         };
     }
@@ -671,8 +663,8 @@ public static partial class M65xxEncoder
     {
         return register.Type switch
         {
-            TokenType.S => EncodeUtil.EncodeSingleOperand(state, opcode.indirectStackRelativeIndexed, Bad, operand, 1),
-            TokenType.Sp => EncodeUtil.EncodeSingleOperand(state, opcode.indirectStackPointerIndexed, Bad, operand, 1),
+            TokenType.S => EncodeSingleOperand(state, opcode.indirectStackRelativeIndexed, operand, 1),
+            TokenType.Sp => EncodeSingleOperand(state, opcode.indirectStackPointerIndexed, operand, 1),
             _ => false
         };
     }
@@ -721,7 +713,7 @@ public static partial class M65xxEncoder
     
     private static bool EncodeBitTestOperand(AssemblyState state, int opcodeHex, IList<Expression> operands)
     {
-        EncodeUtil.EnforceBit(operands[0]);
+        EnforceBit(operands[0]);
         var evaluator = new Evaluator(state);
         var bitVal = operands[0].Value.AsInt();
         var testVal = evaluator.EvalPagedBanked(operands[1], sbyte.MinValue, sbyte.MaxValue);
@@ -738,7 +730,7 @@ public static partial class M65xxEncoder
         IList<Expression> operands
     )
     {
-        EncodeUtil.EnforceBit(operands[0]);
+        EnforceBit(operands[0]);
         var evaluator = new Evaluator(state);
         var bitVal = operands[0].Value.AsInt();
         var testVal = evaluator.EvalPagedBanked(operands[1], sbyte.MinValue, byte.MaxValue);

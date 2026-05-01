@@ -24,6 +24,8 @@ using System.Collections.Frozen;
 
 namespace Sixty502DotNet.Shared.Encode;
 
+using static EncodeUtil;
+
 public static class PostByteFlags
 {
     public const int Offset5Bit    = 0b0001_1111,
@@ -51,8 +53,6 @@ public static class PostByteFlags
 
 internal static partial class MotorolaEncoder
 {
-    private const int Bad = -1;
-    
     private static readonly FrozenDictionary<TokenType, byte> s_exchangeModes 
         = new Dictionary<TokenType, byte>()
     {

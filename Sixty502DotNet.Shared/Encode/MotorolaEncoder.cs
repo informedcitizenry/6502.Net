@@ -28,6 +28,8 @@ using System.Text;
 
 namespace Sixty502DotNet.Shared.Encode;
 
+using static EncodeUtil;
+
 internal static partial class MotorolaEncoder
 {
     public static string Decode(ReadOnlySpan<byte> bytes, Cpu cpu, ref int programCounter)
@@ -129,7 +131,7 @@ internal static partial class MotorolaEncoder
         }
         return statement.Operand.Type switch
         {
-            OperandType.Implied => EncodeUtil.EncodeImplied
+            OperandType.Implied => EncodeImplied
             (
                 state, 
                 opcode.implied, 
@@ -138,29 +140,27 @@ internal static partial class MotorolaEncoder
             ),
             OperandType.Indexed when statement.Operand.CoercedSize == 1 &&state.Cpu == Cpu.M6800 =>
                 statement.Operand.Registers[0].Type == TokenType.X &&
-                EncodeUtil.EncodeSingleOperand
+                EncodeSingleOperand
                 (
                     state, 
                     opcode.zeroPageX, 
-                    Bad, 
                     statement.Operand.Expressions[0],
                     1,
                     ByteOrder.BigEndian
                 ),   
             OperandType.Indexed when statement.Operand.CoercedSize == 2 && state.Cpu ==  Cpu.M6800 =>
                 statement.Operand.Registers[0].Type == TokenType.X &&
-                EncodeUtil.EncodeSingleOperand
+                EncodeSingleOperand
                 (
                     state, 
                     opcode.absoluteX, 
-                    Bad, 
                     statement.Operand.Expressions[0],
                     2,
                     ByteOrder.BigEndian
                 ),
             OperandType.Indexed when state.Cpu == Cpu.M6800 => 
             statement.Operand.Registers[0].Type == TokenType.X &&
-            EncodeUtil.EncodeVariantOperand
+            EncodeVariantOperand
             (
                 state,
                 opcode.zeroPageX,
@@ -173,7 +173,7 @@ internal static partial class MotorolaEncoder
             
             OperandType.Address when statement.Operand.CoercedSize == 1 && 
                                      opcode.relative != Bad && opcode.relative == Bad =>
-            EncodeUtil.EncodeRelative
+            EncodeRelative
             (
                 state, 
                 opcode,
@@ -183,7 +183,7 @@ internal static partial class MotorolaEncoder
             ),
             OperandType.Address when statement.Operand.CoercedSize == 2 && 
                                      opcode.relative == Bad && opcode.relativeAbsolute != Bad
-            => EncodeUtil.EncodeRelative
+            => EncodeRelative
             (
                 state, 
                 opcode, 
@@ -192,7 +192,7 @@ internal static partial class MotorolaEncoder
                 ByteOrder.BigEndian
             ),
             OperandType.Address when opcode.relative != Bad || opcode.relativeAbsolute != Bad =>
-            EncodeUtil.EncodeRelative
+            EncodeRelative
             (
                 state, 
                 opcode, 
@@ -201,26 +201,24 @@ internal static partial class MotorolaEncoder
                 ByteOrder.BigEndian
             ),
             OperandType.Address when statement.Operand.CoercedSize == 1 
-                => EncodeUtil.EncodeSingleOperand
+                => EncodeSingleOperand
             (
                 state, 
                 opcode.zeroPage, 
-                Bad, 
                 statement.Operand.Expressions[0],
                 1,
                 ByteOrder.BigEndian
             ),
             OperandType.Address when statement.Operand.CoercedSize == 2 
-                => EncodeUtil.EncodeSingleOperand
+                => EncodeSingleOperand
             (
                 state, 
                 opcode.absolute, 
-                Bad, 
                 statement.Operand.Expressions[0], 
                 2,
                 ByteOrder.BigEndian
             ),
-            OperandType.Address => EncodeUtil.EncodeVariantOperand
+            OperandType.Address => EncodeVariantOperand
             (
                 state, 
                 opcode.zeroPage, 
@@ -231,26 +229,24 @@ internal static partial class MotorolaEncoder
                 ByteOrder.BigEndian
             ),
             OperandType.Immediate when statement.Operand.CoercedSize == 1 
-                => EncodeUtil.EncodeSingleOperand
+                => EncodeSingleOperand
             (
                 state,
                 opcode.immediate,
-                Bad,
                 statement.Operand.Expressions[0],
                 1,
                 ByteOrder.BigEndian
             ),
             OperandType.Immediate when statement.Operand.CoercedSize == 2 
-                => EncodeUtil.EncodeSingleOperand
+                => EncodeSingleOperand
             (
                 state,
                 opcode.immediate16Bit,
-                Bad,
                 statement.Operand.Expressions[0],
                 2,
                 ByteOrder.BigEndian
             ),
-            OperandType.Immediate => EncodeUtil.EncodeVariantOperand
+            OperandType.Immediate => EncodeVariantOperand
             (
                 state, 
                 opcode.immediate, 
