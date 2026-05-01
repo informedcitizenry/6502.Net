@@ -21,7 +21,6 @@
 using Sixty502DotNet.Shared.Error;
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Eval.Scope;
-using Sixty502DotNet.Shared.Eval.String;
 using Sixty502DotNet.Shared.Lex;
 using Sixty502DotNet.Shared.Parse.Ast;
 
@@ -79,8 +78,7 @@ public partial class Parser
         Consume(TokenType.StringLiteral);
         return new Value
         (
-            _previous.Text.ToString().Trim('"'),
-            TextEncodingType.Default
+            _previous.Text.ToString().Trim('"')
         )
         {
             JsonPath = GetPath()

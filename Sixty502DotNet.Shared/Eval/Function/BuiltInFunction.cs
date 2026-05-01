@@ -196,7 +196,7 @@ public sealed class PokePeekFunction(bool isPoke, Output output) : IFunction
 public sealed class TypeofFunction : IFunction
 {
     public Value Invoke(IList<Value> arguments, CallExpression callSite) 
-        => new(arguments[0].TypeDisplayName(), TextEncodingType.Default);
+        => new(arguments[0].TypeDisplayName());
 
     public int Arity => 1;
     public int DefaultValues => 0;
@@ -217,7 +217,7 @@ public sealed class CharFunction(TextEncodingCollection collection) : IFunction
         {
             throw new CompileException(CompileExceptionType.InvalidCodePoint, callSite.Arguments[0]);
         }
-        return new Value(char.ConvertFromUtf32((int)codepoint), TextEncodingType.Default);
+        return new Value(char.ConvertFromUtf32((int)codepoint));
     }
 
     public int Arity => 1;

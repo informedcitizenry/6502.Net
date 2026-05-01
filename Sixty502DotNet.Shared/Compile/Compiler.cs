@@ -25,7 +25,6 @@ using Sixty502DotNet.Shared.Error;
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Eval.Function;
 using Sixty502DotNet.Shared.Eval.Scope;
-using Sixty502DotNet.Shared.Eval.String;
 using Sixty502DotNet.Shared.Lex;
 using Sixty502DotNet.Shared.Parse.Ast;
 using System.Text;

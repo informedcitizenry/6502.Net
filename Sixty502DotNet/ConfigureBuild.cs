@@ -21,7 +21,6 @@
 using Sixty502DotNet.CLI;
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Eval.Scope;
-using Sixty502DotNet.Shared.Eval.String;
 
 namespace Sixty502DotNet;
 
@@ -168,7 +167,7 @@ public static class ConfigureBuild
         var strOption = parseResult.GetStringOption(options);
         if (!string.IsNullOrEmpty(strOption))
         {
-            obj.Add(property, new Value(strOption, TextEncodingType.Default));
+            obj.Add(property, new Value(strOption));
         }
     }
     
@@ -182,7 +181,7 @@ public static class ConfigureBuild
     {
         var listOption = parseResult
             .GetListOption(options)
-            .Select(o => new Value(o, TextEncodingType.Default))
+            .Select(o => new Value(o))
             .ToList();
         if (listOption.Count > 0)
         {

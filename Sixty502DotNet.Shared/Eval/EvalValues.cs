@@ -547,7 +547,7 @@ internal static class EvalValues
         try
         {
             var strVal = string.Format(new ValueFormatter(encoding), fullFormat, interpolationVal);
-            return new Value(strVal, TextEncodingType.Default);
+            return new Value(strVal);
         }
         catch
         {

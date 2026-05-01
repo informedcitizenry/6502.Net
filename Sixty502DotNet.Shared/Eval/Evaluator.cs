@@ -22,7 +22,6 @@ using Sixty502DotNet.Shared.Arch;
 using Sixty502DotNet.Shared.Error;
 using Sixty502DotNet.Shared.Eval.Function;
 using Sixty502DotNet.Shared.Eval.Scope;
-using Sixty502DotNet.Shared.Eval.String;
 using Sixty502DotNet.Shared.Lex;
 using Sixty502DotNet.Shared.Parse.Ast;
 
@@ -52,11 +51,11 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
         var symbol = expression.Expr.Text;
         if (symbol.Equals(CpuIdConst, assemblyState.Comparison))
         {
-            return new Value(CpuLookup.ReverseLookup(assemblyState.Cpu), TextEncodingType.Default);
+            return new Value(CpuLookup.ReverseLookup(assemblyState.Cpu));
         }
         if (symbol.Equals(FileConst, assemblyState.Comparison))
         {
-            return new Value(expression.LeftToken.Source.Name, TextEncodingType.Default);
+            return new Value(expression.LeftToken.Source.Name);
         }
         if (symbol.Equals(LineConst, assemblyState.Comparison))
         {

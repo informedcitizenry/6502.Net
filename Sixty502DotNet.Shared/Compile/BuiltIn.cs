@@ -22,7 +22,6 @@ using Sixty502DotNet.Shared.Arch;
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Eval.Function;
 using Sixty502DotNet.Shared.Eval.Scope;
-using Sixty502DotNet.Shared.Eval.String;
 
 namespace Sixty502DotNet.Shared.Compile;
 
@@ -31,7 +30,7 @@ public static class BuiltIn
     public static void Define(AssemblyState state)
     {
         state.SymbolTable.DefineBuiltIn(Evaluator.CpuIdConst, new Value(CpuLookup.ReverseLookup(state.Cpu)));
-        state.SymbolTable.DefineBuiltIn(Evaluator.FileConst, new Value("<unnamed>", TextEncodingType.Default));
+        state.SymbolTable.DefineBuiltIn(Evaluator.FileConst, new Value("<unnamed>"));
         state.SymbolTable.DefineBuiltIn(Evaluator.LineConst, new Value(1));
 
         state.SymbolTable.DefineBuiltIn("INT8_MAX", new Value(sbyte.MaxValue));

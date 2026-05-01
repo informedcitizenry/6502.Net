@@ -21,7 +21,6 @@
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Error;
 using Sixty502DotNet.Shared.Eval.Scope;
-using Sixty502DotNet.Shared.Eval.String;
 using Sixty502DotNet.Shared.Lex;
 using Sixty502DotNet.Shared.Parse;
 using TransformFunc = System.Func<Sixty502DotNet.Shared.Eval.Value, Sixty502DotNet.Shared.Eval.Value?>;
@@ -131,7 +130,7 @@ public sealed class JsonSchemaBuilder
                         .CombineWith(AllDraftsMapper());
 
     private KeywordMapper Draft2019()
-        => new KeywordMapper().Map("$recursiveAnchor", TypeTag.Boolean, "$dynamicAnchor", (_) => new Value("\"\"", TextEncodingType.Default))
+        => new KeywordMapper().Map("$recursiveAnchor", TypeTag.Boolean, "$dynamicAnchor", (_) => new Value("\"\""))
                               .Map("$recursiveRef", TypeTag.String, "$dynamicRef")
                               .CombineWith(AllDraftsPost4Pre2020())
                               .CombineWith(AllDraftsPost7())
@@ -503,13 +502,13 @@ public sealed class JsonSchemaBuilder
                 _ = obj?.TryGetValue("required", out required);
                 if (required == null)
                 {
-                    List<Value> reqArray = [new Value(prop, TextEncodingType.Default)];
+                    List<Value> reqArray = [new Value(prop)];
                     obj?.Add("required", new Value(reqArray, TypeTag.Array));
                 }
                 else
                 {
                     var reqArr = required.AsArray();
-                    reqArr?.Add(new Value(prop, TextEncodingType.Default));
+                    reqArr?.Add(new Value(prop));
                 }
             }
         }

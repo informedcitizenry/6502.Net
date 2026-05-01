@@ -3390,7 +3390,7 @@ public static partial class ZilogIntelEncoder
         { 0xfb, new DecodedInstruction("ei", 0xfb) },
         { 0xfe, new DecodedInstruction("cp ${0:x2}", 0xfe,    2) },
         { 0xff, new DecodedInstruction("rst $38", 0xff) },
-        { 0x0010, new DecodedInstruction("stop", 0x0010,   1) },
+        { 0x0010, new DecodedInstruction("stop", 0x0010) },
         { 0x00cb, new DecodedInstruction("rlc b", 0x00cb,   2) },
         { 0x01cb, new DecodedInstruction("rlc c", 0x01cb,   2) },
         { 0x02cb, new DecodedInstruction("rlc d", 0x02cb,   2) },

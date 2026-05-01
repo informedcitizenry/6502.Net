@@ -21,8 +21,6 @@
 // ReSharper disable IdentifierTypo
 // ReSharper disable StringLiteralTypo
 
-using Sixty502DotNet.Shared.Eval.Scope;
-
 namespace Sixty502DotNet.Shared.Lex;
 
 

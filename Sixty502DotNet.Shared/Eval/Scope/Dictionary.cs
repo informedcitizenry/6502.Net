@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Sixty502DotNet.Shared.Eval.String;
 using System.Collections;
 using System.Text;
 
@@ -57,7 +56,7 @@ public sealed class Dictionary
     public bool ContainsKey(Value key) => _values.ContainsKey(key);
 
     public bool ContainsKey(string key) 
-        => _values.ContainsKey(new Value(key, TextEncodingType.Default));
+        => _values.ContainsKey(new Value(key));
     
     public IEnumerable<Value> Keys => _values.Keys;
 
@@ -135,7 +134,7 @@ public sealed class Dictionary
     }
 
     public Value this[string key] 
-        => _values[new Value(key, TextEncodingType.Default)];
+        => _values[new Value(key)];
 
     public Value? Lookup(string key)
     {
