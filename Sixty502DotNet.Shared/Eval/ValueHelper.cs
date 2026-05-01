@@ -19,7 +19,6 @@
 // SOFTWARE.
 
 using Sixty502DotNet.Shared.Compile;
-using Sixty502DotNet.Shared.Eval.Scope;
 using Sixty502DotNet.Shared.Eval.String;
 using Sixty502DotNet.Shared.Lex;
 using System.Globalization;
@@ -210,7 +209,7 @@ public static class ValueHelper
         var (sanitizedIntText, _) = GetSanitizedLiteral(enumerator, radix);
         if (sanitizedIntText[0] == '0')
         {
-            var i = 1;
+            var i = 0;
             for (; i < sanitizedIntText.Length && sanitizedIntText[i] != '0'; i++) { }
             sanitizedIntText = i < sanitizedIntText.Length ? sanitizedIntText[i..] : sanitizedIntText;
         }
