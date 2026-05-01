@@ -156,6 +156,15 @@ public static partial class I86Encoder
                 }
                 size = 2;
             }
+            else if (addr.Size() > 1) return false;
+            else
+            {
+                if (!s_address.TryGetValue((mnemonic, TokenType.N8), out hex))
+                {
+                    return false;
+                }
+                size = 1;
+            }
         }
         state.Output.EmitValue(hex, ByteOrder.LittleEndian);
         state.Output.EmitValueSized(addr, size, ByteOrder.LittleEndian);
