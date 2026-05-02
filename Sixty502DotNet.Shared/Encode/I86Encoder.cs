@@ -156,10 +156,10 @@ public static partial class I86Encoder
                 }
                 size = 2;
             }
-            else if (addr.Size() > 1) return false;
             else
             {
-                if (!s_address.TryGetValue((mnemonic, TokenType.N8), out hex))
+                if (addr.Size() > 1 || 
+                    !s_address.TryGetValue((mnemonic, TokenType.N8), out hex))
                 {
                     return false;
                 }

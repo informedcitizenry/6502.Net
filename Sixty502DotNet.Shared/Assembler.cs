@@ -208,7 +208,7 @@ public static class Assembler
             {
                 state.Logger.LogWarning
                 (
-                    $"Symbol `{unreferenced[i].Key}` was never referenced", 
+                    "Symbol was never referenced", 
                     new PrimaryExpression(unreferenced[i].Value)
                 );
             }
@@ -217,7 +217,7 @@ public static class Assembler
                 var macro = state.UnexpandedMacros[i];
                 state.Logger.LogWarning
                 (
-                    $"Macro `{macro.ToString()}` was never invoked", 
+                    "Macro was never invoked", 
                     new PrimaryExpression(macro)
                 );
             }

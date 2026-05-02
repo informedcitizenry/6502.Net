@@ -832,9 +832,9 @@ public class Compiler : IStatementVisitor<Jump>
         }
         var jump = Jump.NoJump;
         if (statement.Directive.Type == TokenType.ProcKw && 
-            (_assemblyState.Passes == 0 || !_assemblyState.SymbolTable.CurrentScopeIsReferenced) )
+            (_assemblyState.Passes != 0 && !_assemblyState.SymbolTable.CurrentScopeIsReferenced) )
         {
-            _assemblyState.PassNeeded |= _assemblyState.Passes == 0;
+            //_assemblyState.PassNeeded |= _assemblyState.Passes == 0;
         }
         else
         {

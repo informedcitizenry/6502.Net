@@ -109,7 +109,7 @@ public class SymbolTable
             out int? existingAddress)
     {
         var symbolName = symbol.Text.ToString();
-        if (symbolName[0] == '_')
+        if (symbolName[0] == '_' && type == EnvironmentType.Local)
         {
             var cheapLocal = new Label(statementIndex, address);
             if (!ActiveEnvironment.TryDefineConstant(symbol, new Value(cheapLocal), out var existing))

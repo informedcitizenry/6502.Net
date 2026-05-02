@@ -295,7 +295,10 @@ public sealed class Environment
         {
             label.Env.IsReferenced |= symbol.IsReferenced;
         }
-        IsReferenced |= symbol.IsReferenced;
+        if (Type != EnvironmentType.Proc)
+        {
+            IsReferenced |= symbol.IsReferenced;
+        }
         return symbol.Value;
     }
 
@@ -329,7 +332,10 @@ public sealed class Environment
     {
         var unreferenced = new List<KeyValuePair<string, Token>>();
         foreach (var entry in 
-                 _symbols.Where(kvp => !kvp.Value.IsReferenced && kvp.Value.Type != SymbolType.BuiltIn))
+                 _symbols.Where(kvp 
+                     => !kvp.Value.IsReferenced && 
+                        kvp.Value.Type != SymbolType.BuiltIn &&
+                        kvp.Value.Token.Type != TokenType.Eof))
         {
             var entryPath = parentName != null ? $"{parentName}.{entry.Key}" : entry.Key;
             unreferenced.Add(new KeyValuePair<string, Token>(entryPath, entry.Value.Token));

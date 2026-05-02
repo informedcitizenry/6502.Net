@@ -535,5 +535,5 @@ public static class ValueHelper
         }
     }
     
-    public static string Name(this TypeTag typeTag) => $"@{typeTag}";
+    public static string Name(this TypeTag typeTag) => $"<type@{typeTag}>";
 }

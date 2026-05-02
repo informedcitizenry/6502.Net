@@ -71,7 +71,8 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             }
             return symVal;
         }
-        assemblyState.PassNeeded |= assemblyState.Passes == 0;
+
+        assemblyState.PassNeeded |= assemblyState.Passes < 2;;
         return assemblyState.PassNeeded 
             ? null 
             : throw new CompileException
@@ -99,7 +100,8 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             address = assemblyState.Output.ProgramCounter;
             return new Value(new Label(address));
         }
-        assemblyState.PassNeeded |= assemblyState.Passes == 0;
+
+        assemblyState.PassNeeded |= assemblyState.Passes < 2;
         return assemblyState.PassNeeded 
             ? null 
             : throw new CompileException
@@ -259,7 +261,7 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             }
             return symVal;
         }
-        assemblyState.PassNeeded |= assemblyState.Passes == 0;
+        assemblyState.PassNeeded |= assemblyState.Passes < 2;
         return assemblyState.PassNeeded 
             ? null 
             : throw new CompileException(CompileExceptionType.HasNoMemberSymbol, expression.Member);
@@ -387,9 +389,9 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
         var asInt = value.AsInt(assemblyState.TextEncodingCollection);
         if (asInt < minValue || asInt > maxValue)
         {
-            if (assemblyState is { PassNeeded: false, Passes: > 0 })
+            if (assemblyState is { PassNeeded: false, Passes: > 1 })
                 throw new IntegerOverflowException(maxValue.Size(), minValue, maxValue, expression);
-            assemblyState.PassNeeded |= assemblyState.Passes == 0;
+            assemblyState.PassNeeded |= assemblyState.Passes < 2;
         }
         return asInt;
     }

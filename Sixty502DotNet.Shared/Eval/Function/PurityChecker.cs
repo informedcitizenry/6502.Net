@@ -103,9 +103,15 @@ public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool
     }
 
     public bool VisitForStatement(ForStatement statement)
-        => CheckBlock(statement.Block);
+    {
+        if (statement.Init != null && VariableExistsInOuterScope(statement.Init.Left))
+        {
+            return false;
+        }
+        return statement.Iterators.All(Visit) && CheckBlock(statement.Block);
+    }
 
-    public bool VisitForeachStatement(ForeachStatement statement)
+    public bool VisitForeachStatement(ForeachStatement statement) 
         => CheckBlock(statement.Block);
 
     public bool VisitSwitchStatement(SwitchStatement statement) 
