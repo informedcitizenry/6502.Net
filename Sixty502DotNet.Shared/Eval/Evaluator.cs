@@ -72,7 +72,7 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             return symVal;
         }
 
-        assemblyState.PassNeeded |= assemblyState.Passes < 2;;
+        assemblyState.PassNeeded |= assemblyState.Passes < 2;
         return assemblyState.PassNeeded 
             ? null 
             : throw new CompileException
@@ -194,6 +194,7 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
         if (startVal == null) return null;
         try
         {
+            assemblyState.PassNeeded |= assemblyState.Passes == 0;
             return !startVal.IsNumber()
                 ? throw new TypeException(TypeTag.Float, startVal, expression.Index)
                 : new Value(assemblyState.Output.Peek((int)(targetVal.AsInt() + startVal.AsInt())));
