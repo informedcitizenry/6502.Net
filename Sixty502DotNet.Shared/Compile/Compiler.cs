@@ -1275,51 +1275,58 @@ public class Compiler : IStatementVisitor<Jump>
     private Jump CompileBinaryStatement(Statement statement, IList<Expression> expressions)
     {
         var file = ExpressionFolder.EvalStringLiteral(expressions[0]);
+        byte[] fileBytes;
         try
         {
             var reader = _assemblyState.SourceFactory.CreateReader();
-            var fileBytes = reader.GetBytes(file) 
+            fileBytes = reader.GetBytes(file)
                             ?? throw new CompileException(CompileExceptionType.FileNotFound, expressions[0]);
-            var offset = 0;
-            var length = fileBytes.Length;
-            if (expressions.Count > 1)
-            {
-                offset = (int)_evaluator.EvalInteger(expressions[1], 0, int.MaxValue);
-                if (expressions.Count == 3)
-                {
-                    length = (int)_evaluator.EvalInteger(expressions[2], 0, int.MaxValue);   
-                }
-            }
-            if (offset + length > fileBytes.Length)
-            {
-                if (!_assemblyState.PassNeeded)
-                    throw new CompileException
-                    (
-                        CompileExceptionType.OffsetAndLengthOutOfRange, 
-                        expressions[1]
-                    );
-                _assemblyState.Output.EmitBytes(fileBytes, ByteOrder.LittleEndian);
-                return Jump.NoJump;
-            }
-
-            var programCounter = _assemblyState.Output.ProgramCounter;
-            var startOffset = _assemblyState.Output.Offset;
-            _assemblyState.Output.EmitBytes
-            (
-                fileBytes
-                    .Skip(offset)
-                    .Take(length)
-                    .ToArray(), 
-                _assemblyState.Cpu.ByteOrder()
-            );
-            BankCrossed(statement, programCounter);
-            GenDataListing(statement.LeftToken, startOffset, programCounter);
-            return Jump.NoJump;
         }
         catch 
         {
             throw new CompileException(CompileExceptionType.FileNotFound, expressions[0]);
         }
+        var offset = 0;
+        var length = fileBytes.Length;
+        if (expressions.Count > 1)
+        {
+            offset = (int)_evaluator.EvalInteger(expressions[1], 0, int.MaxValue);
+            if (expressions.Count == 3)
+            {
+                length = (int)_evaluator.EvalInteger(expressions[2], 0, int.MaxValue);
+            }
+            else if (offset < length)
+            {
+                length -= offset;
+            }
+        }
+        if (offset + length > fileBytes.Length)
+        {
+            if (!_assemblyState.PassNeeded)
+            {
+                var offender = length > fileBytes.Length ? 2 : 1;
+                throw new CompileException
+                (
+                    CompileExceptionType.OffsetAndLengthOutOfRange,
+                    expressions[offender]
+                );
+            }
+            _assemblyState.Output.EmitBytes(fileBytes, ByteOrder.LittleEndian);
+            return Jump.NoJump;
+        }
+        var programCounter = _assemblyState.Output.ProgramCounter;
+        var startOffset = _assemblyState.Output.Offset;
+        _assemblyState.Output.EmitBytes
+        (
+            fileBytes
+                .Skip(offset)
+                .Take(length)
+                .ToArray(),
+            _assemblyState.Cpu.ByteOrder()
+        );
+        BankCrossed(statement, programCounter);
+        GenDataListing(statement.LeftToken, startOffset, programCounter);
+        return Jump.NoJump;
     }
 
     private Jump CompileAlignOrFill(Statement statement, IList<Expression> expressions)
