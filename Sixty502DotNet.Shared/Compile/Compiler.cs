@@ -832,9 +832,9 @@ public class Compiler : IStatementVisitor<Jump>
         }
         var jump = Jump.NoJump;
         if (statement.Directive.Type == TokenType.ProcKw && 
-            (_assemblyState.Passes != 0 && !_assemblyState.SymbolTable.CurrentScopeIsReferenced) )
+            _assemblyState.Passes != 0 && !_assemblyState.SymbolTable.CurrentScopeIsReferenced)
         {
-            //_assemblyState.PassNeeded |= _assemblyState.Passes == 0;
+            // skip compiling
         }
         else
         {
@@ -1333,7 +1333,7 @@ public class Compiler : IStatementVisitor<Jump>
         );
         var startOffset = _assemblyState.Output.Offset;
         var programCounter = _assemblyState.Output.ProgramCounter;
-        if (startOffset + amount > 0xffff)
+        if (amount < 0 || startOffset + amount > Address.MaxAddress)
         {
             return _assemblyState.PassNeeded 
                 ? Jump.NoJump 
@@ -1379,7 +1379,7 @@ public class Compiler : IStatementVisitor<Jump>
         {
             return Jump.NoJump;
         }
-        var error = "Assertion failed.";
+        var error = "Assertion failed";
         if (expressions.Count > 1)
         {
             var errorVal = _evaluator.Visit(expressions[1]);

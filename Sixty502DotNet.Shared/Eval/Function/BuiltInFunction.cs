@@ -161,9 +161,9 @@ public sealed class SizeofFunction(TextEncodingCollection collection) : IFunctio
             ? new Value(arguments[0].AsInt(collection).Size()) 
             : new Value(arguments[0].Length);
 
-    public int Arity { get; } = 1;
-    public int DefaultValues { get; } = 0;
-    public bool IsVariant { get; } = false;
+    public int Arity => 1;
+    public int DefaultValues => 0;
+    public bool IsVariant => false;
 }
 
 public sealed class PokePeekFunction(bool isPoke, Output output) : IFunction
@@ -176,13 +176,13 @@ public sealed class PokePeekFunction(bool isPoke, Output output) : IFunction
         }
         if (!isPoke)
         {
-            return new Value(output.Peek((int)arguments[0].AsInt()));
+            return new Value(output.PeekInAssembledSpace((int)arguments[0].AsInt()));
         }
         if (!arguments[1].IsNumber() || arguments[1].AsInt().Size() > 1)
         {
             throw new IntegerOverflowException(1, sbyte.MinValue,  byte.MaxValue, callSite.Arguments[1]);
         }
-        output.Poke((int)arguments[0].AsInt(), (byte)(arguments[1].AsInt() & 0xff));
+        output.PokeInAssembledSpace((int)arguments[0].AsInt(), (byte)(arguments[1].AsInt() & 0xff));
         return null;
     }
 

@@ -48,6 +48,7 @@ public class Output(StringComparer comparer)
 
     public void Reset()
     {
+        InitMemValues(0x00);
         Started = false;
         _sections.Reset();
         Synched = true;
@@ -57,7 +58,6 @@ public class Output(StringComparer comparer)
         End = 0;
         ProgramCounterStart = 0;
         ProgramCounterEnd = 0;
-        Array.Fill(_bytes, (byte)0x00);
     }
 
     public void Fill(int amount)
@@ -200,7 +200,7 @@ public class Output(StringComparer comparer)
         }
     }
 
-    public void Poke(int address, byte value)
+    public void PokeInAssembledSpace(int address, byte value)
     {
         address = GetEffectiveAddress(address);
         if (!AddressInCodespace(address) || address < Start || address >= End)
@@ -209,11 +209,31 @@ public class Output(StringComparer comparer)
         }
         _bytes[address] = value;
     }
+
+    public void Poke(int address, byte value)
+    {
+        address = GetEffectiveAddress(address);
+        if (address > Address.MaxAddress)
+        {
+            throw new OutputException(OutputExceptionType.InvalidPokeAddress);
+        }
+        _bytes[address] = value;
+    }
+
+    
+    public byte PeekInAssembledSpace(int address)
+    {
+        address = GetEffectiveAddress(address);
+        return AddressInCodespace(address) && address >= Start && address < End
+            ? _bytes[address]
+            : throw new OutputException(OutputExceptionType.InvalidPeekAddress);
+    }
+    
     
     public byte Peek(int address)
     {
         address = GetEffectiveAddress(address);
-        return AddressInCodespace(address) && address >= Start && address < End
+        return address <= Address.MaxAddress
             ? _bytes[address]
             : throw new OutputException(OutputExceptionType.InvalidPeekAddress);
     }
@@ -334,10 +354,15 @@ public class Output(StringComparer comparer)
         return address - diff;
     }
 
+    private void InitMemValues(byte value)
+    {
+        Array.Fill(_bytes, value, 0, Start);
+        Array.Fill(_bytes, value, End, _bytes.Length - End);
+    }
     
     public byte InitMem
     {
-        set => Array.Fill(_bytes, value);
+        set => InitMemValues(value);
     }
 
     public int Start { get; private set; }
