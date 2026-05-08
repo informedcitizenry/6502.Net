@@ -265,7 +265,7 @@ public static class Assembler
                 Cpu.M6800 or Cpu.M6809 => state.Format switch
                 {
                     OutputFormat.None => new FlatFormatProvider(),
-                    _ => throw new OutputFormatException(state.Format)
+                    _ => throw new OutputFormatException()
                 },
                 Cpu.Gb80 or Cpu.I8080 or Cpu.I86 or Cpu.Z80 => state.Format switch
                 {
@@ -274,7 +274,7 @@ public static class Assembler
                     OutputFormat.Mz => new MzFormatProvider(),
                     _ => cpu != Cpu.I86 
                         ? new Z80FormatProvider(state.Format) 
-                        : throw new OutputFormatException(state.Format)
+                        : throw new OutputFormatException()
                 },
                 _ => state.Format switch
                 {

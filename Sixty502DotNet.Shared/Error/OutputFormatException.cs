@@ -18,11 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Sixty502DotNet.Shared.Arch.Formats;
-
 namespace Sixty502DotNet.Shared.Error;
 
-public class OutputFormatException(OutputFormat format) : Exception
-{
-    public OutputFormat Format { get; } = format;
-}
+public class OutputFormatException : Exception;
