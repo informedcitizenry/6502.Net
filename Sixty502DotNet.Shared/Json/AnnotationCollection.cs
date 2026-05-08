@@ -18,7 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Text.Json.Serialization;
 using Sixty502DotNet.Shared.Eval;
 
 namespace Sixty502DotNet.Shared.Json;
@@ -31,8 +30,7 @@ public enum AnnotationAddType
     Items = 2,
     Properties = 4,
     ErrorsAndItems = Errors | Items,
-    ErrorsAndProperties = Errors | Properties,
-    All = Errors | Items | Properties
+    ErrorsAndProperties = Errors | Properties
 };
 
 public sealed class ValidationError
@@ -51,25 +49,23 @@ public sealed class ValidationError
 
     public override string ToString()
     {
-        var messageFrament = Error.Length > 39 ? Error[..40] : Error;
-        return $"@{InstanceLocation}:{KeywordLocation}=>'{messageFrament}'";
+        var messageFragment = Error.Length > 39 ? Error[..40] : Error;
+        return $"@{InstanceLocation}:{KeywordLocation}=>'{messageFragment}'";
     }
     
     public string Error { get; }
 
-    public string KeywordLocation { get; }
-    
-    public string InstanceLocation { get; }
+    private string KeywordLocation { get; }
+
+    private string InstanceLocation { get; }
 }
 
 public class AnnotationCollection
 {
     public List<ValidationError> Errors { get; } = [];
-
-    [JsonIgnore]
+    
     public ISet<string> EvaluatedProperties { get; } = new HashSet<string>();
 
-    [JsonIgnore]
     public ISet<int> EvaluatedItems { get; } = new HashSet<int>();
 
     public bool Valid => Errors.Count == 0;
@@ -96,11 +92,12 @@ public class AnnotationCollection
     
     public void AddAnnotations(IEnumerable<AnnotationCollection> collections, AnnotationAddType addType = AnnotationAddType.Errors)
     {
+        var annotationCollections = collections as AnnotationCollection[] ?? collections.ToArray();
         if (addType.HasFlag(AnnotationAddType.Errors))
-            Errors.AddRange(collections.SelectMany(a => a.Errors));
+            Errors.AddRange(annotationCollections.SelectMany(a => a.Errors));
         if (addType.HasFlag(AnnotationAddType.Items))
-            EvaluatedItems.UnionWith(collections.SelectMany(a => a.EvaluatedItems));
+            EvaluatedItems.UnionWith(annotationCollections.SelectMany(a => a.EvaluatedItems));
         if (addType.HasFlag(AnnotationAddType.Properties))
-            EvaluatedProperties.UnionWith(collections.SelectMany(a => a.EvaluatedProperties));
+            EvaluatedProperties.UnionWith(annotationCollections.SelectMany(a => a.EvaluatedProperties));
     }
 }
