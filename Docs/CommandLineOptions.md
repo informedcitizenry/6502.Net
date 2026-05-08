@@ -367,7 +367,7 @@ Commands select a particular feature or set of behaviors with subsequent argumen
 
 ## Build command
 
-This command builds a project expecting a JSON-formatted build file. If no build file is given, the default file is assumed as `build.json`. A build file can be generated from arguments using the `create` command described below.
+This command builds a project expecting a JSON-formatted build file. If no build file is given, the default file is assumed as `build.json`. A build file can be generated from arguments using the `config` command described below.
 
 ```
 6502.Net build # builds a project from options in the build.json file
