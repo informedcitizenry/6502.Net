@@ -35,7 +35,7 @@ public static class ValueHelper
         return Int128.MaxMagnitude(value, (Int128)MaxTByte) > (Int128)MaxTByte;
     }
     
-    public static long GetCbmFloat(double val, bool packed)
+    public static long GetCbmFloat(double val)
     {
         var longDouble = BitConverter.DoubleToInt64Bits(val);
                            
@@ -46,13 +46,8 @@ public static class ValueHelper
         var mantissa = longDouble & mantMask;
         var cbmExponent = exponent - adjustedBias;
         var cbmMantissa = mantissa >> (52 - 31); 
-        if (packed)
-        {
-            var sign = longDouble < 0 ? -1 : 0;
-            return (cbmExponent << 32) | (uint)(sign << 31) | cbmMantissa;
-        }
-        var signByte = longDouble < 0 ? 0x80 : 0x00;
-        return (cbmExponent << 40) | (cbmMantissa << 8) | (uint)signByte;
+        var sign = longDouble < 0 ? -1 : 0;
+        return (cbmExponent << 32) | (uint)(sign << 31) | cbmMantissa;
     }
     
     public static string? GetString(string s)

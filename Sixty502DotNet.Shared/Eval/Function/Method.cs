@@ -350,7 +350,7 @@ public class Method : IFunction
     
     public static Method ToCbmFlt
         => new(0, (args, _) => 
-            new Value(ValueHelper.GetCbmFloat(args[0].AsDouble(), true)));
+            new Value(ValueHelper.GetCbmFloat(args[0].AsDouble())));
 
     public static Method ToLower => new(0, (args, _)
         => new Value(args[0].AsString().ToLower()));

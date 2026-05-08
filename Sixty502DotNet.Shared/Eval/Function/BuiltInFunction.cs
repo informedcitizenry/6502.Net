@@ -116,7 +116,7 @@ public sealed class CbmFltFunction : IFunction
         {
             throw new TypeException(TypeTag.Float, arguments[0], callSite.Arguments[0]);
         }
-        var value = ValueHelper.GetCbmFloat(arguments[0].AsDouble(), true);
+        var value = ValueHelper.GetCbmFloat(arguments[0].AsDouble());
         return new Value(value);
     }
 

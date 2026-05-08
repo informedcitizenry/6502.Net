@@ -454,7 +454,7 @@ public static class EmitData
                 {
                     throw new CompileException(CompileExceptionType.ValueOverflow, expression);
                 }
-                var cbmFlt = ValueHelper.GetCbmFloat(doubleValue, true);
+                var cbmFlt = ValueHelper.GetCbmFloat(doubleValue);
                 state.Output.EmitValueSized(cbmFlt, 5, ByteOrder.BigEndian);
                 break;
             }
