@@ -23,10 +23,10 @@ using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Error;
 
-public sealed class TypeException(TypeTag exected, Value found, Ast offender)
+public sealed class TypeException(TypeTag expected, Value found, Ast offender)
     : CompileException(CompileExceptionType.TypeMismatch, offender)
 {
-    public TypeTag Expected { get; } = exected;
+    public TypeTag Expected { get; } = expected;
 
     public Value Found { get; } = found;
 }

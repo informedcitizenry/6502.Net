@@ -359,12 +359,10 @@ internal static class EvalValues
                     .Take(len)
                     .ToList(), TypeTag.Array);
             }
-            if (target.AsAsmString() is { } asmStr)
-            {
-                return new Value(asmStr
-                        .Substring(intStart, len));
-            }
-            return null;
+            return target.AsAsmString() is { } asmStr
+                ? new Value(asmStr
+                    .Substring(intStart, len))
+                : null;
         }
         if (rangeStartValue == null) return null;
         if (start < 0) start = size + start;
@@ -376,11 +374,9 @@ internal static class EvalValues
         {
             return rangeTarget[(int)start];
         }
-        if (target.AsString() is { } rangeStrTarget)
-        {
-            return new Value(rangeStrTarget[(int)start]);
-        }
-        return null;
+        return target.AsString() is { } rangeStrTarget 
+            ? new Value(rangeStrTarget[(int)start]) 
+            : null;
     }
 
     public static Value? ArrayInit(IList<Value?> values, ArrayInitExpression expression)

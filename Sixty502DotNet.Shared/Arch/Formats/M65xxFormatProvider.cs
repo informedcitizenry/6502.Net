@@ -61,7 +61,7 @@ public sealed class M65xxFormatProvider(OutputFormat format) : IOutputFormatProv
                 writer.Write(endL); writer.Write(endH);
                 break;
             default:
-                throw new OutputFormatException(format);
+                throw new OutputFormatException();
         }
         writer.Write(objectBytes.ToArray());
         return ms.ToArray();

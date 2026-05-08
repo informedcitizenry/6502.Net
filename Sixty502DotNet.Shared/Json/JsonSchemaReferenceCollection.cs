@@ -110,5 +110,5 @@ public sealed class JsonSchemaReferenceCollection
         return schema;
     }
 
-    public JsonSchema Root { get; }
+    private JsonSchema Root { get; }
 }

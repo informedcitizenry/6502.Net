@@ -39,13 +39,10 @@ public partial class DateTimeValidator : IFormatValidator
             "duration" => DurationRegex().IsMatch(value),
             _ => DateTimeRegex().IsMatch(value)
         };
-        if (valid)
-        {
-            if (formatName.Equals("duration"))
-                return !value.Equals("P");
-            return DateTime.TryParse(value, out _);
-        }
-        return false;
+        if (!valid) return false;
+        if (formatName.Equals("duration"))
+            return !value.Equals("P");
+        return DateTime.TryParse(value, out _);
     }
 
     [GeneratedRegex("^\\d{4}-\\d{2}-\\d{2}$")]

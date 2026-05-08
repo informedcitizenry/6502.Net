@@ -18,11 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Sixty502DotNet.Shared.Json;
-
 namespace Sixty502DotNet.Shared.Error;
 
-public class JsonSchemaException(string message, JsonSchema schema) : Exception(message)
-{
-    private JsonSchema Schema { get; } = schema;
-}
+public class JsonSchemaException(string message) : Exception(message);

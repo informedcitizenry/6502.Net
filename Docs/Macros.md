@@ -155,9 +155,11 @@ Because macros are evaluated before other scope blocks, they are considered "glo
 
 ```
 myscope     .block
+{
 mymacro     .macro
-{            lda #\1
-            .endmacro
+{           
+            lda #\1
+}
 }
             .mymacro $42 // not 'myscope.mymacro'
 ```

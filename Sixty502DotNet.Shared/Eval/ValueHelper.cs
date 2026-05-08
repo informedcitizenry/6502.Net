@@ -506,25 +506,30 @@ public static class ValueHelper
                 unicode <<= 4;
                 unicode |= Convert.ToInt32(hex, 16);
             }
-            if (unicode is >= Unicode.SurrogateMin and <= Unicode.SurrogateMax)
+            switch (unicode)
             {
-                if (unicode < Unicode.LowSurrogate)
+                case < Unicode.SurrogateMin or > Unicode.SurrogateMax:
+                    break;
+                case < Unicode.LowSurrogate when escapeType != 'u' || 
+                                                 !enumerator.MoveNext() || 
+                                                 enumerator.GetTextElement() != "\\" ||
+                                                 !enumerator.MoveNext() ||
+                                                 enumerator.GetTextElement() != "u":
+                    return null;
+                case < Unicode.LowSurrogate:
                 {
-                    if (escapeType != 'u' || 
-                        !enumerator.MoveNext() || 
-                        enumerator.GetTextElement() != "\\" ||
-                        !enumerator.MoveNext() ||
-                        enumerator.GetTextElement() != "u")
-                    {
-                        return null;
-                    }
                     var low = GetUnicodeEscaped(enumerator, '2');
                     if (low == null) return null;
                     unicode = (unicode - Unicode.HighSurrogate) * 0x400 + (low.Value - Unicode.LowSurrogate) + 0x10000;
+                    break;
                 }
-                else if (escapeType != '2')
+                default:
                 {
-                    return null;
+                    if (escapeType != '2')
+                    {
+                        return null;
+                    }
+                    break;
                 }
             }
             return unicode;

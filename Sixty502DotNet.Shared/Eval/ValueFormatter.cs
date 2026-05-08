@@ -61,7 +61,7 @@ public sealed class ValueFormatter(TextEncodingCollection encoding) : ICustomFor
             case 'P':
             case 'r':
             case 'R':
-                return value.AsDouble().ToString(format);
+                return value.AsDouble(encoding).ToString(format);
             default:
                 return format;
             

@@ -92,7 +92,7 @@ public sealed class JsonSchemaBuilder
             }
             var expected = _typeMapping.Keys.FirstOrDefault(nameType => nameType.Item1.Equals(draftName));
             if (_typeMapping.TryGetValue(expected, out var expectedMapping) && expectedMapping.RaiseExceptionOnTypeMismatch)
-                throw new JsonSchemaBuilderException($"Property '{draftName}' expects a different type from '{token?.TypeTag.ToString().ToLower() ?? "null"}'.", token ?? new Value());
+                throw new JsonSchemaBuilderException($"Property '{draftName}' expects a different type from '{token?.TypeTag.ToString().ToLower() ?? "null"}'.");
             return (null, null);
         }
     }
@@ -339,7 +339,7 @@ public sealed class JsonSchemaBuilder
                         dependentSchema = new Value(val.AsBoolean());
                         break;
                     default:
-                        throw new JsonSchemaBuilderException($"Property '{prop}' type is invalid.", val);
+                        throw new JsonSchemaBuilderException($"Property '{prop}' type is invalid.");
                 }
                 if (dependentSchema != null)
                     dependentSchemas.Add(prop.Key.ToString(), dependentSchema);
@@ -361,7 +361,7 @@ public sealed class JsonSchemaBuilder
                 {
                     TypeTag.Dictionary => MapToSchema(schemaToken),
                     TypeTag.Boolean when postDraft4 => new Value(schemaToken.AsBoolean()),
-                    _ => throw new JsonSchemaBuilderException($"Property '{prop}' type is invalid.", schemaToken)
+                    _ => throw new JsonSchemaBuilderException($"Property '{prop}' type is invalid.")
                 };
                 if (schema != null)
                     objSchemas.Add(prop.Key.ToString(), schema);
@@ -383,7 +383,7 @@ public sealed class JsonSchemaBuilder
                 else if (arr[i].TypeTag == TypeTag.Boolean && postDraft4)
                     schemaList.Add(new Value(arr[i].AsBoolean()));
                 else
-                    throw new JsonSchemaBuilderException($"Schema must be an object.", arr[i]);
+                    throw new JsonSchemaBuilderException($"Schema must be an object.");
             }
             return new Value(schemaList, TypeTag.Array);
         }
@@ -445,7 +445,7 @@ public sealed class JsonSchemaBuilder
                         break;
                     }
                     default:
-                        throw new JsonSchemaBuilderException($"Property must be a string or object.", val);
+                        throw new JsonSchemaBuilderException($"Property must be a string or object.");
                 }
             }
             return new Value(schemaList, TypeTag.Array);

@@ -111,7 +111,7 @@ public sealed partial class JsonSchema
         else
         {
             if (value.AsDictionary() is not {} obj)
-                throw new JsonSchemaException("Not a valid schema object", this);
+                throw new JsonSchemaException("Not a valid schema object");
             if (obj.Count > 0)
             {
                 Id = GetStringProperty(obj, "$id") ?? "";
@@ -200,7 +200,7 @@ public sealed partial class JsonSchema
     private void ValidateProperty(string propertyName, string error, bool isValid)
     {
         if (!isValid)
-            throw new JsonSchemaException($"Error in schema: Property '{propertyName}' {error}.", this);
+            throw new JsonSchemaException($"Error in schema: Property '{propertyName}' {error}.");
     }
 
     private JsonSchemaType ConvertType()
@@ -228,7 +228,7 @@ public sealed partial class JsonSchema
         }
         catch
         {
-            throw new JsonSchemaException($"Error in schema: Property 'type' contains one or more invalid type names.", this);
+            throw new JsonSchemaException($"Error in schema: Property 'type' contains one or more invalid type names.");
         }
     }
     private static string? GetParentBasePath(JsonSchema? parent)
@@ -309,7 +309,7 @@ public sealed partial class JsonSchema
         {
             Dictionary<string, ISet<string>> result = new();
             if (dependent?.AsDictionary() is not { } dependentRequired)
-                throw new JsonSchemaException($"Property 'dependentRequired' is not in the correct form", this);
+                throw new JsonSchemaException($"Property 'dependentRequired' is not in the correct form");
             foreach (var kvp in dependentRequired)
             {
                 var propList = GetStringPropertyList(dependentRequired, kvp.Key.AsString()) ?? [];
@@ -334,7 +334,7 @@ public sealed partial class JsonSchema
                 }
                 catch
                 {
-                    throw new JsonSchemaException($"Property '{property}' requires string values", this);
+                    throw new JsonSchemaException($"Property '{property}' requires string values");
                 }
             }
             return propVals;
@@ -367,7 +367,7 @@ public sealed partial class JsonSchema
         {
             return value?.TypeTag == TypeTag.String 
                 ? value.AsString() 
-                : throw new JsonSchemaException($"Property '{property}' must be a string value", this);
+                : throw new JsonSchemaException($"Property '{property}' must be a string value");
         }
         return null;
     }

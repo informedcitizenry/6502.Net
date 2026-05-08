@@ -439,7 +439,7 @@ public sealed partial class JsonValidator
         if (!string.IsNullOrEmpty(schema.Ref))
         {
             var definition = _refs.GetReference(schema.Ref)
-                ?? throw new JsonSchemaException($"Error in schema: Unable to resolve reference '{schema.Ref}' in {schema}.", schema);
+                ?? throw new JsonSchemaException($"Error in schema: Unable to resolve reference '{schema.Ref}' in {schema}.");
             annotations.AddAnnotations(ValidateInstance(definition, token), addType | AnnotationAddType.Errors);
         }
         return annotations;

@@ -19,48 +19,21 @@
 // SOFTWARE.
 
 using Sixty502DotNet.Shared.Eval;
-using Sixty502DotNet.Shared.Lex;
 using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Error;
 
 
-public sealed class InvalidUnaryOperationException : CompileException
+public sealed class InvalidUnaryOperationException(Value val, Ast offender)
+    : CompileException(CompileExceptionType.InvalidOperation, offender)
 {
-    public InvalidUnaryOperationException(Value val, Ast offender)
-        : base(CompileExceptionType.InvalidOperation, offender)
-    {
-        Val = val;
-    }
-    
-    public InvalidUnaryOperationException(Value val, Token offender)
-        : base(CompileExceptionType.InvalidOperation, offender)
-    {
-        Val = val;
-    }
-    
-    public Value Val { get; }
-
+    public Value Val { get; } = val;
 }
 
-public sealed class InvalidBinaryOperationException : CompileException
+public sealed class InvalidBinaryOperationException(Value leftVal, Value rightVal, Ast offender)
+    : CompileException(CompileExceptionType.InvalidOperation, offender)
 {
-    public InvalidBinaryOperationException(Value leftVal, Value rightVal, Ast offender)
-        : base(CompileExceptionType.InvalidOperation, offender)
-    {
-        LeftVal = leftVal;
-        RightVal = rightVal;
-    }
+    public Value LeftVal { get; } = leftVal;
 
-    public InvalidBinaryOperationException(Value leftVal, Value rightVal, Token offender)
-    : base(CompileExceptionType.InvalidOperation, offender)
-    {
-        LeftVal = leftVal;
-        RightVal = rightVal;
-    }
-    
-    public Value LeftVal { get; }
-    
-    public Value RightVal { get; }
-    
+    public Value RightVal { get; } = rightVal;
 }

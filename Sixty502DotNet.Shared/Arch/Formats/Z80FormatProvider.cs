@@ -180,7 +180,7 @@ public sealed class Z80FormatProvider(OutputFormat format) : IOutputFormatProvid
                 // do nothing
                 break;
             default:
-                throw new OutputFormatException(format);
+                throw new OutputFormatException();
         }
         writer.Write(objectBytes.ToArray());
         return ms.ToArray();

@@ -418,7 +418,7 @@ public static partial class M65xxEncoder
         var size = 1;
         var address = (int)evaluator.EvalInteger(operandExpression, short.MinValue, ushort.MaxValue);
         var offs = address - (state.Output.ProgramCounter + 2);
-        if (offs is < -128 or > 127)
+        if (offs is < sbyte.MinValue or > sbyte.MaxValue)
         {
             var jmp = 0x4c;
             pseudoHex = s_6502PseudoToReal[mnemonicType] + 256 * 3;
