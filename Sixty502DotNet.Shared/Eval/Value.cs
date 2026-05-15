@@ -36,7 +36,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
     
     private readonly Int128 _int128Value;
 
-    private readonly Dictionary? _dictionaryValues;
+    private readonly Dictionary? _dictionaryValue;
 
     private readonly double _floatValue;
     
@@ -83,7 +83,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
                 _charValue = other._charValue; 
                 break;
             case TypeTag.Dictionary:
-                _dictionaryValues = other._dictionaryValues; break;
+                _dictionaryValue = other._dictionaryValue; break;
             case TypeTag.Float: _floatValue = other._floatValue; break;
             case TypeTag.Function: _functionValue = other._functionValue; break;
             case TypeTag.Int: _intValue = other._intValue; break;
@@ -119,13 +119,12 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
         if (int128 >= long.MinValue && int128 <= long.MaxValue)
         {
             _intValue = (long)int128;
-            TypeTag =  TypeTag.Int128;
+            TypeTag =  TypeTag.Int;
             return;
         }
         _intValue = long.MinValue;
         _int128Value =  int128;
         TypeTag = TypeTag.Int128;
-
     }
     
     public Value(IAddress address)
@@ -178,8 +177,8 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
 
     public Value(Dictionary dictionaryValues)
     {
-        _dictionaryValues = new Dictionary(dictionaryValues);
-        _resolverValue = _dictionaryValues;
+        _dictionaryValue = new Dictionary(dictionaryValues);
+        _resolverValue = _dictionaryValue;
         TypeTag = TypeTag.Dictionary;
     }
 
@@ -224,7 +223,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
             case TypeTag.Dictionary:
             {
                 var hash = new HashCode();
-                foreach (var pair in _dictionaryValues!)
+                foreach (var pair in _dictionaryValue!)
                 {
                     hash.Add(pair.Key.GetHashCode());
                     hash.Add(pair.Value.GetHashCode());
@@ -327,7 +326,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
         {
             TypeTag.Array or 
             TypeTag.Tuple => ReferenceEquals(_arrayValues, other._arrayValues),
-            TypeTag.Dictionary => ReferenceEquals(_dictionaryValues, other._dictionaryValues),
+            TypeTag.Dictionary => ReferenceEquals(_dictionaryValue, other._dictionaryValue),
             TypeTag.Function => ReferenceEquals(_functionValue, other._functionValue),
             TypeTag.String => ReferenceEquals(_stringValue, other._stringValue),
             TypeTag.Resolver when _resolverValue is not IAddress && other._resolverValue is not IAddress 
@@ -422,10 +421,10 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
                 return _boolValue == other._boolValue;
             case TypeTag.Dictionary:
             {
-                if (_dictionaryValues!.Count != other._dictionaryValues!.Count) return false;
-                foreach (var kvp in _dictionaryValues)
+                if (_dictionaryValue!.Count != other._dictionaryValue!.Count) return false;
+                foreach (var kvp in _dictionaryValue)
                 {
-                    if (!other._dictionaryValues.TryGetValue(kvp.Key, out var value)) return false;
+                    if (!other._dictionaryValue.TryGetValue(kvp.Key, out var value)) return false;
                     if (value?.Equals(kvp.Value) == false) return false;
                 }
                 return true;
@@ -484,7 +483,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
                 TypeTag.Array or 
                 TypeTag.Tuple => _arrayValues!.Count,
                 TypeTag.String => _stringValue!.Length,
-                TypeTag.Dictionary => _dictionaryValues!.Count,
+                TypeTag.Dictionary => _dictionaryValue!.Count,
                 _ => 0
             };
         }
@@ -560,7 +559,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
     
     public IList<Value>? AsArray() => _arrayValues;
     
-    public Dictionary? AsDictionary() => _dictionaryValues;
+    public Dictionary? AsDictionary() => _dictionaryValue;
     
     public IFunction? AsFunction() => _functionValue;
 
@@ -602,7 +601,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
                 var ss = new StringBuilder();
                 ss.Append('{');
                 var isFirst = true;
-                foreach (var kvp in _dictionaryValues!)
+                foreach (var kvp in _dictionaryValue!)
                 {
                     if (!isFirst)
                     {
@@ -630,7 +629,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
             TypeTag.Tuple => _arrayValues,
             TypeTag.Boolean => _boolValue,
             TypeTag.Char => _charValue,
-            TypeTag.Dictionary => _dictionaryValues,
+            TypeTag.Dictionary => _dictionaryValue,
             TypeTag.Float => _floatValue,
             TypeTag.Function => _functionValue,
             TypeTag.Int => _intValue,
@@ -683,7 +682,7 @@ public sealed class Value : IEquatable<Value>, IComparable<Value>
         }
         else
         {
-            var dict = _dictionaryValues ?? new Dictionary();
+            var dict = _dictionaryValue ?? new Dictionary();
             var c = 0;
             foreach (KeyValuePair<Value, Value> kvp in dict)
             {

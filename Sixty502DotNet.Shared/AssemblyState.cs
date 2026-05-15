@@ -48,6 +48,7 @@ public sealed class AssemblyState
         AnalysisContexts.Clear();
         DirectPageOff = true;
         DirectPage = 0;
+        StatementIndex = 0;
         Bank = 0;
         BankOff = true;
         Format = FormatLookup.ByName(AssemblyOptions.Format) ?? OutputFormat.None;
@@ -76,6 +77,8 @@ public sealed class AssemblyState
     public bool BankOff { get; set; } = true;
     
     public int Passes { get; set; }
+    
+    public int StatementIndex { get; set; }
 
     public OutputFormat Format { get; set; } = OutputFormat.None;
     

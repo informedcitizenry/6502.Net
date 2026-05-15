@@ -33,23 +33,23 @@ public sealed class ValueComparer
 {
     public int Compare(Value? x, Value? y)
     {
-        if (x != null && y != null)
+        if (x == null || y == null)
         {
-            List<Value> compareParams = [x, y];
-            var result = comparer.Invoke(compareParams, callSite);
-            if (result == null)
-            {
-                return state.PassNeeded ? 0 
-                    : throw new CompileException(CompileExceptionType.NoValueReturned, callSite);
-            }
-            var asInt = result.AsInt();
-            if (asInt is < -1 or > 1)
-            {
-                return state.PassNeeded ? 0 
-                    : throw new CompileException(CompileExceptionType.TypeMismatch, callSite);
-            }
-            return (int)result.AsInt();
+            return Comparer<Value>.Default.Compare(x, y);
         }
-        return Comparer<Value>.Default.Compare(x, y);
+        List<Value> compareParams = [x, y];
+        var result = comparer.Invoke(compareParams, callSite);
+        if (result == null)
+        {
+            return state.PassNeeded ? 0 
+                : throw new CompileException(CompileExceptionType.NoValueReturned, callSite);
+        }
+        var asInt = result.AsInt();
+        if (asInt is < -1 or > 1)
+        {
+            return state.PassNeeded ? 0 
+                : throw new CompileException(CompileExceptionType.TypeMismatch, callSite);
+        }
+        return (int)result.AsInt();
     }
 }

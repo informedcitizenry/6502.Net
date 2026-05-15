@@ -58,7 +58,7 @@ public sealed class AssemblyOptions
     
     public bool WarnJumpBug { get; init; }
     
-    public bool WarnOptimizeZ80AccToZero { get; init; }
+    public bool WarnOptimizeResetReg { get; init; }
     
     public bool DoNotWarnOnUnusedSections { get; init; }
     

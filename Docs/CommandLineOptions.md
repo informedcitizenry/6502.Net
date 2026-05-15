@@ -314,9 +314,9 @@ If any defined sections are not used, do not emit a warning.
     // do not warn if "zp" is never used
 ```
 
-**`--Woptimize-z80-acc-to-zero`**
+**`--Woptimize-reset-register`**
 
-For Z80 code, warn when `ld a,0` can be optimized to `and a` or `xor a`.
+Warn when `ld a,0` (z80) or `mov ax,0` (i8086) can be optimized to `and a` (z80) or `and ax,ax` (i8086).
 
 **`--Wregister-as-identifier`**
 

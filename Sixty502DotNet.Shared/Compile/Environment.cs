@@ -22,6 +22,7 @@ using System.Text;
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Eval.Scope;
 using Sixty502DotNet.Shared.Lex;
+using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Compile;
 
@@ -43,6 +44,8 @@ public sealed class Environment
 )
 {
     private readonly Dictionary<string, Symbol> _symbols = new(comparer);
+
+    private readonly Dictionary<string, Ast> _constantNames = new(comparer);
     
     private readonly AnonymousCollection _anonymousRefs = new();
 
@@ -136,6 +139,9 @@ public sealed class Environment
 
     public bool SymbolExists(string name)
         => _symbols.ContainsKey(name);
+
+    public void LogConstant(string name, Ast ast)
+        => _ = _constantNames.TryAdd(name, ast);
     
     public bool TryDefineConstant(Token name, Value value, out Value? existing)
     {
@@ -157,6 +163,12 @@ public sealed class Environment
         existing = symbol.Value;
         symbol.Value = value;
         return false;
+    }
+
+    public Ast? ConstantDeclaration(string name)
+    {
+        _ = _constantNames.TryGetValue(name, out var ast);
+        return ast;
     }
     
     public bool DefineOrUpdateThis(Value argument)
@@ -280,6 +292,9 @@ public sealed class Environment
         );
         return true;
     }
+
+    public bool SymbolIsVariable(string symbolName)
+        => _symbols.TryGetValue(symbolName, out var symbol) && symbol.Type == SymbolType.Variable;
     
     public bool SymbolIsReferenced(string symbolName) 
         => _symbols.TryGetValue(symbolName, out var symbol) && symbol.IsReferenced;
@@ -291,7 +306,7 @@ public sealed class Environment
             return Parent?.Lookup(name) ?? closure?.Lookup(name);
         }
         symbol.IsReferenced |= symbol.Type != SymbolType.BuiltIn;
-        if (symbol.Value.AsResolver() is ScopeLabel { Type: EnvironmentType.Proc } label)
+        if (symbol.Value.AsResolver() is ScopeLabel label)
         {
             label.Env.IsReferenced |= symbol.IsReferenced;
         }
@@ -302,6 +317,15 @@ public sealed class Environment
         return symbol.Value;
     }
 
+    public Value? PeekLocally(string name)
+    {
+        if (!_symbols.TryGetValue(name, out var symbol))
+        {
+            return null;
+        }
+        return symbol.Value;
+    }
+    
     public Value? LookupLocally(string name)
     {
         if (!_symbols.TryGetValue(name, out var symbol))
@@ -309,6 +333,14 @@ public sealed class Environment
             return null;
         }
         symbol.IsReferenced |= symbol.Type != SymbolType.BuiltIn;
+        if (symbol.Value.AsResolver() is ScopeLabel scopeLabel)
+        {
+            scopeLabel.Env.IsReferenced |= symbol.IsReferenced;
+        }
+        if (Type != EnvironmentType.Proc)
+        {
+            IsReferenced |= symbol.IsReferenced;
+        }
         return symbol.Value;
     }
     

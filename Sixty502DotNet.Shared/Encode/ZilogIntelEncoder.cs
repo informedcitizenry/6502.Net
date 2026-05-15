@@ -294,13 +294,13 @@ public static partial class ZilogIntelEncoder
         {
             return "Return following subroutine call can be simplified to a jump instruction";
         }
-        if (options.WarnOptimizeZ80AccToZero &&
+        if (options.WarnOptimizeResetReg &&
             context.Statement.Mnemonic.Type is TokenType.Ld &&
             context.Statement.Operand.Type == OperandType.Immediate80 &&
             context.Statement.Operand.Registers[0].Type == TokenType.A &&
             context.ObjectCode[1] == 0)
         {
-            return "Instruction can be optimized to `and a,a`";
+            return "Instruction can be optimized to `xor a,a`";
         }
         return string.Empty;
     }

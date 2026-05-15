@@ -30,9 +30,9 @@ public abstract class Expression : Ast
 
     public abstract bool IsLValue();
     
-    public Value Value { get; set; } = new Value();
-
-    public abstract Value? Accept(IExpressionVisitor visitor);
+    public Value Value { get; set; } = new ();
+    
+    public abstract T Accept<T>(IExpressionVisitor<T> visitor);
 }
 
 public sealed class PrimaryExpression : Expression
@@ -60,7 +60,7 @@ public sealed class PrimaryExpression : Expression
     public override bool IsLValue() 
         => LeftToken.Type.IsIdent() || LeftToken.Type == TokenType.Star;
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitPrimaryExpression(this);
     
     public Token Expr { get; }
@@ -81,12 +81,12 @@ public sealed class GroupedExpression : Expression
 
     public override bool IsLValue() => Inner.IsLValue();
 
-    public Expression Inner { get; }
+    private Expression Inner { get; }
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => Inner.Accept(visitor);
 
-    public override string ToString() => Inner?.ToString() ?? string.Empty;
+    public override string ToString() => Inner.ToString() ?? string.Empty;
 }
 
 public sealed class AnonymousRefExpression : Expression
@@ -105,7 +105,7 @@ public sealed class AnonymousRefExpression : Expression
 
     public override string ToString() => new (Type, Places);
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitAnonymousRefExpression(this);
     
     public char Type { get; }
@@ -128,7 +128,7 @@ public sealed class BinaryOpExpression : Expression
     
     public override bool IsLValue() => false;
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitBinaryOpExpression(this);
 
     public override string ToString() => $"({Operator.Text} {Left} {Right})";
@@ -156,7 +156,7 @@ public sealed class TernaryExpression : Expression
     public override bool IsConstant() 
         => Condition.IsConstant() && Then.IsConstant() && Else.IsConstant();
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitTernaryExpression(this);
 
     public override string ToString() => $"(? {Condition} (: {Then} {Else}))";
@@ -183,7 +183,7 @@ public sealed class UnaryOpExpression : Expression
 
     public override bool IsConstant() => Expr.IsConstant();
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitUnaryOpExpression(this);
     
     public Token Operator { get; }
@@ -218,7 +218,7 @@ public sealed class ArrayInitExpression : Expression
     public override bool IsLValue() 
         => IsTuple && Expressions.All(t => t.IsLValue());
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitArrayInitExpression(this);
 
     public override string ToString()
@@ -261,7 +261,7 @@ public sealed class DictionaryInitExpression : Expression
     
     public override bool IsLValue() => false;
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitDictionaryInitExpression(this);
 
     public override string ToString()
@@ -300,7 +300,7 @@ public sealed class SubscriptExpression : Expression
                (Index.End == null || Index.End.IsConstant());
     }
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitSubscriptExpression(this);
 
     public override string ToString()
@@ -336,7 +336,7 @@ public sealed class MemberExpression : Expression
 
     public override bool IsLValue() => Left.IsLValue();
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitMemberExpression(this);
 
     public override string ToString() => $"(. {Left} {Member.Text})";
@@ -360,7 +360,7 @@ public sealed class CallExpression : Expression
     
     public override bool IsLValue() => false;
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitCallExpression(this);
     
     public Expression Callee { get; }
@@ -415,7 +415,7 @@ public sealed class FunctionExpression : Expression
     
     public override bool IsLValue() => false;
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitFunctionExpression(this);
 
     public override string ToString() => "function()";
@@ -443,7 +443,7 @@ public sealed class InterpolationExpression : Expression
 
     public override bool IsLValue() => false;
 
-    public override Value? Accept(IExpressionVisitor visitor)
+    public override T Accept<T>(IExpressionVisitor<T> visitor)
         => visitor.VisitInterpolationExpression(this);
     
     public override string ToString() => Expr.ToString() ?? string.Empty;

@@ -125,7 +125,7 @@ switch (parseResult.CommandName)
             WarnLeftSpaceOfLabel = wall || parseResult.GetBoolOption("--Wleft"),
             WarnRegistersAsIdent = wall || parseResult.GetBoolOption("--Wregister-as-identifier"),
             WarnSimplifyCallReturn =  wall || parseResult.GetBoolOption("--Wsimplify-call-return"),
-            WarnOptimizeZ80AccToZero =  wall || parseResult.GetBoolOption("--Woptimize-z80-acc-to-zero"),
+            WarnOptimizeResetReg =  wall || parseResult.GetBoolOption("--Woptimize-reset-register"),
             WarnTextInNonTextPseudoOp = wall || parseResult.GetBoolOption("--Wtext-in-non-text-pseudo-ops"),
             WarnUnreferencedSymbols = wall || parseResult.GetBoolOption("--Wunreferenced-symbols"),
             UseLegacyBlocks = parseResult.GetBoolOption("--legacy-blocks"),
@@ -480,10 +480,10 @@ Command ConfigureOptions()
         Name = "Wunreferenced-symbols",
         Type = OptionType.Boolean
     };
-    var warnOptimizeZ80AccToZeroOption = new Option
+    var warnOptimizeResetRegisterOption = new Option
     {
-        HelpText = "Warn when `ld a,0` can be optimized.",
-        Name = "Woptimize-z80-acc-to-zero",
+        HelpText = "Warn when resetting register can be optimized for Z80 and i86.",
+        Name = "Woptimize-reset-register",
         Type = OptionType.Boolean
     };
     branchAlwaysOption.Validators.Add(result =>
@@ -497,10 +497,6 @@ Command ConfigureOptions()
     warnAboutJumpBugOption.Validators.Add(result =>
     {
         ValidateCpuOptionIsInFamily("--Wjump-bug", Cpu.M6502, result);
-    });
-    warnOptimizeZ80AccToZeroOption.Validators.Add(result =>
-    {
-        ValidateCpuOptionIsInFamily("--Woptimize-z80-acc-to-zero", Cpu.Z80, result);
     });
     labelsAddressesOnlyOption.Validators.Add(result =>
     {
@@ -573,7 +569,7 @@ Command ConfigureOptions()
     rootCommand.AddOption(warnNotUnusedSections);
     rootCommand.AddOption(warnNotBankCrossedOption);
     rootCommand.AddOption(warnNotIntToFloatOption);
-    rootCommand.AddOption(warnOptimizeZ80AccToZeroOption);
+    rootCommand.AddOption(warnOptimizeResetRegisterOption);
     rootCommand.AddOption(x16Option);
 
     var disasmCommand = new Command
@@ -704,7 +700,7 @@ Command ConfigureOptions()
     configCommand.AddOption(warnNotUnusedSections);
     configCommand.AddOption(warnNotBankCrossedOption);
     configCommand.AddOption(warnNotIntToFloatOption);
-    configCommand.AddOption(warnOptimizeZ80AccToZeroOption);
+    configCommand.AddOption(warnOptimizeResetRegisterOption);
     configCommand.AddOption(x16Option);
     
     rootCommand.AddCommand(buildFromConfigCommand);

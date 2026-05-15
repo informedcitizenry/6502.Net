@@ -1013,8 +1013,14 @@ public sealed partial class Parser
                 if (Check(TokenType.Eof))
                 {
                     _recoveryDelimiters.Clear();
-                    throw new ParserBlockException(openType.GetDelimiter(), declToken,
-                        declEndToken, _previous);
+                    throw new UnresolvedDeclException
+                    (
+                        CompileExceptionType.ExpectedTokenException, 
+                        openType.GetDelimiter(), 
+                        declToken,
+                        declEndToken, 
+                        _previous
+                    );
                 }
                 list.Add(Statement());
                 DiscardNewlines();
@@ -1034,8 +1040,9 @@ public sealed partial class Parser
         while (!Match(TokenType.CloseBrace))
         {
             if (Check(TokenType.Eof))
-                throw new ParserBlockException
+                throw new UnresolvedDeclException
                 (
+                    CompileExceptionType.ExpectedTokenException,
                     TokenType.CloseBrace, 
                     declToken, 
                     declEndToken, 

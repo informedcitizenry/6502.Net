@@ -30,14 +30,20 @@ public sealed class ParserException(TokenType expected, Token found)
     public TokenType Found { get; } = found.Type;
 }
 
-public sealed class ParserBlockException(TokenType expected, Token declBeginning, Token declEnding, Token blockEnding)
-    : CompileException(CompileExceptionType.ExpectedTokenException, new PrimaryExpression(declBeginning))
+public sealed class UnresolvedDeclException
+(
+    CompileExceptionType type,
+    TokenType expected, 
+    Token originDeclBeginning, 
+    Token originDeclEnding, 
+    Token offenderPoint
+) : CompileException(type, new PrimaryExpression(originDeclBeginning))
 {
     public TokenType Expected { get; } = expected;
     
-    public Token DeclBeginning { get; } = declBeginning;
+    public Token OriginDeclBeginning { get; } = originDeclBeginning;
     
-    public Token DeclEnding { get; } = declEnding;
+    public Token OriginDeclEnding { get; } = originDeclEnding;
     
-    public Token BlockEnding { get; } = blockEnding;
+    public Token OffenderPoint { get; } = offenderPoint;
 }

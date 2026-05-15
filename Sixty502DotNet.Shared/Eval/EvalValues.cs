@@ -369,7 +369,7 @@ internal static class EvalValues
         if (start < 0 || start >= size)
             return ignoreOutOfRangeException 
                 ? null 
-                : throw new CompileException(CompileExceptionType.IndexOutOfRange, expression);
+                : throw new CompileException(CompileExceptionType.IndexOutOfRange, expression.Index);
         if (target.AsArray() is { } rangeTarget)
         {
             return rangeTarget[(int)start];
@@ -379,7 +379,12 @@ internal static class EvalValues
             : null;
     }
 
-    public static Value? ArrayInit(IList<Value?> values, ArrayInitExpression expression)
+    public static Value? ArrayInit
+    (
+        IList<Value?> values, 
+        ArrayInitExpression expression,
+        bool doNotRaiseError
+    )
     {
         var elements = new List<Value>();
         var firstValue = values.FirstOrDefault();
@@ -390,6 +395,7 @@ internal static class EvalValues
             if (element == null) return null;
             if (!element.IsRValue())
             {
+                return doNotRaiseError ? null :
                 throw new CompileException
                 (
                     CompileExceptionType.TypeMismatch,
@@ -412,7 +418,8 @@ internal static class EvalValues
     public static Value? DictionaryInit
     (
         IList<(Value?, Value?)> keyValuePairs, 
-        DictionaryInitExpression expression
+        DictionaryInitExpression expression,
+        bool doNotRaiseError
     )
     {
         var dictValue = new Dictionary();
@@ -446,6 +453,7 @@ internal static class EvalValues
             }
             else if (!firstKey.IsCompatibleType(key))
             {
+                return doNotRaiseError ? null :
                 throw new CompileException
                     (
                         CompileExceptionType.MismatchKeyTypes, 
@@ -458,6 +466,7 @@ internal static class EvalValues
             }
             else if (!firstValue.IsCompatibleType(value))
             {
+                return doNotRaiseError ? null :
                 throw new CompileException
                     (
                         CompileExceptionType.MismatchValueTypes,
@@ -466,6 +475,7 @@ internal static class EvalValues
             }
             if (!dictValue.TryAdd(key, value))
             {
+                return doNotRaiseError ? null :
                 throw new CompileException
                     (
                         CompileExceptionType.DuplicateKeyInDictionary,
@@ -536,7 +546,7 @@ internal static class EvalValues
             {
                 throw new TypeException(TypeTag.Int, width, expression.Width ?? expression);
             }
-            widthFormat = $", {width.AsInt()}";
+            widthFormat = $", {width.AsInt(encoding)}";
         }
         var specifier = !string.IsNullOrEmpty(format) ? $":{format}" : string.Empty;
         var fullFormat = $"{{0{widthFormat}{specifier}}}";

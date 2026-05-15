@@ -27,7 +27,7 @@ using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Eval;
 
-public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
+public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor<Value?>
 {
     public const string FileConst = "__FILE__";
 
@@ -71,15 +71,29 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             }
             return symVal;
         }
-
         assemblyState.PassNeeded |= assemblyState.Passes < 2;
-        return assemblyState.PassNeeded 
-            ? null 
-            : throw new CompileException
+        if (assemblyState.PassNeeded)
+        {
+            return null;
+        }
+
+        var constExpr = assemblyState.SymbolTable.ConstantDeclaration(symbol.ToString());
+        if (constExpr != null)
+        {
+            throw new UnresolvedDeclException
             (
-                CompileExceptionType.SymbolNotFound, 
-                expression
+                CompileExceptionType.UnresolvableReference,
+                TokenType.Ident,
+                constExpr.LeftToken,
+                constExpr.RightToken,
+                expression.Expr
             );
+        }
+        throw new CompileException
+        (
+            CompileExceptionType.SymbolNotFound,
+            expression
+        );
     }
 
     public Value? VisitAnonymousRefExpression(AnonymousRefExpression expression)
@@ -88,7 +102,7 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             (
                 expression.Type, 
                 expression.Places,
-                expression.StatementIndex, 
+                assemblyState.StatementIndex, 
                 out var address))
         {
             if (address != Address.BadAddress) return new Value(new Label(address));
@@ -229,7 +243,7 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
             var val = Visit(expression.DefaultValues[i]);
             if (val == null) return null;
             defaultValues.Add(val);
-        }
+        } 
         return new Value(new UserFunction
         (
             assemblyState, 
@@ -272,14 +286,14 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor
     {
         List<Value?> vals = [];
         vals.AddRange(expression.Expressions.Select(Visit));
-        return EvalValues.ArrayInit(vals, expression);
+        return EvalValues.ArrayInit(vals, expression, assemblyState.PassNeeded);
     }
 
     public Value? VisitDictionaryInitExpression(DictionaryInitExpression expression)
     {
         List<(Value?,Value?)> kvps = [];
         kvps.AddRange(expression.Members.Select(t => (Visit(t.Key), Visit(t.Value))));
-        return EvalValues.DictionaryInit(kvps, expression);
+        return EvalValues.DictionaryInit(kvps, expression, assemblyState.PassNeeded);
     }
 
     public Value? VisitInterpolationExpression(InterpolationExpression expression)

@@ -52,13 +52,36 @@ public sealed class UserFunction : IFunction
         var purityChecker = new PurityChecker(assemblyState);
         _pure = _simpleExpr != null || purityChecker.CheckBlock(_body);
     }
+
+    private bool IsRecursive()
+    {
+        if (!_pure)
+        {
+            return false;
+        }
+        if (_simpleExpr != null)
+        {
+            var expressionChecker = new RecursiveExpressionChecker(_assemblyState, this);
+            return expressionChecker.Visit(_simpleExpr);
+        }
+        var statementChecker = new RecursiveStatementChecker(_assemblyState, this);
+        return statementChecker.CheckBlock(_body);
+    }
     
     public Value? Invoke(IList<Value> arguments, CallExpression callSite)
     {
         var rec = new CallRecord(this, arguments);
-        if (_pure && _assemblyState.CachedCalls.TryGetValue(rec, out var retVal))
+        if (_pure)
         {
-            return retVal;
+            if ( _assemblyState.CachedCalls.TryGetValue(rec, out var retVal))
+            {
+                return retVal;
+            }
+            if (IsRecursive() && (_assemblyState.PassNeeded || _assemblyState.Logger.ErrorCount > 0))
+            {
+                // fail quickly in cases of crazy recursive functions
+                return null;
+            }
         }
         if (!_assemblyState.SymbolTable.PushStack(_closure))
         {
@@ -83,7 +106,6 @@ public sealed class UserFunction : IFunction
             }
             var compiler = new Compiler(_assemblyState);
             var jump = compiler.CompileBlock(_body);
-
             if (jump.Type is JumpType.None or JumpType.Exit)
             {
                 return null;
@@ -104,7 +126,10 @@ public sealed class UserFunction : IFunction
                     {
                         return null;
                     }
-                    _ = _assemblyState.CachedCalls.TryAdd(rec, jump.ReturnValue);
+                    if (!_assemblyState.PassNeeded)
+                    {
+                        _ = _assemblyState.CachedCalls.TryAdd(rec, jump.ReturnValue);
+                    }
                     return new Value(jump.ReturnValue);
             }
         }

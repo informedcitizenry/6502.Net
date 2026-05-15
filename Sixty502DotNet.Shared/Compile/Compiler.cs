@@ -112,6 +112,7 @@ public class Compiler : IStatementVisitor<Jump>
         {
             _assemblyState.Logger.LogWarning("Whitespace precedes label", left);
         }
+        _assemblyState.SymbolTable.LogConstantDeclaration(symbol, left);
         if (left.LeftToken.Type.IsRegister() && 
             _assemblyState.AssemblyOptions.WarnRegistersAsIdent &&
             !_assemblyState.SymbolTable.InFunction)
@@ -140,7 +141,13 @@ public class Compiler : IStatementVisitor<Jump>
     
     public Jump VisitConstantAssignStatement(ConstantAssignStatement statement)
     {
+        _assemblyState.SymbolTable.LogConstantDeclaration
+        (
+            statement.ConstSymbol.LeftToken.Text.ToString(),
+            statement
+        );
         var constVal = _evaluator.Visit(statement.Value);
+        
         return constVal == null 
             ? Jump.NoJump 
             : CompileConstantAssign
@@ -479,7 +486,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitCpuInstructionStatement(CpuInstructionStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement.Operand);
+            throw new CompileException(CompileExceptionType.CompilationNotValidInFunction, statement.Operand);
         var startOffset = _assemblyState.Output.Offset;
         var programCounter = _assemblyState.Output.ProgramCounter;
         try
@@ -528,8 +535,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitI86RepInstructionStatement(I86RepInstructionStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
-        
+            throw new CompileException(CompileExceptionType.CompilationNotValidInFunction, statement);
         try
         {
             var startOffset = _assemblyState.Output.Offset;
@@ -733,7 +739,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitPseudoOpStatement(PseudoOpStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.CompilationNotValidInFunction, statement);
         var startOffset = _assemblyState.Output.Offset;
         var programCounter = _assemblyState.Output.ProgramCounter;
         EmitData.Encode(_assemblyState, statement);
@@ -754,8 +760,14 @@ public class Compiler : IStatementVisitor<Jump>
         if (symbol is "+" or "-")
         {
             if (_assemblyState.SymbolTable.InFunction)
-                throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
-            if (_assemblyState.SymbolTable.LookupAnonymousAtIndex(symbol[0], statement.StatementIndex, out var currentPc))
+                throw new CompileException(CompileExceptionType.RefNotValidInFunction, statement);
+            if (_assemblyState.SymbolTable.LookupAnonymousAtIndex
+                    (
+                        symbol[0], 
+                        _assemblyState.StatementIndex, 
+                        out var currentPc
+                    )
+                )
             {
                 if (currentPc == Address.BadAddress)
                 {
@@ -768,7 +780,7 @@ public class Compiler : IStatementVisitor<Jump>
             (
                 symbol, 
                 pc, 
-                statement.StatementIndex
+                _assemblyState.StatementIndex
             );
             GenLabeledStatementListing(statement);
             return Jump.NoJump;
@@ -800,7 +812,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitLabeledBlockStatement(LabeledBlockStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.DirectiveNotValidInFunction, statement);
 
         var type = statement.Directive.Type == TokenType.BlockKw 
             ? EnvironmentType.Block 
@@ -827,12 +839,11 @@ public class Compiler : IStatementVisitor<Jump>
         {
             if (_assemblyState.Passes == 0) 
                 throw new CompileException(CompileExceptionType.SymbolRedefined, statement);
-            _assemblyState.PassNeeded |= !_assemblyState.SymbolTable.InFunction
-                                         && address != _assemblyState.Output.ProgramCounter;
+            _assemblyState.PassNeeded |= address != _assemblyState.Output.ProgramCounter;
         }
         var jump = Jump.NoJump;
         if (statement.Directive.Type == TokenType.ProcKw && 
-            _assemblyState.Passes != 0 && !_assemblyState.SymbolTable.CurrentScopeIsReferenced)
+            _assemblyState is { Passes: > 1, SymbolTable.CurrentScopeIsReferenced: false })
         {
             // skip compiling
         }
@@ -840,6 +851,11 @@ public class Compiler : IStatementVisitor<Jump>
         {
             GenLabeledStatementListing(statement);
             jump = CompileBlock(statement.Statements);
+            if (statement.Directive.Type == TokenType.ProcKw &&
+                !_assemblyState.SymbolTable.CurrentScopeIsReferenced)
+            {
+                _assemblyState.PassNeeded |= _assemblyState.Passes < 2;
+            }
         }
         _assemblyState.SymbolTable.Pop();
         return jump;
@@ -857,7 +873,7 @@ public class Compiler : IStatementVisitor<Jump>
             return Jump.NoJump;
         }
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.DirectiveNotValidInFunction, statement);
 
         var enumeration = new Enumeration(_assemblyState.Comparer, false);
         long startValue = 0;
@@ -889,7 +905,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitNamespaceBlockStatement(NamespaceBlockStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.DirectiveNotValidInFunction, statement);
         if (!_assemblyState.SymbolTable.ActivateNamespace(statement.Namespace))
         {
             throw new CompileException(CompileExceptionType.SymbolRedefined, statement.Namespace);
@@ -902,7 +918,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitPageBlockStatement(PageBlockStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.CompilationNotValidInFunction, statement);
         var startPc = _assemblyState.Output.ProgramCounter;
         var startPcPage = startPc & 0xffffff00;
         var jump = CompileBlock(statement.Statements);
@@ -945,7 +961,7 @@ public class Compiler : IStatementVisitor<Jump>
     public Jump VisitFunctionDefinitionStatement(FunctionDefinitionStatement statement)
     {
         if (_assemblyState.SymbolTable.InFunction)
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.DirectiveNotValidInFunction, statement);
         if (_assemblyState.Passes > 0)
             return Jump.NoJump;
         var defaultValues = new List<Value>();
@@ -1070,7 +1086,12 @@ public class Compiler : IStatementVisitor<Jump>
     {
         var enumerable = _evaluator.Visit(statement.Enumerable);
         if (enumerable == null) return Jump.NoJump;
-        _assemblyState.SymbolTable.PushAnonymous(false, statement.StatementIndex, _assemblyState.Output.ProgramCounter);
+        _assemblyState.SymbolTable.PushAnonymous
+        (
+            false, 
+            statement.StatementIndex, 
+            _assemblyState.Output.ProgramCounter
+        );
         var asDictionary = enumerable.AsDictionary();
         var blockJump = Jump.NoJump;
         if (asDictionary != null)
@@ -1225,6 +1246,7 @@ public class Compiler : IStatementVisitor<Jump>
 
     public Jump Visit(Statement statement)
     {
+        _assemblyState.StatementIndex++;
         try
         {
             return statement.Accept(this);
@@ -1240,10 +1262,14 @@ public class Compiler : IStatementVisitor<Jump>
         catch (InvalidBinaryOperationException binaryEx)
         {
             _assemblyState.Logger.LogError(binaryEx);
-        }        
+        }
         catch (TypeException typeEx)
         {
             _assemblyState.Logger.LogError(typeEx);
+        }
+        catch (UnresolvedDeclException unresolvedDeclEx)
+        {
+            _assemblyState.Logger.LogError(unresolvedDeclEx);
         }
         catch (CompileException compileEx)
         {
@@ -1523,7 +1549,13 @@ public class Compiler : IStatementVisitor<Jump>
         {
             var symbol = statement?.Label.Text.ToString();
             if (statement == null || symbol is not ("+" or "-") ||
-               _assemblyState.SymbolTable.LookupAnonymousAtIndex(symbol[0], statement.StatementIndex, out _))
+               _assemblyState.SymbolTable.LookupAnonymousAtIndex
+                (
+                    symbol[0], 
+                    _assemblyState.StatementIndex, 
+                    out _
+                )
+            )
             {
                continue;
             }
@@ -1531,7 +1563,7 @@ public class Compiler : IStatementVisitor<Jump>
             (
                 symbol, 
                 Address.BadAddress, 
-                statement.StatementIndex
+                _assemblyState.StatementIndex
             );
         }
     }
@@ -1731,7 +1763,7 @@ public class Compiler : IStatementVisitor<Jump>
     {
         if (_assemblyState.SymbolTable.InFunction)
         {
-            throw new CompileException(CompileExceptionType.NotValidInFunction, statement);
+            throw new CompileException(CompileExceptionType.CompilationNotValidInFunction, statement);
         }
 
         var offs = _assemblyState.Output.Offset;

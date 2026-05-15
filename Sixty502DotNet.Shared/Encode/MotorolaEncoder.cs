@@ -117,7 +117,7 @@ internal static partial class MotorolaEncoder
     
     public static bool Encode(CpuInstructionStatement statement, AssemblyState state)
     {
-        if (statement.Operand.CoercedSize == 3) return false;
+        if (statement.Operand.CoercedSize > 2) return false;
         if (statement.Mnemonic.Type is TokenType.Tfradp or TokenType.Tfrbdp)
         {
             return EncodeTfradp(state, statement.Mnemonic.Type, statement.Operand);

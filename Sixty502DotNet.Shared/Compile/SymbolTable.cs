@@ -21,6 +21,7 @@
 using Sixty502DotNet.Shared.Eval;
 using Sixty502DotNet.Shared.Eval.Scope;
 using Sixty502DotNet.Shared.Lex;
+using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Compile;
 
@@ -121,7 +122,7 @@ public class SymbolTable
             return true;
         }
         PopLocal();
-        existingAddress = ActiveEnvironment.LookupLocally(symbolName)
+        existingAddress = ActiveEnvironment.PeekLocally(symbolName)
                                 ?.AsAddress()
                                 ?.Address;
         var result = ActiveEnvironment.TryDefineLabel
@@ -216,7 +217,7 @@ public class SymbolTable
         }
         for (var i = 1; i < path.Count; i++)
         {
-            scopeVal = scope.LookupLocally(path[i]);
+            scopeVal = scope.PeekLocally(path[i]);
             if (scopeVal == null)
             {
                 throw new KeyNotFoundException($"Import path `{path[i]}` could not be found");
@@ -247,6 +248,22 @@ public class SymbolTable
         return lookup;
     }
 
+    public bool SymbolIsVariable(string symbol)
+    {
+        var isVar = ActiveEnvironment.SymbolIsVariable(symbol);
+        for (var i = 0; !isVar && i < _imports.Count; i++)
+        {
+            isVar = _imports[i].SymbolIsVariable(symbol);
+        }
+        return isVar;
+    }
+    
+    public void LogConstantDeclaration(string constant, Ast ast)
+        => ActiveEnvironment.LogConstant(constant, ast);
+    
+    public Ast? ConstantDeclaration(string constant) 
+        => ActiveEnvironment.ConstantDeclaration(constant);
+    
     public Value? LookupGlobally(string symbol) => Root.Lookup(symbol);
     
     public void DefineAnonymous(string type, int address, int atIndex)

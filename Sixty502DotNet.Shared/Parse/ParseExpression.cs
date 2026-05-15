@@ -377,8 +377,14 @@ public sealed partial class Parser
                 if (parser.Check(TokenType.Eof))
                 {
                     parser._recoveryDelimiters.Clear();
-                    throw new ParserBlockException(TokenType.CloseBrace, beginning,
-                        arrow, parser._previous);
+                    throw new UnresolvedDeclException
+                    (
+                        CompileExceptionType.ExpectedTokenException,
+                        TokenType.CloseBrace, 
+                        beginning,
+                        arrow, 
+                        parser._previous
+                    );
                 }
                 body.Add(parser.Statement());
             }

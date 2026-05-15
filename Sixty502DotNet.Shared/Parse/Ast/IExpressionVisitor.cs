@@ -18,35 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Sixty502DotNet.Shared.Eval;
-
 namespace Sixty502DotNet.Shared.Parse.Ast;
 
-public interface IExpressionVisitor
+public interface IExpressionVisitor<out T>
 {
-    Value? VisitPrimaryExpression(PrimaryExpression expression);
+    T VisitPrimaryExpression(PrimaryExpression expression);
 
-    Value? VisitAnonymousRefExpression(AnonymousRefExpression expression);
+    T VisitAnonymousRefExpression(AnonymousRefExpression expression);
     
-    Value? VisitBinaryOpExpression(BinaryOpExpression expression);
+    T VisitBinaryOpExpression(BinaryOpExpression expression);
     
-    Value? VisitTernaryExpression(TernaryExpression expression);
+    T VisitTernaryExpression(TernaryExpression expression);
     
-    Value? VisitUnaryOpExpression(UnaryOpExpression expression);
+    T VisitUnaryOpExpression(UnaryOpExpression expression);
     
-    Value? VisitSubscriptExpression(SubscriptExpression expression);
+    T VisitSubscriptExpression(SubscriptExpression expression);
     
-    Value? VisitCallExpression(CallExpression expression);
+    T VisitCallExpression(CallExpression expression);
     
-    Value? VisitMemberExpression(MemberExpression expression);
+    T VisitMemberExpression(MemberExpression expression);
     
-    Value? VisitArrayInitExpression(ArrayInitExpression expression);
+    T VisitArrayInitExpression(ArrayInitExpression expression);
     
-    Value? VisitDictionaryInitExpression(DictionaryInitExpression expression);
+    T VisitDictionaryInitExpression(DictionaryInitExpression expression);
     
-    Value? VisitFunctionExpression(FunctionExpression expression);
+    T VisitFunctionExpression(FunctionExpression expression);
     
-    Value? VisitInterpolationExpression(InterpolationExpression expression);
+    T VisitInterpolationExpression(InterpolationExpression expression);
     
-    Value? Visit(Expression expression);
+    T Visit(Expression expression);
 }

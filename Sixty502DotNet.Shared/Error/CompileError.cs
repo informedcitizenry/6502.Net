@@ -69,26 +69,26 @@ public readonly struct CompileError : IEquatable<CompileError>
         Console.ForegroundColor = ConsoleColor.DarkYellow;
         Console.Error.Write(Length > 0 ? new string('^', Length) : '^');
         Console.ResetColor();
-        if (!string.IsNullOrEmpty(BlockBeginningLineText))
+        if (!string.IsNullOrEmpty(OriginalDeclarationLineText))
         {
-            Console.Error.WriteLine("\nBlock declared here:");
-            Console.Error.Write($" {BlockBeginningLine} | ");
-            Console.Error.Write(BlockBeginningLineText);
+            Console.Error.WriteLine("\nOriginal declaration here:");
+            Console.Error.Write($" {OriginalDeclarationLine} | ");
+            Console.Error.Write(OriginalDeclarationLineText);
             Console.Error.WriteLine();
-            Console.Error.Write(new string(' ', BlockBeginningLine.ToString().Length + 1));
+            Console.Error.Write(new string(' ', OriginalDeclarationLine.ToString().Length + 1));
             Console.Error.Write(" | ");
-            for (var i = 0; i < BlockBeginningColumn; i++)
+            for (var i = 0; i < OriginalDeclarationColumn; i++)
             {
                 Console.Error.Write(LineText[i] == '\t' ? '\t' : ' ');
             }
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            if (BlockBeginningLength < 1)
+            if (OriginalDeclarationLength < 1)
             {
                 Console.Error.Write('^');
             }
             else
             {
-                Console.Error.Write(new string('^', BlockBeginningLength));
+                Console.Error.Write(new string('^', OriginalDeclarationLength));
             }
             Console.ResetColor();
         }
@@ -129,19 +129,19 @@ public readonly struct CompileError : IEquatable<CompileError>
             sb.Append(LineText[i] == '\t' ? '\t' : ' ');
         }
         sb.Append(Length > 0 ? new string('^', Length) : '^');
-        if (!string.IsNullOrEmpty(BlockBeginningLineText))
+        if (!string.IsNullOrEmpty(OriginalDeclarationLineText))
         {
             sb.AppendLine("\nBlock declared here:");
-            sb.Append($" {BlockBeginningLine} | ");
-            sb.Append(BlockBeginningLineText);
+            sb.Append($" {OriginalDeclarationLine} | ");
+            sb.Append(OriginalDeclarationLineText);
             sb.AppendLine();
-            sb.Append(new string(' ', BlockBeginningLine.ToString().Length + 1));
+            sb.Append(new string(' ', OriginalDeclarationLine.ToString().Length + 1));
             sb.Append(" | ");
-            for (var i = 0; i < BlockBeginningColumn; i++)
+            for (var i = 0; i < OriginalDeclarationColumn; i++)
             {
                 sb.Append(LineText[i] == '\t' ? '\t' : ' ');
             }
-            sb.Append(new string('^', BlockBeginningLength));
+            sb.Append(new string('^', OriginalDeclarationLength));
         }
         return sb.ToString();
     }
@@ -180,13 +180,13 @@ public readonly struct CompileError : IEquatable<CompileError>
     
     public string LineText { get; init; }
     
-    public int BlockBeginningLine { get; init; }
+    public int OriginalDeclarationLine { get; init; }
     
-    public int BlockBeginningColumn { get; init; }
+    public int OriginalDeclarationColumn { get; init; }
     
-    public int BlockBeginningLength { get; init; }
+    public int OriginalDeclarationLength { get; init; }
     
     public List<Inclusion> Inclusions { get; init; }
     
-    public string BlockBeginningLineText { get; init; }
+    public string OriginalDeclarationLineText { get; init; }
 }

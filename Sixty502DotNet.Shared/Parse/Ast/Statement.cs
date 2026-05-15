@@ -43,10 +43,8 @@ public sealed class Define : Ast
 
 public sealed class EofStatement : Statement
 {
-    public override T Accept<T>(IStatementVisitor<T> visitor)
-    {
-        return visitor.VisitEofStatement(this);
-    }
+    public override T Accept<T>(IStatementVisitor<T> visitor) 
+        => visitor.VisitEofStatement(this);
 }
 
 public sealed class ConstantAssignStatement : Statement

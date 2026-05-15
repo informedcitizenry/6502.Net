@@ -139,7 +139,7 @@ public static class Assemble
             WarnLeftSpaceOfLabel = jsonObj.GetBoolValueFromPath("/loggingOptions/warnLeft"),
             WarnRegistersAsIdent = jsonObj.GetBoolValueFromPath("/loggingOptions/warnRegistersAsIdentifiers"),
             WarnSimplifyCallReturn = jsonObj.GetBoolValueFromPath("/loggingOptions/warnSimplifyCallReturn"),
-            WarnOptimizeZ80AccToZero = jsonObj.GetBoolValueFromPath("/loggingOptions/warnAboutOptimizingZ80AccumulatorReset"),
+            WarnOptimizeResetReg = jsonObj.GetBoolValueFromPath("/loggingOptions/warnAboutOptimizingResettingRegister"),
             WarnTextInNonTextPseudoOp = jsonObj.GetBoolValueFromPath("/loggingOptions/WarnAboutUsingTextInNonTextPseudoOps"),
             WarnUnreferencedSymbols = jsonObj.GetBoolValueFromPath("/loggingOptions/warnUnreferencedSymbols"),
             X16 =  jsonObj.GetBoolValueFromPath("/target/x16")

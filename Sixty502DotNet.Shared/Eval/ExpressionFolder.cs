@@ -24,7 +24,7 @@ using Sixty502DotNet.Shared.Parse.Ast;
 
 namespace Sixty502DotNet.Shared.Eval;
 
-public sealed class ExpressionFolder : IExpressionVisitor
+public sealed class ExpressionFolder : IExpressionVisitor<Value?>
 {
     private static string GetStringText(PrimaryExpression primary)
     {
@@ -156,7 +156,7 @@ public sealed class ExpressionFolder : IExpressionVisitor
     {
         List<Value?> array = [];
         array.AddRange(expression.Expressions.Select(Visit));
-        return EvalValues.ArrayInit(array, expression);
+        return EvalValues.ArrayInit(array, expression, true);
     }
 
     public Value? VisitDictionaryInitExpression(DictionaryInitExpression expression)
@@ -167,7 +167,7 @@ public sealed class ExpressionFolder : IExpressionVisitor
             var kvp = expression.Members[i];
             keyValuePair.Add((Visit(kvp.Key), Visit(kvp.Value)));
         }
-        return EvalValues.DictionaryInit(keyValuePair, expression);
+        return EvalValues.DictionaryInit(keyValuePair, expression, true);
     }
 
     public Value? VisitInterpolationExpression(InterpolationExpression expression) => null;

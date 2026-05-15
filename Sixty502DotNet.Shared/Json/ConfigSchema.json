@@ -115,7 +115,7 @@
                         "warnAboutJumpBug": {
                             "type": "boolean"
                         },
-                        "warnAboutOptimizingZ80AccumulatorReset": {
+                        "warnAboutOptimizingResettingRegister": {
                             "type": "boolean"
                         },
                         "WarnAboutUsingTextInNonTextPseudoOps": {

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Sixty502DotNet.Shared.Compile;
+using Sixty502DotNet.Shared.Eval.Scope;
 using Sixty502DotNet.Shared.Lex;
 using Sixty502DotNet.Shared.Parse.Ast;
 
@@ -26,36 +28,81 @@ namespace Sixty502DotNet.Shared.Eval.Function;
 
 public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool>
 {
-    public bool VisitConstantAssignStatement(ConstantAssignStatement statement) 
-        => !statement.ConstSymbol.LeftToken.Text.ToString().Equals("*") && 
-           VariableExistsInOuterScope(statement.ConstSymbol);
+    private readonly Compile.Environment _variables = new
+    (
+        EnvironmentType.Func, 
+        null, 
+        null, 
+        assemblyState.Comparer
+    );
+    
+    public bool VisitConstantAssignStatement(ConstantAssignStatement statement)
+        => !statement.ConstSymbol.LeftToken.Text.ToString().Equals("*") &&
+           !VariableExistsInOuterScope(statement.ConstSymbol) &&
+           !VariableExistsInOuterScope(statement.Value);
 
     public bool VisitVarAssignmentStatement(VarAssignmentStatement statement)
     {
-        if (statement.Left.LeftToken.Text.ToString().Equals("*"))
+        if (statement.Left.LeftToken.Text.ToString().Equals("*") ||
+            VariableExistsInOuterScope(statement.Left))
         {
             return false;
         }
-        return !VariableExistsInOuterScope(statement.Left);
+        if (statement.Operator.Type == TokenType.ColonEq)
+        {
+            TrackVariable(statement.Left);
+        }
+        else if (!IsDefinedInFunction(statement.Left))
+        {
+            return false;
+        }
+        return !VariableExistsInOuterScope(statement.Right);
+    }
+
+    private void TrackVariable(Expression variable)
+    {
+        if (variable is not ArrayInitExpression { IsTuple: true } tuple)
+        {
+            _variables.DefineOrUpdateVariable(variable.LeftToken, new Value());
+            return;
+        }
+        for (var i = 0; i < tuple.Expressions.Count; i++)
+        {
+            TrackVariable(tuple.Expressions[i]);
+        }
+    }
+
+    private bool IsDefinedInFunction(Expression variable)
+    {
+        return variable is not ArrayInitExpression { IsTuple: true } tuple 
+            ? _variables.SymbolIsVariable(variable.LeftToken.Text.ToString()) 
+            : tuple.Expressions.All(IsDefinedInFunction);
     }
 
     private bool VariableExistsInOuterScope(Expression expr)
     {
-        return expr switch
+        if (expr is not MemberExpression memberExpression)
+            return expr switch
+            {
+                ArrayInitExpression { IsTuple: true } arrayInitExpression
+                    => arrayInitExpression.Expressions.Any(VariableExistsInOuterScope),
+                SubscriptExpression subscriptExpression
+                    => VariableExistsInOuterScope(subscriptExpression.Left),
+                PrimaryExpression primary => VariableExistsInOuterScope(primary.Expr),
+                _ => false
+            };
+        var eval = new Evaluator(assemblyState);
+        var env = eval.Visit(memberExpression.Left)?.AsResolver() switch
         {
-            ArrayInitExpression { IsTuple: true } arrayInitExpression 
-                => arrayInitExpression.Expressions.Any(VariableExistsInOuterScope),
-            MemberExpression memberExpression 
-                => VariableExistsInOuterScope(memberExpression.Member),
-            SubscriptExpression subscriptExpression 
-                => VariableExistsInOuterScope(subscriptExpression.Left),
-            PrimaryExpression primary => VariableExistsInOuterScope(primary.Expr),
-            _ => false
+            Namespace ns => ns.Env,
+            ScopeLabel sl => sl.Env,
+            _ => null
         };
+        return env?.SymbolIsVariable(memberExpression.Member.Text.ToString()) == true;
     }
     
     private bool VariableExistsInOuterScope(Token sym) 
-        => assemblyState.SymbolTable.Lookup(sym.Text.ToString()) != null;
+        => assemblyState.SymbolTable.SymbolIsVariable(sym.Text.ToString());
 
     public bool VisitCpuInstructionStatement(CpuInstructionStatement statement) => false;
 
@@ -94,13 +141,16 @@ public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool
 
     public bool VisitIfStatement(IfStatement statement)
     {
-        if (CheckBlock(statement.IfBlock.Block) &&
+        if (CheckIfBlock(statement.IfBlock) &&
             CheckBlock(statement.ElseBlock))
         {
-            return statement.ElseIfBlocks.All(t => CheckBlock(t.Block));
+            return statement.ElseIfBlocks.All(CheckIfBlock);
         }
         return false;
     }
+
+    private bool CheckIfBlock(IfBlock block) 
+        => !VariableExistsInOuterScope(block.Condition) && CheckBlock(block.Block);
 
     public bool VisitForStatement(ForStatement statement)
     {
@@ -112,13 +162,15 @@ public class PurityChecker(AssemblyState assemblyState) : IStatementVisitor<bool
     }
 
     public bool VisitForeachStatement(ForeachStatement statement) 
-        => CheckBlock(statement.Block);
+        => !VariableExistsInOuterScope(statement.Enumerable) && CheckBlock(statement.Block);
 
     public bool VisitSwitchStatement(SwitchStatement statement) 
-        => statement.Cases.All(t => CheckBlock(t.Block));
+        => !VariableExistsInOuterScope(statement.Condition) &&
+           statement.Cases.All(t => CheckBlock(t.Block));
 
     public bool VisitExpressionBlockStatement(ExpressionBlockStatement statement)
-        => CheckBlock(statement.Block);
+        => !VariableExistsInOuterScope(statement.Expression) &&
+           CheckBlock(statement.Block);
 
     public bool VisitModule(BlockStatement statement)
         => CheckBlock(statement.Statements);

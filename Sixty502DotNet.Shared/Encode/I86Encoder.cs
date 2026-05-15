@@ -44,6 +44,21 @@ public static partial class I86Encoder
         {
             return "Return following subroutine call can be simplified to a jump instruction";
         }
+        if (options.WarnOptimizeResetReg &&
+            context.Statement.Mnemonic.Type is TokenType.Mov &&
+            context.Statement.Operand.Type == OperandType.Immediate80 &&
+            context.ObjectCode.Count > 1 &&
+            context.ObjectCode[1] == 0x00)
+        {
+            var reg = context.Statement.Operand.Registers[0].Type;
+            var is16BitZero = context.ObjectCode.Count > 2 && context.ObjectCode[2] == 0x00;
+            if (s_8BitRegisters.ContainsKey(reg) ||
+                (s_16BitRegisters.ContainsKey(reg) && is16BitZero))
+            {
+                var regStr = reg.ToString().ToLower();
+                return $"Instruction can be optimized to `xor {regStr},{regStr}`";
+            }
+        }
         return string.Empty;
     }
     

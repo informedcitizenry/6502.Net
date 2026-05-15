@@ -389,7 +389,8 @@ public static partial class M65xxEncoder
             context.Cpuid is Cpu.M6502 or Cpu.M6502I && 
             context.Statement.Mnemonic.Type == TokenType.Jmp && 
             context.Statement.Operand.Type == OperandType.Indirect &&
-            context.ObjectCode.Count > 1 && context.ObjectCode[context.Offset + 1] == 0xff)
+            context.ObjectCode.Count > 1 + context.Offset && 
+            context.ObjectCode[context.Offset + 1] == 0xff)
         {
             return "Indirect jump at page boundary has a defect";
         }

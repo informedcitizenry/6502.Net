@@ -229,7 +229,7 @@ public sealed partial class Parser
                 }
                 switch (ex)
                 {
-                    case ParserBlockException parseBlockEx:
+                    case UnresolvedDeclException parseBlockEx:
                         logger.LogError(parseBlockEx);
                         break;
                     case ParserException parseEx:

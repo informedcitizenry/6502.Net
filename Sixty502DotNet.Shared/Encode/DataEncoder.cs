@@ -427,7 +427,7 @@ public static class EmitData
                 break;
             case TokenType.QwordKw:
             {
-                var i128 = value.AsInt128();
+                var i128 = value.AsInt128(state.TextEncodingCollection);
                 if ((i128 < long.MinValue || i128 > ulong.MaxValue) && !state.PassNeeded)
                 {
                     throw new CompileException(CompileExceptionType.ValueOverflow, expression);
@@ -438,7 +438,7 @@ public static class EmitData
             }
             case TokenType.TbyteKw:
             {
-                var i128 = value.AsInt128();
+                var i128 = value.AsInt128(state.TextEncodingCollection);
                 if (i128.ExceedsTByte() && !state.PassNeeded)
                 {
                     throw new CompileException(CompileExceptionType.ValueOverflow, expression);

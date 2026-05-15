@@ -462,7 +462,6 @@ public sealed class ToStringMethod(TextEncodingCollection encodings)
         {
             throw new CompileException(CompileExceptionType.InvalidFormatSpecifier, callSite.Arguments[0]);
         }
-        
     }
     
     public override bool IsVariant => true;

@@ -71,7 +71,7 @@ public static class ConfigureBuild
             loggingOptions.Add("warnAboutAmbiguousZp", new Value(true));
             loggingOptions.Add("warnAboutJumpBug", new Value(true));
             loggingOptions.Add("warnCaseMismatch", new Value(true));
-            loggingOptions.Add("warnAboutOptimizingZ80AccumulatorReset", new Value(true));
+            loggingOptions.Add("warnAboutOptimizingResettingRegister", new Value(true));
             loggingOptions.Add("WarnAboutUsingTextInNonTextPseudoOps", new Value(true));
             loggingOptions.Add("warnLeft", new Value(true));
             loggingOptions.Add("warnRegistersAsIdentifiers", new Value(true));
@@ -84,7 +84,7 @@ public static class ConfigureBuild
             AddBoolOption(loggingOptions, "warnAboutAmbiguousZp", parseResult, "--Wambiguous-zp");
             AddBoolOption(loggingOptions, "warnAboutJumpBug", parseResult, "--Wjump-bug");
             AddBoolOption(loggingOptions, "warnCaseMismatch", parseResult, "--Wcase-mismatch");
-            AddBoolOption(loggingOptions, "warnAboutOptimizingZ80AccumulatorReset", parseResult, "--Woptimize-z80-acc-to-zero");
+            AddBoolOption(loggingOptions, "warnAboutOptimizingResettingRegister", parseResult, "--Woptimize-reset-register");
             AddBoolOption(loggingOptions, "WarnAboutUsingTextInNonTextPseudoOps", parseResult, "--Wtext-in-non-text-pseudo-ops");
             AddBoolOption(loggingOptions, "warnLeft", parseResult, "--Wleft");
             AddBoolOption(loggingOptions, "warnRegistersAsIdentifiers", parseResult, "--Wregister-as-identifier");

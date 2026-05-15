@@ -75,24 +75,39 @@ public sealed class ErrorLogger(bool warningsAsErrors)
         LogError(message, exception.Offender);
     }
     
-    public void LogError(ParserBlockException exception)
+    public void LogError(UnresolvedDeclException exception)
     {
-        var message = $"Expected {exception.Expected.Stringified()} but found end of file";
+        var message = exception.OffenderPoint.Type switch
+        {
+            TokenType.Eof =>
+                $"Expected {exception.Expected.Stringified()} but found end of file",
+            _ => exception.Type.Stringified()
+        };
+        
+        var originalDeclHighlightLength = exception.OriginDeclEnding.Location.Start + 
+                                 exception.OriginDeclEnding.Text.Length -
+                                    exception.OriginDeclBeginning.Location.Start;
+        
+        var highlightLength = exception.OffenderPoint.Type switch
+        {
+            TokenType.Eof => 1,
+            _ => exception.OffenderPoint.Text.Length
+        };
         var entry = new CompileError
         {
-            Path = exception.BlockEnding.Source.Name,
-            Line = exception.BlockEnding.Line,
-            Column = exception.BlockEnding.Column,
-            Length = 1,
-            LineText = exception.BlockEnding.GetLineText().ToString(),
+            Path = exception.OffenderPoint.Source.Name,
+            Line = exception.OffenderPoint.Line,
+            Column = exception.OffenderPoint.Column,
+            Length = highlightLength,
+            LineText = exception.OffenderPoint.GetLineText().ToString(),
             Message = message,
             IsError = true,
             IsFatal = false,
-            Inclusions = exception.DeclBeginning.Inclusions,
-            BlockBeginningLine = exception.DeclBeginning.Line,
-            BlockBeginningColumn = exception.DeclBeginning.Column,
-            BlockBeginningLength = exception.DeclEnding.Location.Start + exception.DeclEnding.Text.Length - exception.DeclBeginning.Location.Start,
-            BlockBeginningLineText = exception.DeclBeginning.GetLineText().ToString()
+            Inclusions = exception.OriginDeclBeginning.Inclusions,
+            OriginalDeclarationLine = exception.OriginDeclBeginning.Line,
+            OriginalDeclarationColumn = exception.OriginDeclBeginning.Column,
+            OriginalDeclarationLength = originalDeclHighlightLength,
+            OriginalDeclarationLineText = exception.OriginDeclBeginning.GetLineText().ToString()
         };
         _errors.Add(entry);
     }
