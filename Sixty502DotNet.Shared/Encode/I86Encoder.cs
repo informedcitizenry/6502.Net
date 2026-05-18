@@ -174,7 +174,8 @@ public static partial class I86Encoder
             else
             {
                 if (addr.Size() > 1 || 
-                    !s_address.TryGetValue((mnemonic, TokenType.N8), out hex))
+                    !s_address.TryGetValue((mnemonic, TokenType.N8), out hex) &&
+                    !state.PassNeeded)
                 {
                     return false;
                 }
