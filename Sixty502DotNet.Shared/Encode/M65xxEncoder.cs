@@ -763,7 +763,7 @@ public static partial class M65xxEncoder
         var addrVal = evaluator.EvalPagedBanked(operands[1], short.MinValue, ushort.MaxValue);
         var opcodeHex = zeroPageHex;
         var size = 1;
-        if (addrVal is < -128 or > 127 || opcodeHex == Bad)
+        if (addrVal is < sbyte.MinValue or > sbyte.MaxValue || opcodeHex == Bad)
         {
             size = 2;
             opcodeHex = absoluteHex;
@@ -834,7 +834,7 @@ public static partial class M65xxEncoder
         return true;
     }
 
-        private static bool IsAmbiguousSize(CodeAnalysisContext context)
+    private static bool IsAmbiguousSize(CodeAnalysisContext context)
     {
         var code = context.ObjectCode;
         if (context.Statement.Operand.CoercedSize > 0 ||

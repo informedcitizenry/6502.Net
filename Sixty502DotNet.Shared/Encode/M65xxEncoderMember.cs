@@ -69,117 +69,62 @@ public static partial class M65xxEncoder
     {
         //                                Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX  
         { TokenType.Adc, new M6xxOpcode(  Bad,  Bad, 0x65,  Bad, 0x6d, 0x69, 0x75,  Bad, 0x7d, 0x79,  Bad, 0x71, 0x61) },
-
         { TokenType.And, new M6xxOpcode(  Bad,  Bad, 0x25,  Bad, 0x2d, 0x29, 0x35,  Bad, 0x3d, 0x39,  Bad, 0x31, 0x21) },
-
         { TokenType.Asl, new M6xxOpcode( 0x0a, 0x0a, 0x06,  Bad, 0x0e,  Bad, 0x16,  Bad, 0x1e,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bcc, new M6xxOpcode(  Bad,  Bad,  Bad, 0x90,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bcs, new M6xxOpcode(  Bad,  Bad,  Bad, 0xb0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Beq, new M6xxOpcode(  Bad,  Bad,  Bad, 0xf0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bit, new M6xxOpcode(  Bad,  Bad, 0x24,  Bad, 0x2c,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bmi, new M6xxOpcode(  Bad,  Bad,  Bad, 0x30,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bne, new M6xxOpcode(  Bad,  Bad,  Bad, 0xd0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bpl, new M6xxOpcode(  Bad,  Bad,  Bad, 0x10,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Brk, new M6xxOpcode( 0x00,  Bad,  Bad,  Bad,  Bad, 0x00,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bvc, new M6xxOpcode(  Bad,  Bad,  Bad, 0x50,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Bvs, new M6xxOpcode(  Bad,  Bad,  Bad, 0x70,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Clc, new M6xxOpcode( 0x18,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Cld, new M6xxOpcode( 0xd8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Cli, new M6xxOpcode( 0x58,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Clv, new M6xxOpcode( 0xb8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Cmp, new M6xxOpcode(  Bad,  Bad, 0xc5,  Bad, 0xcd, 0xc9, 0xd5,  Bad, 0xdd, 0xd9,  Bad, 0xd1, 0xc1) },
-
         { TokenType.Cpx, new M6xxOpcode(  Bad,  Bad, 0xe4,  Bad, 0xec, 0xe0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Cpy, new M6xxOpcode(  Bad,  Bad, 0xc4,  Bad, 0xcc, 0xc0,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         //                                  Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX  
         { TokenType.Dec, new M6xxOpcode(  Bad,  Bad, 0xc6,  Bad, 0xce,  Bad, 0xd6,  Bad, 0xde,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Dex, new M6xxOpcode( 0xca,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Dey, new M6xxOpcode( 0x88,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Eor, new M6xxOpcode(  Bad,  Bad, 0x45,  Bad, 0x4d, 0x49, 0x55,  Bad, 0x5d, 0x59,  Bad, 0x51, 0x41) },
-
         { TokenType.Inc, new M6xxOpcode(  Bad,  Bad, 0xe6,  Bad, 0xee,  Bad, 0xf6,  Bad, 0xfe,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Inx, new M6xxOpcode( 0xe8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Iny, new M6xxOpcode( 0xc8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Jmp, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x4c,  Bad,  Bad,  Bad,  Bad,  Bad, 0x6c,  Bad,  Bad) },
-
         { TokenType.Jsr, new M6xxOpcode(  Bad,  Bad,  Bad,  Bad, 0x20,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Lda, new M6xxOpcode(  Bad,  Bad, 0xa5,  Bad, 0xad, 0xa9, 0xb5,  Bad, 0xbd, 0xb9,  Bad, 0xb1, 0xa1) },
-
         { TokenType.Ldx, new M6xxOpcode(  Bad,  Bad, 0xa6,  Bad, 0xae, 0xa2,  Bad, 0xb6,  Bad, 0xbe,  Bad,  Bad,  Bad) },
-
         { TokenType.Ldy, new M6xxOpcode(  Bad,  Bad, 0xa4,  Bad, 0xac, 0xa0, 0xb4,  Bad, 0xbc,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Lsr, new M6xxOpcode( 0x4a, 0x4a, 0x46,  Bad, 0x4e,  Bad, 0x56,  Bad, 0x5e,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Nop, new M6xxOpcode( 0xea,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Ora, new M6xxOpcode(  Bad,  Bad, 0x05,  Bad, 0x0d, 0x09, 0x15,  Bad, 0x1d, 0x19,  Bad, 0x11, 0x01) },
-
         { TokenType.Pha, new M6xxOpcode( 0x48,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Php, new M6xxOpcode( 0x08,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Pla, new M6xxOpcode( 0x68,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Plp, new M6xxOpcode( 0x28,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Rol, new M6xxOpcode( 0x2a, 0x2a, 0x26,  Bad, 0x2e,  Bad, 0x36,  Bad, 0x3e,  Bad,  Bad,  Bad,  Bad) },
-
         //                                  Impl   Acc   Zp    Rel   Abs   Imm   ZpX   Zpy  AbsX  AbsY   Ind  IndY  IndX  
         { TokenType.Ror, new M6xxOpcode( 0x6a, 0x6a, 0x66,  Bad, 0x6e,  Bad, 0x76,  Bad, 0x7e,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Rti, new M6xxOpcode( 0x40,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Rts, new M6xxOpcode( 0x60,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Sbc, new M6xxOpcode(  Bad,  Bad, 0xe5,  Bad, 0xed, 0xe9, 0xf5,  Bad, 0xfd, 0xf9,  Bad, 0xf1, 0xe1) },
-
         { TokenType.Sec, new M6xxOpcode( 0x38,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Sed, new M6xxOpcode( 0xf8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Sei, new M6xxOpcode( 0x78,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Sta, new M6xxOpcode(  Bad,  Bad, 0x85,  Bad, 0x8d,  Bad, 0x95,  Bad, 0x9d, 0x99,  Bad, 0x91, 0x81) },
-
         { TokenType.Stx, new M6xxOpcode(  Bad,  Bad, 0x86,  Bad, 0x8e,  Bad,  Bad, 0x96,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Sty, new M6xxOpcode(  Bad,  Bad, 0x84,  Bad, 0x8c,  Bad, 0x94,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Tax, new M6xxOpcode( 0xaa,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Tay, new M6xxOpcode( 0xa8,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Tsx, new M6xxOpcode( 0xba,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Txa, new M6xxOpcode( 0x8a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Txs, new M6xxOpcode( 0x9a,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) },
-
         { TokenType.Tya, new M6xxOpcode( 0x98,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad,  Bad) }
     }.ToFrozenDictionary();
 
@@ -1510,7 +1455,6 @@ public static partial class M65xxEncoder
         { 0x1c, new DecodedInstruction("top ${0:x4},x", 0x1c, 3) },
         { 0x32, new DecodedInstruction("sac #${0:x2}", 0x32, 2) },
         { 0x42, new DecodedInstruction("sir #${0:x2}", 0x42, 2) },
-
     }.ToFrozenDictionary();
     
     private static readonly FrozenDictionary<int, DecodedInstruction> s_huc6280Decoded 

@@ -28,10 +28,12 @@
     <LangVersion>14</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType></DebugType>
     <WarningLevel>4</WarningLevel>
     <NoWarn>1701;1702;3021</NoWarn>
     <LangVersion>default</LangVersion>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <EmbedAllSources>false</EmbedAllSources>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Properties\launchSettings.json" />

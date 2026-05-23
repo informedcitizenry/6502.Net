@@ -684,7 +684,11 @@ public class Compiler : IStatementVisitor<Jump>
             case TokenType.CpuKw:
                 return CompileSetCpuStatement(statement.Expression);
             case TokenType.EchoKw:
-                _assemblyState.Logger.LogWarning("Directive `.echo` is deprecated and has no effect", statement);
+                _assemblyState.Logger.LogWarning
+                (
+                    "Directive `.echo` is deprecated and has no effect. Consider using `.warn` directive to output messages", 
+                    statement
+                );
                 return Jump.NoJump;
             case TokenType.EorKw:
                 return CompileXorStatement(statement.Expression);

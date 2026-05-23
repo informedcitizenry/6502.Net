@@ -35,7 +35,7 @@ This behavior differs from many other assemblers, where data directives can take
 
 **`.addr`**
 
-Generate one or more values with byte order according to CPU endianness. The accepted value range is normally 0 to 65535, but can be longer if the option to allow long addressing is set, or if the current bank matches that of the expression. Wildcard arguments `?`s represent uninitialized data, two bytes in size.
+Generate one or more values with byte order according to CPU endianness. The accepted value range is normally 0 to 65535, but can be longer if the current bank matches that of the expression. Wildcard arguments `?`s represent uninitialized data, two bytes in size.
 
 ```
     .addr $2000,$3000,$4000
@@ -262,7 +262,7 @@ Generate one or more values between 0 and 2^64-1 into the output, with byte orde
 
 **`.rta`**
 
-Generate one or more values according to CPU endianness. The accepted value range is normally 1 to 65536, but can be longer if the option to allow long addressing is set, or if the current bank matches that of the expression. Useful for so-called "return jump" tables for 6502-based CPUs. Wildcard `?`s represent uninitialized data, two bytes in size.
+Generate one or more values according to CPU endianness. The accepted value range is normally 1 to 65536, but can be longer if the current bank matches that of the expression. Useful for so-called "return jump" tables for 6502-based CPUs. Wildcard `?`s represent uninitialized data, two bytes in size.
 
 ```
 chrin   = $ffcf

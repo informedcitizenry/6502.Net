@@ -35,6 +35,7 @@ internal static class EncodeUtil
     {
         if (!(expr is PrimaryExpression { Expr.Type: TokenType.IntLiteral } bitExpr &&
               bitExpr.Value.IsInt() &&
+              bitExpr.Value.AsInt() >= 0 &&
               bitExpr.Value.AsInt() <= 7))
         {
             throw new IntegerOverflowException( 1, 0, 7, expr);
