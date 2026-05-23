@@ -360,6 +360,19 @@ public static class ValueHelper
             };
         }
 
+        public long GetPagedBanked(AssemblyState assemblyState)
+        {
+            if (!assemblyState.BankOff && value / 0x10000 == assemblyState.Bank)
+            {
+                value &= 0xffff;
+            }
+            if (!assemblyState.DirectPageOff && value / 0x100 == assemblyState.DirectPage)
+            {
+                return value & 0xff;
+            }
+            return value;
+        }
+
         public long AsPositive()
         {
             return value switch

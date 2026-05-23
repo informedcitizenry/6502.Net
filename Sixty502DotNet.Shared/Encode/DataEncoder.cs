@@ -85,10 +85,10 @@ public static class EmitData
         switch (statement.PseudoOp.Type)
         {
             case TokenType.AddrKw:
-            case TokenType.WordKw:
                 maxValue = ushort.MaxValue;
                 minValue = ushort.MinValue;
                 size = 2;
+                transform = v => v.GetPagedBanked(state);
                 break;
             case TokenType.BankBytesKw:
                 maxValue = uint.MaxValue;
@@ -157,12 +157,21 @@ public static class EmitData
                 maxValue = ushort.MaxValue + 1;
                 minValue = ushort.MinValue + 1;
                 size = 2;
-                transform = (input) => input - 1;
+                transform = (input) =>
+                {
+                    input -= 1;
+                    return input.GetPagedBanked(state);
+                };
                 break;
             case TokenType.ShortKw:
             case TokenType.SintKw:
                 maxValue = short.MaxValue;
                 minValue = short.MinValue;
+                size = 2;
+                break;
+            case TokenType.WordKw:
+                maxValue = ushort.MaxValue;
+                minValue = ushort.MinValue;
                 size = 2;
                 break;
         }
@@ -511,7 +520,7 @@ public static class EmitData
         }
         state.Output.EmitValueSized(intValue, size, state.Cpu.ByteOrder());
     }
-
+    
     private static List<byte> GetStringBytes
     (
         AssemblyState state, 

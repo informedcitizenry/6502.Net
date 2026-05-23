@@ -414,16 +414,19 @@ public sealed class Evaluator(AssemblyState assemblyState) : IExpressionVisitor<
     public byte EvalByte(Expression expression)
         => (byte)(EvalInteger(expression, sbyte.MinValue, byte.MaxValue) & 0xff);
 
-    public long EvalPagedBanked(Expression expression, long minValue = -8388608, long maxValue = 16777215)
+    public long EvalPagedBanked
+    (
+        Expression expression, 
+        long minValue = Int24.MinValue, 
+        long maxValue = UInt24.MaxValue
+    )
     {
-        var value = EvalInteger(expression, minValue, maxValue);
-        if (!assemblyState.BankOff && value / 0x10000 == assemblyState.Bank)
+        var value = EvalInteger(expression).GetPagedBanked(assemblyState);
+        if (value < minValue || value > maxValue)
         {
-            value &= 0xffff;
-        }
-        if (!assemblyState.DirectPageOff && value / 0x100 == assemblyState.DirectPage)
-        {
-            return value & 0xff;
+            if (assemblyState is { PassNeeded: false, Passes: > 1 })
+                throw new IntegerOverflowException(maxValue.Size(), minValue, maxValue, expression);
+            assemblyState.PassNeeded |= assemblyState.Passes < 2;
         }
         return value;
     }
