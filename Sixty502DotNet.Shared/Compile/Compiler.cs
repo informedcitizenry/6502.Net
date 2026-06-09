@@ -1898,7 +1898,8 @@ public class Compiler : IStatementVisitor<Jump>
     
     private Jump CompileDirectPageOrBank(SingleExpressionDirectiveStatement statement)
     {
-        if (_assemblyState.Cpu != Cpu.M65816 && _assemblyState.Cpu != Cpu.M6809)
+        if (!_assemblyState.Cpu.IsInFamilyWith(Cpu.M6502) && 
+            !_assemblyState.Cpu.IsInFamilyWith(Cpu.M6809))
         {
             _assemblyState.Logger.LogWarning
             (
@@ -1915,15 +1916,6 @@ public class Compiler : IStatementVisitor<Jump>
         }
         else
         {
-            if (_assemblyState.Cpu != Cpu.M65816)
-            {
-                _assemblyState.Logger.LogWarning
-                   (
-                       $"Directive {statement.Directive.Type.Stringified()} ignored for CPU", 
-                       statement
-                   );
-                return Jump.NoJump;
-            }
             _assemblyState.BankOff = false;
             _assemblyState.Bank = operand;
         }
