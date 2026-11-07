@@ -398,7 +398,7 @@ public static partial class ZilogIntelEncoder
         if (mnemonic is TokenType.Djnz or TokenType.Jr)
         {
             operandVal -= state.Output.ProgramCounter + 2;
-            if (operandVal is < -126 or > 129) // per Z80 manual
+            if (operandVal is < -128 or > 127) // per Z80 manual
             {
                 if (state is { PassNeeded: false, Passes: > 3 })
                 {
