@@ -31,7 +31,8 @@ using System.Collections.Frozen;
 
 namespace Sixty502DotNet.Shared.Encode;
 
-public static partial class ZilogIntelEncoder
+public static partial class 
+    ZilogIntelEncoder
 {
     public static string Decode(ReadOnlySpan<byte> bytes, Cpu cpu, ref int programCounter)
     {
@@ -728,10 +729,17 @@ public static partial class ZilogIntelEncoder
             return false;
         }
         var eval = new Evaluator(state);
-        var offs = (int)eval.EvalInteger(index, -128, 255) * 0x10000;
-        offs |= (opcodeHex & 0x00ffff);
-        offs |= (opcodeHex & 0xff0000) * 256;
-        state.Output.EmitValue(offs, ByteOrder.LittleEndian);
+        var offs = (int)eval.EvalInteger(index, -128, 255);
+        var hex = offs * 0x10000;
+        hex |= (opcodeHex & 0x00ffff);
+        hex |= (opcodeHex & 0xff0000) * 256;
+        var size = opcodeHex.Size() + 1;
+        if ((opcodeHex & 0xffff) == 0xcbdd ||
+            (opcodeHex & 0xffff) == 0xcbfd)
+        {
+            size = 4;
+        }
+        state.Output.EmitValueSized(hex, size, ByteOrder.LittleEndian);
         return true;
     }
     
