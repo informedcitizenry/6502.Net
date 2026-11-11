@@ -1732,7 +1732,7 @@ public class Compiler : IStatementVisitor<Jump>
                 }
                 try
                 {
-                    mapEnd = new Value(char.ConvertFromUtf32((int)mapEnd.AsInt()));
+                    mapEnd = new Value(char.ConvertFromUtf32((int)mapEnd.AsInt() + 1));
                 }
                 catch
                 {
@@ -1801,7 +1801,7 @@ public class Compiler : IStatementVisitor<Jump>
                 }
                 try
                 {
-                    unmapEnd = new Value(char.ConvertFromUtf32((int)unmapEnd.AsInt()));
+                    unmapEnd = new Value(char.ConvertFromUtf32((int)unmapEnd.AsInt() + 1));
                 }
                 catch
                 {
