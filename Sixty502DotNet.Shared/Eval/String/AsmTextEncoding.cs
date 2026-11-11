@@ -219,7 +219,7 @@ public class AsmTextEncoding : Encoding
         var i = char.ConvertToUtf32(start, 0);
         var e = char.ConvertToUtf32(end, 0);
         if (i >= e) return false;
-        for (; i < e; i++)
+        for (; i <= e; i++)
         {
             if (!Map(char.ConvertFromUtf32(i), startValue++))
             {
@@ -244,7 +244,7 @@ public class AsmTextEncoding : Encoding
         var i = char.ConvertToUtf32(start, 0);
         var e = char.ConvertToUtf32(end, 0);
         if (i >= e) return false;
-        for (; i < e; i++)
+        for (; i <= e; i++)
         {
             if (!Unmap(char.ConvertFromUtf32(i)))
             {
