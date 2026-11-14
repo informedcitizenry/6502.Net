@@ -111,6 +111,10 @@ public static class EmitData
                 }
                 size = 1;
                 break;
+            case TokenType.DintKw:
+                maxValue = int.MaxValue;
+                minValue = int.MinValue;
+                break;
             case TokenType.DwordKw:
                 maxValue = uint.MaxValue;
                 minValue = uint.MinValue;
