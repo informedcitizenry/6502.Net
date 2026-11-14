@@ -969,9 +969,9 @@ public class Compiler : IStatementVisitor<Jump>
         if (_assemblyState.Passes > 0)
             return Jump.NoJump;
         var defaultValues = new List<Value>();
-        foreach (var t in statement.DefaultValues)
+        for (var i = 0; i < statement.DefaultValues.Count; i++)
         {
-            var val = _evaluator.Visit(t);
+            var val = _evaluator.Visit(statement.DefaultValues[i]);
             if (val == null) return Jump.NoJump;
             defaultValues.Add(val);
         }
@@ -993,30 +993,30 @@ public class Compiler : IStatementVisitor<Jump>
 
     public Jump VisitIfStatement(IfStatement statement)
     {
-        var evaluatedIfBlock = false;
+        var evaledIfBlock = false;
         var jump = Jump.NoJump;
         if (ShouldCompileIfBlock(statement.IfBlock))
         {
             jump = CompileBlock(statement.IfBlock.Block);
-            evaluatedIfBlock = true;
+            evaledIfBlock = true;
         }
         else
         {
             ScanUncompiledIfBlockForAnonRefs(statement.IfBlock.Block);
         }
-        foreach (var t in statement.ElseIfBlocks)
+        for (var i = 0; i < statement.ElseIfBlocks.Count; i++)
         {
-            if (!evaluatedIfBlock && ShouldCompileIfBlock(t))
+            if (!evaledIfBlock && ShouldCompileIfBlock(statement.ElseIfBlocks[i]))
             {
-                evaluatedIfBlock = true;
-                jump = CompileBlock(t.Block);
+                evaledIfBlock = true;
+                jump = CompileBlock(statement.ElseIfBlocks[i].Block);
             }
             else
             {
                 ScanUncompiledIfBlockForAnonRefs(statement.IfBlock.Block);
             }
         }
-        if (!evaluatedIfBlock)
+        if (!evaledIfBlock)
         {
             jump = CompileBlock(statement.ElseBlock);
         }
@@ -1035,15 +1035,15 @@ public class Compiler : IStatementVisitor<Jump>
         var condValue = new Value(true);
         if (statement.Condition != null)
         {
-            var evaluatedCondValue = _evaluator.Visit(statement.Condition);
-            if (evaluatedCondValue == null) return Jump.NoJump;
-            if (evaluatedCondValue.TypeTag != TypeTag.Boolean)
+            var evaledCondValue = _evaluator.Visit(statement.Condition);
+            if (evaledCondValue == null) return Jump.NoJump;
+            if (evaledCondValue.TypeTag != TypeTag.Boolean)
             {
                 if (!_assemblyState.PassNeeded)
                     throw new TypeException
                     (
                         TypeTag.Boolean,
-                        evaluatedCondValue,
+                        evaledCondValue,
                         statement.Condition
                     );
             }
@@ -1054,7 +1054,7 @@ public class Compiler : IStatementVisitor<Jump>
                     $"Condition is a constant expression that will always evaluate to {statement.Condition.Value}", 
                     statement.Condition);
             }
-            condValue = evaluatedCondValue;
+            condValue = evaledCondValue;
         }
         var repetition = 65535;
         while (condValue.AsBoolean() && repetition-- > 0)
@@ -1075,9 +1075,9 @@ public class Compiler : IStatementVisitor<Jump>
             }
             var printOn = _assemblyState.PrintOn;
             _assemblyState.PrintOn = false;
-            foreach (var t in statement.Iterators)
+            for (var i = 0; i < statement.Iterators.Count; i++)
             {
-                _ = Visit(t);
+                _ = Visit(statement.Iterators[i]);
             }
             _assemblyState.PrintOn = printOn;
             if (statement.Condition != null)
@@ -1157,8 +1157,9 @@ public class Compiler : IStatementVisitor<Jump>
                 }
                 defaultCase = i;
             }
-            foreach (var caseLabel in caseBlock.Cases)
+            for (var c = 0; c < caseBlock.Cases.Count; c++)
             {
+                var caseLabel = caseBlock.Cases[c];
                 if (!caseLabel.IsConstant())
                 {
                     throw new CompileException(CompileExceptionType.ValueNotConstant, caseLabel);
@@ -1852,9 +1853,9 @@ public class Compiler : IStatementVisitor<Jump>
         {
             throw new CompileException(CompileExceptionType.NotInRootScope, statement);
         }
-        foreach (var t in expressions)
+        for (var i = 0; i < expressions.Count; i++)
         {
-            var path = GetImportPath(t);
+            var path = GetImportPath(expressions[i]);
             if (_assemblyState.SymbolTable.IsImported(path))
             {
                 _assemblyState.Logger.LogWarning("Scope is already imported", statement);
@@ -1867,12 +1868,12 @@ public class Compiler : IStatementVisitor<Jump>
             catch (KeyNotFoundException knfExc)
             {
                 if (_assemblyState.PassNeeded) continue;
-                _assemblyState.Logger.LogError(knfExc.Message,t);
+                _assemblyState.Logger.LogError(knfExc.Message,expressions[i]);
                 return Jump.NoJump;
             }
             catch (Exception e)
             {
-                _assemblyState.Logger.LogError(e.Message, t);
+                _assemblyState.Logger.LogError(e.Message, expressions[i]);
                 return Jump.NoJump;
             }
         }
@@ -1883,11 +1884,9 @@ public class Compiler : IStatementVisitor<Jump>
     {
         if (expression is MemberExpression member)
         {
-            List<string> path =
-            [
-                .. GetImportPath(member.Left),
-                member.Member.Text.ToString()
-            ];
+            var path = new List<string>();
+            path.AddRange(GetImportPath(member.Left));
+            path.Add(member.Member.Text.ToString());
             return path;
         }
         if (expression is not PrimaryExpression primary || !primary.Expr.Type.IsIdent())
@@ -2090,7 +2089,7 @@ public class Compiler : IStatementVisitor<Jump>
     
     private static string GetDataBytesString(ReadOnlySpan<byte> bytes, int offset, int programCounter)
     {
-        var synced = programCounter == offset;
+        var synched = programCounter == offset;
         var sb = new StringBuilder();
         for (var y = 0; y < bytes.Length; y += 8)
         {
@@ -2105,7 +2104,7 @@ public class Compiler : IStatementVisitor<Jump>
             programCounter += 8;
             sb.AppendLine();
             sb.Append('>');
-            if (!synced)
+            if (!synched)
             {
                 sb.Append($"{offset,-7:x4}");
             }

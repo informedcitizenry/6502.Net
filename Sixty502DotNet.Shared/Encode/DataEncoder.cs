@@ -33,9 +33,9 @@ public static class EmitData
     public static void EncodeStringify(AssemblyState state, IList<Expression> expressions)
     {
         var eval = new Evaluator(state);
-        foreach (var t in expressions)
+        for (var i = 0; i < expressions.Count; i++)
         {
-            var val = eval.Visit(t);
+            var val = eval.Visit(expressions[i]);
             if (val == null)
             {
                 state.Output.Fill(1);
@@ -79,8 +79,8 @@ public static class EmitData
         }
         var evaluator = new Evaluator(state);
         Func<long, long>? transform = null;
-        long maxValue;
-        long minValue;
+        long maxValue = uint.MinValue;
+        long minValue = uint.MaxValue;
         var size = 4;
         switch (statement.PseudoOp.Type)
         {
@@ -174,15 +174,15 @@ public static class EmitData
                 size = 2;
                 break;
             case TokenType.WordKw:
-            default:
                 maxValue = ushort.MaxValue;
                 minValue = ushort.MinValue;
                 size = 2;
                 break;
         }
 
-        foreach (var expression in statement.Expressions)
+        for (var i = 0; i < statement.Expressions.Count; i++)
         {
+            var expression = statement.Expressions[i];
             if (expression == null)
             {
                 state.Output.Fill(size);
@@ -232,8 +232,9 @@ public static class EmitData
             },
             _ => null
         };
-        foreach (var expression in statement.Expressions)
+        for (var i = 0; i < statement.Expressions.Count; i++)
         {
+            var expression = statement.Expressions[i];
             if (expression == null)
             {
                 bytes.Add(null);
@@ -247,10 +248,9 @@ public static class EmitData
                     continue;
                 }
                 var valBytes = GetStringBytes(state, expression, val);
-                var expression1 = expression;
                 valBytes.ForEach(b =>
                 {
-                    bytes.Add(transform?.Invoke(b, expression1) ?? b);
+                    bytes.Add(transform?.Invoke(b, expression) ?? b);
                 });
             }
         }
@@ -284,12 +284,12 @@ public static class EmitData
                 throw new CompileException(CompileExceptionType.ValueOverflow, ast);
             }
             case TokenType.PstringKw:
-            default:
                 bytes.Insert(0, (byte)bytes.Count);
                 break;
         }
-        foreach (var b in bytes)
+        for (var i = 0; i < bytes.Count; i++)
         {
+            var b = bytes[i];
             if (b == null)
             {
                 state.Output.Fill(1);
@@ -304,8 +304,9 @@ public static class EmitData
     private static void EncodeBinHexStrings(AssemblyState state, PseudoOpStatement statement)
     {
         var evaluator = new Evaluator(state);
-        foreach (var expression in statement.Expressions)
+        for (var i = 0; i <  statement.Expressions.Count; i++)
         {
+            var expression = statement.Expressions[i];
             if (expression == null)
             {
                 state.Output.Fill(1);
@@ -332,11 +333,10 @@ public static class EmitData
         var valArray = value.AsArray();
         if (valArray != null && value.TypeTag == TypeTag.Array)
         {
-            foreach (var t in valArray)
+            for (var i = 0; i < valArray.Count; i++)
             {
-                EncodeBinHexString(state, pseudoOp, expression, t);
+                EncodeBinHexString(state, pseudoOp, expression, valArray[i]);
             }
-
             return;
         }
         var size = pseudoOp == TokenType.HstringKw ? 2 : 8;
@@ -381,8 +381,9 @@ public static class EmitData
             _ => 10
         };
         var evaluator = new Evaluator(state);
-        foreach (var expression in statement.Expressions)
+        for (var i = 0; i < statement.Expressions.Count; i++)
         {
+            var expression = statement.Expressions[i];
             if (expression == null)
             {
                 state.Output.Fill(fillAmount);
